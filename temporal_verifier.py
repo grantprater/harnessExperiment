@@ -56,32 +56,25 @@ class TemporalInvariantVerifier:
         self.fps = fps
         self.max_v = max_velocity_px_per_s
 
-    def verify_temporal_invariants(self) -> TemporalVerificationResult:
-        passed = []
+    def _check_monotonicity(self) -> Tuple[bool, List[str]]:
         violations = []
-
-        # 1. Check Chronological Monotonicity
-        mono_ok = True
         for i in self.ledger.intervals:
             if i.t_start >= i.t_end:
-                mono_ok = False
                 violations.append(
                     f"Interval {i.interval_id} for '{i.entity_id}' violates monotonicity: t_start ({i.t_start}s) >= t_end ({i.t_end}s)"
                 )
-        if mono_ok:
-            passed.append("Invariant 1: Chronological monotonicity holds across all entity intervals")
+        return len(violations) == 0, violations
 
-        # 2. Check Spatial Continuity & Object Permanence (No Teleportation)
+    def _check_spatial_continuity(self) -> Tuple[bool, List[str], int]:
+        violations = []
         by_entity: Dict[str, List[EntityInterval]] = {}
         for i in self.ledger.intervals:
             by_entity.setdefault(i.entity_id, []).append(i)
 
-        teleport_ok = True
         for eid, ints in by_entity.items():
             sorted_ints = sorted(ints, key=lambda x: x.t_start)
             for k in range(1, len(sorted_ints)):
-                prev_i = sorted_ints[k - 1]
-                curr_i = sorted_ints[k]
+                prev_i, curr_i = sorted_ints[k - 1], sorted_ints[k]
                 dt = curr_i.t_start - prev_i.t_end
                 dist = math.hypot(
                     curr_i.start_coords[0] - prev_i.end_coords[0],
@@ -89,53 +82,63 @@ class TemporalInvariantVerifier:
                 )
                 if dt < 0:
                     violations.append(f"Entity '{eid}' has overlapping temporal intervals: [{prev_i.t_start}-{prev_i.t_end}] and [{curr_i.t_start}-{curr_i.t_end}]")
-                    teleport_ok = False
                 elif dt == 0 and dist > 10.0:
                     violations.append(f"Entity '{eid}' instant teleportation detected: jumped {dist:.1f}px at t={curr_i.t_start}s")
-                    teleport_ok = False
                 elif dt > 0 and (dist / dt) > self.max_v:
                     violations.append(f"Entity '{eid}' velocity violation: moved at {dist/dt:.1f}px/s (max: {self.max_v}px/s)")
-                    teleport_ok = False
 
-        if teleport_ok:
-            passed.append("Invariant 2: Spatial continuity & object permanence hold (no teleportation)")
+        return len(violations) == 0, violations, len(by_entity)
 
-        # 3. Check Physical Motion Energy Grounding
-        grounded_count = 0
+    def _check_energy_grounding(self) -> Tuple[bool, float, List[str]]:
+        violations = []
         motion_intervals = [i for i in self.ledger.intervals if "motion" in i.state_predicate.lower() or "moving" in i.state_predicate.lower()]
-        
         if not motion_intervals:
-            grounding_score = 1.0
-            passed.append("Invariant 3: Physical motion grounding verified (no ungrounded motion claims)")
-        elif not self.energy_profile:
-            grounding_score = 1.0
-            passed.append("Invariant 3: Motion claims recorded (no profile attached)")
-        else:
-            for mi in motion_intervals:
-                s_frame = int(mi.t_start * self.fps)
-                e_frame = int(mi.t_end * self.fps)
-                energies = [p["motion_energy"] for p in self.energy_profile if s_frame <= p["frame_index"] <= e_frame]
-                peak = max(energies) if energies else 0.0
-                if peak > 0.003:
-                    grounded_count += 1
-                else:
-                    violations.append(
-                        f"Hallucinated motion: Entity '{mi.entity_id}' claimed in motion during [{mi.t_start}s - {mi.t_end}s], "
-                        f"but physical video motion energy was 0.0 (static frame)"
-                    )
-            grounding_score = grounded_count / max(1, len(motion_intervals))
-            if grounding_score == 1.0:
-                passed.append("Invariant 3: All motion intervals grounded in physical optical energy peaks")
+            return True, 1.0, []
+        if not self.energy_profile:
+            return True, 1.0, []
 
-        total_rules = 3
-        score = len(passed) / total_rules
-        all_passed = (len(violations) == 0)
+        grounded_count = 0
+        for mi in motion_intervals:
+            s_frame = int(mi.t_start * self.fps)
+            e_frame = int(mi.t_end * self.fps)
+            energies = [p["motion_energy"] for p in self.energy_profile if s_frame <= p["frame_index"] <= e_frame]
+            peak = max(energies, default=0.0)
+            if peak > 0.003:
+                grounded_count += 1
+            else:
+                violations.append(
+                    f"Hallucinated motion: Entity '{mi.entity_id}' claimed in motion during [{mi.t_start}s - {mi.t_end}s], "
+                    f"but physical video motion energy was 0.0 (static frame)"
+                )
+        score = grounded_count / max(1, len(motion_intervals))
+        return score == 1.0, score, violations
 
+    def verify_temporal_invariants(self) -> TemporalVerificationResult:
+        passed = []
+        all_violations = []
+
+        mono_ok, mono_errs = self._check_monotonicity()
+        if mono_ok:
+            passed.append("Invariant 1: Chronological monotonicity holds across all entity intervals")
+        all_violations.extend(mono_errs)
+
+        cont_ok, cont_errs, entity_count = self._check_spatial_continuity()
+        if cont_ok:
+            passed.append("Invariant 2: Spatial continuity & object permanence hold (no teleportation)")
+        all_violations.extend(cont_errs)
+
+        energy_ok, energy_score, energy_errs = self._check_energy_grounding()
+        if energy_ok:
+            desc = "Invariant 3: Physical motion grounding verified (no ungrounded motion claims)" if not self.energy_profile else "Invariant 3: All motion intervals grounded in physical optical energy peaks"
+            passed.append(desc)
+        all_violations.extend(energy_errs)
+
+        score = len(passed) / 3.0
         return TemporalVerificationResult(
-            passed=all_passed,
+            passed=len(all_violations) == 0,
             score=score,
             passed_invariants=passed,
-            detected_violations=violations,
-            energy_grounding_score=grounding_score,
-            details={"entity_count": len(by_entity), "interval_count": len(self.ledger.intervals)}
+            detected_violations=all_violations,
+            energy_grounding_score=energy_score,
+            details={"entity_count": entity_count, "interval_count": len(self.ledger.intervals)}
         )

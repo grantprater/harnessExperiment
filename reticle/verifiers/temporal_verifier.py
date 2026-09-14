@@ -46,27 +46,21 @@ class TemporalInvariantVerifier(BaseVerifier):
         self.fps = fps
         self.max_v = max_velocity_px_per_s
 
-    def verify_temporal_invariants(self) -> TemporalVerificationResult:
-        passed = []
+    def _check_monotonicity(self) -> Tuple[bool, List[str]]:
         violations = []
-
-        # 1. Check Chronological Monotonicity
-        mono_ok = True
         for i in self.ledger.intervals:
             if i.t_start >= i.t_end:
-                mono_ok = False
                 violations.append(
                     f"Interval {i.interval_id} for '{i.entity_id}' violates monotonicity: t_start ({i.t_start}s) >= t_end ({i.t_end}s)"
                 )
-        if mono_ok:
-            passed.append("Invariant 1: Chronological monotonicity holds across all entity intervals")
+        return len(violations) == 0, violations
 
-        # 2. Check Spatial Continuity & Object Permanence (No Teleportation)
+    def _check_spatial_continuity(self) -> Tuple[bool, List[str], int]:
+        violations = []
         by_entity: Dict[str, List[EntityInterval]] = {}
         for i in self.ledger.intervals:
             by_entity.setdefault(i.entity_id, []).append(i)
 
-        teleport_ok = True
         for eid, ints in by_entity.items():
             sorted_ints = sorted(ints, key=lambda x: x.t_start)
             for idx in range(1, len(sorted_ints)):
@@ -78,15 +72,14 @@ class TemporalInvariantVerifier(BaseVerifier):
                 dist = math.hypot(dx, dy)
                 speed = dist / dt
                 if speed > self.max_v:
-                    teleport_ok = False
                     violations.append(
                         f"Entity '{eid}' teleported between {prev_i.interval_id} and {curr_i.interval_id}: "
                         f"moved {dist:.2f}px in {dt:.2f}s (Speed {speed:.1f}px/s > max {self.max_v}px/s)"
                     )
-        if teleport_ok:
-            passed.append("Invariant 2: Spatial continuity & object permanence hold (no teleportation)")
+        return len(violations) == 0, violations, len(by_entity)
 
-        # 3. Check Physical Motion Energy Grounding
+    def _check_energy_grounding(self) -> Tuple[bool, float, List[str], int]:
+        violations = []
         motion_grounded_count = 0
         motion_total_count = 0
 
@@ -112,21 +105,38 @@ class TemporalInvariantVerifier(BaseVerifier):
         energy_score = 1.0
         if motion_total_count > 0:
             energy_score = round(motion_grounded_count / motion_total_count, 4)
-            if energy_score >= 0.8:
-                passed.append("Invariant 3: All motion intervals grounded in physical optical energy peaks")
-        else:
-            passed.append("Invariant 3: Static consistency holds")
+            return energy_score >= 0.8, energy_score, violations, motion_total_count
+        return True, 1.0, violations, 0
 
-        all_passed = (len(violations) == 0)
-        score = 1.0 if all_passed else max(0.0, 1.0 - (len(violations) * 0.25))
+    def verify_temporal_invariants(self) -> TemporalVerificationResult:
+        passed = []
+        all_violations = []
+
+        mono_ok, mono_errs = self._check_monotonicity()
+        if mono_ok:
+            passed.append("Invariant 1: Chronological monotonicity holds across all entity intervals")
+        all_violations.extend(mono_errs)
+
+        cont_ok, cont_errs, entity_count = self._check_spatial_continuity()
+        if cont_ok:
+            passed.append("Invariant 2: Spatial continuity & object permanence hold (no teleportation)")
+        all_violations.extend(cont_errs)
+
+        energy_ok, energy_score, energy_errs, motion_count = self._check_energy_grounding()
+        if energy_ok:
+            passed.append("Invariant 3: All motion intervals grounded in physical optical energy peaks" if motion_count > 0 else "Invariant 3: Static consistency holds")
+        all_violations.extend(energy_errs)
+
+        all_passed = (len(all_violations) == 0)
+        score = 1.0 if all_passed else max(0.0, 1.0 - (len(all_violations) * 0.25))
 
         return TemporalVerificationResult(
             passed=all_passed,
             score=round(score, 4),
             passed_invariants=passed,
-            detected_violations=violations,
+            detected_violations=all_violations,
             energy_grounding_score=energy_score,
-            details={"by_entity_count": len(by_entity), "motion_intervals": motion_total_count}
+            details={"by_entity_count": entity_count, "motion_intervals": motion_count}
         )
 
     def verify(self, *args, **kwargs) -> VerificationResult:
