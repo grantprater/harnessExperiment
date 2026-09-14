@@ -10,6 +10,7 @@ executes the failing test/reproduction command and extracts:
 
 from __future__ import annotations
 
+import contextlib
 import io
 import json
 import os
@@ -61,6 +62,55 @@ class RuntimeExecutionTracer:
         return self.trace_calls
 
 
+@contextlib.contextmanager
+def _probe_sandbox(
+    work_dir: Path,
+    test_path: Path,
+    test_filter: Optional[str],
+    stdout_buf: io.StringIO,
+    stderr_buf: io.StringIO,
+    tracer: RuntimeExecutionTracer
+):
+    """Context manager ensuring execution isolation, directory switching, and stdout/stderr capture."""
+    old_cwd = os.getcwd()
+    old_sys_path = list(sys.path)
+    old_sys_argv = list(sys.argv)
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+    old_trace = sys.gettrace()
+    try:
+        os.chdir(work_dir)
+        if str(work_dir) not in sys.path:
+            sys.path.insert(0, str(work_dir))
+        sys.stdout = stdout_buf
+        sys.stderr = stderr_buf
+        sys.argv = [str(test_path)] + ([test_filter] if test_filter else [])
+        sys.settrace(tracer.trace_calls)
+        yield
+    finally:
+        sys.settrace(old_trace)
+        os.chdir(old_cwd)
+        sys.path = old_sys_path
+        sys.argv = old_sys_argv
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+
+
+def _extract_exception_frames(exc_tb, target_prefix: str) -> List[Dict[str, Any]]:
+    """Extract clean call frames filtering by target prefix."""
+    frames = []
+    for frame_summary in traceback.extract_tb(exc_tb):
+        fn = frame_summary.filename.replace("\\", "/")
+        rel = fn.split(target_prefix)[-1].lstrip("/") if target_prefix in fn else frame_summary.filename
+        frames.append({
+            "file": rel,
+            "line": frame_summary.lineno,
+            "function": frame_summary.name,
+            "code": frame_summary.line
+        })
+    return frames
+
+
 def run_with_probe(
     test_path: Union[str, Path],
     target_prefix: str = "",
@@ -71,34 +121,13 @@ def run_with_probe(
     test_path = Path(test_path).resolve()
     work_dir = Path(cwd).resolve() if cwd else test_path.parent
 
-    old_cwd = os.getcwd()
-    old_sys_path = list(sys.path)
-    old_sys_argv = list(sys.argv)
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-    old_trace = sys.gettrace()
-
     tracer = RuntimeExecutionTracer(target_prefix=str(target_prefix))
     stdout_buf = io.StringIO()
     stderr_buf = io.StringIO()
     passed = False
     error_info: Optional[Dict[str, Any]] = None
 
-    try:
-        os.chdir(work_dir)
-        if str(work_dir) not in sys.path:
-            sys.path.insert(0, str(work_dir))
-
-        sys.stdout = stdout_buf
-        sys.stderr = stderr_buf
-
-        # Set isolated argv for unittest or script
-        sys.argv = [str(test_path)]
-        if test_filter:
-            sys.argv.append(test_filter)
-
-        sys.settrace(tracer.trace_calls)
-
+    with _probe_sandbox(work_dir, test_path, test_filter, stdout_buf, stderr_buf, tracer):
         try:
             runpy.run_path(str(test_path), run_name="__main__")
             passed = True
@@ -113,29 +142,12 @@ def run_with_probe(
         except Exception as ex:
             passed = False
             exc_type, exc_val, exc_tb = sys.exc_info()
-            frames = []
-            for frame_summary in traceback.extract_tb(exc_tb):
-                fn = frame_summary.filename.replace("\\", "/")
-                rel = fn.split(target_prefix)[-1].lstrip("/") if target_prefix in fn else frame_summary.filename
-                frames.append({
-                    "file": rel,
-                    "line": frame_summary.lineno,
-                    "function": frame_summary.name,
-                    "code": frame_summary.line
-                })
             error_info = {
                 "type": exc_type.__name__ if exc_type else "Error",
                 "message": str(exc_val),
-                "frames": frames,
+                "frames": _extract_exception_frames(exc_tb, target_prefix),
                 "output": stderr_buf.getvalue() + stdout_buf.getvalue()
             }
-    finally:
-        sys.settrace(old_trace)
-        os.chdir(old_cwd)
-        sys.path = old_sys_path
-        sys.argv = old_sys_argv
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
 
     # Parse failure details from test output if available
     raw_output = (error_info.get("output", "") if error_info else stdout_buf.getvalue() + stderr_buf.getvalue()).strip()
