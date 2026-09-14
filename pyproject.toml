@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reticle"
+version = "0.2.0"
+description = "Cognitive Harness Framework for Multimodal AI Agents: Sensory Transduction, Epistemic Ledgers, and Formal Invariants"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Grant" }
+]
+dependencies = [
+    "pillow>=10.0.0",
+    "opencv-python>=4.8.0",
+    "numpy>=1.24.0",
+    "pyyaml>=6.0"
+]
+
+[project.scripts]
+reticle = "reticle.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["reticle*"]
