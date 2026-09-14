@@ -94,6 +94,54 @@ class TechnicalSpecVerifier:
         self.blueprint = blueprint
         self.ledger = ledger
 
+    @staticmethod
+    def _extract_sections(doc_text: str) -> Dict[str, str]:
+        """Extract markdown sections keyed by heading title."""
+        sections: Dict[str, str] = {}
+        curr_sec = None
+        curr_lines = []
+        heading_re = re.compile(r"^#+\s+(.+)$")
+
+        for line in doc_text.splitlines():
+            m = heading_re.match(line)
+            if m:
+                if curr_sec:
+                    sections[curr_sec] = "\n".join(curr_lines).strip()
+                curr_sec = m.group(1).strip()
+                curr_lines = []
+            else:
+                curr_lines.append(line)
+        if curr_sec:
+            sections[curr_sec] = "\n".join(curr_lines).strip()
+        return sections
+
+    @staticmethod
+    def _verify_code_blocks(sec_title: str, content: str, must_contain: bool) -> Tuple[int, List[str]]:
+        """Extract and AST-validate code blocks in section."""
+        errors = []
+        code_blocks = re.findall(r"```(?:python)?\s*(.*?)```", content, re.DOTALL)
+        if must_contain and not code_blocks:
+            errors.append(f"[{sec_title}] Specification requires code examples but none found.")
+
+        for c_idx, code in enumerate(code_blocks):
+            code_clean = code.strip()
+            if code_clean:
+                try:
+                    ast.parse(code_clean)
+                except SyntaxError as e:
+                    errors.append(f"[{sec_title}] Code block {c_idx+1} syntax error: {e.msg} on line {e.lineno}")
+        return len(code_blocks), errors
+
+    @staticmethod
+    def _verify_citations(sec_title: str, content: str, known_atoms: set) -> List[str]:
+        """Verify all cited atoms exist in the evidence ledger."""
+        errors = []
+        citations = re.findall(r"\[(ev_\d{3})\]", content)
+        for cit in citations:
+            if cit not in known_atoms:
+                errors.append(f"[{sec_title}] Phantom citation: '{cit}' not found in EvidenceLedger.")
+        return errors
+
     def verify_document(self, doc_text: str) -> SpecVerificationResult:
         missing_sections = []
         code_syntax_errors = []
@@ -101,68 +149,33 @@ class TechnicalSpecVerifier:
         unfulfilled_invariants = []
         section_reports = {}
 
-        # 1. Check Section Presence & Extract Section Contents
-        lines = doc_text.splitlines()
-        extracted_sections: Dict[str, str] = {}
-        curr_sec = None
-        curr_lines = []
-
-        heading_re = re.compile(r"^#+\s+(.+)$")
-        for line in lines:
-            m = heading_re.match(line)
-            if m:
-                if curr_sec:
-                    extracted_sections[curr_sec] = "\n".join(curr_lines).strip()
-                curr_sec = m.group(1).strip()
-                curr_lines = []
-            else:
-                curr_lines.append(line)
-        if curr_sec:
-            extracted_sections[curr_sec] = "\n".join(curr_lines).strip()
+        extracted_sections = self._extract_sections(doc_text)
+        known_atoms = {a.atom_id for a in self.ledger.atoms}
 
         # Check blueprint coverage
         for sec in self.blueprint.sections:
-            matched_content = None
-            for title, content in extracted_sections.items():
-                if sec.title.lower() in title.lower() or title.lower() in sec.title.lower():
-                    matched_content = content
-                    break
+            matched_content = next(
+                (c for t, c in extracted_sections.items() if sec.title.lower() in t.lower() or t.lower() in sec.title.lower()),
+                None
+            )
 
             if not matched_content or len(matched_content.split()) < 3:
                 missing_sections.append(sec.title)
                 continue
 
-            sec_rep: Dict[str, Any] = {"words": len(matched_content.split()), "code_blocks": 0}
-
-            # 2. Check Invariants
+            # Check required concepts / invariants
             for inv in sec.required_invariants:
                 if inv.lower() not in matched_content.lower():
                     unfulfilled_invariants.append(f"[{sec.title}] Missing required concept/invariant: '{inv}'")
 
-            # 3. Check Code Blocks (if python code expected)
-            code_blocks = re.findall(r"```(?:python)?\s*(.*?)```", matched_content, re.DOTALL)
-            sec_rep["code_blocks"] = len(code_blocks)
+            # Check code blocks & citations via modular helpers
+            n_blocks, code_errs = self._verify_code_blocks(sec.title, matched_content, sec.must_contain_code)
+            code_syntax_errors.extend(code_errs)
 
-            if sec.must_contain_code and not code_blocks:
-                code_syntax_errors.append(f"[{sec.title}] Specification requires code examples but none found.")
+            cit_errs = self._verify_citations(sec.title, matched_content, known_atoms)
+            citation_errors.extend(cit_errs)
 
-            for c_idx, code in enumerate(code_blocks):
-                code_clean = code.strip()
-                if not code_clean:
-                    continue
-                try:
-                    ast.parse(code_clean)
-                except SyntaxError as e:
-                    code_syntax_errors.append(f"[{sec.title}] Code block {c_idx+1} syntax error: {e.msg} on line {e.lineno}")
-
-            # 4. Check Citations against Ledger
-            citations = re.findall(r"\[(ev_\d{3})\]", matched_content)
-            known_atoms = {a.atom_id for a in self.ledger.atoms}
-            for cit in citations:
-                if cit not in known_atoms:
-                    citation_errors.append(f"[{sec.title}] Phantom citation: '{cit}' not found in EvidenceLedger.")
-
-            section_reports[sec.title] = sec_rep
+            section_reports[sec.title] = {"words": len(matched_content.split()), "code_blocks": n_blocks}
 
         passed = not (missing_sections or code_syntax_errors or citation_errors or unfulfilled_invariants)
         return SpecVerificationResult(
