@@ -1,0 +1,37 @@
+{
+  "public": {
+    "passed": true,
+    "exit_code": 0,
+    "output": "..............\n----------------------------------------------------------------------\nRan 14 tests in 0.076s\n\nOK\n",
+    "seconds": 0.16613150000011956
+  },
+  "hidden": {
+    "passed": true,
+    "exit_code": 0,
+    "output": "....\n----------------------------------------------------------------------\nRan 4 tests in 0.002s\n\nOK\n",
+    "seconds": 0.08980159999919124
+  },
+  "summary": {
+    "run_id": "quote_1_adaptive",
+    "task": "quote",
+    "mode": "adaptive",
+    "repeat": 1,
+    "elapsed_seconds": 32.52906632423401,
+    "public_passed": true,
+    "hidden_passed": true,
+    "protected_integrity": true,
+    "snapshots_match": true,
+    "actions": 8,
+    "observation_characters": 6951,
+    "source_view_characters": 1435,
+    "returned_characters": 9051,
+    "edit_errors": 0,
+    "observation_choices": {
+      "tree": 1,
+      "search": 2,
+      "file": 1,
+      "region": 1
+    },
+    "api_tokens": null
+  }
+}

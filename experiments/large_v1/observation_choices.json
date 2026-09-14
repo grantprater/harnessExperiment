@@ -1,0 +1,212 @@
+{
+  "by_mode": {
+    "full": {
+      "attempted": {
+        "tree": 6,
+        "file": 16,
+        "search": 5,
+        "region": 3
+      },
+      "successful": {
+        "tree": 6,
+        "file": 16,
+        "search": 5
+      },
+      "rejected": 3
+    },
+    "foveated": {
+      "attempted": {
+        "tree": 6,
+        "file": 6,
+        "outline": 9,
+        "region": 17,
+        "search": 7
+      },
+      "successful": {
+        "tree": 6,
+        "outline": 9,
+        "region": 17,
+        "search": 7
+      },
+      "rejected": 6
+    },
+    "adaptive": {
+      "attempted": {
+        "tree": 6,
+        "search": 6,
+        "file": 11,
+        "region": 5,
+        "outline": 2
+      },
+      "successful": {
+        "tree": 6,
+        "search": 6,
+        "file": 11,
+        "region": 5,
+        "outline": 2
+      },
+      "rejected": 0
+    }
+  },
+  "adaptive_reads": [
+    {
+      "run_id": "cache_1_adaptive",
+      "kind": "file",
+      "file": "dispatchdesk/cache/service.py",
+      "file_lines": 21,
+      "args": [],
+      "characters": 838
+    },
+    {
+      "run_id": "cache_1_adaptive",
+      "kind": "file",
+      "file": "dispatchdesk/cache/keys.py",
+      "file_lines": 11,
+      "args": [],
+      "characters": 389
+    },
+    {
+      "run_id": "cache_1_adaptive",
+      "kind": "file",
+      "file": "dispatchdesk/cache/storage.py",
+      "file_lines": 29,
+      "args": [],
+      "characters": 864
+    },
+    {
+      "run_id": "cache_1_adaptive",
+      "kind": "file",
+      "file": "test_contract.py",
+      "file_lines": 72,
+      "args": [],
+      "characters": 4177
+    },
+    {
+      "run_id": "cache_1_adaptive",
+      "kind": "region",
+      "file": "dispatchdesk/cache/storage.py",
+      "file_lines": 29,
+      "args": [
+        "7",
+        "13"
+      ],
+      "characters": 182
+    },
+    {
+      "run_id": "cache_2_adaptive",
+      "kind": "file",
+      "file": "dispatchdesk/cache/keys.py",
+      "file_lines": 11,
+      "args": [],
+      "characters": 389
+    },
+    {
+      "run_id": "cache_2_adaptive",
+      "kind": "file",
+      "file": "dispatchdesk/cache/service.py",
+      "file_lines": 21,
+      "args": [],
+      "characters": 838
+    },
+    {
+      "run_id": "cache_2_adaptive",
+      "kind": "file",
+      "file": "dispatchdesk/cache/storage.py",
+      "file_lines": 29,
+      "args": [],
+      "characters": 864
+    },
+    {
+      "run_id": "feed_1_adaptive",
+      "kind": "file",
+      "file": "dispatchdesk/events/service.py",
+      "file_lines": 6,
+      "args": [],
+      "characters": 383
+    },
+    {
+      "run_id": "feed_1_adaptive",
+      "kind": "outline",
+      "file": "dispatchdesk/events/query.py",
+      "file_lines": 282,
+      "args": [],
+      "characters": 5626
+    },
+    {
+      "run_id": "feed_1_adaptive",
+      "kind": "region",
+      "file": "dispatchdesk/events/query.py",
+      "file_lines": 282,
+      "args": [
+        "1",
+        "8"
+      ],
+      "characters": 312
+    },
+    {
+      "run_id": "feed_1_adaptive",
+      "kind": "region",
+      "file": "dispatchdesk/events/query.py",
+      "file_lines": 282,
+      "args": [
+        "180",
+        "195"
+      ],
+      "characters": 699
+    },
+    {
+      "run_id": "feed_2_adaptive",
+      "kind": "file",
+      "file": "dispatchdesk/events/service.py",
+      "file_lines": 6,
+      "args": [],
+      "characters": 383
+    },
+    {
+      "run_id": "feed_2_adaptive",
+      "kind": "outline",
+      "file": "dispatchdesk/events/query.py",
+      "file_lines": 282,
+      "args": [],
+      "characters": 5626
+    },
+    {
+      "run_id": "feed_2_adaptive",
+      "kind": "region",
+      "file": "dispatchdesk/events/query.py",
+      "file_lines": 282,
+      "args": [
+        "185",
+        "195"
+      ],
+      "characters": 487
+    },
+    {
+      "run_id": "quote_1_adaptive",
+      "kind": "file",
+      "file": "dispatchdesk/billing/service.py",
+      "file_lines": 12,
+      "args": [],
+      "characters": 667
+    },
+    {
+      "run_id": "quote_1_adaptive",
+      "kind": "region",
+      "file": "dispatchdesk/billing/pricing.py",
+      "file_lines": 352,
+      "args": [
+        "185",
+        "205"
+      ],
+      "characters": 768
+    },
+    {
+      "run_id": "quote_2_adaptive",
+      "kind": "file",
+      "file": "dispatchdesk/billing/service.py",
+      "file_lines": 12,
+      "args": [],
+      "characters": 667
+    }
+  ]
+}

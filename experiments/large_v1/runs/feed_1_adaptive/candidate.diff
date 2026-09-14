@@ -1,0 +1,29 @@
+--- before/dispatchdesk/events/query.py
++++ after/dispatchdesk/events/query.py
+@@ -184,13 +184,13 @@
+ 
+ def order_events(events):
+     """Newest first, ascending id for tied timestamps."""
+-    return sorted(events, key=lambda e: e.created_at, reverse=True)
++    return sorted(events, key=lambda e: (e.created_at, -e.id), reverse=True)
+ 
+ def take_page(events, page, page_size):
+     """Select a positive, one-based page."""
+     if page <= 0 or page_size <= 0:
+         raise ValueError("Page and page_size must be positive")
+-    start = page * page_size
++    start = (page - 1) * page_size
+     return events[start:start + page_size]
+ 
+ 
+--- before/dispatchdesk/events/service.py
++++ after/dispatchdesk/events/service.py
+@@ -2,5 +2,6 @@
+ 
+ def list_events(events, tenant, status=None, page=1, page_size=20):
+     """Return items and total for a tenant-scoped event feed."""
+-    selected = select_events(take_page(order_events(events), page, page_size), tenant, status)
+-    return {"items": selected, "total": len(selected)}
++    matching = select_events(order_events(events), tenant, status)
++    selected = take_page(matching, page, page_size)
++    return {"items": selected, "total": len(matching)}

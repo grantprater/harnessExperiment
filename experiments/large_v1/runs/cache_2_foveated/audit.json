@@ -1,0 +1,37 @@
+{
+  "public": {
+    "passed": true,
+    "exit_code": 0,
+    "output": "..............\n----------------------------------------------------------------------\nRan 14 tests in 0.075s\n\nOK\n",
+    "seconds": 0.1623660999994172
+  },
+  "hidden": {
+    "passed": true,
+    "exit_code": 0,
+    "output": "....\n----------------------------------------------------------------------\nRan 4 tests in 0.002s\n\nOK\n",
+    "seconds": 0.08744420000039099
+  },
+  "summary": {
+    "run_id": "cache_2_foveated",
+    "task": "cache",
+    "mode": "foveated",
+    "repeat": 2,
+    "elapsed_seconds": 45.29873085021973,
+    "public_passed": true,
+    "hidden_passed": true,
+    "protected_integrity": true,
+    "snapshots_match": true,
+    "actions": 10,
+    "observation_characters": 7132,
+    "source_view_characters": 2321,
+    "returned_characters": 9350,
+    "edit_errors": 0,
+    "observation_choices": {
+      "tree": 1,
+      "outline": 1,
+      "file": 1,
+      "region": 3
+    },
+    "api_tokens": null
+  }
+}

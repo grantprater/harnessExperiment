@@ -1,0 +1,161 @@
+{
+  "original_files_preserved": true,
+  "runs": [
+    {
+      "run_id": "billing_1_foveated",
+      "initial_snapshot_matches": true,
+      "final_snapshot_matches": true,
+      "public_recheck": {
+        "passed": true,
+        "exit_code": 0,
+        "output": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.000s\n\nOK\n",
+        "seconds": 0.2911331999994218
+      },
+      "supplementary_passed": true,
+      "supplementary_output": ".ss\n----------------------------------------------------------------------\nRan 3 tests in 0.003s\n\nOK (skipped=2)\n"
+    },
+    {
+      "run_id": "billing_1_full",
+      "initial_snapshot_matches": true,
+      "final_snapshot_matches": true,
+      "public_recheck": {
+        "passed": true,
+        "exit_code": 0,
+        "output": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.000s\n\nOK\n",
+        "seconds": 0.28678840000065975
+      },
+      "supplementary_passed": true,
+      "supplementary_output": ".ss\n----------------------------------------------------------------------\nRan 3 tests in 0.003s\n\nOK (skipped=2)\n"
+    },
+    {
+      "run_id": "billing_2_foveated",
+      "initial_snapshot_matches": true,
+      "final_snapshot_matches": true,
+      "public_recheck": {
+        "passed": true,
+        "exit_code": 0,
+        "output": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.000s\n\nOK\n",
+        "seconds": 0.286505600000055
+      },
+      "supplementary_passed": true,
+      "supplementary_output": ".ss\n----------------------------------------------------------------------\nRan 3 tests in 0.003s\n\nOK (skipped=2)\n"
+    },
+    {
+      "run_id": "billing_2_full",
+      "initial_snapshot_matches": true,
+      "final_snapshot_matches": true,
+      "public_recheck": {
+        "passed": true,
+        "exit_code": 0,
+        "output": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.000s\n\nOK\n",
+        "seconds": 0.2907197999993514
+      },
+      "supplementary_passed": true,
+      "supplementary_output": ".ss\n----------------------------------------------------------------------\nRan 3 tests in 0.003s\n\nOK (skipped=2)\n"
+    },
+    {
+      "run_id": "kv_1_foveated",
+      "initial_snapshot_matches": true,
+      "final_snapshot_matches": true,
+      "public_recheck": {
+        "passed": true,
+        "exit_code": 0,
+        "output": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.231s\n\nOK\n",
+        "seconds": 0.5189632999999958
+      },
+      "supplementary_passed": true,
+      "supplementary_output": "s.s\n----------------------------------------------------------------------\nRan 3 tests in 0.002s\n\nOK (skipped=2)\n"
+    },
+    {
+      "run_id": "kv_1_full",
+      "initial_snapshot_matches": true,
+      "final_snapshot_matches": true,
+      "public_recheck": {
+        "passed": true,
+        "exit_code": 0,
+        "output": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.230s\n\nOK\n",
+        "seconds": 0.516842799999722
+      },
+      "supplementary_passed": true,
+      "supplementary_output": "s.s\n----------------------------------------------------------------------\nRan 3 tests in 0.002s\n\nOK (skipped=2)\n"
+    },
+    {
+      "run_id": "kv_2_foveated",
+      "initial_snapshot_matches": true,
+      "final_snapshot_matches": true,
+      "public_recheck": {
+        "passed": true,
+        "exit_code": 0,
+        "output": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.231s\n\nOK\n",
+        "seconds": 0.5171745000006922
+      },
+      "supplementary_passed": true,
+      "supplementary_output": "s.s\n----------------------------------------------------------------------\nRan 3 tests in 0.002s\n\nOK (skipped=2)\n"
+    },
+    {
+      "run_id": "kv_2_full",
+      "initial_snapshot_matches": true,
+      "final_snapshot_matches": true,
+      "public_recheck": {
+        "passed": true,
+        "exit_code": 0,
+        "output": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.231s\n\nOK\n",
+        "seconds": 0.516679600000316
+      },
+      "supplementary_passed": true,
+      "supplementary_output": "s.s\n----------------------------------------------------------------------\nRan 3 tests in 0.002s\n\nOK (skipped=2)\n"
+    },
+    {
+      "run_id": "pagination_1_foveated",
+      "initial_snapshot_matches": true,
+      "final_snapshot_matches": true,
+      "public_recheck": {
+        "passed": true,
+        "exit_code": 0,
+        "output": "........\n----------------------------------------------------------------------\nRan 8 tests in 0.000s\n\nOK\n",
+        "seconds": 0.2672370000000228
+      },
+      "supplementary_passed": true,
+      "supplementary_output": "ss.\n----------------------------------------------------------------------\nRan 3 tests in 0.002s\n\nOK (skipped=2)\n"
+    },
+    {
+      "run_id": "pagination_1_full",
+      "initial_snapshot_matches": true,
+      "final_snapshot_matches": true,
+      "public_recheck": {
+        "passed": true,
+        "exit_code": 0,
+        "output": "........\n----------------------------------------------------------------------\nRan 8 tests in 0.000s\n\nOK\n",
+        "seconds": 0.2660217000002376
+      },
+      "supplementary_passed": true,
+      "supplementary_output": "ss.\n----------------------------------------------------------------------\nRan 3 tests in 0.002s\n\nOK (skipped=2)\n"
+    },
+    {
+      "run_id": "pagination_2_foveated",
+      "initial_snapshot_matches": true,
+      "final_snapshot_matches": true,
+      "public_recheck": {
+        "passed": true,
+        "exit_code": 0,
+        "output": "........\n----------------------------------------------------------------------\nRan 8 tests in 0.000s\n\nOK\n",
+        "seconds": 0.2689400999997815
+      },
+      "supplementary_passed": true,
+      "supplementary_output": "ss.\n----------------------------------------------------------------------\nRan 3 tests in 0.002s\n\nOK (skipped=2)\n"
+    },
+    {
+      "run_id": "pagination_2_full",
+      "initial_snapshot_matches": true,
+      "final_snapshot_matches": true,
+      "public_recheck": {
+        "passed": true,
+        "exit_code": 0,
+        "output": "........\n----------------------------------------------------------------------\nRan 8 tests in 0.000s\n\nOK\n",
+        "seconds": 0.2677812999991147
+      },
+      "supplementary_passed": true,
+      "supplementary_output": "ss.\n----------------------------------------------------------------------\nRan 3 tests in 0.002s\n\nOK (skipped=2)\n"
+    }
+  ]
+}

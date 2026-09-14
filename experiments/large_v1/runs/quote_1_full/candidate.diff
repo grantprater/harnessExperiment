@@ -1,0 +1,11 @@
+--- before/dispatchdesk/billing/service.py
++++ after/dispatchdesk/billing/service.py
+@@ -6,7 +6,7 @@
+     subtotal = merchandise_total(items)
+     discount = promotion_amount(subtotal, discount_percent)
+     taxable = round(subtotal - discount, 2)
+-    tax = sales_tax(subtotal, tax_rate)
++    tax = sales_tax(taxable, tax_rate)
+     shipping = shipping_charge(taxable)
+     return Quote(subtotal, discount, taxable, tax, shipping,
+                  round(taxable + tax + shipping, 2))

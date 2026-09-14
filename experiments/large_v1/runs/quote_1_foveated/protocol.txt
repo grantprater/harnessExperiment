@@ -1,0 +1,19 @@
+Task: quote_order produces excessive tax when a promotion is applied. Tax must use the discounted merchandise amount. Preserve quantity, shipping, and currency-rounding behavior. Fix the implementation and verify.
+Run: quote_1_foveated. Assigned observation mode: foveated.
+This is a synthetic Python repository. Find relevant code yourself.
+Observation commands:
+  tree [PREFIX]: list repository files and line counts (all modes).
+  search LITERAL [PREFIX]: case-insensitive literal search; up to 30 matching lines (all modes).
+  file PATH: entire file with line numbers (full and adaptive only).
+  outline PATH: AST symbol outline (foveated and adaptive only).
+  region PATH START END: inclusive numbered source, at most 40 lines (foveated and adaptive only).
+Adaptive mode may freely choose and combine all observation types. No requirement to outline before reading.
+Shared actions:
+  edit PATH OLD_BASE64 NEW_BASE64: replace one unique exact UTF-8 snippet. Preserve indentation; syntax is checked atomically. No line-number editing.
+  verify: run the fixed public test suite.
+  finish: independently rerun public tests and finalize, even if unsolved.
+Tests and documentation are read-only. Only existing dispatchdesk/*.py descendants may be edited.
+Budget: 36 actions after start, plus finish. No editorial pass. Stop after solving and call finish.
+Use only this interface; do not read the runner, other trials, fixtures, reference solutions, or logs.
+No direct file access, arbitrary commands, browsing, delegation, or parent help. In-memory base64 computation in PowerShell is allowed.
+Call one interface action per exec_command, max_output_tokens=24000 to preserve complete observations.

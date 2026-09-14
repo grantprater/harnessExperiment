@@ -1,0 +1,11 @@
+--- before/pricing.py
++++ after/pricing.py
+@@ -70,7 +70,7 @@
+ 
+     tax_rate = get_tax_rate(state)
+ 
+-    tax_amount = round(subtotal * tax_rate, 2)
++    tax_amount = round(discounted_subtotal * tax_rate, 2)
+ 
+     shipping_fee = calculate_shipping(discounted_subtotal)
+     final_total = round(discounted_subtotal + tax_amount + shipping_fee, 2)

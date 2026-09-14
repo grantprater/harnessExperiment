@@ -1,0 +1,58 @@
+--- before/engine.py
++++ after/engine.py
+@@ -14,20 +14,38 @@
+ 
+     def set(self, key: str, value: str, ttl_seconds: Optional[float] = None) -> None:
+         """Stores a key-value pair. If ttl_seconds is provided, sets expires_at to time.time() + ttl_seconds."""
+-        raise NotImplementedError
++        expires_at = None if ttl_seconds is None else time.time() + ttl_seconds
++        self._store[key] = KVEntry(key=key, value=value, expires_at=expires_at)
+ 
+     def get(self, key: str) -> Optional[str]:
+         """Returns the value for key. If key is missing or expired, removes it if expired and returns None."""
+-        raise NotImplementedError
++        entry = self._store.get(key)
++        if entry is None:
++            return None
++        if entry.is_expired():
++            del self._store[key]
++            return None
++        return entry.value
+ 
+     def delete(self, key: str) -> bool:
+         """Deletes key from store. Returns True if deleted, False if key did not exist."""
+-        raise NotImplementedError
++        if key not in self._store:
++            return False
++        del self._store[key]
++        return True
+ 
+     def export_json(self) -> str:
+         """Returns a JSON string of all currently unexpired key -> value mappings."""
+-        raise NotImplementedError
++        snapshot = {}
++        for key in list(self._store):
++            value = self.get(key)
++            if value is not None:
++                snapshot[key] = value
++        return json.dumps(snapshot)
+ 
+     def import_json(self, json_str: str) -> int:
+         """Loads key -> value pairs from a JSON string into store. Returns count of loaded keys."""
+-        raise NotImplementedError
++        data = json.loads(json_str)
++        for key, value in data.items():
++            self.set(key, value)
++        return len(data)
+--- before/models.py
++++ after/models.py
+@@ -11,4 +11,8 @@
+ 
+     def is_expired(self, now: Optional[float] = None) -> bool:
+         """Returns True if entry has an expiration timestamp and current time >= expires_at."""
+-        raise NotImplementedError
++        if self.expires_at is None:
++            return False
++        if now is None:
++            now = time.time()
++        return now >= self.expires_at

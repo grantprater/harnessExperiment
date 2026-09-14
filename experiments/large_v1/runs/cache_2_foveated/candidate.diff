@@ -1,0 +1,22 @@
+--- before/dispatchdesk/cache/keys.py
++++ after/dispatchdesk/cache/keys.py
+@@ -2,7 +2,7 @@
+ 
+ def feed_key(tenant, status, page):
+     """Build an immutable identity for a feed request."""
+-    return (page,)
++    return (tenant, status, page)
+ 
+ def document_key(tenant, document_id):
+     return ("document", tenant, document_id)
+--- before/dispatchdesk/cache/storage.py
++++ after/dispatchdesk/cache/storage.py
+@@ -7,7 +7,7 @@
+     expires_at: float
+ 
+     def expired(self, now):
+-        return now > self.expires_at
++        return now >= self.expires_at
+ 
+ class MemoryBackend:
+     def __init__(self):

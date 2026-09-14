@@ -1,0 +1,17 @@
+{
+  "trace_id": "tr_434463",
+  "task": "Demonstrate macro perception and foveation on perception.py",
+  "timestamp": 1789351434.4677987,
+  "total_steps": 1,
+  "actions": [
+    {
+      "step": 1,
+      "type": "mock",
+      "detail": "Simulation step"
+    }
+  ],
+  "success": true,
+  "phase1_steps": 1,
+  "phase2_executed": false,
+  "notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "modes": [
+    "full",
+    "foveated",
+    "adaptive"
+  ],
+  "repeats": [
+    1,
+    2
+  ],
+  "action_limit": 36,
+  "files": 96,
+  "python_files": 95,
+  "lines": 8146,
+  "source_lines": 8067,
+  "heldout_hash": "e612b7ce41eb8d4cff232d72a621e4cf1e5f418afab32e78bfc86d7fc4050499",
+  "harness_hash": "67954eb84ba84c87e6c4a0ce5c96a79b8451801d4d915b897f4eef547daa5d50",
+  "generator_hash": "2dec614f4f124de2aec6d3cd3efa29df4abd6f92f58c5ac352d3c35447b27f18",
+  "created_at": 1789392589.4062383
+}

@@ -1,0 +1,28 @@
+--- before/query.py
++++ after/query.py
+@@ -4,9 +4,11 @@
+ 
+ def ordered(records):
+     """Newest first, with ascending id for identical timestamps."""
+-    return sorted(records, key=lambda r: r.created_at, reverse=True)
++    return sorted(records, key=lambda r: (-r.created_at, r.id))
+ 
+ def page_slice(records, page, page_size):
+     """Return a one-based page; reject nonpositive page or page_size."""
+-    start = page * page_size
++    if page <= 0 or page_size <= 0:
++        raise ValueError("page and page_size must be positive")
++    start = (page - 1) * page_size
+     return records[start:start + page_size]
+--- before/service.py
++++ after/service.py
+@@ -2,6 +2,6 @@
+ 
+ def list_records(records, owner, status=None, page=1, page_size=2):
+     """Return {'items': list[Record], 'total': matching count} without changing input."""
+-    selected = page_slice(ordered(records), page, page_size)
+-    selected = matching(selected, owner, status)
+-    return {"items": selected, "total": len(selected)}
++    filtered = matching(records, owner, status)
++    ordered_records = ordered(filtered)
++    return {"items": page_slice(ordered_records, page, page_size), "total": len(ordered_records)}

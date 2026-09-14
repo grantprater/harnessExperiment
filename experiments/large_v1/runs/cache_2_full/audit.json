@@ -1,0 +1,35 @@
+{
+  "public": {
+    "passed": true,
+    "exit_code": 0,
+    "output": "..............\n----------------------------------------------------------------------\nRan 14 tests in 0.075s\n\nOK\n",
+    "seconds": 0.16218690000005154
+  },
+  "hidden": {
+    "passed": true,
+    "exit_code": 0,
+    "output": "....\n----------------------------------------------------------------------\nRan 4 tests in 0.002s\n\nOK\n",
+    "seconds": 0.08701950000067882
+  },
+  "summary": {
+    "run_id": "cache_2_full",
+    "task": "cache",
+    "mode": "full",
+    "repeat": 2,
+    "elapsed_seconds": 32.87177896499634,
+    "public_passed": true,
+    "hidden_passed": true,
+    "protected_integrity": true,
+    "snapshots_match": true,
+    "actions": 8,
+    "observation_characters": 6854,
+    "source_view_characters": 2091,
+    "returned_characters": 9062,
+    "edit_errors": 0,
+    "observation_choices": {
+      "tree": 1,
+      "file": 3
+    },
+    "api_tokens": null
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "public": {
+    "passed": true,
+    "exit_code": 0,
+    "output": "..............\n----------------------------------------------------------------------\nRan 14 tests in 0.076s\n\nOK\n",
+    "seconds": 0.16523920000054204
+  },
+  "hidden": {
+    "passed": true,
+    "exit_code": 0,
+    "output": "....\n----------------------------------------------------------------------\nRan 4 tests in 0.002s\n\nOK\n",
+    "seconds": 0.08909529999982624
+  },
+  "summary": {
+    "run_id": "feed_1_adaptive",
+    "task": "feed",
+    "mode": "adaptive",
+    "repeat": 1,
+    "elapsed_seconds": 65.37802147865295,
+    "public_passed": true,
+    "hidden_passed": true,
+    "protected_integrity": true,
+    "snapshots_match": true,
+    "actions": 12,
+    "observation_characters": 11939,
+    "source_view_characters": 7020,
+    "returned_characters": 14213,
+    "edit_errors": 1,
+    "observation_choices": {
+      "tree": 1,
+      "search": 1,
+      "file": 1,
+      "outline": 1,
+      "region": 2
+    },
+    "api_tokens": null
+  }
+}
