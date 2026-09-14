@@ -345,6 +345,29 @@ class CognitiveHarness:
         self.env = env
         self.client = client or LLMClient()
 
+    def _dispatch_tool(
+        self,
+        fn_name: str,
+        args: Dict[str, Any],
+        target_file: Optional[str],
+        verify_cmd: str
+    ) -> Tuple[str, bool]:
+        """Dispatch tool call to environment and return (result_preview, is_solved)."""
+        target = args.get("file_path", target_file)
+        if fn_name == "outline":
+            return self.env.outline(target, mode=args.get("mode", "semantic")), False
+        if fn_name in ("view_symbol", "symbol"):
+            return self.env.symbol(target, args.get("symbol_name", "")), False
+        if fn_name == "saccade":
+            return self.env.saccade(target, args.get("start_line", 1), args.get("end_line", 20)), False
+        if fn_name == "replace_lines":
+            return self.env.replace_lines(target, args.get("start_line", 1), args.get("end_line", 1), args.get("new_content", "")), False
+        if fn_name == "run_command":
+            cmd = args.get("cmd", verify_cmd)
+            cmd_res = self.env.run_command(cmd)
+            return f"Exit: {cmd_res['exit_code']}\nStdout: {cmd_res['stdout']}\nStderr: {cmd_res['stderr']}", (cmd_res["passed"] and cmd == verify_cmd)
+        return f"Unknown tool: {fn_name}", False
+
     def run(
         self,
         task: str,
@@ -455,37 +478,9 @@ class CognitiveHarness:
                     args = {}
                 print(f"  -> Actuating Tool: {fn_name}({args})")
 
-                result_str = ""
-                if fn_name == "outline":
-                    result_str = self.env.outline(
-                        args.get("file_path", target_file),
-                        mode=args.get("mode", "semantic")
-                    )
-                elif fn_name in ("view_symbol", "symbol"):
-                    result_str = self.env.symbol(
-                        args.get("file_path", target_file),
-                        args.get("symbol_name", "")
-                    )
-                elif fn_name == "saccade":
-                    result_str = self.env.saccade(
-                        args.get("file_path", target_file),
-                        args.get("start_line", 1),
-                        args.get("end_line", 20)
-                    )
-                elif fn_name == "replace_lines":
-                    result_str = self.env.replace_lines(
-                        args.get("file_path", target_file),
-                        args.get("start_line", 1),
-                        args.get("end_line", 1),
-                        args.get("new_content", "")
-                    )
-                elif fn_name == "run_command":
-                    cmd_res = self.env.run_command(args.get("cmd", verify_cmd))
-                    result_str = f"Exit: {cmd_res['exit_code']}\nStdout: {cmd_res['stdout']}\nStderr: {cmd_res['stderr']}"
-                    if cmd_res["passed"] and args.get("cmd") == verify_cmd:
-                        phase1_solved = True
-                else:
-                    result_str = f"Unknown tool: {fn_name}"
+                result_str, call_solved = self._dispatch_tool(fn_name, args, target_file, verify_cmd)
+                if call_solved:
+                    phase1_solved = True
 
                 actions_log.append({"tool": fn_name, "args": args, "result_preview": result_str[:100]})
                 messages.append({
