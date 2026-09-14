@@ -45,6 +45,19 @@ def cmd_scan_video(args):
     transducer.close()
 
 
+def cmd_scan_audio(args):
+    from reticle.sensory.audio_transducer import AudioTransducer
+    audio_path = Path(args.audio_path)
+    if not audio_path.exists():
+        print(f"Error: Audio/video file not found at {audio_path}")
+        sys.exit(1)
+
+    print(f"Scanning audio dynamics: {audio_path}")
+    transducer = AudioTransducer(audio_path)
+    profile = transducer.analyze_profile()
+    print(profile.summary())
+
+
 def cmd_spatial_grid(args):
     w, h = args.width, args.height
     sectors = create_spatial_grid(w, h, rows=args.rows, cols=args.cols)
@@ -88,6 +101,11 @@ def main():
     p_video.add_argument("video_path", help="Path to video file (.mp4, .mov, etc.)")
     p_video.add_argument("--stride", type=int, default=5, help="Frame stride for optical sampling (default: 5)")
     p_video.set_defaults(func=cmd_scan_video)
+
+    # scan-audio
+    p_audio = subparsers.add_parser("scan-audio", help="Deterministically scan audio transients and RMS envelope")
+    p_audio.add_argument("audio_path", help="Path to audio (.wav) or video (.mp4) file")
+    p_audio.set_defaults(func=cmd_scan_audio)
 
     # spatial-grid
     p_grid = subparsers.add_parser("spatial-grid", help="Display spatial sector topology")

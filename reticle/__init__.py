@@ -28,6 +28,8 @@ from reticle.sensory.temporal_transducer import (
     select_coarse_keyframe_anchors
 )
 from reticle.sensory.video_stream import VideoStreamTransducer
+from reticle.sensory.audio_transducer import AudioTransducer, AcousticPeak
+from reticle.sensory.perceptual_probe import PerceptualProbeRunner
 from reticle.adapters.code_ast import parse_and_inspect_code, validate_python_syntax
 from reticle.adapters.blender_engine import run_blender_script, verify_blender_installed
 from reticle.verifiers.spatial_verifier import SpatialVerifier, evaluate_grounding
@@ -53,6 +55,9 @@ __all__ = [
     "detect_motion_intervals",
     "select_coarse_keyframe_anchors",
     "VideoStreamTransducer",
+    "AudioTransducer",
+    "AcousticPeak",
+    "PerceptualProbeRunner",
     "parse_and_inspect_code",
     "validate_python_syntax",
     "run_blender_script",

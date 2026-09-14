@@ -17,6 +17,15 @@ from reticle.sensory.temporal_transducer import (
     render_temporal_summary
 )
 from reticle.sensory.video_stream import VideoStreamTransducer
+from reticle.sensory.audio_transducer import (
+    AudioTransducer,
+    AcousticPeak,
+    AcousticProfileResult
+)
+from reticle.sensory.perceptual_probe import (
+    PerceptualProbeRunner,
+    ProbeExecutionResult
+)
 
 __all__ = [
     "SpatialSector",
@@ -32,4 +41,9 @@ __all__ = [
     "select_coarse_keyframe_anchors",
     "render_temporal_summary",
     "VideoStreamTransducer",
+    "AudioTransducer",
+    "AcousticPeak",
+    "AcousticProfileResult",
+    "PerceptualProbeRunner",
+    "ProbeExecutionResult",
 ]
