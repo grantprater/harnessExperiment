@@ -27,6 +27,58 @@ class SectionNode:
     preview: str
 
 
+def _create_section_node(
+    title: str,
+    level: int,
+    start_line: int,
+    end_line: int,
+    lines: List[str]
+) -> SectionNode:
+    """Construct a SectionNode with computed word count and 120-char preview."""
+    section_lines = lines[start_line - 1 : end_line]
+    word_count = sum(len(l.split()) for l in section_lines)
+    preview = " ".join(l.strip() for l in section_lines if l.strip())[:120]
+    return SectionNode(
+        title=title,
+        level=level,
+        start_line=start_line,
+        end_line=end_line,
+        word_count=word_count,
+        preview=preview + "..." if len(preview) == 120 else preview
+    )
+
+
+def _detect_heading(
+    line: str,
+    next_line: str,
+    md_pattern: re.Pattern,
+    rst_chars: set
+) -> Tuple[bool, str, int, bool]:
+    """Detect Markdown or RST underline headings. Return (found, title, level, is_rst)."""
+    # 1. Markdown heading
+    md_match = md_pattern.match(line)
+    if md_match:
+        return True, md_match.group(2).strip(), len(md_match.group(1)), False
+
+    # 2. RST Underline heading
+    s_line = line.strip()
+    s_next = next_line.strip()
+    if (
+        s_line and s_next
+        and len(s_next) >= 3
+        and len(s_next) >= len(s_line)
+        and all(c == s_next[0] for c in s_next)
+        and s_next[0] in rst_chars
+        and not line.startswith("..")
+    ):
+        char = s_next[0]
+        rst_hierarchy = ["=", "-", "~", "^", "\"", "'", "`"]
+        level = (rst_hierarchy.index(char) + 1) if char in rst_hierarchy else 3
+        return True, s_line, level, True
+
+    return False, "", 1, False
+
+
 def parse_document_structure(text: str) -> List[SectionNode]:
     """Parse Markdown, RST, and structured text headings into a hierarchical section index."""
     lines = text.splitlines()
@@ -46,49 +98,15 @@ def parse_document_structure(text: str) -> List[SectionNode]:
 
         line = lines[idx - 1]
         next_line = lines[idx] if idx < len(lines) else ""
-        heading_found = False
-        new_title = ""
-        new_level = 1
-
-        # 1. Markdown check
-        md_match = md_heading_pattern.match(line)
-        if md_match:
-            heading_found = True
-            new_level = len(md_match.group(1))
-            new_title = md_match.group(2).strip()
-
-        # 2. RST Underline check (title on line idx-1, underline on line idx)
-        elif (
-            line.strip()
-            and next_line.strip()
-            and len(next_line.strip()) >= 3
-            and len(next_line.strip()) >= len(line.strip())
-            and all(c == next_line.strip()[0] for c in next_line.strip())
-            and next_line.strip()[0] in rst_underline_chars
-            and not line.startswith("..")
-        ):
-            char = next_line.strip()[0]
-            rst_hierarchy = ["=", "-", "~", "^", "\"", "'", "`"]
-            new_level = (rst_hierarchy.index(char) + 1) if char in rst_hierarchy else 3
-            new_title = line.strip()
-            heading_found = True
-            skip_next = True
+        heading_found, new_title, new_level, is_rst = _detect_heading(
+            line, next_line, md_heading_pattern, rst_underline_chars
+        )
 
         if heading_found:
-            # Finalize previous section
+            skip_next = is_rst
             prev_end = idx - 2 if skip_next else idx - 1
             if prev_end >= start_line:
-                section_lines = lines[start_line - 1 : prev_end]
-                word_count = sum(len(l.split()) for l in section_lines)
-                preview = " ".join(l.strip() for l in section_lines if l.strip())[:120]
-                sections.append(SectionNode(
-                    title=current_title,
-                    level=current_level,
-                    start_line=start_line,
-                    end_line=prev_end,
-                    word_count=word_count,
-                    preview=preview + "..." if len(preview) == 120 else preview
-                ))
+                sections.append(_create_section_node(current_title, current_level, start_line, prev_end, lines))
 
             current_level = new_level
             current_title = new_title
@@ -96,17 +114,7 @@ def parse_document_structure(text: str) -> List[SectionNode]:
 
     # Finalize last section
     if start_line <= len(lines):
-        section_lines = lines[start_line - 1 :]
-        word_count = sum(len(l.split()) for l in section_lines)
-        preview = " ".join(l.strip() for l in section_lines if l.strip())[:120]
-        sections.append(SectionNode(
-            title=current_title,
-            level=current_level,
-            start_line=start_line,
-            end_line=len(lines),
-            word_count=word_count,
-            preview=preview + "..." if len(preview) == 120 else preview
-        ))
+        sections.append(_create_section_node(current_title, current_level, start_line, len(lines), lines))
 
     return sections
 
