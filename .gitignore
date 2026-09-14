@@ -37,5 +37,7 @@ spatial_cache/
 experiments/comparison_general/
 experiments/comparison_bench/
 experiments/blender_bench/work_arm_*/
+experiments/reticle_sample_frames/
 *.blend
 *.blend1
+
