@@ -106,38 +106,12 @@ if __name__ == "__main__":
 """
 
 
-def verify_prop_studio_scene(
-    blend_file: Union[str, Path],
-    expected_render_path: Optional[Union[str, Path]] = None
-) -> BlenderVerificationResult:
-    """Verify all 5 engineering & visual invariants on the prop_studio project."""
-    res = run_blender_script(VERIFICATION_PROBE_SCRIPT, blend_file=blend_file)
-    if not res.success:
-        return BlenderVerificationResult(
-            passed=False,
-            score=0.0,
-            passed_invariants=[],
-            failed_invariants=[f"Blender probe crash: {res.traceback or res.stderr}"],
-            render_verified=False,
-            details={}
-        )
-
-    out = res.stdout
-    if "=== VERIFY_JSON_START ===" not in out:
-        return BlenderVerificationResult(
-            passed=False,
-            score=0.0,
-            passed_invariants=[],
-            failed_invariants=["Failed to parse probe JSON"],
-            render_verified=False,
-            details={"raw_stdout": out}
-        )
-
-    json_str = out.split("=== VERIFY_JSON_START ===")[1].split("=== VERIFY_JSON_END ===")[0].strip()
-    data = json.loads(json_str)
-
-    passed = []
-    failed = []
+def _evaluate_scene_invariants(
+    data: Dict[str, Any],
+    expected_render_path: Optional[Union[str, Path]]
+) -> Tuple[List[str], List[str], bool]:
+    """Evaluate individual 3D scene invariant rules against probe data."""
+    passed, failed = [], []
 
     # Invariant 1: Chassis_Base Bevel Modifier
     bev = data.get("modifiers", {}).get("Chassis_Base_Bevel", {})
@@ -174,8 +148,7 @@ def verify_prop_studio_scene(
         if r_path.exists() and r_path.stat().st_size > 5000:
             try:
                 with Image.open(r_path) as im:
-                    w, h = im.size
-                    render_ok = (w >= 640 and h >= 360)
+                    render_ok = (im.size[0] >= 640 and im.size[1] >= 360)
             except Exception:
                 render_ok = False
 
@@ -184,6 +157,40 @@ def verify_prop_studio_scene(
     elif expected_render_path:
         failed.append(f"Invariant 5: Render still missing or invalid at {expected_render_path}")
 
+    return passed, failed, render_ok
+
+
+def verify_prop_studio_scene(
+    blend_file: Union[str, Path],
+    expected_render_path: Optional[Union[str, Path]] = None
+) -> BlenderVerificationResult:
+    """Verify all 5 engineering & visual invariants on the prop_studio project."""
+    res = run_blender_script(VERIFICATION_PROBE_SCRIPT, blend_file=blend_file)
+    if not res.success:
+        return BlenderVerificationResult(
+            passed=False,
+            score=0.0,
+            passed_invariants=[],
+            failed_invariants=[f"Blender probe crash: {res.traceback or res.stderr}"],
+            render_verified=False,
+            details={}
+        )
+
+    out = res.stdout
+    if "=== VERIFY_JSON_START ===" not in out:
+        return BlenderVerificationResult(
+            passed=False,
+            score=0.0,
+            passed_invariants=[],
+            failed_invariants=["Failed to parse probe JSON"],
+            render_verified=False,
+            details={"raw_stdout": out}
+        )
+
+    json_str = out.split("=== VERIFY_JSON_START ===")[1].split("=== VERIFY_JSON_END ===")[0].strip()
+    data = json.loads(json_str)
+
+    passed, failed, render_ok = _evaluate_scene_invariants(data, expected_render_path)
     total_invariants = 5 if expected_render_path else 4
     score = len(passed) / total_invariants
     all_passed = (len(failed) == 0)
