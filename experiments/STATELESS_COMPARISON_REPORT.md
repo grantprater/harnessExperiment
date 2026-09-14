@@ -11,10 +11,10 @@ Evaluated across the 4 core domains up to Blender 5.0 3D Program Use.
 
 | Benchmark Domain | Monolithic LLM Baseline | Previous Cognitive Harness | Stateless Blank-Slate Harness (New) | Key Architectural Advantage |
 | :--- | :---: | :---: | :---: | :--- |
-| **1. Multi-File Code (DispatchDesk)** | 82.6s, uncommitted | 0.83s, 353 tokens pruned | **0.52s, 100% public & held-out pass** | Dynamic tool synthesis + exact grounding pointers. Zero conversational history. |
+| **1. Multi-File Code (DispatchDesk)** | 82.6s, uncommitted | 0.83s, 353 tokens pruned | **0.89s, 100% public & held-out pass** | Dynamic tool synthesis + exact grounding pointers. Zero conversational history. |
 | **2. Multi-Doc Spec Grounding (PEPs)** | 40,999 context tokens, 66.7% | 919 context tokens, 100% | **381 tokens (99.1% reduction), 100% pass** | Pointers replace raw source texts; verification oracle synthesized as callable tool. |
 | **3. 4K GUI Spatial Perception** | 284px grid drift (0% hit) | 0px error (100% hit) | **0.0px error (100% hit), 80.1% vision saving** | Exact bounding box pointer in note board; 1:1 foveation on demand. |
-| **4. 3D Program Use (Blender 5.0)** | 60.0% pass (3/5), failed render | 100% pass (5/5), 9.26s | **100% pass (5/5), 3.89s** | Headless render verified; scene pointers prevent hallucinated object names. |
+| **4. 3D Program Use (Blender 5.0)** | 60.0% pass (3/5), failed render | 100% pass (5/5), 9.26s | **100% pass (5/5), 3.92s** | Headless render verified; scene pointers prevent hallucinated object names. |
 
 ---
 

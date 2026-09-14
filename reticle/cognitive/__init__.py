@@ -1,4 +1,4 @@
-"""Cognitive modules for Reticle."""
+from reticle.cognitive.llm_client import LLMClient, StepMetric, MODEL_PRICING
 from reticle.cognitive.capability_ledger import CapabilityLedger
 from reticle.cognitive.autotelic_drive import AutotelicDriveEngine
 from reticle.cognitive.stateless_harness import (
@@ -10,6 +10,9 @@ from reticle.cognitive.stateless_harness import (
 )
 
 __all__ = [
+    "LLMClient",
+    "StepMetric",
+    "MODEL_PRICING",
     "CapabilityLedger",
     "AutotelicDriveEngine",
     "BlankSlateHarness",
@@ -18,3 +21,4 @@ __all__ = [
     "FalsificationLedger",
     "GroundingLedger",
 ]
+

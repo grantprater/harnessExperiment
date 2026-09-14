@@ -120,6 +120,24 @@ def main():
     p_ast.add_argument("file", help="Python source file to inspect")
     p_ast.set_defaults(func=cmd_verify_ast)
 
+    # run (Stateless Cognitive Harness)
+    p_run = subparsers.add_parser("run", help="Execute goal-directed tasks with Stateless Cognitive Harness")
+    p_run.add_argument("--goal", "-g", required=True, help="Goal description for the agent")
+    p_run.add_argument("--verify", "-v", required=True, help="Verification command that must return exit code 0")
+    p_run.add_argument("--invariants", "-i", nargs="*", help="Optional explicit invariant assertions")
+    p_run.add_argument("--model", "-m", default="gemini-3.6-flash", help="Model name (default: gemini-3.6-flash)")
+    p_run.add_argument("--api-key", "-k", default=None, help="Google Studio or OpenAI API key (or set GEMINI_API_KEY)")
+    p_run.add_argument("--base-url", default=None, help="API Base URL (default: Google AI Studio OpenAI endpoint)")
+    p_run.add_argument("--max-steps", "-s", type=int, default=10, help="Maximum execution steps (default: 10)")
+    p_run.add_argument("--dir", "-d", default=".", help="Working directory for execution (default: current)")
+    p_run.add_argument("--json", action="store_true", help="Print execution results as JSON")
+    p_run.add_argument("--report", default=None, help="Optional path to export execution telemetry report")
+    p_run.set_defaults(func=cmd_run)
+
+    # metrics (Efficiency & Token Spend Benchmark)
+    p_met = subparsers.add_parser("metrics", help="Display token efficiency & context flatline benchmark report")
+    p_met.set_defaults(func=cmd_metrics)
+
     args = parser.parse_args()
     if hasattr(args, "func"):
         args.func(args)
@@ -127,5 +145,119 @@ def main():
         parser.print_help()
 
 
+def cmd_run(args):
+    """Execute goal-directed tasks using the Stateless Blank-Slate Harness."""
+    import json
+    import time
+    from reticle.cognitive.llm_client import LLMClient
+    from reticle.cognitive.stateless_harness import StatelessEnvironment, BlankSlateHarness
+
+    target_dir = Path(args.dir).resolve()
+    if not target_dir.exists():
+        print(f"Error: Target directory does not exist: {target_dir}")
+        sys.exit(1)
+
+    print("=" * 80)
+    print("RETICLE COGNITIVE HARNESS: STATELESS BLANK-SLATE RUNNER")
+    print("=" * 80)
+    print(f"Directory:    {target_dir}")
+    print(f"Goal:         {args.goal}")
+    print(f"Verify Cmd:   {args.verify}")
+    print(f"Model:        {args.model}")
+
+    client = LLMClient(
+        api_key=args.api_key,
+        base_url=args.base_url,
+        model=args.model
+    )
+
+    if client.mock_mode:
+        print("[Notice] Running in MOCK / SIMULATION mode.")
+        print("         To connect to Google AI Studio, provide --api-key or export GEMINI_API_KEY.")
+    else:
+        print(f"[Connected] Live endpoint configured for model '{client.model}'")
+
+    print("-" * 80)
+
+    t0 = time.time()
+    env = StatelessEnvironment(target_dir)
+    harness = BlankSlateHarness(env=env, client=client, max_steps=args.max_steps)
+
+    invariants = args.invariants if args.invariants else [f"Command '{args.verify}' exits with code 0"]
+    result = harness.run(
+        goal=args.goal,
+        verify_cmd=args.verify,
+        invariants=invariants
+    )
+    elapsed = time.time() - t0
+
+    metrics = result.get("efficiency_metrics", {})
+    solved = result.get("solved", False)
+    status_str = "SUCCESS (All Invariants Satisfied)" if solved else "INCOMPLETE (Max Steps Reached)"
+
+    if args.json:
+        serializable_res = {
+            "solved": solved,
+            "total_steps": result.get("total_steps"),
+            "elapsed_seconds": round(elapsed, 2),
+            "goal": args.goal,
+            "verify_cmd": args.verify,
+            "falsifications_count": result.get("falsifications_count"),
+            "grounding_pointers_count": result.get("grounding_pointers_count"),
+            "synthesized_tools_count": result.get("synthesized_tools_count"),
+            "total_token_spend": result.get("total_token_spend"),
+            "efficiency_metrics": metrics
+        }
+        print(json.dumps(serializable_res, indent=2))
+        return
+
+    print("\n" + "=" * 80)
+    print("EXECUTION TELEMETRY & EFFICIENCY REPORT")
+    print("=" * 80)
+    print(f"Status:                   {status_str}")
+    print(f"Steps Executed:           {result.get('total_steps')} / {args.max_steps}")
+    print(f"Elapsed Time:             {elapsed:.2f}s")
+    print("\n-- TOKEN SPEND & CONTEXT DYNAMICS ----------------------------------------------")
+    print(f"Total Prompt Tokens:      {metrics.get('total_prompt_tokens', 0):,}")
+    print(f"Total Completion Tokens:  {metrics.get('total_completion_tokens', 0):,}")
+    print(f"Total Tokens Consumed:    {metrics.get('total_tokens', 0):,}")
+    print(f"Estimated Cost (USD):     ${metrics.get('total_cost_usd', 0.0):.6f}")
+    print(f"Mean Tokens / Step:       {metrics.get('mean_tokens_per_step', 0.0)} tok")
+    print(f"Context Growth Gradient:  {metrics.get('context_growth_gradient', 0.0)} (0.00 = Perfect Flatline)")
+    print(f"Context Stability Index:  {metrics.get('context_stability_index', 1.0)}x")
+    print("\n-- EPISTEMIC ACCUMULATION ------------------------------------------------------")
+    print(f"Grounding Pointers:       {result.get('grounding_pointers_count', 0)} active anchors")
+    print(f"Falsifications Pruned:    {result.get('falsifications_count', 0)} negative paths")
+    print(f"Synthesized Opcodes:      {result.get('synthesized_tools_count', 0)} dynamic tools")
+    print("=" * 80)
+
+    if args.report:
+        rep_path = Path(args.report)
+        report_content = (
+            f"# Reticle Execution Report\n\n"
+            f"- **Goal**: {args.goal}\n"
+            f"- **Status**: {status_str}\n"
+            f"- **Steps**: {result.get('total_steps')} / {args.max_steps}\n"
+            f"- **Elapsed**: {elapsed:.2f}s\n"
+            f"- **Total Token Spend**: {metrics.get('total_tokens', 0):,} tokens\n"
+            f"- **Estimated Cost**: ${metrics.get('total_cost_usd', 0.0):.6f} USD\n"
+            f"- **Context Gradient**: {metrics.get('context_growth_gradient', 0.0)}\n\n"
+            f"## Final Epistemic Note Board\n\n"
+            f"{result['board'].render_packet()}\n"
+        )
+        rep_path.write_text(report_content, encoding="utf-8")
+        print(f"[Report] Saved detailed telemetry report to {rep_path}")
+
+
+def cmd_metrics(args):
+    """Display comparative efficiency and token spend benchmarks."""
+    report_file = Path("experiments/STATELESS_COMPARISON_REPORT.md")
+    if report_file.exists():
+        print(report_file.read_text(encoding="utf-8"))
+    else:
+        print("No comparison report found. Run experiments/run_stateless_comparison_bench.py first.")
+
+
 if __name__ == "__main__":
     main()
+

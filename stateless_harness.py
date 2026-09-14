@@ -637,6 +637,13 @@ class BlankSlateHarness:
 
             board.last_delta = "\n".join(deltas)
 
+        # Collect efficiency and token telemetry if client supports it
+        efficiency_metrics = {}
+        total_token_spend = 0
+        if self.client is not None and hasattr(self.client, "get_efficiency_metrics"):
+            efficiency_metrics = self.client.get_efficiency_metrics()
+            total_token_spend = efficiency_metrics.get("total_tokens", 0)
+
         return {
             "solved": solved,
             "total_steps": step,
@@ -644,5 +651,8 @@ class BlankSlateHarness:
             "falsifications_count": len(board.falsifications.records),
             "grounding_pointers_count": len(board.grounding.pointers),
             "synthesized_tools_count": len(board.tools.schemas),
-            "execution_history": execution_history
+            "execution_history": execution_history,
+            "total_token_spend": total_token_spend,
+            "efficiency_metrics": efficiency_metrics
         }
+

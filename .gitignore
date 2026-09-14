@@ -45,3 +45,8 @@ experiments/reticle_sample_frames/
 node_modules/
 package-lock.json
 
+# Traces
+traces/
+mc_trace_*.json
+
+
