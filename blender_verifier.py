@@ -168,7 +168,7 @@ def _evaluate_scene_invariants(
     elif expected_render_path:
         failed.append(f"Invariant 5: Render still missing or invalid at {expected_render_path}")
 
-    return passed, failed
+    return passed, failed, render_ok
 
 
 def verify_prop_studio_scene(
@@ -201,7 +201,7 @@ def verify_prop_studio_scene(
     json_str = out.split("=== VERIFY_JSON_START ===")[1].split("=== VERIFY_JSON_END ===")[0].strip()
     data = json.loads(json_str)
 
-    passed, failed = _evaluate_scene_invariants(data, expected_render_path)
+    passed, failed, render_ok = _evaluate_scene_invariants(data, expected_render_path)
     total_invariants = 5 if expected_render_path else 4
     score = len(passed) / total_invariants
     all_passed = (len(failed) == 0)
