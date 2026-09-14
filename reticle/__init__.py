@@ -35,7 +35,26 @@ from reticle.adapters.blender_engine import run_blender_script, verify_blender_i
 from reticle.verifiers.spatial_verifier import SpatialVerifier, evaluate_grounding
 from reticle.verifiers.temporal_verifier import TemporalInvariantVerifier
 from reticle.verifiers.blender_verifier import BlenderVerifier
-from reticle.verifiers.synthetic_verifier import SyntheticInvariantVerifier
+from reticle.adapters.minecraft_adapter import (
+    SimulatedMinecraftEnvironment,
+    MinecraftBotClient,
+    MinecraftAdapter,
+    VoxelBlock,
+    CANONICAL_BLOCKS,
+    CANONICAL_RECIPES,
+    TOOL_TIERS
+)
+from reticle.minecraft.epistemic_probe import (
+    EpistemicHypothesis,
+    ExperimentResult,
+    MinecraftEpistemicProbe
+)
+from reticle.minecraft.genetic_skills import (
+    SkillGenome,
+    MAPElitesSkillArchive,
+    SkillEvolutionEngine
+)
+from reticle.minecraft.harness import MinecraftCognitiveHarness
 
 __all__ = [
     "__version__",
@@ -67,4 +86,20 @@ __all__ = [
     "TemporalInvariantVerifier",
     "BlenderVerifier",
     "SyntheticInvariantVerifier",
+    "SimulatedMinecraftEnvironment",
+    "MinecraftBotClient",
+    "MinecraftAdapter",
+    "VoxelBlock",
+    "CANONICAL_BLOCKS",
+    "CANONICAL_RECIPES",
+    "TOOL_TIERS",
+    "EpistemicHypothesis",
+    "ExperimentResult",
+    "MinecraftEpistemicProbe",
+    "SkillGenome",
+    "MAPElitesSkillArchive",
+    "SkillEvolutionEngine",
+    "MinecraftCognitiveHarness",
 ]
+
+

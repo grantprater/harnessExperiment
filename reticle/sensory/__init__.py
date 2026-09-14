@@ -26,6 +26,11 @@ from reticle.sensory.perceptual_probe import (
     PerceptualProbeRunner,
     ProbeExecutionResult
 )
+from reticle.sensory.streaming_transducer import (
+    SensoryEvent,
+    StreamingROIFilter,
+    StreamingVideoTransducer
+)
 
 __all__ = [
     "SpatialSector",
@@ -46,4 +51,8 @@ __all__ = [
     "AcousticProfileResult",
     "PerceptualProbeRunner",
     "ProbeExecutionResult",
+    "SensoryEvent",
+    "StreamingROIFilter",
+    "StreamingVideoTransducer",
 ]
+

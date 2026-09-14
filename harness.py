@@ -156,6 +156,17 @@ class LLMClient:
         base_url: Optional[str] = None,
         model: Optional[str] = None
     ):
+        env_file = Path(".env")
+        if env_file.exists():
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    k = k.strip().replace("$env:", "")
+                    v = v.strip().strip('"').strip("'")
+                    if k not in os.environ:
+                        os.environ[k] = v
+
         self.api_key = (
             api_key
             or os.getenv("LLM_API_KEY")
@@ -170,8 +181,8 @@ class LLMClient:
             or os.getenv("OPENROUTER_BASE_URL")
             or "https://generativelanguage.googleapis.com/v1beta/openai/"
         ).rstrip("/")
-        self.model = model or os.getenv("LLM_MODEL") or os.getenv("MODEL") or "google/gemini-2.0-flash-001"
-        self.mock_mode = self.api_key == "mock_key" and not os.getenv("LLM_BASE_URL")
+        self.model = model or os.getenv("LLM_MODEL") or os.getenv("MODEL") or "gemini-3.6-flash"
+        self.mock_mode = (self.api_key == "mock_key")
 
     def chat_completion(self, messages: List[Dict[str, str]], tools: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         if self.mock_mode:
