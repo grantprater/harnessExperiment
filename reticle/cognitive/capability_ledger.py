@@ -129,6 +129,24 @@ class CapabilityRecord:
                 "cost_scope": "known repeat trials including failures",
                 "reliable": self.is_reliable(min_trials, threshold)}
 
+    def record_outcome(self, status: str, cond: Dict[str, Any], duration_s: Optional[float]) -> Dict[str, Any]:
+        """Update counts, condition variants, and duration metrics for this trial outcome."""
+        self.trials += 1
+        attr = {"discovery": "discovery_count", "success": "successes",
+                "failure": "failures", "unknown": "unknown"}[status]
+        setattr(self, attr, getattr(self, attr) + 1)
+        if cond != self.conditions and cond not in self.condition_variants:
+            self.condition_variants.append(cond)
+        context_key = json.dumps(cond, sort_keys=True, allow_nan=False)
+        stats = self.condition_stats.setdefault(context_key, {
+            "conditions": cond, "discovery": 0, "success": 0,
+            "failure": 0, "unknown": 0, "durations_s": []})
+        stats[status] += 1
+        if status in ("success", "failure") and duration_s is not None:
+            self.durations_s.append(duration_s)
+            stats["durations_s"].append(duration_s)
+        return {"capability_id": self.capability_id, "outcome": self.outcome, "status": status}
+
 
 class CapabilityLedger:
     def __init__(self, path: Optional[Union[str, Path]] = None, min_trials: int = DEFAULT_MIN_TRIALS,
@@ -195,25 +213,6 @@ class CapabilityLedger:
         outcomes = set(_outcomes(source)) if known else set()
         existing = [r for r in self.records.values() if r.routine == routine_key]
         updates = []
-
-        def update(rec, status):
-            rec.trials += 1
-            attr = {"discovery": "discovery_count", "success": "successes",
-                    "failure": "failures", "unknown": "unknown"}[status]
-            setattr(rec, attr, getattr(rec, attr) + 1)
-            if cond != rec.conditions and cond not in rec.condition_variants:
-                rec.condition_variants.append(cond)
-            context_key = json.dumps(cond, sort_keys=True, allow_nan=False)
-            stats = rec.condition_stats.setdefault(context_key, {
-                "conditions": cond, "discovery": 0, "success": 0,
-                "failure": 0, "unknown": 0, "durations_s": []})
-            stats[status] += 1
-            if status in ("success", "failure") and duration_s is not None:
-                rec.durations_s.append(duration_s)
-                stats["durations_s"].append(duration_s)
-            updates.append({"capability_id": rec.capability_id,
-                            "outcome": rec.outcome, "status": status})
-
         event = {"trial_id": len(self.trial_log) + 1, "routine": routine_key,
                  "action": _jsonable(routine), "conditions": cond,
                  "observed_inventory_delta": dict(source) if known else None,
@@ -223,13 +222,16 @@ class CapabilityLedger:
         json.dumps(event, allow_nan=False)
         if not known:
             self.unknown_trials += 1
+
         for rec in existing:
-            update(rec, "unknown" if not known else "success" if rec.outcome in outcomes else "failure")
+            status_val = "unknown" if not known else "success" if rec.outcome in outcomes else "failure"
+            updates.append(rec.record_outcome(status_val, cond, duration_s))
+
         for outcome in sorted(outcomes - {r.outcome for r in existing}):
             key = json.dumps([routine_key, outcome], separators=(",", ":"))
             rec = CapabilityRecord(key, routine_key, outcome, cond)
             self.records[key] = rec
-            update(rec, "discovery")
+            updates.append(rec.record_outcome("discovery", cond, duration_s))
         statuses = {u["status"] for u in updates}
         status = ("unknown" if not known else "discovery" if "discovery" in statuses
                   else "success" if "success" in statuses else "failure" if updates else "unattributed")
