@@ -144,24 +144,34 @@ def list_symbols(file_path: Union[str, Path]) -> List[SymbolInfo]:
     return symbols
 
 
+def _format_function_outline(
+    node: Union[ast.FunctionDef, ast.AsyncFunctionDef],
+    mode: str,
+    indent: str = "  "
+) -> List[str]:
+    """Format a function or method signature, decorators, and docstring summary."""
+    res = [f"{indent}@{ast.unparse(d)}" for d in node.decorator_list]
+    start = node.lineno
+    end = getattr(node, "end_lineno", start)
+    args = ast.unparse(node.args)
+    prefix = "async def" if isinstance(node, ast.AsyncFunctionDef) else "def"
+    ret = f" -> {ast.unparse(node.returns)}" if node.returns else ""
+    res.append(f"{indent}{prefix} {node.name}({args}){ret}  # L{start}-L{end}")
+
+    if mode in ("semantic", "folded"):
+        doc = ast.get_docstring(node)
+        if doc:
+            res.append(f'{indent}  """{doc.splitlines()[0]}..."""')
+    return res
+
+
 def extract_outline(
     file_path: Union[str, Path],
     mode: str = "semantic",
     inline_threshold: int = 50,
     inline_small: bool = True
 ) -> str:
-    """Macro Sensor: Extracts a compressed symbol outline of a Python file.
-
-    Parameters:
-    - file_path: Path to the target Python file.
-    - mode:
-      - 'semantic' (default): Signatures with types, line numbers, and 1-line docstring summaries.
-      - 'bare': Signatures and line numbers only (no docstrings, minimal tokens).
-      - 'folded': Structural folding (classes/functions outlines + top-level module assignments).
-    - inline_threshold: If file total lines <= inline_threshold and inline_small is True,
-      returns full numbered source immediately instead of an outline.
-    - inline_small: Whether to auto-inline small files.
-    """
+    """Macro Sensor: Extracts a compressed symbol outline of a Python file."""
     path = Path(file_path)
     if not path.exists():
         return f"Error: File '{path}' does not exist."
@@ -198,9 +208,8 @@ def extract_outline(
             end = getattr(node, "end_lineno", start)
             bases = [ast.unparse(b) for b in node.bases]
             base_str = f"({', '.join(bases)})" if bases else ""
-            decs = [f"@{ast.unparse(d)}" for d in node.decorator_list]
-            for dec in decs:
-                outline.append(f"  {dec}")
+            for dec in node.decorator_list:
+                outline.append(f"  @{ast.unparse(dec)}")
             outline.append(f"  class {node.name}{base_str}:  # L{start}-L{end}")
 
             if mode in ("semantic", "folded"):
@@ -210,39 +219,12 @@ def extract_outline(
 
             for item in node.body:
                 if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    m_start = item.lineno
-                    m_end = getattr(item, "end_lineno", m_start)
-                    m_decs = [f"@{ast.unparse(d)}" for d in item.decorator_list]
-                    for d in m_decs:
-                        outline.append(f"    {d}")
-                    args = ast.unparse(item.args)
-                    prefix = "async def" if isinstance(item, ast.AsyncFunctionDef) else "def"
-                    ret = f" -> {ast.unparse(item.returns)}" if item.returns else ""
-                    outline.append(f"    {prefix} {item.name}({args}){ret}  # L{m_start}-L{m_end}")
-
-                    if mode in ("semantic", "folded"):
-                        m_doc = ast.get_docstring(item)
-                        if m_doc:
-                            outline.append(f'      """{m_doc.splitlines()[0]}..."""')
+                    outline.extend(_format_function_outline(item, mode, indent="    "))
 
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            start = node.lineno
-            end = getattr(node, "end_lineno", start)
-            decs = [f"@{ast.unparse(d)}" for d in node.decorator_list]
-            for dec in decs:
-                outline.append(f"  {dec}")
-            args = ast.unparse(node.args)
-            prefix = "async def" if isinstance(node, ast.AsyncFunctionDef) else "def"
-            ret = f" -> {ast.unparse(node.returns)}" if node.returns else ""
-            outline.append(f"  {prefix} {node.name}({args}){ret}  # L{start}-L{end}")
-
-            if mode in ("semantic", "folded"):
-                doc = ast.get_docstring(node)
-                if doc:
-                    outline.append(f'    """{doc.splitlines()[0]}..."""')
+            outline.extend(_format_function_outline(node, mode, indent="  "))
 
         elif mode == "folded" and isinstance(node, (ast.Assign, ast.AnnAssign)):
-            # In folded mode, surface top-level constant definitions
             start = node.lineno
             try:
                 raw = lines[start - 1].strip()
