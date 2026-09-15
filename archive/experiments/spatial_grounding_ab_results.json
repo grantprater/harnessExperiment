@@ -1,0 +1,266 @@
+[
+  {
+    "suite": "android_studio_macos",
+    "index": 0,
+    "arm": "A_pixel",
+    "canvas": [
+      3840,
+      2160
+    ],
+    "bbox": [
+      1774,
+      1586,
+      2113,
+      1618
+    ],
+    "target_wh": [
+      339,
+      32
+    ],
+    "instruction": "modify the highlights of the photo with in the virtual android machine in android studio",
+    "point": [
+      502.0,
+      704.0
+    ],
+    "hit": false,
+    "dist_px": 1698.33,
+    "tokens": 3703,
+    "time_s": 5.48,
+    "raw": "(502, 704)",
+    "reinterp_norm_xy_hit": false
+  },
+  {
+    "suite": "android_studio_macos",
+    "index": 0,
+    "arm": "A_norm",
+    "canvas": [
+      3840,
+      2160
+    ],
+    "bbox": [
+      1774,
+      1586,
+      2113,
+      1618
+    ],
+    "target_wh": [
+      339,
+      32
+    ],
+    "instruction": "modify the highlights of the photo with in the virtual android machine in android studio",
+    "point": [
+      2707.2,
+      1086.5
+    ],
+    "hit": false,
+    "dist_px": 921.41,
+    "tokens": 3648,
+    "time_s": 9.49,
+    "raw": "{\"point\": [503, 705]}"
+  },
+  {
+    "suite": "android_studio_macos",
+    "index": 0,
+    "arm": "B_orig",
+    "canvas": [
+      3840,
+      2160
+    ],
+    "bbox": [
+      1774,
+      1586,
+      2113,
+      1618
+    ],
+    "target_wh": [
+      339,
+      32
+    ],
+    "instruction": "modify the highlights of the photo with in the virtual android machine in android studio",
+    "point": [
+      2952.0,
+      2016.0
+    ],
+    "hit": false,
+    "dist_px": 1090.17,
+    "tokens": 1451,
+    "time_s": 9.49,
+    "raw": "CLICK: (75, 456)"
+  },
+  {
+    "suite": "excel_macos",
+    "index": 0,
+    "arm": "A_pixel",
+    "canvas": [
+      3456,
+      2234
+    ],
+    "bbox": [
+      1177,
+      926,
+      1300,
+      942
+    ],
+    "target_wh": [
+      123,
+      16
+    ],
+    "instruction": "change selected cells to type \"Text\"",
+    "point": [
+      352.0,
+      417.0
+    ],
+    "hit": false,
+    "dist_px": 1026.24,
+    "tokens": 3526,
+    "time_s": 4.02,
+    "raw": "CLICK: (352, 417)",
+    "reinterp_norm_xy_hit": true
+  },
+  {
+    "suite": "excel_macos",
+    "index": 0,
+    "arm": "A_norm",
+    "canvas": [
+      3456,
+      2234
+    ],
+    "bbox": [
+      1177,
+      926,
+      1300,
+      942
+    ],
+    "target_wh": [
+      123,
+      16
+    ],
+    "instruction": "change selected cells to type \"Text\"",
+    "point": [
+      1441.2,
+      793.1
+    ],
+    "hit": false,
+    "dist_px": 246.84,
+    "tokens": 3638,
+    "time_s": 4.64,
+    "raw": "{\"point\": [355, 417]}"
+  },
+  {
+    "suite": "excel_macos",
+    "index": 0,
+    "arm": "B_orig",
+    "canvas": [
+      3456,
+      2234
+    ],
+    "bbox": [
+      1177,
+      926,
+      1300,
+      942
+    ],
+    "target_wh": [
+      123,
+      16
+    ],
+    "instruction": "change selected cells to type \"Text\"",
+    "point": [
+      2242.0,
+      1910.0
+    ],
+    "hit": false,
+    "dist_px": 1399.85,
+    "tokens": 1614,
+    "time_s": 10.36,
+    "raw": "(233, 461)"
+  },
+  {
+    "suite": "blender_windows",
+    "index": 0,
+    "arm": "A_pixel",
+    "canvas": [
+      2560,
+      1440
+    ],
+    "bbox": [
+      1020,
+      1088,
+      1146,
+      1114
+    ],
+    "target_wh": [
+      126,
+      26
+    ],
+    "instruction": "Change position along Y axis using text input",
+    "point": [
+      428.0,
+      764.0
+    ],
+    "hit": false,
+    "dist_px": 736.61,
+    "tokens": 3717,
+    "time_s": 7.4,
+    "raw": "(428, 764)",
+    "reinterp_norm_xy_hit": true
+  },
+  {
+    "suite": "blender_windows",
+    "index": 0,
+    "arm": "A_norm",
+    "canvas": [
+      2560,
+      1440
+    ],
+    "bbox": [
+      1020,
+      1088,
+      1146,
+      1114
+    ],
+    "target_wh": [
+      126,
+      26
+    ],
+    "instruction": "Change position along Y axis using text input",
+    "point": [
+      1950.7,
+      625.0
+    ],
+    "hit": false,
+    "dist_px": 989.72,
+    "tokens": 3671,
+    "time_s": 4.41,
+    "raw": "{\"point\": [434, 762]}"
+  },
+  {
+    "suite": "blender_windows",
+    "index": 0,
+    "arm": "B_orig",
+    "canvas": [
+      2560,
+      1440
+    ],
+    "bbox": [
+      1020,
+      1088,
+      1146,
+      1114
+    ],
+    "target_wh": [
+      126,
+      26
+    ],
+    "instruction": "Change position along Y axis using text input",
+    "point": [
+      1904.0,
+      1592.0
+    ],
+    "hit": false,
+    "dist_px": 956.62,
+    "tokens": 1547,
+    "time_s": 10.5,
+    "raw": "(144, 752)"
+  }
+]

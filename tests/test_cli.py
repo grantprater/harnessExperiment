@@ -19,13 +19,7 @@ class TestReticleCLI(unittest.TestCase):
         cmd = [sys.executable, "-m", "reticle", "--help"]
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
         self.assertIn("run", res.stdout)
-        self.assertIn("metrics", res.stdout)
         self.assertIn("verify-ast", res.stdout)
-
-    def test_cli_metrics(self):
-        cmd = [sys.executable, "-m", "reticle", "metrics"]
-        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        self.assertIn("Stateless Blank-Slate Harness: Head-to-Head Comparison Report", res.stdout)
 
     def test_cli_run_mock_json(self):
         # Run with mock key and json output to test structured telemetry output

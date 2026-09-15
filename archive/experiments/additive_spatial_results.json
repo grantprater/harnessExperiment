@@ -1,0 +1,237 @@
+[
+  {
+    "suite": "blender_windows",
+    "index": 0,
+    "instruction": "Change position along Y axis using text input",
+    "canvas": [
+      2560,
+      1440
+    ],
+    "gt_bbox": [
+      1020,
+      1088,
+      1146,
+      1114
+    ],
+    "gt_center": [
+      1083.0,
+      1101.0
+    ],
+    "arm_a": {
+      "point": [
+        1088.0,
+        1101.6
+      ],
+      "hit": true,
+      "dist_px": 5.0,
+      "elapsed_s": 1.37,
+      "tokens": 1248
+    },
+    "arm_b": {
+      "point": [
+        1111.2,
+        1099.8
+      ],
+      "hit": true,
+      "dist_px": 28.2,
+      "refined": true,
+      "fallback_used": false,
+      "crop_box": [
+        688,
+        801,
+        1488,
+        1401
+      ],
+      "elapsed_s": 3.44,
+      "tokens": 2530
+    }
+  },
+  {
+    "suite": "excel_macos",
+    "index": 0,
+    "instruction": "change selected cells to type \"Text\"",
+    "canvas": [
+      3456,
+      2234
+    ],
+    "gt_bbox": [
+      1177,
+      926,
+      1300,
+      942
+    ],
+    "gt_center": [
+      1238.5,
+      934.0
+    ],
+    "arm_a": {
+      "point": [
+        1233.792,
+        938.28
+      ],
+      "hit": true,
+      "dist_px": 6.4,
+      "elapsed_s": 2.26,
+      "tokens": 1214
+    },
+    "arm_b": {
+      "point": [
+        1205.0,
+        933.2
+      ],
+      "hit": true,
+      "dist_px": 33.5,
+      "refined": true,
+      "fallback_used": false,
+      "crop_box": [
+        833,
+        638,
+        1633,
+        1238
+      ],
+      "elapsed_s": 3.32,
+      "tokens": 2491
+    }
+  },
+  {
+    "suite": "android_studio_macos",
+    "index": 0,
+    "instruction": "modify the highlights of the photo with in the virtual android machine in android studio",
+    "canvas": [
+      3840,
+      2160
+    ],
+    "gt_bbox": [
+      1774,
+      1586,
+      2113,
+      1618
+    ],
+    "gt_center": [
+      1943.5,
+      1602.0
+    ],
+    "arm_a": {
+      "point": [
+        1939.2,
+        1518.48
+      ],
+      "hit": false,
+      "dist_px": 83.6,
+      "elapsed_s": 5.2,
+      "tokens": 1255
+    },
+    "arm_b": {
+      "point": [
+        1943.8,
+        1512.6
+      ],
+      "hit": false,
+      "dist_px": 89.4,
+      "refined": true,
+      "fallback_used": false,
+      "crop_box": [
+        1543,
+        1218,
+        2343,
+        1818
+      ],
+      "elapsed_s": 3.68,
+      "tokens": 2539
+    }
+  },
+  {
+    "suite": "blender_windows",
+    "index": 1,
+    "instruction": "Construct a UV sphere mesh.",
+    "canvas": [
+      2560,
+      1440
+    ],
+    "gt_bbox": [
+      417,
+      132,
+      576,
+      152
+    ],
+    "gt_center": [
+      496.5,
+      142.0
+    ],
+    "arm_a": {
+      "point": [
+        496.64,
+        148.32
+      ],
+      "hit": true,
+      "dist_px": 6.3,
+      "elapsed_s": 2.67,
+      "tokens": 1246
+    },
+    "arm_b": {
+      "point": [
+        484.0,
+        144.0
+      ],
+      "hit": true,
+      "dist_px": 12.7,
+      "refined": true,
+      "fallback_used": false,
+      "crop_box": [
+        96,
+        0,
+        896,
+        600
+      ],
+      "elapsed_s": 5.94,
+      "tokens": 2521
+    }
+  },
+  {
+    "suite": "excel_macos",
+    "index": 2,
+    "instruction": "adjust column width of A-H",
+    "canvas": [
+      3456,
+      2234
+    ],
+    "gt_bbox": [
+      707,
+      495,
+      883,
+      512
+    ],
+    "gt_center": [
+      795.0,
+      503.5
+    ],
+    "arm_a": {
+      "point": [
+        774.144,
+        504.884
+      ],
+      "hit": true,
+      "dist_px": 20.9,
+      "elapsed_s": 4.04,
+      "tokens": 1213
+    },
+    "arm_b": {
+      "point": [
+        763.5999999999999,
+        504.0
+      ],
+      "hit": true,
+      "dist_px": 31.4,
+      "refined": true,
+      "fallback_used": false,
+      "crop_box": [
+        374,
+        204,
+        1174,
+        804
+      ],
+      "elapsed_s": 3.36,
+      "tokens": 2489
+    }
+  }
+]

@@ -1,17 +1,5 @@
-"""Domain verifiers for spatial, temporal, 3D blender, and synthetic document domains."""
+"""Domain verifiers for 3D Blender and synthetic document domains."""
 
-from reticle.verifiers.spatial_verifier import (
-    GroundingEvaluation,
-    SpatialVerifier,
-    evaluate_grounding,
-    is_point_inside_bbox,
-    compute_iou,
-    estimate_vision_tokens
-)
-from reticle.verifiers.temporal_verifier import (
-    TemporalInvariantVerifier,
-    TemporalVerificationResult
-)
 from reticle.verifiers.blender_verifier import (
     BlenderVerifier,
     BlenderVerificationResult,
@@ -23,14 +11,6 @@ from reticle.verifiers.synthetic_verifier import (
 )
 
 __all__ = [
-    "GroundingEvaluation",
-    "SpatialVerifier",
-    "evaluate_grounding",
-    "is_point_inside_bbox",
-    "compute_iou",
-    "estimate_vision_tokens",
-    "TemporalInvariantVerifier",
-    "TemporalVerificationResult",
     "BlenderVerifier",
     "BlenderVerificationResult",
     "verify_prop_studio_scene",

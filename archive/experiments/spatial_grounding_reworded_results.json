@@ -1,0 +1,233 @@
+[
+  {
+    "suite": "android_studio_macos",
+    "index": 0,
+    "arm": "A_direct",
+    "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "canvas": [
+      3840,
+      2160
+    ],
+    "bbox": [
+      1774,
+      1586,
+      2113,
+      1618
+    ],
+    "instruction": "modify the highlights of the photo with in the virtual android machine in android studio",
+    "time_s": 8.5,
+    "tokens": 3700,
+    "stages": {
+      "direct": {
+        "raw": "{\"x\": 502, \"y\": 702}",
+        "normalized_xy": [
+          502.0,
+          702.0
+        ],
+        "rejected": null
+      }
+    },
+    "point": [
+      1927.7,
+      1516.3
+    ],
+    "hit": false,
+    "dist_px": 87.13
+  },
+  {
+    "suite": "android_studio_macos",
+    "index": 0,
+    "arm": "B_reticle",
+    "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "canvas": [
+      3840,
+      2160
+    ],
+    "bbox": [
+      1774,
+      1586,
+      2113,
+      1618
+    ],
+    "instruction": "modify the highlights of the photo with in the virtual android machine in android studio",
+    "time_s": 35.1,
+    "tokens": 3024,
+    "stages": {
+      "coarse": {
+        "raw": "{\"x\": 500, \"y\": 800}",
+        "normalized_xy": [
+          500.0,
+          800.0
+        ],
+        "rejected": null
+      },
+      "coarse_global": [
+        1920,
+        1728
+      ],
+      "crop_bbox": [
+        1520,
+        1428,
+        2320,
+        2028
+      ],
+      "fine": {
+        "raw": "{\"x\": 743, \"y\": 587}",
+        "normalized_xy": [
+          743.0,
+          587.0
+        ],
+        "rejected": null
+      }
+    },
+    "target_in_crop": true,
+    "point": [
+      2114.4,
+      1780.2
+    ],
+    "hit": false,
+    "dist_px": 246.9
+  },
+  {
+    "suite": "excel_macos",
+    "index": 0,
+    "arm": "A_direct",
+    "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "canvas": [
+      3456,
+      2234
+    ],
+    "bbox": [
+      1177,
+      926,
+      1300,
+      942
+    ],
+    "instruction": "change selected cells to type \"Text\"",
+    "time_s": 13.6,
+    "tokens": 3723,
+    "stages": {
+      "direct": {
+        "raw": "{\"x\": 359, \"y\": 417}",
+        "normalized_xy": [
+          359.0,
+          417.0
+        ],
+        "rejected": null
+      }
+    },
+    "point": [
+      1240.7,
+      931.6
+    ],
+    "hit": true,
+    "dist_px": 3.27
+  },
+  {
+    "suite": "excel_macos",
+    "index": 0,
+    "arm": "B_reticle",
+    "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "canvas": [
+      3456,
+      2234
+    ],
+    "bbox": [
+      1177,
+      926,
+      1300,
+      942
+    ],
+    "instruction": "change selected cells to type \"Text\"",
+    "error": "RuntimeError('API/Network error: Upstream LLM error response: {\"id\": \"gen-1789430808-sT1GlcGeFaS1nsCW3VZq\", \"error\": {\"message\": \"Upstream error from Nvidia: ResourceExhausted: Worker local total request limit reached (16/16)\", \"code\": 502, \"metadata\": {\"error_type\": \"provider_unavailable\"}}}')"
+  },
+  {
+    "suite": "blender_windows",
+    "index": 0,
+    "arm": "A_direct",
+    "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "canvas": [
+      2560,
+      1440
+    ],
+    "bbox": [
+      1020,
+      1088,
+      1146,
+      1114
+    ],
+    "instruction": "Change position along Y axis using text input",
+    "time_s": 26.6,
+    "tokens": 3680,
+    "stages": {
+      "direct": {
+        "raw": "{\"x\": 427, \"y\": 761}",
+        "normalized_xy": [
+          427.0,
+          761.0
+        ],
+        "rejected": null
+      }
+    },
+    "point": [
+      1093.1,
+      1095.8
+    ],
+    "hit": true,
+    "dist_px": 11.36
+  },
+  {
+    "suite": "blender_windows",
+    "index": 0,
+    "arm": "B_reticle",
+    "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "canvas": [
+      2560,
+      1440
+    ],
+    "bbox": [
+      1020,
+      1088,
+      1146,
+      1114
+    ],
+    "instruction": "Change position along Y axis using text input",
+    "time_s": 40.0,
+    "tokens": 2659,
+    "stages": {
+      "coarse": {
+        "raw": "{\"x\": 450, \"y\": 420}",
+        "normalized_xy": [
+          450.0,
+          420.0
+        ],
+        "rejected": null
+      },
+      "coarse_global": [
+        1152,
+        605
+      ],
+      "crop_bbox": [
+        752,
+        304,
+        1552,
+        904
+      ],
+      "fine": {
+        "raw": "{\"x\": 456, \"y\": 622}",
+        "normalized_xy": [
+          456.0,
+          622.0
+        ],
+        "rejected": null
+      }
+    },
+    "target_in_crop": false,
+    "point": [
+      1116.8,
+      677.2
+    ],
+    "hit": false,
+    "dist_px": 425.15
+  }
+]
