@@ -1,0 +1,242 @@
+[
+  {
+    "slug": "bank-account",
+    "arm_a": {
+      "passed": false,
+      "tests_passed": 14,
+      "tests_total": 16,
+      "pass_ratio": 0.88,
+      "elapsed_s": 1.51,
+      "tokens": 670,
+      "test_output": ".....F...F......\n======================================================================\nFAIL: test_cannot_deposit_negative (bank_account_test.BankAccountTest.test_cannot_deposit_negative)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\tmp2gzv08yq\\bank_account_test.py\", line 137, in test_cannot_deposit_negative\n    self.assertEqual(err.exception.args[0], \"amount must be greater than 0\")\n    ~~~~~~"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": false,
+      "turn2_recovered": true,
+      "turns_used": 2,
+      "tests_passed": 16,
+      "tests_total": 16,
+      "pass_ratio": 1.0,
+      "elapsed_s": 2.93,
+      "tokens": 2512,
+      "test_output": "ALL PASSED"
+    }
+  },
+  {
+    "slug": "clock",
+    "arm_a": {
+      "passed": true,
+      "tests_passed": 55,
+      "tests_total": 55,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.21,
+      "tokens": 496,
+      "test_output": "ALL PASSED"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": true,
+      "turn2_recovered": false,
+      "turns_used": 1,
+      "tests_passed": 55,
+      "tests_total": 55,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.25,
+      "tokens": 464,
+      "test_output": "ALL PASSED"
+    }
+  },
+  {
+    "slug": "allergies",
+    "arm_a": {
+      "passed": true,
+      "tests_passed": 50,
+      "tests_total": 50,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.08,
+      "tokens": 597,
+      "test_output": "ALL PASSED"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": true,
+      "turn2_recovered": false,
+      "turns_used": 1,
+      "tests_passed": 50,
+      "tests_total": 50,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.28,
+      "tokens": 621,
+      "test_output": "ALL PASSED"
+    }
+  },
+  {
+    "slug": "grade-school",
+    "arm_a": {
+      "passed": false,
+      "tests_passed": 15,
+      "tests_total": 20,
+      "pass_ratio": 0.75,
+      "elapsed_s": 1.32,
+      "tokens": 767,
+      "test_output": "FFFFF...............\n======================================================================\nFAIL: test_add_a_student (grade_school_test.GradeSchoolTest.test_add_a_student)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\tmpviiukkbw\\grade_school_test.py\", line 24, in test_add_a_student\n    self.assertEqual(school.added(), expected)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": true,
+      "turn2_recovered": false,
+      "turns_used": 1,
+      "tests_passed": 20,
+      "tests_total": 20,
+      "pass_ratio": 1.0,
+      "elapsed_s": 2.7,
+      "tokens": 1239,
+      "test_output": "ALL PASSED"
+    }
+  },
+  {
+    "slug": "circular-buffer",
+    "arm_a": {
+      "passed": true,
+      "tests_passed": 14,
+      "tests_total": 14,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.65,
+      "tokens": 1207,
+      "test_output": "ALL PASSED"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": true,
+      "turn2_recovered": false,
+      "turns_used": 1,
+      "tests_passed": 14,
+      "tests_total": 14,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.46,
+      "tokens": 1222,
+      "test_output": "ALL PASSED"
+    }
+  },
+  {
+    "slug": "markdown",
+    "arm_a": {
+      "passed": true,
+      "tests_passed": 17,
+      "tests_total": 17,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.92,
+      "tokens": 1692,
+      "test_output": "ALL PASSED"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": false,
+      "turn2_recovered": true,
+      "turns_used": 2,
+      "tests_passed": 17,
+      "tests_total": 17,
+      "pass_ratio": 1.0,
+      "elapsed_s": 5.13,
+      "tokens": 5843,
+      "test_output": "ALL PASSED"
+    }
+  },
+  {
+    "slug": "ledger",
+    "arm_a": {
+      "passed": false,
+      "tests_passed": 10,
+      "tests_total": 11,
+      "pass_ratio": 0.91,
+      "elapsed_s": 3.18,
+      "tokens": 3726,
+      "test_output": "....F......\n======================================================================\nFAIL: test_dutch_negative_number_with_3_digits_before_decimal_point (ledger_test.LedgerTest.test_dutch_negative_number_with_3_digits_before_decimal_point)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\tmplxiab4ov\\ledger_test.py\", line 143, in test_dutch_negative_number_with_3_digits_before_decimal_point\n    self.a"
+    },
+    "arm_b": {
+      "passed": false,
+      "turn1_passed": false,
+      "turn2_recovered": false,
+      "turns_used": 2,
+      "tests_passed": 8,
+      "tests_total": 11,
+      "pass_ratio": 0.73,
+      "elapsed_s": 8.88,
+      "tokens": 10151,
+      "test_output": "..FFF......\n======================================================================\nFAIL: test_dutch_locale (ledger_test.LedgerTest.test_dutch_locale)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\tmpbq0a6pwv\\ledger_test.py\", line 115, in test_dutch_locale\n    self.assertEqual(format_entries(currency, locale, entries), expected)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+    }
+  },
+  {
+    "slug": "word-count",
+    "arm_a": {
+      "passed": true,
+      "tests_passed": 17,
+      "tests_total": 17,
+      "pass_ratio": 1.0,
+      "elapsed_s": 19.93,
+      "tokens": 726,
+      "test_output": "ALL PASSED"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": false,
+      "turn2_recovered": true,
+      "turns_used": 2,
+      "tests_passed": 17,
+      "tests_total": 17,
+      "pass_ratio": 1.0,
+      "elapsed_s": 2.67,
+      "tokens": 2259,
+      "test_output": "ALL PASSED"
+    }
+  },
+  {
+    "slug": "robot-simulator",
+    "arm_a": {
+      "passed": true,
+      "tests_passed": 18,
+      "tests_total": 18,
+      "pass_ratio": 1.0,
+      "elapsed_s": 2.06,
+      "tokens": 875,
+      "test_output": "ALL PASSED"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": true,
+      "turn2_recovered": false,
+      "turns_used": 1,
+      "tests_passed": 18,
+      "tests_total": 18,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.59,
+      "tokens": 787,
+      "test_output": "ALL PASSED"
+    }
+  },
+  {
+    "slug": "tournament",
+    "arm_a": {
+      "passed": true,
+      "tests_passed": 12,
+      "tests_total": 12,
+      "pass_ratio": 1.0,
+      "elapsed_s": 2.35,
+      "tokens": 1171,
+      "test_output": "ALL PASSED"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": true,
+      "turn2_recovered": false,
+      "turns_used": 1,
+      "tests_passed": 12,
+      "tests_total": 12,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.86,
+      "tokens": 1118,
+      "test_output": "ALL PASSED"
+    }
+  }
+]

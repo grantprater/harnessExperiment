@@ -1,0 +1,167 @@
+[
+  {
+    "slug": "markdown",
+    "arm_a": {
+      "passed": false,
+      "tests_passed": 16,
+      "tests_total": 17,
+      "pass_ratio": 0.94,
+      "elapsed_s": 2.48,
+      "tokens": 1777,
+      "test_output": "......F..........\n======================================================================\nFAIL: test_unordered_lists_close_properly_with_preceding_and_following_lines (markdown_test.MarkdownTest.test_unordered_lists_close_properly_with_preceding_and_following_lines)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\tmpwl3jb_tv\\markdown_test.py\", line 100, in test_unordered_lists_close_properly_with_p"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": false,
+      "turn2_recovered": true,
+      "turns_used": 2,
+      "tests_passed": 17,
+      "tests_total": 17,
+      "pass_ratio": 1.0,
+      "elapsed_s": 4.62,
+      "tokens": 5784,
+      "test_output": "ALL PASSED"
+    },
+    "arm_c": {
+      "passed": true,
+      "tests_passed": 17,
+      "tests_total": 17,
+      "pass_ratio": 1.0,
+      "elapsed_s": 10.53,
+      "tokens": 606,
+      "test_output": "ALL PASSED"
+    }
+  },
+  {
+    "slug": "ledger",
+    "arm_a": {
+      "passed": false,
+      "tests_passed": 0,
+      "tests_total": 11,
+      "pass_ratio": 0.0,
+      "elapsed_s": 3.03,
+      "tokens": 3701,
+      "test_output": "FFFFFFFFFFF\n======================================================================\nFAIL: test_american_negative_number_with_3_digits_before_decimal_point (ledger_test.LedgerTest.test_american_negative_number_with_3_digits_before_decimal_point)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\tmpag0v_hk8\\ledger_test.py\", line 157, in test_american_negative_number_with_3_digits_before_decimal_point\n "
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": false,
+      "turn2_recovered": true,
+      "turns_used": 2,
+      "tests_passed": 11,
+      "tests_total": 11,
+      "pass_ratio": 1.0,
+      "elapsed_s": 6.8,
+      "tokens": 10315,
+      "test_output": "ALL PASSED"
+    },
+    "arm_c": {
+      "passed": true,
+      "tests_passed": 11,
+      "tests_total": 11,
+      "pass_ratio": 1.0,
+      "elapsed_s": 18.93,
+      "tokens": 1376,
+      "test_output": "ALL PASSED"
+    }
+  },
+  {
+    "slug": "word-count",
+    "arm_a": {
+      "passed": true,
+      "tests_passed": 17,
+      "tests_total": 17,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.61,
+      "tokens": 771,
+      "test_output": "ALL PASSED"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": true,
+      "turn2_recovered": false,
+      "turns_used": 1,
+      "tests_passed": 17,
+      "tests_total": 17,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.76,
+      "tokens": 840,
+      "test_output": "ALL PASSED"
+    },
+    "arm_c": {
+      "passed": true,
+      "tests_passed": 17,
+      "tests_total": 17,
+      "pass_ratio": 1.0,
+      "elapsed_s": 11.73,
+      "tokens": 241,
+      "test_output": "ALL PASSED"
+    }
+  },
+  {
+    "slug": "robot-simulator",
+    "arm_a": {
+      "passed": true,
+      "tests_passed": 18,
+      "tests_total": 18,
+      "pass_ratio": 1.0,
+      "elapsed_s": 2.58,
+      "tokens": 1211,
+      "test_output": "ALL PASSED"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": true,
+      "turn2_recovered": false,
+      "turns_used": 1,
+      "tests_passed": 18,
+      "tests_total": 18,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.46,
+      "tokens": 743,
+      "test_output": "ALL PASSED"
+    },
+    "arm_c": {
+      "passed": true,
+      "tests_passed": 18,
+      "tests_total": 18,
+      "pass_ratio": 1.0,
+      "elapsed_s": 9.76,
+      "tokens": 338,
+      "test_output": "ALL PASSED"
+    }
+  },
+  {
+    "slug": "tournament",
+    "arm_a": {
+      "passed": true,
+      "tests_passed": 12,
+      "tests_total": 12,
+      "pass_ratio": 1.0,
+      "elapsed_s": 1.76,
+      "tokens": 1108,
+      "test_output": "ALL PASSED"
+    },
+    "arm_b": {
+      "passed": true,
+      "turn1_passed": true,
+      "turn2_recovered": false,
+      "turns_used": 1,
+      "tests_passed": 12,
+      "tests_total": 12,
+      "pass_ratio": 1.0,
+      "elapsed_s": 2.07,
+      "tokens": 1114,
+      "test_output": "ALL PASSED"
+    },
+    "arm_c": {
+      "passed": true,
+      "tests_passed": 12,
+      "tests_total": 12,
+      "pass_ratio": 1.0,
+      "elapsed_s": 16.29,
+      "tokens": 652,
+      "test_output": "ALL PASSED"
+    }
+  }
+]
