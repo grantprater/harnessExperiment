@@ -27,6 +27,15 @@ from typing import Any, Callable, Dict, List, Optional
 from perception import extract_outline, extract_symbol, inspect_region, list_symbols
 
 
+MAX_INLINE_RESULT_CHARS = 8_000
+
+
+def _inline_preview(value: str, limit: int = MAX_INLINE_RESULT_CHARS) -> str:
+    if len(value) <= limit:
+        return value
+    return f"{value[:limit]}\n[truncated: {len(value) - limit} characters omitted]"
+
+
 # ============================================================================
 # 1. Epistemic Trace & State Dataclasses
 # ============================================================================
@@ -49,6 +58,8 @@ class EpisodicTrace:
     success: bool
     phase1_steps: int
     phase2_executed: bool
+    phase2_succeeded: Optional[bool] = None
+    rollback_succeeded: Optional[bool] = None
     notes: str = ""
 
     def save(self, trace_dir: str | Path = "traces"):
@@ -365,7 +376,12 @@ class CognitiveHarness:
         if fn_name == "run_command":
             cmd = args.get("cmd", verify_cmd)
             cmd_res = self.env.run_command(cmd)
-            return f"Exit: {cmd_res['exit_code']}\nStdout: {cmd_res['stdout']}\nStderr: {cmd_res['stderr']}", (cmd_res["passed"] and cmd == verify_cmd)
+            stdout = _inline_preview(cmd_res["stdout"]) or "(empty)"
+            stderr = _inline_preview(cmd_res["stderr"]) or "(empty)"
+            return (
+                f"Exit: {cmd_res['exit_code']}\nStdout:\n{stdout}\nStderr:\n{stderr}",
+                cmd_res["passed"] and cmd == verify_cmd,
+            )
         return f"Unknown tool: {fn_name}", False
 
     def run(
@@ -374,7 +390,8 @@ class CognitiveHarness:
         verify_cmd: str,
         target_file: Optional[str] = None,
         project_dir: Optional[str] = None,
-        max_phase1_steps: int = 8
+        max_phase1_steps: int = 8,
+        editorial_pass: bool = False,
     ) -> EpisodicTrace:
         trace_id = f"tr_{int(time.time() * 1000) % 1000000:06d}"
         actions_log: List[Dict[str, Any]] = []
@@ -489,11 +506,29 @@ class CognitiveHarness:
                     "content": result_str
                 })
 
+            # A verification earlier in a batch cannot certify later mutations.
+            batch_verification = self.env.run_command(verify_cmd)
+            phase1_solved = batch_verification["passed"]
+            if not phase1_solved:
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        "Final verification for this action batch failed:\n"
+                        f"{batch_verification['stderr'] or batch_verification['stdout']}"
+                    ),
+                })
+
         # ================================================================
         # PHASE 2: COMPACTION ("Make It Elegant / Taste Pass")
         # ================================================================
-        phase2_done = False
-        if phase1_solved and not self.client.mock_mode:
+        final_res = self.env.run_command(verify_cmd)
+        phase1_solved = final_res["passed"]
+        phase2_executed = False
+        phase2_succeeded: Optional[bool] = None
+        rollback_succeeded: Optional[bool] = None
+        trace_notes = ""
+        if editorial_pass and phase1_solved and not self.client.mock_mode:
+            phase2_executed = True
             print("\n--- PHASE 2: COMPACTION (Taste / Editorial Refactor) ---")
             compaction_prompt = (
                 "The task is functionally solved and verified. Now perform the EDITORIAL TASTE PASS:\n"
@@ -504,18 +539,41 @@ class CognitiveHarness:
             messages.append({"role": "user", "content": compaction_prompt})
             
             refactor_resp = self.client.chat_completion(messages, tools=TOOL_SCHEMAS)
+            snapshots: Dict[Path, Optional[bytes]] = {}
             if refactor_resp["tool_calls"]:
                 for tc in refactor_resp["tool_calls"]:
                     fn_name = tc["function"]["name"]
                     args = json.loads(tc["function"]["arguments"])
                     if fn_name == "replace_lines":
+                        target = (self.env.root / args["file_path"]).resolve()
+                        if target not in snapshots:
+                            snapshots[target] = target.read_bytes() if target.exists() else None
                         self.env.replace_lines(args["file_path"], args["start_line"], args["end_line"], args["new_content"])
                         actions_log.append({"phase": 2, "tool": fn_name, "args": args})
 
             # Final verification
             final_res = self.env.run_command(verify_cmd)
-            phase2_done = final_res["passed"]
-            print(f"  [Phase 2 Verification]: {'Green (Preserved)' if phase2_done else 'Failed (Rollback candidate)'}")
+            phase2_succeeded = final_res["passed"]
+            if not phase2_succeeded:
+                rollback_errors: List[str] = []
+                for target, content in snapshots.items():
+                    try:
+                        if content is None:
+                            target.unlink(missing_ok=True)
+                        else:
+                            target.write_bytes(content)
+                    except Exception as exc:
+                        rollback_errors.append(f"{target}: {exc}")
+                rollback_check = self.env.run_command(verify_cmd)
+                rollback_succeeded = not rollback_errors and rollback_check["passed"]
+                final_res = rollback_check
+                if rollback_errors:
+                    trace_notes = "Editorial rollback failed: " + "; ".join(rollback_errors)
+                elif not rollback_check["passed"]:
+                    trace_notes = "Editorial files restored, but verification after rollback failed."
+            print(f"  [Phase 2 Verification]: {'Green (Preserved)' if phase2_succeeded else 'Failed (Rolled Back)'}")
+
+        final_success = final_res["passed"]
 
         # ================================================================
         # EPISODIC LOGGING (Save to /traces/)
@@ -526,9 +584,12 @@ class CognitiveHarness:
             timestamp=time.time(),
             total_steps=step,
             actions=actions_log,
-            success=phase1_solved,
+            success=final_success,
             phase1_steps=step,
-            phase2_executed=phase2_done
+            phase2_executed=phase2_executed,
+            phase2_succeeded=phase2_succeeded,
+            rollback_succeeded=rollback_succeeded,
+            notes=trace_notes,
         )
         trace.save(self.env.root / "traces")
         return trace
@@ -592,5 +653,3 @@ if __name__ == "__main__":
         )
 
     print(f"\n[Done] Experiment '{args.experiment}' completed.")
-
-

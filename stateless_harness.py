@@ -15,16 +15,41 @@ Implements the "Notes-as-State, Tools-as-Opcodes" cognitive architecture:
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from perception import extract_outline, extract_symbol, inspect_region
+from reticle.execution import ExecutionRequest, TrustedLocalBackend
+from reticle.execution import worker as execution_worker
+
+
+MAX_INLINE_RESULT_CHARS = 8_000
+
+
+def _inline_preview(value: str, limit: int = MAX_INLINE_RESULT_CHARS) -> str:
+    """Return a truthful bounded preview for a tool result."""
+    if len(value) <= limit:
+        return value
+    omitted = len(value) - limit
+    return f"{value[:limit]}\n[truncated: {omitted} characters omitted]"
+
+
+def _format_command_result(cmd: str, result: Dict[str, Any]) -> str:
+    stdout = _inline_preview(result.get("stdout", "")) or "(empty)"
+    stderr = _inline_preview(result.get("stderr", "")) or "(empty)"
+    return (
+        f"Command '{cmd}': exit {result['exit_code']}\n"
+        f"Stdout:\n{stdout}\n"
+        f"Stderr:\n{stderr}"
+    )
 
 
 # ============================================================================
@@ -77,7 +102,9 @@ class GroundingPointer:
     target: str          # e.g. "sample_calculator.py"
     locator: str         # e.g. "L8-L15" or "def calculate_discount"
     description: str     # e.g. "Percentage calculation defect"
-    verified: bool = True
+    verified: bool = False
+    target_revision: Optional[str] = None
+    stale: bool = False
 
 
 class GroundingLedger:
@@ -86,12 +113,21 @@ class GroundingLedger:
     def __init__(self):
         self.pointers: List[GroundingPointer] = []
 
-    def record_pointer(self, target: str, locator: str, description: str, verified: bool = True) -> GroundingPointer:
+    def record_pointer(
+        self,
+        target: str,
+        locator: str,
+        description: str,
+        verified: bool = False,
+        target_revision: Optional[str] = None,
+    ) -> GroundingPointer:
         # Deduplicate or update existing target+locator
         for p in self.pointers:
             if p.target == target and p.locator == locator:
                 p.description = description
                 p.verified = verified
+                p.target_revision = target_revision
+                p.stale = False
                 return p
         ptr_id = f"ptr_{len(self.pointers) + 1:02d}"
         ptr = GroundingPointer(
@@ -99,20 +135,31 @@ class GroundingLedger:
             target=target.strip(),
             locator=locator.strip(),
             description=description.strip(),
-            verified=verified
+            verified=verified,
+            target_revision=target_revision,
         )
         self.pointers.append(ptr)
         return ptr
+
+    def invalidate_target(self, target: str, current_revision: Optional[str]) -> None:
+        """Mark pointers stale when their target no longer has the observed bytes."""
+        for pointer in self.pointers:
+            if pointer.target != target:
+                continue
+            if pointer.target_revision != current_revision:
+                pointer.verified = False
+                pointer.stale = True
 
     def render_view(self) -> str:
         if not self.pointers:
             return "No grounding pointers established yet."
         lines = [
-            "| ID | Target File / Entity | Locator (Lines/Symbol) | Semantic Role | Verified |",
+            "| ID | Target File / Entity | Locator (Lines/Symbol) | Semantic Role | Status |",
             "| :--- | :--- | :--- | :--- | :--- |"
         ]
         for p in self.pointers:
-            lines.append(f"| `{p.id}` | `{p.target}` | `{p.locator}` | {p.description} | {'Yes' if p.verified else 'No'} |")
+            status = "stale" if p.stale else ("verified" if p.verified else "unvalidated")
+            lines.append(f"| `{p.id}` | `{p.target}` | `{p.locator}` | {p.description} | {status} |")
         return "\n".join(lines)
 
 
@@ -124,7 +171,7 @@ class DynamicToolRegistry:
     """Enables runtime synthesis and execution of ad-hoc Python tools."""
 
     def __init__(self):
-        self.tools: Dict[str, Callable[..., Any]] = {}
+        self.tools: Dict[str, str] = {}
         self.schemas: Dict[str, Dict[str, Any]] = {}
         self.tool_sources: Dict[str, str] = {}
 
@@ -149,29 +196,9 @@ class DynamicToolRegistry:
             available = [n.name for n in fn_nodes]
             return False, f"Code does not define top-level function '{name}'. Found: {available}"
 
-        # 2. Execution environment sandbox
-        local_scope: Dict[str, Any] = {}
-        try:
-            # Provide standard modules
-            safe_globals = {
-                "__builtins__": __builtins__,
-                "os": os,
-                "sys": sys,
-                "json": json,
-                "Path": Path,
-                "re": __import__("re"),
-                "math": __import__("math")
-            }
-            exec(code, safe_globals, local_scope)
-        except Exception as e:
-            return False, f"Evaluation error during tool registration: {e}"
-
-        fn = local_scope.get(name)
-        if not callable(fn):
-            return False, f"Target '{name}' is not callable."
-
-        # 3. Store callable and construct schema
-        self.tools[name] = fn
+        # Registration is metadata-only. Generated code is loaded and validated
+        # later in the supervised worker, never evaluated in the controller.
+        self.tools[name] = code
         self.tool_sources[name] = code
 
         schema_params = parameters or {
@@ -194,11 +221,37 @@ class DynamicToolRegistry:
         if name not in self.tools:
             return f"Error: Synthesized tool '{name}' not found in registry."
         try:
-            fn = self.tools[name]
-            result = fn(**args)
-            if isinstance(result, (dict, list)):
-                return json.dumps(result, indent=2)
-            return str(result)
+            with tempfile.TemporaryDirectory(prefix="reticle-legacy-tool-") as temp_name:
+                temp = Path(temp_name)
+                source_path = temp / "tool.py"
+                result_path = temp / "result.json"
+                source_path.write_text(self.tools[name], encoding="utf-8")
+                execution = TrustedLocalBackend().run(ExecutionRequest(
+                    command=[
+                        sys.executable,
+                        str(Path(execution_worker.__file__).resolve()),
+                        "--source", str(source_path),
+                        "--entry-point", name,
+                        "--arguments", json.dumps(args),
+                        "--result", str(result_path),
+                    ],
+                    working_directory=temp,
+                    timeout_seconds=30,
+                    output_limit_bytes=1_000_000,
+                ))
+                if not result_path.exists():
+                    detail = execution.stderr.decode("utf-8", errors="replace")
+                    return f"Error executing tool '{name}': {execution.error_kind}: {detail}"
+                worker_result = json.loads(result_path.read_text(encoding="utf-8"))
+                if worker_result["status"] != "success":
+                    return (
+                        f"Error executing tool '{name}': {worker_result['error_type']}: "
+                        f"{worker_result['message']}"
+                    )
+                result = worker_result.get("value")
+                if isinstance(result, (dict, list)):
+                    return json.dumps(result, indent=2)
+                return str(result)
         except Exception as e:
             return f"Error executing tool '{name}': {type(e).__name__}: {e}"
 
@@ -274,6 +327,12 @@ class StatelessEnvironment:
 
     def outline(self, file_path: str, mode: str = "semantic") -> str:
         return extract_outline(self.root / file_path, mode=mode)
+
+    def file_revision(self, file_path: str) -> Optional[str]:
+        target = self.root / file_path
+        if not target.is_file():
+            return None
+        return hashlib.sha256(target.read_bytes()).hexdigest()
 
     def symbol(self, file_path: str, symbol_name: str) -> str:
         return extract_symbol(self.root / file_path, symbol_name)
@@ -421,7 +480,8 @@ BASE_TOOL_SCHEMAS: List[Dict[str, Any]] = [
                 "properties": {
                     "target": {"type": "string", "description": "Target file or component."},
                     "locator": {"type": "string", "description": "Line span, AST symbol, or entity coordinate."},
-                    "description": {"type": "string", "description": "Semantic role or summary of what is located here."}
+                    "description": {"type": "string", "description": "Semantic role or summary of what is located here."},
+                    "verified": {"type": "boolean", "description": "True only when the locator was explicitly validated against the current target revision."}
                 },
                 "required": ["target", "locator", "description"]
             }
@@ -477,7 +537,7 @@ class BlankSlateHarness:
 
         if fn_name == "outline":
             res = self.env.outline(args.get("file_path", ""), mode=args.get("mode", "semantic"))
-            return f"Outline of {args.get('file_path')}: {len(res.splitlines())} lines rendered.", False
+            return f"Outline of {args.get('file_path')}:\n{_inline_preview(res)}", False
 
         if fn_name == "saccade":
             res = self.env.saccade(args.get("file_path", ""), args.get("start_line", 1), args.get("end_line", 20))
@@ -488,8 +548,9 @@ class BlankSlateHarness:
             return f"Symbol {args.get('symbol_name')}:\n{res}", False
 
         if fn_name == "replace_lines":
+            target = args.get("file_path", "")
             res = self.env.replace_lines(
-                args.get("file_path", ""),
+                target,
                 args.get("start_line", 1),
                 args.get("end_line", 1),
                 args.get("new_content", "")
@@ -501,6 +562,8 @@ class BlankSlateHarness:
                     rejection_evidence=res,
                     step=step
                 )
+            else:
+                board.grounding.invalidate_target(target, self.env.file_revision(target))
             return res, False
 
         if fn_name == "run_command":
@@ -515,10 +578,17 @@ class BlankSlateHarness:
                 )
             elif cmd == verify_cmd:
                 solved = True
-            return f"Command '{cmd}': exit {cmd_res['exit_code']}", solved
+            return _format_command_result(cmd, cmd_res), solved
 
         if fn_name == "record_grounding_pointer":
-            ptr = board.grounding.record_pointer(args.get("target", ""), args.get("locator", ""), args.get("description", ""))
+            target = args.get("target", "")
+            ptr = board.grounding.record_pointer(
+                target,
+                args.get("locator", ""),
+                args.get("description", ""),
+                verified=bool(args.get("verified", False)),
+                target_revision=self.env.file_revision(target),
+            )
             return f"Recorded Grounding Pointer {ptr.id} -> {ptr.target}:{ptr.locator}", False
 
         if fn_name == "synthesize_tool":
@@ -557,7 +627,13 @@ class BlankSlateHarness:
 
         if initial_pointers:
             for p in initial_pointers:
-                board.grounding.record_pointer(p["target"], p["locator"], p["description"])
+                board.grounding.record_pointer(
+                    p["target"],
+                    p["locator"],
+                    p["description"],
+                    verified=bool(p.get("verified", False)),
+                    target_revision=self.env.file_revision(p["target"]),
+                )
 
         solved = False
         step = 0
@@ -567,7 +643,7 @@ class BlankSlateHarness:
             "You are a stateless epistemic agent. You have NO conversational memory; each turn is a blank slate.\n"
             "All knowledge of previous steps is preserved strictly in the Epistemic State Board.\n"
             "Cognitive Rules:\n"
-            "1. NEVER repeat an action or hypothesis recorded in the Falsification Ledger.\n"
+            "1. Treat the Falsification Ledger as conditional evidence. Retry an action when relevant state or circumstances have changed.\n"
             "2. Use Grounding Pointers to target saccades directly at known coordinates without re-scanning.\n"
             "3. If an invariant can be computed deterministically, use 'synthesize_tool' to create a dedicated probe.\n"
             "4. Preserving minimal state: do not write narrative summaries; update the ledger with precise pointers."
@@ -631,11 +707,18 @@ class BlankSlateHarness:
 
             # 3. Re-verify invariants
             check = self.env.run_command(verify_cmd)
-            if check["passed"]:
-                solved = True
+            solved = check["passed"]
+            if solved:
                 deltas.append("Verification check passed.")
+            else:
+                deltas.append(_format_command_result(verify_cmd, check))
 
             board.last_delta = "\n".join(deltas)
+
+        # Completion always describes the final workspace revision, including a
+        # mutation that occurred after an earlier passing verification.
+        final_verification = self.env.run_command(verify_cmd)
+        solved = final_verification["passed"]
 
         # Collect efficiency and token telemetry if client supports it
         efficiency_metrics = {}
@@ -653,6 +736,7 @@ class BlankSlateHarness:
             "synthesized_tools_count": len(board.tools.schemas),
             "execution_history": execution_history,
             "total_token_spend": total_token_spend,
-            "efficiency_metrics": efficiency_metrics
+            "efficiency_metrics": efficiency_metrics,
+            "final_verification": final_verification,
         }
 

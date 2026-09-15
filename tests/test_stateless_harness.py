@@ -32,12 +32,15 @@ class MockBlankSlateClient:
         self.steps_script = steps_script
         self.call_count = 0
         self.observed_prompts: List[str] = []
+        self.observed_system_prompts: List[str] = []
 
     def chat_completion(self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> Dict[str, Any]:
         self.call_count += 1
         # Store user prompt (the state packet)
         user_msg = next((m["content"] for m in messages if m["role"] == "user"), "")
         self.observed_prompts.append(user_msg)
+        system_msg = next((m["content"] for m in messages if m["role"] == "system"), "")
+        self.observed_system_prompts.append(system_msg)
 
         if self.call_count <= len(self.steps_script):
             return self.steps_script[self.call_count - 1]
@@ -98,6 +101,8 @@ class StatelessHarnessTests(unittest.TestCase):
         view = ledger.render_view()
         self.assertIn("calc.py", view)
         self.assertIn("L1-L3", view)
+        self.assertFalse(ptr.verified)
+        self.assertIn("unvalidated", view)
 
     def test_dynamic_tool_synthesis_valid(self):
         registry = DynamicToolRegistry()
@@ -136,6 +141,130 @@ class StatelessHarnessTests(unittest.TestCase):
         ok, msg = registry.register_tool("broken", bad_code, "broken tool")
         self.assertFalse(ok)
         self.assertIn("SyntaxError", msg)
+
+    def test_dynamic_tool_uses_module_namespace_for_helpers_and_imports(self):
+        registry = DynamicToolRegistry()
+        code = (
+            "import math\n"
+            "OFFSET = 1\n"
+            "def helper(value):\n"
+            "    return math.floor(value) + OFFSET\n"
+            "def composed(value):\n"
+            "    return helper(value) * 2\n"
+        )
+        ok, msg = registry.register_tool("composed", code, "Uses sibling definitions")
+        self.assertTrue(ok, msg)
+        self.assertEqual(registry.execute_tool("composed", {"value": 2.8}), "6")
+
+    def test_dispatch_returns_outline_and_command_streams(self):
+        harness = BlankSlateHarness(env=self.env)
+        board = EpistemicNoteBoard(goal="inspect", invariants=[])
+
+        outline, _ = harness._dispatch_tool(
+            "outline", {"file_path": "calc.py"}, board, 1, "unused"
+        )
+        self.assertIn("calculate_discount", outline)
+
+        command = f'"{sys.executable}" -c "import sys; print(\'visible-out\'); print(\'visible-err\', file=sys.stderr)"'
+        result, _ = harness._dispatch_tool(
+            "run_command", {"cmd": command}, board, 1, "unused"
+        )
+        self.assertIn("visible-out", result)
+        self.assertIn("visible-err", result)
+        self.assertIn("Stdout:", result)
+        self.assertIn("Stderr:", result)
+
+        self.env.run_command = lambda cmd: {
+            "exit_code": 0,
+            "passed": True,
+            "stdout": "x" * 9_000,
+            "stderr": "",
+        }
+        truncated, _ = harness._dispatch_tool(
+            "run_command", {"cmd": "large-output"}, board, 1, "unused"
+        )
+        self.assertIn("[truncated: 1000 characters omitted]", truncated)
+
+    def test_edit_marks_pointer_to_prior_revision_stale(self):
+        harness = BlankSlateHarness(env=self.env)
+        board = EpistemicNoteBoard(goal="edit", invariants=[])
+        harness._dispatch_tool(
+            "record_grounding_pointer",
+            {"target": "calc.py", "locator": "L3", "description": "return"},
+            board,
+            1,
+            "unused",
+        )
+        pointer = board.grounding.pointers[0]
+        self.assertFalse(pointer.stale)
+
+        harness._dispatch_tool(
+            "replace_lines",
+            {
+                "file_path": "calc.py",
+                "start_line": 3,
+                "end_line": 3,
+                "new_content": "    return 0",
+            },
+            board,
+            1,
+            "unused",
+        )
+        self.assertTrue(pointer.stale)
+        self.assertFalse(pointer.verified)
+        self.assertIn("stale", board.grounding.render_view())
+
+    def test_final_verification_overrides_earlier_pass_in_same_batch(self):
+        verify_cmd = f'"{sys.executable}" test_calc.py'
+        client = MockBlankSlateClient([
+            {
+                "content": "Pass first, then mutate.",
+                "tool_calls": [
+                    {"function": {"name": "replace_lines", "arguments": json.dumps({
+                        "file_path": "calc.py", "start_line": 3, "end_line": 3,
+                        "new_content": "    return price * (1.0 - discount_percent / 100.0)",
+                    })}},
+                    {"function": {"name": "run_command", "arguments": json.dumps({"cmd": verify_cmd})}},
+                    {"function": {"name": "replace_lines", "arguments": json.dumps({
+                        "file_path": "calc.py", "start_line": 3, "end_line": 3,
+                        "new_content": "    return 0",
+                    })}},
+                ],
+            }
+        ])
+        result = BlankSlateHarness(self.env, client=client, max_steps=1).run(
+            goal="Keep tests passing", verify_cmd=verify_cmd
+        )
+        self.assertFalse(result["solved"])
+        self.assertFalse(result["final_verification"]["passed"])
+
+    def test_failed_verification_can_be_retried_after_repair(self):
+        verify_cmd = f'"{sys.executable}" test_calc.py'
+        client = MockBlankSlateClient([
+            {
+                "content": "Observe failure.",
+                "tool_calls": [
+                    {"function": {"name": "run_command", "arguments": json.dumps({"cmd": verify_cmd})}},
+                ],
+            },
+            {
+                "content": "Repair and retry under changed state.",
+                "tool_calls": [
+                    {"function": {"name": "replace_lines", "arguments": json.dumps({
+                        "file_path": "calc.py", "start_line": 3, "end_line": 3,
+                        "new_content": "    return price * (1.0 - discount_percent / 100.0)",
+                    })}},
+                    {"function": {"name": "run_command", "arguments": json.dumps({"cmd": verify_cmd})}},
+                ],
+            },
+        ])
+        result = BlankSlateHarness(self.env, client=client, max_steps=2).run(
+            goal="Repair", verify_cmd=verify_cmd
+        )
+        attempts = [item for item in result["execution_history"] if item["tool"] == "run_command"]
+        self.assertEqual(len(attempts), 2)
+        self.assertTrue(result["solved"])
+        self.assertNotIn("NEVER repeat", client.observed_system_prompts[0])
 
     def test_epistemic_note_board_stateless_rendering(self):
         board = EpistemicNoteBoard(
@@ -235,7 +364,7 @@ class StatelessHarnessTests(unittest.TestCase):
                     {
                         "function": {
                             "name": "run_command",
-                            "arguments": json.dumps({"cmd": f"{Path(sys.executable).name} test_calc.py"})
+                            "arguments": json.dumps({"cmd": f'"{sys.executable}" test_calc.py'})
                         }
                     }
                 ]
@@ -245,7 +374,7 @@ class StatelessHarnessTests(unittest.TestCase):
         client = MockBlankSlateClient(steps)
         harness = BlankSlateHarness(env=self.env, client=client, max_steps=5)
 
-        verify_cmd = f"{Path(sys.executable).name} test_calc.py"
+        verify_cmd = f'"{sys.executable}" test_calc.py'
         result = harness.run(
             goal="Fix calculate_discount in calc.py so all tests pass",
             verify_cmd=verify_cmd
