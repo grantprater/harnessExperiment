@@ -6,7 +6,12 @@ from reticle.runtime.session import LocalRuntime, PendingOperationState, Recover
 from reticle.runtime.scratch import ScratchPad, ScratchRead, ScratchSearchHit, ScratchWrite
 from reticle.runtime.workspace import StaleWorkspaceError, WorkspaceObservation, WorkspaceTracker
 from reticle.runtime.observations import OBSERVATION_MODES, ObservationService, ObservationView
-from reticle.runtime.budgets import BudgetSnapshot, TaskBudgetExhausted, TaskBudgetLedger
+from reticle.runtime.budgets import (
+    BudgetSnapshot,
+    ProviderAttemptRecorder,
+    TaskBudgetExhausted,
+    TaskBudgetLedger,
+)
 from reticle.runtime.ownership import SessionOwnedError, SessionWriterLock
 from reticle.runtime.queries import HistoryPage, SessionQueryService
 
@@ -21,6 +26,7 @@ __all__ = [
     "ObservationService",
     "ObservationView",
     "PendingOperationState",
+    "ProviderAttemptRecorder",
     "RecoveryState",
     "ScratchPad",
     "ScratchRead",

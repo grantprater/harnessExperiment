@@ -1,0 +1,50 @@
+{
+  "id": "E0-s2b-boundaries",
+  "runner_version": 2,
+  "created_at": "2026-09-15T15:25:30.684719+00:00",
+  "oci_image": "localhost/reticle-p6-task:py313-v1",
+  "oci_image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+  "engine": "C:\\Program Files\\RedHat\\Podman\\podman.EXE",
+  "container_user_arguments": [
+    "--userns",
+    "keep-id"
+  ],
+  "trusted_local_python": "C:\\Users\\grant\\harnessExperiment\\.runtime\\bugs-venv\\Scripts\\python.exe",
+  "expected": {
+    "trusted-local": {
+      "probe_ran": true,
+      "sibling_evaluator_readable": true,
+      "credential_file_readable": true,
+      "credential_env_present": false,
+      "host_listener_reachable": true,
+      "workspace_write_ok": true,
+      "workspace_chmod_ok": true,
+      "source_write_changes_revision": true,
+      "pytest_succeeded": true,
+      "cache_directories_created": true,
+      "cache_files_leave_revision_unchanged": true
+    },
+    "isolated-oci": {
+      "probe_ran": true,
+      "sibling_evaluator_readable": false,
+      "credential_file_readable": false,
+      "credential_env_present": false,
+      "host_listener_reachable": false,
+      "public_network_reachable": false,
+      "dns_resolves": false,
+      "workspace_write_ok": true,
+      "workspace_chmod_ok": true,
+      "source_write_changes_revision": true,
+      "pytest_succeeded": true,
+      "cache_directories_created": true,
+      "cache_files_leave_revision_unchanged": true
+    }
+  },
+  "source_sha256": {
+    "experiments/session_harness/run_s2b_controls.py": "74febb1b5fd2c972e16f1a09e4ddfa996b1b1f40dfaa5de8fe871ff82221f314",
+    "reticle/execution/backends.py": "47dbe768f5a50fe4ac6459865ba2e3ccb90839727ecd19daf9d6061234f9f545",
+    "reticle/runtime/workspace.py": "98f70892171428e0fb386fd5e02a6e3170968625265711d46c633591b8325feb",
+    "reticle/tools/primitives.py": "cead4fdf7a1477e461f53fb59ddfe39e0899f96316410620a02f88e93f151b6c"
+  },
+  "decision_rule": "boundary gate passes iff every isolated-oci check matches and every trusted-local positive control matches"
+}

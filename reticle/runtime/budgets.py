@@ -1,9 +1,17 @@
-"""Journal-derived cumulative task resource reservations and reconciliation."""
+"""Journal-derived cumulative task resource reservations and reconciliation.
+
+Pause and deadline semantics: a task is paused whenever no controller owns its session
+(between invocations, or after a crash). ``active_seconds`` accrues only while a controller
+runs and is charged at each dispatch boundary, so a crash loses at most the time since the
+last boundary. ``deadline_utc`` is an absolute wall-clock limit that keeps running while
+paused. Pausing never releases a pending reservation.
+"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 from reticle.runtime.session import LocalRuntime
 
@@ -25,6 +33,21 @@ class BudgetSnapshot:
     reserved: Dict[str, float]
     remaining: Dict[str, float]
     pending: Dict[str, Dict[str, Any]]
+    adjusted: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+
+
+def parse_deadline(value: Any) -> Optional[datetime]:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("deadline_utc must be an ISO 8601 string")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        raise ValueError(f"deadline_utc is not ISO 8601: {value}") from None
+    if parsed.tzinfo is None:
+        raise ValueError("deadline_utc must include a UTC offset")
+    return parsed.astimezone(timezone.utc)
 
 
 class TaskBudgetLedger:
@@ -33,12 +56,19 @@ class TaskBudgetLedger:
     CONFIG_KIND = "task_budget_configured"
     RESERVE_KIND = "task_resource_reserved"
     RECONCILE_KIND = "task_resource_reconciled"
+    ADJUST_KIND = "task_resource_adjusted"
 
     def __init__(self, runtime: LocalRuntime, task_id: str, limits: Dict[str, Any]):
         self.runtime = runtime
         self.task_id = task_id
         self.limits = self._normalize_limits(limits)
+        self.deadline = parse_deadline(limits.get("deadline_utc"))
         self._ensure_configuration()
+
+    def deadline_passed(self, now: Optional[datetime] = None) -> bool:
+        if self.deadline is None:
+            return False
+        return (now or datetime.now(timezone.utc)) >= self.deadline
 
     @staticmethod
     def _normalize_limits(limits: Dict[str, Any]) -> Dict[str, float]:
@@ -75,29 +105,37 @@ class TaskBudgetLedger:
             return
         self.runtime.journal.append(self.CONFIG_KIND, {"task_id": self.task_id, "limits": self.limits})
 
-    def snapshot(self) -> BudgetSnapshot:
-        consumed: Dict[str, float] = {}
+    def _charges(self):
         reservations: Dict[str, Dict[str, Any]] = {}
-        reconciled: set[str] = set()
+        charges: Dict[str, tuple[str, float]] = {}
+        adjusted: Dict[str, Dict[str, Any]] = {}
         for event in self._events():
+            operation_id = event.payload.get("resource_operation_id")
             if event.kind == self.RESERVE_KIND:
-                operation_id = str(event.payload["resource_operation_id"])
-                reservations[operation_id] = dict(event.payload)
+                reservations[str(operation_id)] = dict(event.payload)
             elif event.kind == self.RECONCILE_KIND:
-                operation_id = str(event.payload["resource_operation_id"])
-                if operation_id in reconciled:
+                if str(operation_id) in charges:
                     continue
-                reconciled.add(operation_id)
                 actual = event.payload.get("actual")
-                resource = str(event.payload["resource"])
-                # An ambiguous outcome is conservatively charged at its reservation until
-                # a future adjustment mechanism can establish the provider's actual bill.
+                # An ambiguous outcome is conservatively charged at its reservation until a
+                # supervisor adjustment records the provider's actual bill.
                 charged = event.payload.get("reserved", 0.0) if actual is None else actual
-                consumed[resource] = consumed.get(resource, 0.0) + float(charged)
+                charges[str(operation_id)] = (str(event.payload["resource"]), float(charged))
+            elif event.kind == self.ADJUST_KIND and str(operation_id) in charges:
+                resource = charges[str(operation_id)][0]
+                charges[str(operation_id)] = (resource, float(event.payload["actual"]))
+                adjusted[str(operation_id)] = dict(event.payload)
+        return reservations, charges, adjusted
+
+    def snapshot(self) -> BudgetSnapshot:
+        reservations, charges, adjusted = self._charges()
+        consumed: Dict[str, float] = {}
+        for resource, charged in charges.values():
+            consumed[resource] = consumed.get(resource, 0.0) + charged
         pending = {
             operation_id: reservation
             for operation_id, reservation in reservations.items()
-            if operation_id not in reconciled
+            if operation_id not in charges
         }
         reserved: Dict[str, float] = {}
         for reservation in pending.values():
@@ -107,7 +145,24 @@ class TaskBudgetLedger:
             resource: limit - consumed.get(resource, 0.0) - reserved.get(resource, 0.0)
             for resource, limit in self.limits.items()
         }
-        return BudgetSnapshot(self.task_id, dict(self.limits), consumed, reserved, remaining, pending)
+        return BudgetSnapshot(
+            self.task_id, dict(self.limits), consumed, reserved, remaining, pending, adjusted
+        )
+
+    def require_available(self, resource: str, amount: float) -> None:
+        remaining = self.snapshot().remaining.get(resource)
+        if remaining is not None and amount > remaining:
+            raise TaskBudgetExhausted(resource, amount, remaining)
+
+    def unknown_billing_count(self, resource: str = "cost_usd") -> int:
+        """Reconciled reservations with no reported amount and no later supervisor adjustment."""
+        _, _, adjusted = self._charges()
+        return sum(
+            1 for event in self._events()
+            if event.kind == self.RECONCILE_KIND and event.payload.get("resource") == resource
+            and event.payload.get("actual") is None and float(event.payload.get("reserved") or 0) > 0
+            and str(event.payload.get("resource_operation_id")) not in adjusted
+        )
 
     def next_operation_id(self, resource: str) -> str:
         prefix = f"resource:{self.task_id}:{resource}:"
@@ -176,3 +231,110 @@ class TaskBudgetLedger:
         })
         self.reconcile(operation_id, actual, outcome=outcome)
         return operation_id
+
+    def adjust(self, operation_id: str, actual: float, *, source: str, reason: str) -> None:
+        """Supervisor-only: replace a reconciled charge once the actual use is established.
+
+        The controller never calls this and it is not exposed to model tools. Every adjustment
+        is journaled with the charge it replaces; the latest adjustment wins.
+        """
+        if isinstance(actual, bool) or not isinstance(actual, (int, float)) or actual < 0:
+            raise ValueError("Adjusted resource use must be a non-negative number")
+        if not source or not reason:
+            raise ValueError("An adjustment requires a source and a reason")
+        reservations, charges, _ = self._charges()
+        if operation_id not in charges:
+            state = "pending" if operation_id in reservations else "unknown"
+            raise ValueError(f"Only reconciled operations can be adjusted; {operation_id} is {state}")
+        resource, previous = charges[operation_id]
+        self.runtime.journal.append(self.ADJUST_KIND, {
+            "task_id": self.task_id,
+            "resource_operation_id": operation_id,
+            "resource": resource,
+            "previous_charge": previous,
+            "actual": float(actual),
+            "source": source,
+            "reason": reason,
+        })
+
+
+class ProviderAttemptRecorder:
+    """Journals each underlying provider attempt of one model request.
+
+    A client that sets ``reports_provider_attempts = True`` receives this recorder and must
+    call ``begin`` before every network attempt (including retries) and must stop retrying
+    when it raises ``TaskBudgetExhausted``. It should call ``finish`` for failed attempts; the
+    controller finishes the successful attempt with the response's reported cost and charges
+    any other unfinished attempt conservatively.
+    """
+
+    STARTED_KIND = "provider_attempt_started"
+    FINISHED_KIND = "provider_attempt_finished"
+
+    def __init__(self, ledger: TaskBudgetLedger, request_id: str, cost_reservation: Optional[float] = None):
+        self.ledger = ledger
+        self.request_id = request_id
+        self.cost_reservation = cost_reservation
+        self.attempt_ids: List[str] = []
+        self._open: Dict[str, Dict[str, Optional[str]]] = {}
+
+    @property
+    def count(self) -> int:
+        return len(self.attempt_ids)
+
+    def begin(self, metadata: Optional[Dict[str, Any]] = None) -> str:
+        attempt_operation = self.ledger.reserve("model_attempts", 1)
+        cost_operation: Optional[str] = None
+        if self.cost_reservation is not None:
+            try:
+                cost_operation = self.ledger.reserve("cost_usd", self.cost_reservation)
+            except TaskBudgetExhausted:
+                self.ledger.reconcile(attempt_operation, 0, outcome="not_dispatched_cost_exhausted")
+                raise
+        attempt_id = f"{self.request_id}:attempt:{self.count + 1}"
+        self.ledger.runtime.journal.append(self.STARTED_KIND, {
+            "task_id": self.ledger.task_id,
+            "request_id": self.request_id,
+            "provider_attempt_id": attempt_id,
+            "attempt_operation_id": attempt_operation,
+            "cost_operation_id": cost_operation,
+            "metadata": metadata or {},
+        })
+        self.attempt_ids.append(attempt_id)
+        self._open[attempt_id] = {"attempt": attempt_operation, "cost": cost_operation}
+        return attempt_id
+
+    def finish(
+        self,
+        attempt_id: str,
+        *,
+        outcome: str,
+        cost: Optional[float] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        operations = self._open.pop(attempt_id, None)
+        if operations is None:
+            raise ValueError(f"Provider attempt is not open: {attempt_id}")
+        if isinstance(cost, bool) or (cost is not None and not isinstance(cost, (int, float))):
+            cost = None
+        self.ledger.reconcile(str(operations["attempt"]), 1, outcome=outcome)
+        if operations["cost"] is not None:
+            self.ledger.reconcile(operations["cost"], cost, outcome=(
+                "reported" if cost is not None else "unknown_billing"
+            ))
+        self.ledger.runtime.journal.append(self.FINISHED_KIND, {
+            "task_id": self.ledger.task_id,
+            "request_id": self.request_id,
+            "provider_attempt_id": attempt_id,
+            "outcome": outcome,
+            "cost": cost,
+            "metadata": metadata or {},
+        })
+
+    def close_unfinished(self, *, succeeded: bool, final_cost: Optional[float] = None) -> None:
+        latest = self.attempt_ids[-1] if self.attempt_ids else None
+        for attempt_id in list(self._open):
+            if succeeded and attempt_id == latest:
+                self.finish(attempt_id, outcome="response", cost=final_cost)
+            else:
+                self.finish(attempt_id, outcome="unknown_not_finished_by_client")

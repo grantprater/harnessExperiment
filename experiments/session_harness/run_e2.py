@@ -76,6 +76,7 @@ SEED = [
     ("seed-read-log", "read_file", {"path": "logs/worker.log"}),
 ]
 OBSERVATION_TOOLS = {
+    "glob_files", "search_text",  # toolset v3
     "list_files", "read_file", "outline", "search", "read_output", "search_output",
     "history", "search_history", "read_artifact", "read_note",
 }

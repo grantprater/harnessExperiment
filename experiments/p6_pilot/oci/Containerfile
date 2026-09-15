@@ -1,0 +1,10 @@
+# Pinned P6 task environment for isolated candidate commands and evaluation.
+# Build (from the repo root):
+#   podman build -t localhost/reticle-p6-task:py313-v1 experiments/p6_pilot/oci
+# Runs record the resulting image ID, not this tag.
+FROM docker.io/library/python:3.13-alpine@sha256:7415fbc3c9e4979cc717d92377ab2bc7b2b4a2af1ac03cc52b5f3f88efedaf3a
+
+COPY requirements.lock /tmp/requirements.lock
+# Binary wheels only: a missing wheel fails the build instead of compiling something different.
+RUN python -m pip install --no-cache-dir --only-binary=:all: -r /tmp/requirements.lock \
+    && rm /tmp/requirements.lock

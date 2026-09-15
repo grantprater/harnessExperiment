@@ -6,6 +6,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest import mock
 
 from reticle.context import TranscriptStore
 from reticle.runtime import (
@@ -16,7 +17,7 @@ from reticle.runtime import (
     TaskBudgetLedger,
 )
 from reticle.runtime.contracts import TaskEnvelope
-from reticle.runtime.controller import AgentController, AgentLimits, ModelResponse
+from reticle.runtime.controller import AgentController, AgentLimits, ModelClientError, ModelResponse
 from reticle.tools import ToolSuite
 from reticle.execution import ExecutionController
 
@@ -285,6 +286,164 @@ class S2ResourceTests(unittest.TestCase):
         transcript = TranscriptStore(resumed).load()
         self.assertEqual(transcript[-2]["tool_calls"][0]["id"], "recorded-finish")
         self.assertEqual(transcript[-1]["tool_call_id"], "recorded-finish")
+
+
+class ProcessCrash(BaseException):
+    """Stands in for process death: not caught by the controller."""
+
+
+class RetryingModel:
+    """Attempt-reporting client: fails `failures` times (or crashes), then finishes."""
+
+    reports_provider_attempts = True
+
+    def __init__(self, failures=0, max_attempts=5, crash=False, cost=0.002):
+        self.failures, self.max_attempts, self.crash, self.cost = failures, max_attempts, crash, cost
+        self.network_attempts = 0
+
+    def complete(self, messages, tools, *, attempts):
+        for _ in range(self.max_attempts):
+            attempt_id = attempts.begin({"route": "test"})
+            self.network_attempts += 1
+            if self.crash:
+                raise ProcessCrash()
+            if self.network_attempts <= self.failures:
+                attempts.finish(attempt_id, outcome="retryable_error", metadata={"http_status": 503})
+                continue
+            return ModelResponse(FinishModel().complete(messages, tools).message, {"cost": self.cost})
+        raise ModelClientError("retries exhausted")
+
+
+class S2ProviderAttemptAndDeadlineTests(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp_dir.name)
+        self.workspace = self.root / "workspace"
+        self.workspace.mkdir()
+        self.session = self.root / "session"
+        self.runtime = LocalRuntime(self.session, self.workspace)
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def run_controller(self, runtime, task, model):
+        return AgentController(
+            runtime, task, ToolSuite(runtime, interpreter=sys.executable), model, AgentLimits(3, 100_000)
+        ).run()
+
+    def kinds(self, runtime, kind):
+        return [event for event in runtime.journal.read_all() if event.kind == kind]
+
+    def test_each_retry_is_journaled_and_charged(self):
+        task = TaskEnvelope("retries", "Finish.", budgets={
+            "model_attempts": 5, "cost_usd": 1.0, "model_attempt_cost_reservation": 0.01,
+        })
+        model = RetryingModel(failures=2)
+        result = self.run_controller(self.runtime, task, model)
+
+        self.assertEqual(result.stop_reason, "finish_requested")
+        self.assertEqual((result.model_calls, result.provider_attempts, model.network_attempts), (1, 3, 3))
+        started = self.kinds(self.runtime, "provider_attempt_started")
+        finished = self.kinds(self.runtime, "provider_attempt_finished")
+        self.assertEqual(len(started), 3)
+        self.assertEqual(
+            [event.payload["outcome"] for event in finished],
+            ["retryable_error", "retryable_error", "response"],
+        )
+        resources = result.task_resources
+        self.assertEqual(resources["consumed"]["model_attempts"], 3)
+        self.assertEqual(resources["consumed"]["model_responses"], 1)
+        # Two failed attempts with unknown billing hold their reservations; the response reports its cost.
+        self.assertAlmostEqual(resources["consumed"]["cost_usd"], 0.022)
+        self.assertEqual(resources["pending"], {})
+
+    def test_attempt_budget_stops_retries_without_ambiguity(self):
+        task = TaskEnvelope("retry-cap", "Finish.", budgets={"model_attempts": 2})
+        model = RetryingModel(failures=5)
+        result = self.run_controller(self.runtime, task, model)
+
+        self.assertEqual(result.stop_reason, "task_budget_exhausted")
+        self.assertEqual(model.network_attempts, 2)
+        self.assertEqual(result.task_resources["consumed"]["model_attempts"], 2)
+        resumed = LocalRuntime(self.session)
+        self.assertEqual(resumed.recovery.pending_operations, [])
+        second = RetryingModel()
+        again = self.run_controller(resumed, task, second)
+        self.assertEqual(again.stop_reason, "task_budget_exhausted")
+        self.assertEqual(second.network_attempts, 0)
+
+    def test_crash_during_provider_attempt_keeps_charge_and_needs_reconciliation(self):
+        task = TaskEnvelope("attempt-crash", "Finish.", budgets={"model_attempts": 3})
+        with self.assertRaises(ProcessCrash):
+            self.run_controller(self.runtime, task, RetryingModel(crash=True))
+
+        resumed = LocalRuntime(self.session)
+        ledger = TaskBudgetLedger(resumed, task.task_id, task.budgets)
+        self.assertEqual(ledger.snapshot().reserved["model_attempts"], 1)
+        model = RetryingModel()
+        result = self.run_controller(resumed, task, model)
+        self.assertEqual(result.stop_reason, "needs_reconciliation")
+        self.assertEqual(model.network_attempts, 0)
+
+    def test_supervisor_adjustment_replaces_conservative_billing(self):
+        ledger = TaskBudgetLedger(self.runtime, "billing", {"cost_usd": 0.10})
+        operation = ledger.reserve("cost_usd", 0.06)
+        with self.assertRaisesRegex(ValueError, "pending"):
+            ledger.adjust(operation, 0.001, source="provider-invoice", reason="early")
+        ledger.reconcile(operation, None, outcome="unknown_billing")
+        self.assertAlmostEqual(ledger.snapshot().consumed["cost_usd"], 0.06)
+
+        ledger.adjust(operation, 0.004, source="provider-invoice", reason="generation lookup")
+        resumed = TaskBudgetLedger(LocalRuntime(self.session), "billing", {"cost_usd": 0.10})
+        snapshot = resumed.snapshot()
+        self.assertAlmostEqual(snapshot.consumed["cost_usd"], 0.004)
+        self.assertEqual(snapshot.adjusted[operation]["previous_charge"], 0.06)
+        resumed.reserve("cost_usd", 0.09)
+        with self.assertRaisesRegex(ValueError, "unknown"):
+            resumed.adjust("resource:missing", 0.0, source="s", reason="r")
+        with self.assertRaises(ValueError):
+            resumed.adjust(operation, -1, source="s", reason="r")
+
+    def test_passed_deadline_makes_no_provider_call(self):
+        task = TaskEnvelope("deadline", "Finish.", budgets={"deadline_utc": "2020-01-01T00:00:00Z"})
+        model = FinishModel()
+        result = self.run_controller(self.runtime, task, model)
+        self.assertEqual(result.stop_reason, "task_deadline_reached")
+        self.assertEqual(model.calls, 0)
+
+        future = TaskEnvelope("future", "Finish.", budgets={"deadline_utc": "2999-01-01T00:00:00+00:00"})
+        self.assertEqual(self.run_controller(self.runtime, future, FinishModel()).stop_reason, "finish_requested")
+        with self.assertRaisesRegex(ValueError, "UTC offset"):
+            TaskBudgetLedger(self.runtime, "naive", {"deadline_utc": "2999-01-01T00:00:00"})
+
+    def test_active_time_is_durable_across_a_crash(self):
+        clock = [100.0]
+
+        class SlowThenCrash:
+            def __init__(self):
+                self.calls = 0
+
+            def complete(self, messages, tools):
+                self.calls += 1
+                clock[0] += 6.0
+                if self.calls == 2:
+                    raise ProcessCrash()
+                return ModelResponse({"role": "assistant", "content": "thinking"})
+
+        task = TaskEnvelope("active", "Finish.", budgets={"active_seconds": 10})
+        with mock.patch("reticle.runtime.controller.monotonic", lambda: clock[0]):
+            with self.assertRaises(ProcessCrash):
+                self.run_controller(self.runtime, task, SlowThenCrash())
+            resumed = LocalRuntime(self.session)
+            # The first 6 seconds were charged at the second dispatch boundary before the crash.
+            self.assertEqual(
+                TaskBudgetLedger(resumed, task.task_id, task.budgets).snapshot().consumed["active_seconds"], 6.0
+            )
+            # The in-flight request is ambiguous, so it must be resolved before resuming. Time spent
+            # paused between invocations does not accrue.
+            clock[0] += 1_000.0
+            snapshot = TaskBudgetLedger(resumed, task.task_id, task.budgets).snapshot()
+            self.assertEqual(snapshot.remaining["active_seconds"], 4.0)
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ from uuid import uuid4
 
 from reticle.context.baseline import BaselineContextPolicy, ContextBuilder, ContextPolicy, TranscriptStore
 from reticle.runtime.contracts import TaskEnvelope
-from reticle.runtime.budgets import TaskBudgetExhausted, TaskBudgetLedger
+from reticle.runtime.budgets import ProviderAttemptRecorder, TaskBudgetExhausted, TaskBudgetLedger
 from reticle.runtime.ownership import SessionWriterLock
 from reticle.runtime.session import LocalRuntime
 from reticle.tools.primitives import ToolSuite
@@ -41,6 +41,20 @@ class ModelClient(Protocol):
     def complete(self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> ModelResponse: ...
 
 
+class AttemptReportingModelClient(Protocol):
+    """Opt-in client that journals every underlying provider attempt, including retries."""
+
+    reports_provider_attempts: bool  # must be True
+
+    def complete(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        *,
+        attempts: ProviderAttemptRecorder,
+    ) -> ModelResponse: ...
+
+
 @dataclass(frozen=True)
 class AgentLimits:
     max_model_calls: int
@@ -54,8 +68,10 @@ class AgentLimits:
 @dataclass(frozen=True)
 class AgentRunResult:
     task_id: str
-    stop_reason: str  # finish_requested | model_call_limit | model_error | context/task budget exhausted
-    model_calls: int
+    # finish_requested | model_call_limit | model_error | needs_reconciliation |
+    # context_budget_exhausted | task_budget_exhausted | task_deadline_reached
+    stop_reason: str
+    model_calls: int  # model requests; provider_attempts counts retries within them
     tool_calls: int
     final_workspace_revision: str
     usage_reported: Dict[str, float]
@@ -63,6 +79,7 @@ class AgentRunResult:
     finish_summary: Optional[str] = None
     error: Optional[str] = None
     task_resources: Dict[str, Any] = field(default_factory=dict)
+    provider_attempts: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -118,6 +135,41 @@ class AgentController:
         summary = value.get("summary") if isinstance(value, dict) else None
         return str(summary)[:2_000] if summary is not None else None
 
+    def _charge_active_time(self, budget: TaskBudgetLedger, outcome: str) -> None:
+        now = monotonic()
+        elapsed, self._active_mark = now - self._active_mark, now
+        if elapsed > 0:
+            budget.charge("active_seconds", elapsed, outcome=outcome)
+
+    def _resource_status(self, budget: TaskBudgetLedger, model_calls: int) -> Dict[str, Any]:
+        """Remaining resources before the next model response, as the ledger and invocation limit enforce them."""
+        snapshot = budget.snapshot()
+        status: Dict[str, Any] = {}
+        invocation_left = self.limits.max_model_calls - model_calls
+        task_left = snapshot.remaining.get("model_responses")
+        if task_left is None or invocation_left < task_left:
+            status["model_responses"] = {"remaining": invocation_left, "limit": self.limits.max_model_calls}
+        else:
+            status["model_responses"] = {"remaining": task_left, "limit": snapshot.limits["model_responses"]}
+        for resource in ("model_attempts", "tool_actions", "active_seconds", "cost_usd"):
+            if resource in snapshot.limits:
+                status[resource] = {"remaining": snapshot.remaining[resource], "limit": snapshot.limits[resource]}
+        reservation = self.task.budgets.get("model_attempt_cost_reservation")
+        if "cost_usd" in snapshot.limits and isinstance(reservation, (int, float)) and not isinstance(reservation, bool):
+            status["attempt_cost_reservation_usd"] = float(reservation)
+        if "cost_usd" in snapshot.limits:
+            status["cost_unknown_billing_attempts"] = budget.unknown_billing_count()
+        return status
+
+    def _record_budget_stop(self, exc: TaskBudgetExhausted, **extra: Any) -> None:
+        self.runtime.journal.append("task_budget_exhausted", {
+            "task_id": self.task.task_id,
+            "resource": exc.resource,
+            "requested": exc.requested,
+            "remaining": exc.remaining,
+            **extra,
+        })
+
     def run(self) -> AgentRunResult:
         owner_id = f"controller-{uuid4().hex}"
         writer = SessionWriterLock(self.runtime.session_dir).acquire(owner_id)
@@ -169,6 +221,7 @@ class AgentController:
                 finished = True
             else:
                 tool_calls += 1
+                self._charge_active_time(budget, "dispatch_boundary")
                 outcome = self.tools.dispatch(
                     str(function.get("name") or ""), function.get("arguments", "{}"), call_id
                 )
@@ -193,10 +246,11 @@ class AgentController:
         builder = ContextBuilder(self.policy)
         self.runtime.persist_task_contract(self.task)
         budget = TaskBudgetLedger(self.runtime, self.task.task_id, self.task.budgets)
-        started_at = monotonic()
+        self._active_mark = monotonic()
         reported = {name: 0.0 for name in USAGE_FIELDS}
         missing = {name: 0 for name in USAGE_FIELDS}
         model_calls = 0
+        provider_attempts = 0
         tool_calls = 0
         stop_reason = "model_call_limit"
         finish_summary: Optional[str] = None
@@ -229,13 +283,32 @@ class AgentController:
                 recovery_blocked = True
 
         while not recovery_blocked and model_calls < self.limits.max_model_calls:
-            active_limit = budget.snapshot().remaining.get("active_seconds")
-            if active_limit is not None and monotonic() - started_at >= active_limit:
+            # Dispatch boundary: persist active time so a crash cannot renew it.
+            self._charge_active_time(budget, "dispatch_boundary")
+            active_remaining = budget.snapshot().remaining.get("active_seconds")
+            if active_remaining is not None and active_remaining <= 0:
                 stop_reason = "task_budget_exhausted"
                 error = "Task active-time budget exhausted before model dispatch"
+                self.runtime.journal.append("task_budget_exhausted", {
+                    "task_id": self.task.task_id,
+                    "resource": "active_seconds",
+                    "remaining": active_remaining,
+                })
                 break
+            if budget.deadline_passed():
+                stop_reason = "task_deadline_reached"
+                error = f"Task deadline {budget.deadline.isoformat()} passed before model dispatch"
+                self.runtime.journal.append("task_deadline_reached", {
+                    "task_id": self.task.task_id,
+                    "deadline_utc": budget.deadline.isoformat(),
+                })
+                break
+            build_options: Dict[str, Any] = {}
+            if getattr(self.policy, "renders_resource_status", False):
+                build_options["resource_status"] = self._resource_status(budget, model_calls)
             built = builder.build(
-                self.runtime, self.task, transcript.load(), self.tools.schemas(), self.limits.max_context_bytes
+                self.runtime, self.task, transcript.load(), self.tools.schemas(), self.limits.max_context_bytes,
+                **build_options,
             )
             materialized = self.runtime.artifacts.read(
                 built.manifest.materialized_request_artifact_id
@@ -273,36 +346,10 @@ class AgentController:
                     },
                 )
                 break
-            try:
-                attempt_operation = budget.reserve("model_attempts", 1)
-            except TaskBudgetExhausted as exc:
-                stop_reason, error = "task_budget_exhausted", str(exc)
-                self.runtime.journal.append("task_budget_exhausted", {
-                    "task_id": self.task.task_id,
-                    "resource": exc.resource,
-                    "requested": exc.requested,
-                    "remaining": exc.remaining,
-                })
-                break
-            request_ref = {
-                "call_index": model_calls + 1,
-                "attempt_id": attempt_operation,
-                "request_artifact_id": built.manifest.materialized_request_artifact_id,
-                "request_hash": built.manifest.materialized_request_hash,
-                "context_over_budget": built.over_budget,
-            }
-            try:
-                response_operation = budget.reserve("model_responses", 1)
-            except TaskBudgetExhausted as exc:
-                budget.reconcile(attempt_operation, 0, outcome="not_dispatched_response_budget_exhausted")
-                stop_reason, error = "task_budget_exhausted", str(exc)
-                break
-            cost_operation: Optional[str] = None
+            cost_reservation: Optional[float] = None
             if "cost_usd" in budget.limits:
                 reservation = self.task.budgets.get("model_attempt_cost_reservation")
                 if isinstance(reservation, bool) or not isinstance(reservation, (int, float)) or reservation <= 0:
-                    budget.reconcile(attempt_operation, 0, outcome="not_dispatched_missing_cost_reservation")
-                    budget.reconcile(response_operation, 0, outcome="not_dispatched_missing_cost_reservation")
                     stop_reason = "task_budget_exhausted"
                     error = "A positive model_attempt_cost_reservation is required with cost_usd"
                     self.runtime.journal.append("task_budget_exhausted", {
@@ -311,45 +358,103 @@ class AgentController:
                         "reason": "missing_conservative_reservation",
                     })
                     break
+                cost_reservation = float(reservation)
+            # An attempt-reporting client reserves each underlying provider attempt itself;
+            # any other client is charged one attempt per request.
+            attempt_aware = getattr(self.client, "reports_provider_attempts", False) is True
+            attempt_operation: Optional[str] = None
+            try:
+                if attempt_aware:
+                    budget.require_available("model_attempts", 1)
+                    if cost_reservation is not None:
+                        budget.require_available("cost_usd", cost_reservation)
+                    request_id = f"model-request:{self.task.task_id}:{uuid4().hex}"
+                else:
+                    attempt_operation = budget.reserve("model_attempts", 1)
+                    request_id = attempt_operation
+            except TaskBudgetExhausted as exc:
+                stop_reason, error = "task_budget_exhausted", str(exc)
+                self._record_budget_stop(exc)
+                break
+            request_ref = {
+                "call_index": model_calls + 1,
+                "attempt_id": request_id,
+                "request_artifact_id": built.manifest.materialized_request_artifact_id,
+                "request_hash": built.manifest.materialized_request_hash,
+                "context_over_budget": built.over_budget,
+            }
+            try:
+                response_operation = budget.reserve("model_responses", 1)
+            except TaskBudgetExhausted as exc:
+                if attempt_operation is not None:
+                    budget.reconcile(attempt_operation, 0, outcome="not_dispatched_response_budget_exhausted")
+                stop_reason, error = "task_budget_exhausted", str(exc)
+                self._record_budget_stop(exc)
+                break
+            cost_operation: Optional[str] = None
+            if attempt_operation is not None and cost_reservation is not None:
                 try:
-                    cost_operation = budget.reserve("cost_usd", float(reservation))
+                    cost_operation = budget.reserve("cost_usd", cost_reservation)
                 except TaskBudgetExhausted as exc:
                     budget.reconcile(attempt_operation, 0, outcome="not_dispatched_cost_exhausted")
                     budget.reconcile(response_operation, 0, outcome="not_dispatched_cost_exhausted")
                     stop_reason, error = "task_budget_exhausted", str(exc)
-                    self.runtime.journal.append("task_budget_exhausted", {
-                        "task_id": self.task.task_id,
-                        "resource": exc.resource,
-                        "requested": exc.requested,
-                        "remaining": exc.remaining,
-                    })
+                    self._record_budget_stop(exc)
                     break
             self.runtime.journal.append("model_request_intent", {
                 "task_id": self.task.task_id,
+                "attempt_reporting": attempt_aware,
                 **request_ref,
-            }, operation_id=attempt_operation)
+            }, operation_id=request_id)
             model_calls += 1
+            recorder = (
+                ProviderAttemptRecorder(budget, request_id, cost_reservation) if attempt_aware else None
+            )
             try:
-                response = self.client.complete(built.messages, built.tools)
-            except ModelClientError as exc:
-                budget.reconcile(attempt_operation, 1, outcome="provider_error")
+                if recorder is not None:
+                    response = self.client.complete(built.messages, built.tools, attempts=recorder)
+                else:
+                    response = self.client.complete(built.messages, built.tools)
+            except (ModelClientError, TaskBudgetExhausted) as exc:
+                if recorder is not None:
+                    recorder.close_unfinished(succeeded=False)
+                    provider_attempts += recorder.count
+                else:
+                    provider_attempts += 1
+                    budget.reconcile(str(attempt_operation), 1, outcome="provider_error")
+                    if cost_operation is not None:
+                        budget.reconcile(cost_operation, None, outcome="unknown_billing_after_provider_error")
                 budget.reconcile(response_operation, 0, outcome="provider_error")
-                if cost_operation is not None:
-                    budget.reconcile(cost_operation, None, outcome="unknown_billing_after_provider_error")
-                self.runtime.journal.append("model_call_failed", {**request_ref, "error": str(exc)})
-                stop_reason, error = "model_error", str(exc)
+                self.runtime.journal.append("model_call_failed", {
+                    **request_ref,
+                    "error": str(exc),
+                    "provider_attempts": recorder.count if recorder is not None else 1,
+                })
+                if isinstance(exc, TaskBudgetExhausted):
+                    stop_reason, error = "task_budget_exhausted", str(exc)
+                    self._record_budget_stop(exc, request_id=request_id)
+                else:
+                    stop_reason, error = "model_error", str(exc)
                 break
 
             usage = response.usage if isinstance(response.usage, dict) else None
-            budget.reconcile(attempt_operation, 1, outcome="response")
+            actual_cost = usage.get("cost") if usage else None
+            if isinstance(actual_cost, bool) or not isinstance(actual_cost, (int, float)):
+                actual_cost = None
+            if recorder is not None:
+                recorder.close_unfinished(succeeded=True, final_cost=actual_cost)
+                if recorder.count == 0:
+                    # Contract violation: a response arrived without a recorded attempt.
+                    budget.charge("model_attempts", 1, outcome="unrecorded_provider_attempt")
+                provider_attempts += max(recorder.count, 1)
+            else:
+                provider_attempts += 1
+                budget.reconcile(str(attempt_operation), 1, outcome="response")
+                if cost_operation is not None:
+                    budget.reconcile(cost_operation, actual_cost, outcome=(
+                        "reported" if actual_cost is not None else "unknown_billing"
+                    ))
             budget.reconcile(response_operation, 1, outcome="response_persisted")
-            if cost_operation is not None:
-                actual_cost = usage.get("cost") if usage else None
-                if isinstance(actual_cost, bool) or not isinstance(actual_cost, (int, float)):
-                    actual_cost = None
-                budget.reconcile(cost_operation, actual_cost, outcome=(
-                    "reported" if actual_cost is not None else "unknown_billing"
-                ))
             for name in USAGE_FIELDS:
                 value = usage.get(name) if usage else None
                 if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -407,6 +512,7 @@ class AgentController:
                         })
                     else:
                         tool_calls += 1
+                        self._charge_active_time(budget, "dispatch_boundary")
                         outcome = self.tools.dispatch(function["name"], function["arguments"], call["id"])
                         budget.reconcile(tool_operation, 1, outcome=outcome.status)
                         message["content"] = outcome.content
@@ -426,8 +532,7 @@ class AgentController:
                     stop_reason = "finish_requested"
                 break
 
-        active_elapsed = monotonic() - started_at
-        budget.charge("active_seconds", active_elapsed, outcome="controller_invocation")
+        self._charge_active_time(budget, "controller_invocation")
         task_snapshot = budget.snapshot()
 
         result = AgentRunResult(
@@ -446,7 +551,9 @@ class AgentController:
                 "reserved": task_snapshot.reserved,
                 "remaining": task_snapshot.remaining,
                 "pending": task_snapshot.pending,
+                "adjusted": task_snapshot.adjusted,
             },
+            provider_attempts=provider_attempts,
         )
         self.runtime.journal.append("agent_run_result", {"result": result.to_dict()})
         return result

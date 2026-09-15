@@ -1,0 +1,51 @@
+{
+  "fixture": "u2-discount-percent",
+  "fixture_key": "u2",
+  "runner_version": 3,
+  "client": "gold",
+  "model": null,
+  "provider_routing": null,
+  "policy_version": "pressure-recent-v3",
+  "toolset_version": "reticle-tools-v3",
+  "tools_sha256": "7d919d61e9a8196daba895b6bfae4c235c6ab9b7bddbfdadc314af59db833e39",
+  "execution": {
+    "backend": "isolated-oci",
+    "image": "localhost/reticle-p6-task:py313-v1",
+    "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+    "guest_python": "python",
+    "container_user_arguments": [
+      "--userns",
+      "keep-id"
+    ],
+    "authority": "isolated OCI: task workspace mount only, no network, unprivileged user"
+  },
+  "budgets": {
+    "model_responses": 12,
+    "model_attempts": 14,
+    "tool_actions": 24,
+    "active_seconds": 240.0,
+    "cost_usd": 0.05,
+    "model_attempt_cost_reservation": 0.005,
+    "context_bytes": 32000
+  },
+  "max_tokens": 4096,
+  "temperature": 0,
+  "max_total_calls": null,
+  "stop_on_repeats": true,
+  "task": "The `inventory` package applies percentage discounts ten times too strongly: a 10% discount on 200 yields 0 instead of 180. Every place that applies a percentage this way has the same defect; the documentation describes the intended rule. Fix the library, check it with the tests (for example `pytest tests -q` with the run tool), and call finish. A hidden check runs on your final workspace.",
+  "files": {
+    "inventory/__init__.py": "",
+    "inventory/pricing.py": "\"\"\"Pricing helpers for order lines.\"\"\"\n\nTAX_RATE = 0.08\n\n\ndef subtotal(lines):\n    total = 0\n    for line in lines:\n        total += line[\"price\"] * line[\"qty\"]\n    return total\n\n\ndef total_with_tax(lines):\n    total = 0\n    for line in lines:\n        total += line[\"price\"] * line[\"qty\"]\n    return round(total * (1 + TAX_RATE), 2)\n\n\ndef apply_discount(amount, percent):\n    \"\"\"Reduce amount by percent (for example 10 means 10%).\"\"\"\n    return amount - amount * percent / 10\n\n\ndef apply_coupon(amount, coupon):\n    \"\"\"Apply a coupon such as {\"code\": \"SPRING\", \"percent\": 20}.\"\"\"\n    percent = coupon[\"percent\"]\n    return amount - amount * percent / 10\n",
+    "inventory/report.py": "\"\"\"Order report formatting.\"\"\"\n\nfrom inventory.pricing import apply_discount, subtotal\n\n\ndef summary(lines, percent=0):\n    base = subtotal(lines)\n    return f\"subtotal={base:.2f} discounted={apply_discount(base, percent):.2f}\"\n",
+    "docs/discounts.md": "# Discounts\n\nA discount of `percent` reduces an amount by `amount * percent / 100`.\nCoupons carry a `percent` field and use the same rule.\n",
+    "tests/test_pricing.py": "from inventory.pricing import apply_discount, subtotal, total_with_tax\n\nLINES = [{\"price\": 10.0, \"qty\": 2}, {\"price\": 5.0, \"qty\": 1}]\n\n\ndef test_subtotal():\n    assert subtotal(LINES) == 25.0\n\n\ndef test_total_with_tax():\n    assert total_with_tax(LINES) == 27.0\n\n\ndef test_discount_ten_percent():\n    assert apply_discount(200, 10) == 180\n"
+  },
+  "hidden_check": "from inventory.pricing import apply_discount, apply_coupon, subtotal, total_with_tax; from inventory.report import summary; assert apply_discount(200, 10) == 180; assert apply_coupon(50, {'code': 'X', 'percent': 20}) == 40; assert subtotal([{'price': 10.0, 'qty': 2}]) == 20.0; assert total_with_tax([{'price': 10.0, 'qty': 2}, {'price': 5.0, 'qty': 1}]) == 27.0; assert summary([{'price': 200.0, 'qty': 1}], 10) == 'subtotal=200.00 discounted=180.00'; print('hidden-check-passed')",
+  "decision_rule": "pass iff the hidden check passes, every rejected tool call is followed by a non-rejected call of the same tool, and every model request contained the remaining-resources line; otherwise report which condition failed",
+  "pricing_at_plan_time": null,
+  "source_revision": {
+    "commit": "70b6a9f8e71eaabf3f36bb6ab30d603ed76e8cfe",
+    "tracked_changes": true
+  },
+  "started_at": "2026-09-15T17:42:58.373298+00:00"
+}

@@ -1,0 +1,441 @@
+{
+  "runner_version": 5,
+  "protocol_hash": "695932bb9390",
+  "arm": "pressure-recent-v1",
+  "client": "openrouter",
+  "models": [
+    "qwen/qwen3-coder-next"
+  ],
+  "provider_routing": {
+    "qwen/qwen3-coder-next": {
+      "order": [
+        "parasail"
+      ],
+      "allow_fallbacks": false,
+      "require_parameters": true
+    }
+  },
+  "tasks": [
+    "sqlparse-865"
+  ],
+  "max_calls_per_run": 1,
+  "max_context_bytes": 80000,
+  "max_tokens": 4096,
+  "pytest_timeout_seconds": 600,
+  "temperature": 0,
+  "max_attempts_per_call": 3,
+  "max_total_calls": 3,
+  "instructions": "You are working in a source checkout of {repo} ({repo_url}) at an upstream commit. The following problem was reported:\n\n{statement}\n\nChange the library so the reported behavior is correct. Hidden upstream tests will be run on your final workspace; tests you add or edit are not used for acceptance, but you may write and run tests to check your work (for example `pytest tests/test_example.py -q` with the run tool). Call finish when you are done.",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "list_files",
+        "description": "List files under a workspace directory recursively, optionally filtered by a glob.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Directory relative to the workspace root. Default '.'."
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Glob on the relative path or file name, e.g. '*.py'. Default '*'."
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_file",
+        "description": "Read a text file with line numbers. Give start_line and end_line to read a region.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "start_line": {
+              "type": "integer"
+            },
+            "end_line": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "path"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "outline",
+        "description": "List the classes and functions of a Python file with line numbers.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "search",
+        "description": "Find lines containing a literal string in workspace files.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string",
+              "description": "File or directory. Default '.'."
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Glob on the relative path or file name. Default '*'."
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "replace_text",
+        "description": "Replace exact text in a file. Fails without changing the file if old_text is absent, or occurs more than once while replace_all is false.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "old_text": {
+              "type": "string"
+            },
+            "new_text": {
+              "type": "string"
+            },
+            "replace_all": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "path",
+            "old_text",
+            "new_text"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "write_file",
+        "description": "Create or overwrite a file with the given content.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "content"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "run",
+        "description": "Run one command in the workspace root without a shell (no pipes or redirection; use forward slashes in paths). 'python' and 'pytest' use the task's Python environment.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "For example: pytest tests/test_example.py -q"
+            },
+            "timeout_seconds": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "command"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_output",
+        "description": "Read part of an earlier tool result by its output id (for example out_12). Results that were shown partially say which id and range to request. Give start_line/end_line, or start_byte/end_byte for very long lines.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "start_line": {
+              "type": "integer"
+            },
+            "end_line": {
+              "type": "integer"
+            },
+            "start_byte": {
+              "type": "integer"
+            },
+            "end_byte": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "search_output",
+        "description": "Find lines containing a literal string in an earlier tool result by its output id.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "query": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "query"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "history",
+        "description": "Page through authorized durable session history. The response includes a stable next_cursor.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "after_sequence": {
+              "type": "integer"
+            },
+            "before_sequence": {
+              "type": "integer"
+            },
+            "as_of_sequence": {
+              "type": "integer"
+            },
+            "kinds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "limit": {
+              "type": "integer"
+            },
+            "cursor": {
+              "type": "string"
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "search_history",
+        "description": "Find literal text in authorized prior actions and observations without knowing an output ID.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string"
+            },
+            "kinds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "source": {
+              "type": "string"
+            },
+            "as_of_sequence": {
+              "type": "integer"
+            },
+            "limit": {
+              "type": "integer"
+            },
+            "cursor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_artifact",
+        "description": "Read an authorized session artifact by ID, optionally using an exact byte range.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "start_byte": {
+              "type": "integer"
+            },
+            "end_byte": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "note",
+        "description": "Save a named plain-text note that persists across turns. Pinned notes are placed in context when space allows.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "pin": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name",
+            "content"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_note",
+        "description": "Read a saved note by name.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "finish",
+        "description": "Declare the work complete. The final workspace is then checked independently.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "summary": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "summary"
+          ]
+        }
+      }
+    }
+  ],
+  "execution": {
+    "backend": "isolated-oci",
+    "image": "localhost/reticle-p6-task:py313-v1",
+    "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+    "guest_python": "python",
+    "container_user_arguments": [
+      "--userns",
+      "keep-id"
+    ],
+    "authority": "isolated OCI: task workspace mount only, no network, unprivileged user"
+  },
+  "guards": {
+    "stop_on_repeats": true,
+    "resume_after_provider_stop": 0,
+    "resume_wait_seconds": null
+  },
+  "pricing_at_plan_time": {
+    "qwen/qwen3-coder-next": {
+      "prompt_usd_per_mtok": 0.12,
+      "completion_usd_per_mtok": 0.7999999999999999,
+      "tools": true,
+      "quantization": "bf16",
+      "endpoint_tag": "parasail/bf16"
+    }
+  },
+  "budgets_per_run": {
+    "qwen/qwen3-coder-next": {
+      "model_responses": 1,
+      "context_bytes": 80000,
+      "model_attempts": 3,
+      "tool_actions": 2,
+      "active_seconds": 120.0,
+      "cost_usd": 0.02,
+      "model_attempt_cost_reservation": 0.006477
+    }
+  },
+  "created_at": "2026-09-15T17:07:52.634530+00:00",
+  "source_revision": {
+    "commit": "70b6a9f8e71eaabf3f36bb6ab30d603ed76e8cfe",
+    "tracked_changes": true
+  }
+}

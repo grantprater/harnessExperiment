@@ -14,6 +14,11 @@ class StaleWorkspaceError(RuntimeError):
     pass
 
 
+# Tool caches are outside source revision scope: running tests must not look like a source
+# edit, and evaluator snapshots must not inherit candidate bytecode or cached test state.
+CACHE_DIRECTORY_NAMES = frozenset({"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".hypothesis"})
+
+
 @dataclass(frozen=True)
 class WorkspaceObservation:
     path: str
@@ -38,6 +43,12 @@ class WorkspaceTracker:
         return path
 
     def _is_excluded(self, path: Path) -> bool:
+        try:
+            relative = path.relative_to(self.root)
+        except ValueError:
+            relative = None
+        if relative is not None and CACHE_DIRECTORY_NAMES.intersection(relative.parts):
+            return True
         if self.excluded_root is None:
             return False
         try:

@@ -9,6 +9,12 @@ Clients:
   noop        finishes immediately (pipeline check, no API)
   breaker     makes the fixed source files unimportable, then finishes (pipeline check, no API)
   gamer       adds conftest hooks that report every test as passed (pipeline check, no API)
+  tester      runs the existing test roots through the run tool without edits (pipeline check, no API)
+
+Backends:
+  trusted-local  candidate commands and evaluation run on the host (not isolated)
+  oci            candidate commands and evaluation run in a pinned local image by image ID,
+                 workspace-only mount, no network (see experiments/p6_pilot/oci/Containerfile)
 
 Arms (same tools, instructions, evaluator, and limits; only the context policy differs):
   bounded-transcript-v2  original task + as much recent transcript as fits; tool results shown
@@ -29,6 +35,7 @@ from datetime import datetime, timezone
 import hashlib
 import io
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -43,7 +50,12 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from reticle.context import BaselineContextPolicy  # noqa: E402
+from reticle.context import (  # noqa: E402
+    BaselineContextPolicy, PressureRecentContextPolicy, PressureRecentContextPolicyV2, PressureRecentContextPolicyV3,
+    TranscriptStore,
+)
+from reticle.tools.primitives import TOOLSET_VERSION  # noqa: E402
+from reticle.execution import IsolatedOCIBackend  # noqa: E402
 from reticle.context.board import ReticleBoardPolicy  # noqa: E402
 from reticle.evaluation import AcceptancePlan, AcceptanceRunner, CriterionContract  # noqa: E402
 from reticle.runtime import LocalRuntime  # noqa: E402
@@ -55,13 +67,32 @@ HERE = Path(__file__).resolve().parent
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
 TASK_PYTHON = ROOT / ".runtime" / "bugs-venv" / "Scripts" / "python.exe"
 BASE_URL = "https://openrouter.ai/api/v1"
-RUNNER_VERSION = 2  # 2: complete tool outputs with bounded views and read_output/search_output
+# 2: complete tool outputs with bounded views and read_output/search_output
+# 3: selectable execution backend (pinned OCI image), cache files excluded from revisions
+# 4: pressure-recent-v1 arm; the provider client reserves and reconciles every HTTP attempt in the
+#    durable task ledger; per-run attempt/tool/active-time/cost task budgets; opt-in repeat stop;
+#    at most two retries per request; the campaign attempt cap is a recorded model error, not an abort
+# 5: optional chunked runs: after a request exhausts its retries on provider errors, wait (paused
+#    time) and resume the same durable session, up to a declared number of resumes
+# 6: pressure-recent-v2 arm (remaining resources in every request); toolset version in the protocol
+# 7: pressure-recent-v3 arm; toolset v3 names (glob_files, search_text) in repeat detection
+RUNNER_VERSION = 7
+DEFAULT_OCI_IMAGE = "localhost/reticle-p6-task:py313-v1"
 ARMS = {
     "bounded-transcript-v2": BaselineContextPolicy,
+    "pressure-recent-v1": PressureRecentContextPolicy,
+    "pressure-recent-v2": PressureRecentContextPolicyV2,
+    "pressure-recent-v3": PressureRecentContextPolicyV3,
     "reticle-board-v2": ReticleBoardPolicy,
 }
+OBSERVATION_TOOLS = {
+    "glob_files", "search_text",  # toolset v3
+    "list_files", "read_file", "outline", "search", "read_output", "search_output",
+    "history", "search_history", "read_artifact", "read_note",
+}
+GUARD_STOPS = ("diagnostic_termination", "attempt_cap_reached")
 RETRYABLE_HTTP = {408, 429, 500, 502, 503, 504}
-MAX_ATTEMPTS = 4
+MAX_ATTEMPTS = 3  # the first attempt plus at most two retries (plan section 5.3)
 MANAGED_ROOT_FILES = ("conftest.py", "pytest.ini", "setup.cfg", "tox.ini", "pyproject.toml")
 UNPINNED_ROUTING = {"require_parameters": True}
 
@@ -75,14 +106,35 @@ INSTRUCTIONS = (
 )
 
 
-def protocol_hash(arm: str, routing: dict) -> str:
+def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict) -> str:
     return hashlib.sha256(
         json.dumps({
             "runner_version": RUNNER_VERSION, "arm": arm, "instructions": INSTRUCTIONS, "tools": TOOL_SCHEMAS,
             "evaluator": hashlib.sha256((HERE / "evaluate_task.py").read_bytes()).hexdigest(),
-            "managed_root_files": MANAGED_ROOT_FILES, "provider_routing": routing,
+            "managed_root_files": MANAGED_ROOT_FILES, "provider_routing": routing, "execution": execution,
+            "guards": guards, "toolset_version": TOOLSET_VERSION,
         }, sort_keys=True).encode("utf-8")
     ).hexdigest()[:12]
+
+
+def resolve_execution(backend_name: str, image: str):
+    """Return (backend or None for trusted-local, recorded execution contract). Never falls back."""
+    if backend_name == "trusted-local":
+        return None, {"backend": "trusted-local", "guest_python": str(TASK_PYTHON),
+                      "authority": "trusted-local, not host-isolated"}
+    engine = IsolatedOCIBackend(image).engine
+    inspected = subprocess.run([engine, "image", "inspect", "--format", "{{.Id}}", image],
+                               capture_output=True, text=True)
+    if inspected.returncode or not inspected.stdout.strip():
+        raise SystemExit(f"OCI image {image} is not available: {inspected.stderr.strip()}")
+    image_id = inspected.stdout.strip()
+    backend = IsolatedOCIBackend(image_id, engine=engine)
+    available, detail = backend.availability()
+    if not available:
+        raise SystemExit(detail)
+    return backend, {"backend": "isolated-oci", "image": image, "image_id": image_id, "guest_python": "python",
+                     "container_user_arguments": backend.user_arguments(),
+                     "authority": "isolated OCI: task workspace mount only, no network, unprivileged user"}
 
 
 GAMING_CONFTEST = (
@@ -168,7 +220,7 @@ def materialize_workspace(task: dict, repo: Path, workspace: Path) -> None:
     provision_version_stub(workspace)
 
 
-def build_evaluator(task: dict, repo: Path, bundle: Path, pytest_timeout: int) -> str:
+def build_evaluator(task: dict, repo: Path, bundle: Path, pytest_timeout: int, python: str) -> str:
     files = bundle / "files"
     digest = hashlib.sha256()
     # The whole top-level test trees and root pytest configuration come from the fix commit,
@@ -191,7 +243,7 @@ def build_evaluator(task: dict, repo: Path, bundle: Path, pytest_timeout: int) -
                       for p in task["evaluator_test_files"]})
     (bundle / "task.json").write_text(json.dumps({
         "task_id": task["task_id"],
-        "python": str(TASK_PYTHON),
+        "python": python,  # interpreter as seen by the evaluator process (guest path under OCI)
         "pytest_targets": targets,
         "pytest_timeout_seconds": pytest_timeout,
         "test_roots": test_roots,
@@ -221,20 +273,107 @@ class CallBudget:
     def __init__(self, maximum: int, used: int):
         self.maximum, self.used = maximum, used
 
-    def take(self) -> None:
+    def check(self) -> None:
         if self.used >= self.maximum:
             raise BudgetExceeded(f"--max-total-calls {self.maximum} reached")
+
+    def take(self) -> None:
+        self.check()
         self.used += 1
 
 
+class RepeatGuardTools(ToolSuite):
+    """The shared tools, flagging three identical observation calls without a workspace change."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.seen: dict = {}
+        self.diagnostic = None
+
+    def dispatch(self, name, arguments, call_id):
+        outcome = super().dispatch(name, arguments, call_id)
+        if name in OBSERVATION_TOOLS:
+            try:
+                parsed = json.loads(arguments) if isinstance(arguments, str) else arguments
+            except json.JSONDecodeError:
+                parsed = arguments
+            key = json.dumps([name, parsed, self.runtime.workspace.revision()], sort_keys=True, default=str)
+            self.seen[key] = self.seen.get(key, 0) + 1
+            if self.seen[key] >= 3 and self.diagnostic is None:
+                self.diagnostic = f"three identical {name} calls without a workspace change"
+        return outcome
+
+
+class GuardedClient:
+    """Stops that are not task resources: repeated observations and the campaign attempt cap.
+
+    Attempts, tool actions, active time, and cost are durable task budgets enforced by the
+    controller's ledger. Each stop here ends the run as a recorded model error, so resume
+    never sees an ambiguous request.
+    """
+
+    def __init__(self, inner, tools, stop_on_repeats=False):
+        self.inner, self.tools, self.stop_on_repeats = inner, tools, stop_on_repeats
+
+    @property
+    def reports_provider_attempts(self) -> bool:
+        return getattr(self.inner, "reports_provider_attempts", False) is True
+
+    def complete(self, messages, tools, **kwargs) -> ModelResponse:
+        if self.stop_on_repeats and getattr(self.tools, "diagnostic", None):
+            raise ModelClientError(f"diagnostic_termination: {self.tools.diagnostic}")
+        try:
+            return self.inner.complete(messages, tools, **kwargs)
+        except BudgetExceeded as exc:
+            raise ModelClientError(f"attempt_cap_reached: {exc}") from None
+
+
+def guard_stop_label(agent: dict) -> str:
+    """The guard that stopped a run, or the controller stop reason."""
+    error = agent.get("error") or ""
+    return next((label for label in GUARD_STOPS if error.startswith(label)), agent.get("stop_reason", ""))
+
+
+def is_provider_stop(agent: dict) -> bool:
+    """A request that exhausted its retries on retryable provider failures (429/5xx, network, error bodies)."""
+    return agent.get("stop_reason") == "model_error" and (agent.get("error") or "").startswith("failed after")
+
+
+def run_invocations(runtime, envelope, tools, client, limits, policy_factory, max_resumes=0,
+                    wait_seconds=0.0, sleep=time.sleep) -> list:
+    """Run the controller, resuming the same durable session after provider stops.
+
+    The transcript, task budgets, and pending work persist across invocations. The wait is paused
+    time and is not charged to active_seconds. Every other stop reason ends the run immediately.
+    """
+    invocations = []
+    while True:
+        agent = AgentController(runtime, envelope, tools, client, limits, policy=policy_factory()).run().to_dict()
+        invocations.append(agent)
+        if not is_provider_stop(agent) or len(invocations) > max_resumes:
+            return invocations
+        runtime.journal.append("runner_resume_scheduled", {
+            "task_id": envelope.task_id, "after_invocation": len(invocations),
+            "wait_seconds": wait_seconds, "error": agent.get("error"),
+        })
+        sleep(wait_seconds)
+
+
 class OpenRouterClient:
+    """Every HTTP attempt is appended to calls.jsonl. When the controller passes a
+    ProviderAttemptRecorder, each attempt is also reserved before dispatch and reconciled after."""
+
+    reports_provider_attempts = True
+
     def __init__(self, api_key: str, model: str, calls_path: Path, run_id: str, budget: CallBudget,
-                 max_tokens: int, routing: dict, timeout: int = 300):
+                 max_tokens: int, routing: dict, timeout: int = 300, base_url: str = BASE_URL,
+                 backoff_seconds: float = 5.0):
         self.api_key, self.model, self.calls_path, self.run_id = api_key, model, calls_path, run_id
         self.budget, self.max_tokens, self.routing, self.timeout = budget, max_tokens, routing, timeout
+        self.base_url, self.backoff_seconds = base_url.rstrip("/"), backoff_seconds
         self.call_index = 0
 
-    def complete(self, messages, tools) -> ModelResponse:
+    def complete(self, messages, tools, *, attempts=None) -> ModelResponse:
         self.call_index += 1
         body = {
             "model": self.model, "messages": messages, "tools": tools, "tool_choice": "auto",
@@ -244,33 +383,48 @@ class OpenRouterClient:
         request_sha256 = hashlib.sha256(raw).hexdigest()
         last_error = "no attempt made"
         for attempt in range(1, MAX_ATTEMPTS + 1):
+            # Check the campaign cap, then reserve the task resources, then consume the campaign
+            # unit, so neither ledger records an attempt that was never dispatched.
+            self.budget.check()
+            attempt_id = attempts.begin({
+                "call_index": self.call_index, "attempt": attempt, "request_sha256": request_sha256,
+            }) if attempts is not None else None
             self.budget.take()
             entry = {"time": utc_now(), "run_id": self.run_id, "model": self.model, "call_index": self.call_index,
-                     "attempt": attempt, "request_sha256": request_sha256, "request": body}
+                     "attempt": attempt, "provider_attempt_id": attempt_id, "request_sha256": request_sha256,
+                     "request": body}
             started = time.time()
-            data, retry = None, False
+            data, retry, failure = None, False, None
             try:
-                request = urllib.request.Request(f"{BASE_URL}/chat/completions", data=raw, method="POST", headers={
+                request = urllib.request.Request(f"{self.base_url}/chat/completions", data=raw, method="POST", headers={
                     "Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"})
                 with urllib.request.urlopen(request, timeout=self.timeout) as response:
                     data = json.load(response)
                 entry["response"] = data
                 if data.get("error") or not data.get("choices"):
-                    last_error, retry = json.dumps(data.get("error") or data)[:500], True
+                    last_error, retry, failure = json.dumps(data.get("error") or data)[:500], True, "error_body"
             except urllib.error.HTTPError as exc:
                 detail = exc.read().decode("utf-8", errors="replace")[:1_000]
                 entry.update(http_status=exc.code, error=detail)
                 last_error, retry = f"HTTP {exc.code}: {detail[:300]}", exc.code in RETRYABLE_HTTP
-                if not retry:
-                    raise ModelClientError(last_error) from None
+                failure = f"http_{exc.code}"
             except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
                 entry["error"] = repr(exc)
-                last_error, retry = repr(exc), True
+                last_error, retry, failure = repr(exc), True, "network_error"
+            except ValueError as exc:  # a response body that is not JSON
+                entry["error"] = repr(exc)
+                last_error, retry, failure = repr(exc), True, "invalid_json"
             finally:
                 entry["latency_s"] = round(time.time() - started, 2)
                 append_jsonl(self.calls_path, entry)
-            if retry:
-                time.sleep(min(60, 5 * 2 ** (attempt - 1)))
+            if failure is not None:
+                if attempts is not None:
+                    cost = ((data or {}).get("usage") or {}).get("cost")
+                    attempts.finish(attempt_id, outcome=failure, cost=cost, metadata={"error": last_error[:300]})
+                if not retry:
+                    raise ModelClientError(last_error)
+                if attempt < MAX_ATTEMPTS:
+                    time.sleep(min(60, self.backoff_seconds * 2 ** (attempt - 1)))
                 continue
             choice = data["choices"][0]
             return ModelResponse(choice.get("message") or {}, data.get("usage"), {
@@ -299,7 +453,24 @@ class ScriptedWriteClient:
         return ModelResponse({"role": "assistant", "content": None, "tool_calls": calls})
 
 
-def scripted_client(kind: str, task: dict, repo: Path) -> ScriptedWriteClient:
+class ScriptedRunClient:
+    """Runs one command through the run tool without editing files, then finishes."""
+
+    def __init__(self, command: str, summary: str):
+        self.command, self.summary, self.calls = command, summary, 0
+
+    def complete(self, messages, tools) -> ModelResponse:
+        self.calls += 1
+        if self.calls == 1:
+            call = {"id": "scripted_run", "type": "function", "function": {
+                "name": "run", "arguments": json.dumps({"command": self.command, "timeout_seconds": 600})}}
+        else:
+            call = {"id": "scripted_finish", "type": "function", "function": {
+                "name": "finish", "arguments": json.dumps({"summary": self.summary})}}
+        return ModelResponse({"role": "assistant", "content": None, "tool_calls": [call]})
+
+
+def scripted_client(kind: str, task: dict, repo: Path):
     if kind == "gold":
         writes = [(path, git(repo, "show", f"{task['fix_commit']}:{path}").decode("utf-8"))
                   for path in task["gold_source_files"]]
@@ -311,6 +482,9 @@ def scripted_client(kind: str, task: dict, repo: Path) -> ScriptedWriteClient:
         roots = sorted({path.split("/", 1)[0] for path in task["evaluator_test_files"] if "/" in path})
         writes = [("conftest.py", GAMING_CONFTEST)] + [(f"{root}/conftest.py", GAMING_CONFTEST) for root in roots]
         return ScriptedWriteClient(writes, "report every test as passed")
+    if kind == "tester":
+        roots = sorted({path.split("/", 1)[0] for path in task["evaluator_test_files"] if "/" in path})
+        return ScriptedRunClient(f"pytest -q {' '.join(roots)}", "ran the existing tests without changes")
     return ScriptedWriteClient([], "no change")
 
 
@@ -369,7 +543,9 @@ def evaluator_details(runtime: LocalRuntime, report_artifact_id: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--client", required=True, choices=["openrouter", "gold", "noop", "breaker", "gamer"])
+    parser.add_argument("--client", required=True, choices=["openrouter", "gold", "noop", "breaker", "gamer", "tester"])
+    parser.add_argument("--backend", default="trusted-local", choices=["trusted-local", "oci"])
+    parser.add_argument("--oci-image", default=DEFAULT_OCI_IMAGE)
     parser.add_argument("--arm", default="bounded-transcript-v2", choices=sorted(ARMS))
     parser.add_argument("--run-name", required=True)
     parser.add_argument("--models", nargs="*", default=[])
@@ -381,6 +557,21 @@ def main() -> None:
     parser.add_argument("--max-tokens", type=int, default=8_192)
     parser.add_argument("--max-total-calls", type=int, default=None)
     parser.add_argument("--pytest-timeout", type=int, default=600)
+    parser.add_argument("--max-attempts-per-run", type=int, default=None,
+                        help="durable task budget: HTTP attempts per run, retries included")
+    parser.add_argument("--max-tool-actions-per-run", type=int, default=None, help="durable task budget")
+    parser.add_argument("--elapsed-cap-seconds", type=float, default=None,
+                        help="durable task budget: active seconds per run, checked at each dispatch")
+    parser.add_argument("--cost-ceiling-usd", type=float, default=None,
+                        help="durable task budget: USD per run; each attempt first reserves a worst case")
+    parser.add_argument("--attempt-cost-reservation-usd", type=float, default=None,
+                        help="per-attempt reservation with --cost-ceiling-usd (default: pinned endpoint worst case)")
+    parser.add_argument("--resume-after-provider-stop", type=int, default=0, metavar="N",
+                        help="resume the same session up to N times after a request exhausts its retries on provider errors")
+    parser.add_argument("--resume-wait-seconds", type=float, default=300.0,
+                        help="paused wait before each resume (not charged to active_seconds)")
+    parser.add_argument("--stop-on-repeats", action="store_true",
+                        help="stop a run after three identical observation calls without a workspace change")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -405,7 +596,11 @@ def main() -> None:
     routing = {model: ({"order": [pins[model]], "allow_fallbacks": False, "require_parameters": True}
                        if model in pins else dict(UNPINNED_ROUTING)) for model in models}
     arm = args.arm
-    arm_hash = protocol_hash(arm, routing)
+    backend, execution = resolve_execution(args.backend, args.oci_image)
+    guards = {"stop_on_repeats": args.stop_on_repeats,
+              "resume_after_provider_stop": args.resume_after_provider_stop,
+              "resume_wait_seconds": args.resume_wait_seconds if args.resume_after_provider_stop else None}
+    arm_hash = protocol_hash(arm, routing, execution, guards)
     runs = [(task, model) for model in models for task in tasks]
 
     run_dir = HERE / "runs" / args.run_name
@@ -415,9 +610,11 @@ def main() -> None:
         "max_calls_per_run": args.max_calls_per_run, "max_context_bytes": args.max_context_bytes,
         "max_tokens": args.max_tokens, "pytest_timeout_seconds": args.pytest_timeout, "temperature": 0,
         "max_attempts_per_call": MAX_ATTEMPTS, "max_total_calls": args.max_total_calls,
-        "instructions": INSTRUCTIONS, "tools": TOOL_SCHEMAS,
+        "instructions": INSTRUCTIONS, "tools": TOOL_SCHEMAS, "toolset_version": TOOLSET_VERSION,
+        "execution": execution, "guards": guards,
     }
 
+    worst_case_per_call = {}
     if args.client == "openrouter":
         catalog = fetch_catalog()
         pricing = model_pricing(catalog, models)
@@ -429,23 +626,47 @@ def main() -> None:
         print(f"{len(runs)} runs ({len(tasks)} tasks x {len(models)} models), arm {arm}, protocol {arm_hash}")
         print(f"model calls: at most {args.max_calls_per_run} per run -> at most {planned_calls} calls "
               f"(HTTP retries count toward --max-total-calls={args.max_total_calls})")
+        print(f"per-run guards: {json.dumps(guards)}; backend {execution['backend']}")
         for model in models:
             price = pricing[model]
             input_tokens = args.max_context_bytes / 3  # planning bound only; billing uses reported usage.cost
             per_call = (input_tokens * price["prompt_usd_per_mtok"] + args.max_tokens * price["completion_usd_per_mtok"]) / 1e6
+            worst_case_per_call[model] = per_call
             where = f"pinned to {pins[model]} ({price.get('quantization')})" if model in pins else "unpinned routing"
             print(f"  {model} [{where}]: ${price['prompt_usd_per_mtok']:.3f}/M in, ${price['completion_usd_per_mtok']:.3f}/M out; "
                   f"worst case <= ${per_call:.4f}/call, <= ${per_call * args.max_calls_per_run * len(tasks):.2f} for its runs")
+            if args.max_total_calls:
+                print(f"    with --max-total-calls={args.max_total_calls} HTTP attempts: worst case <= "
+                      f"${per_call * args.max_total_calls:.4f} for this invocation")
         config["pricing_at_plan_time"] = pricing
-        if args.dry_run:
-            return
-        if args.max_total_calls is None:
-            raise SystemExit("--max-total-calls is required for live runs")
-        api_key = load_openrouter_key()
-        if not api_key:
-            raise SystemExit("OPENROUTER_API_KEY not found in experiments/.env, .env, or the environment.")
+        if not args.dry_run:
+            if args.max_total_calls is None:
+                raise SystemExit("--max-total-calls is required for live runs")
+            api_key = load_openrouter_key()
+            if not api_key:
+                raise SystemExit("OPENROUTER_API_KEY not found in experiments/.env, .env, or the environment.")
     elif args.dry_run:
         print(f"{len(runs)} runs with the {args.client} client, arm {arm}; no API calls")
+
+    run_budgets = {}
+    for model in models:
+        reservation = args.attempt_cost_reservation_usd
+        if args.cost_ceiling_usd is not None and reservation is None:
+            if model not in worst_case_per_call:
+                raise SystemExit("--attempt-cost-reservation-usd is required with --cost-ceiling-usd "
+                                 "for scripted clients")
+            reservation = math.ceil(worst_case_per_call[model] * 1_000_000) / 1_000_000
+        budgets = {"model_responses": args.max_calls_per_run, "context_bytes": args.max_context_bytes}
+        optional = {
+            "model_attempts": args.max_attempts_per_run, "tool_actions": args.max_tool_actions_per_run,
+            "active_seconds": args.elapsed_cap_seconds, "cost_usd": args.cost_ceiling_usd,
+            "model_attempt_cost_reservation": reservation if args.cost_ceiling_usd is not None else None,
+        }
+        budgets.update({key: value for key, value in optional.items() if value is not None})
+        run_budgets[model] = budgets
+    config["budgets_per_run"] = run_budgets
+    print(f"task budgets per run: {json.dumps(run_budgets)}")
+    if args.dry_run:
         return
 
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -475,44 +696,71 @@ def main() -> None:
         repo = ensure_commits(task)
         workspace, bundle = run_root / "workspace", run_root / "evaluator"
         materialize_workspace(task, repo, workspace)
-        version = build_evaluator(task, repo, bundle, args.pytest_timeout)
+        version = build_evaluator(task, repo, bundle, args.pytest_timeout, execution["guest_python"])
         runtime = LocalRuntime(run_root / "session", workspace)
+        initial_revision = runtime.workspace.revision()
         src = workspace / "src"
-        tools = ToolSuite(runtime, interpreter=str(TASK_PYTHON), environment={
-            "PYTHONPATH": str(src if src.is_dir() else workspace), "PYTHONIOENCODING": "utf-8"})
+        if backend is None:
+            python_path = str(src if src.is_dir() else workspace)
+        else:
+            python_path = "/workspace/src" if src.is_dir() else "/workspace"  # guest path of the same tree
+        tool_class = RepeatGuardTools if args.stop_on_repeats else ToolSuite
+        tools = tool_class(runtime, interpreter=execution["guest_python"], backend=backend, environment={
+            "PYTHONPATH": python_path, "PYTHONIOENCODING": "utf-8"})
         envelope = TaskEnvelope(
             task_id=task["task_id"],
             description=INSTRUCTIONS.format(repo=task["repo"], repo_url=task["repo_url"], statement=task["statement"]),
             criteria=[{"id": "hidden-upstream-tests", "kind": "executable", "visibility": "hidden"}],
-            authority={"filesystem": "task workspace", "execution": "trusted-local, not host-isolated",
+            authority={"filesystem": "task workspace", "execution": execution["authority"],
                        "network": "not provided to tasks"},
-            budgets={"model_calls": args.max_calls_per_run, "context_bytes": args.max_context_bytes},
+            budgets=run_budgets[model],
         )
         if args.client == "openrouter":
-            client = OpenRouterClient(api_key, model, calls_path, run_id, budget, args.max_tokens, routing[model])
+            inner = OpenRouterClient(api_key, model, calls_path, run_id, budget, args.max_tokens, routing[model])
         else:
-            client = scripted_client(args.client, task, repo)
+            inner = scripted_client(args.client, task, repo)
+        client = GuardedClient(inner, tools, args.stop_on_repeats)
+        attempts_before = len(read_jsonl(calls_path))
 
         started = time.time()
         record = {"run_id": run_id, "task_id": task["task_id"], "model": model, "client": args.client, "arm": arm,
                   "protocol_hash": arm_hash, "started_at": utc_now(), "session_dir": str(run_root.relative_to(HERE))}
         budget_stop = None
         try:
-            agent = AgentController(runtime, envelope, tools, client,
-                                    AgentLimits(args.max_calls_per_run, args.max_context_bytes),
-                                    policy=ARMS[arm]()).run()
-            record["agent"] = agent.to_dict()
+            invocations = run_invocations(
+                runtime, envelope, tools, client, AgentLimits(args.max_calls_per_run, args.max_context_bytes),
+                ARMS[arm], args.resume_after_provider_stop, args.resume_wait_seconds,
+            )
         except BudgetExceeded as exc:
             budget_stop = str(exc)
-            record["agent"] = {"stop_reason": "pilot_call_budget_exhausted", "error": budget_stop}
-        decision = AcceptanceRunner(runtime).evaluate(
+            invocations = [{"stop_reason": "pilot_call_budget_exhausted", "error": budget_stop}]
+        record["agent"] = invocations[-1]  # its task_resources are cumulative across invocations
+        record["invocations"] = [{"stop_reason": i.get("stop_reason"), "error": i.get("error"),
+                                  "model_calls": i.get("model_calls"), "provider_attempts": i.get("provider_attempts"),
+                                  "tool_calls": i.get("tool_calls")} for i in invocations]
+        record["totals"] = {key: sum(i.get(key) or 0 for i in invocations)
+                            for key in ("model_calls", "provider_attempts", "tool_calls")}
+        record["stop"] = guard_stop_label(record["agent"])
+        if record["stop"] == "attempt_cap_reached":
+            budget_stop = record["agent"].get("error")
+        # None when no call reported a cost (scripted clients), so a missing bill never reads as $0.
+        costs = [(i.get("usage_reported") or {}).get("cost") for i in invocations
+                 if (i.get("calls_missing_usage") or {}).get("cost", 0) < (i.get("model_calls") or 0)]
+        record["reported_cost_usd"] = round(sum(costs), 8) if costs else None
+        record["http_attempts"] = len(read_jsonl(calls_path)) - attempts_before
+        record["tool_results"] = [
+            {"call_id": m.get("tool_call_id"), "head": m["content"][:300], "tail": m["content"][-300:]}
+            for m in TranscriptStore(runtime).load() if m.get("role") == "tool"
+        ]
+        decision = AcceptanceRunner(runtime, backend).evaluate(
             acceptance_plan(task, version), evaluator_root=bundle, timeout_seconds=args.pytest_timeout + 120)
+        record["initial_workspace_revision"] = initial_revision
         record["acceptance"] = {"status": decision.status, "criterion_outcomes": decision.criterion_outcomes,
                                 "report_artifact_id": decision.report_artifact_id,
                                 **evaluator_details(runtime, decision.report_artifact_id)}
         record["elapsed_s"] = round(time.time() - started, 1)
         append_jsonl(results_path, record)
-        print(f"{run_id}: {record['agent'].get('stop_reason')} -> {decision.status} {decision.criterion_outcomes}", flush=True)
+        print(f"{run_id}: {record['stop']} -> {decision.status} {decision.criterion_outcomes}", flush=True)
         if budget_stop:
             print(f"Stopping: {budget_stop}")
             break

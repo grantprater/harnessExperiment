@@ -12,8 +12,15 @@ available Docker or Podman engine and a pre-provisioned image. It uses one decla
 workspace bind mount, no network, a read-only container root, an unprivileged user,
 dropped capabilities, `no-new-privileges`, PID and memory limits, and a bounded
 temporary filesystem. Read-only requests mount the workspace read-only. Mutating
-requests mount only that workspace read-write. The image and container engine remain
+requests mount only that workspace read-write; `writable_mount` overrides this for a
+private copy such as an evaluation root. The image and container engine remain
 trusted parts of the computing base.
+
+Guest user: with Podman the backend uses `--userns keep-id`, so the guest runs as the
+unprivileged (rootless) host user and owns bind-mounted files. The earlier fixed
+`--user 65534:65534` could write but not `chmod` files on a Windows-drive mount, which made
+pytest's cache setup (and `shutil.copy2`) fail inside candidate commands; this was found by
+the S2b tester control on 2026-09-15. Docker keeps `--user 65534:65534` and may still deny chmod.
 
 The supervised Docker/Podman client receives only the clean local environment plus
 the host variables needed to locate its user configuration and socket. Those host

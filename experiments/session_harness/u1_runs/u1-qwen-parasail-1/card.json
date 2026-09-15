@@ -1,0 +1,61 @@
+{
+  "fixture": "u1-dotted-name",
+  "runner_version": 1,
+  "client": "openrouter",
+  "model": "qwen/qwen3-coder-next",
+  "provider_routing": {
+    "order": [
+      "parasail"
+    ],
+    "allow_fallbacks": false,
+    "require_parameters": true
+  },
+  "policy_version": "pressure-recent-v2",
+  "toolset_version": "reticle-tools-v2",
+  "tools_sha256": "f45f0045c6f76c433816405c84991055fe5d73dc68640c3673d0f63531db504a",
+  "execution": {
+    "backend": "isolated-oci",
+    "image": "localhost/reticle-p6-task:py313-v1",
+    "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+    "guest_python": "python",
+    "container_user_arguments": [
+      "--userns",
+      "keep-id"
+    ],
+    "authority": "isolated OCI: task workspace mount only, no network, unprivileged user"
+  },
+  "budgets": {
+    "model_responses": 8,
+    "model_attempts": 10,
+    "tool_actions": 16,
+    "active_seconds": 180.0,
+    "cost_usd": 0.03,
+    "model_attempt_cost_reservation": 0.004237,
+    "context_bytes": 24000
+  },
+  "max_tokens": 4096,
+  "temperature": 0,
+  "max_total_calls": 10,
+  "stop_on_repeats": true,
+  "task": "This workspace holds a small Python package, `names`. Reported problem: for a dotted name such as 'db.schema.table', the function that should return the final component returns the second component instead ('schema' rather than 'table'). Find that function, fix it so it returns the last component (and the whole name when there is no dot), check your change with the tests (for example `pytest tests -q` with the run tool), and call finish. A hidden check runs on your final workspace.",
+  "files": {
+    "names/__init__.py": "",
+    "names/core.py": "\"\"\"Helpers for dotted names.\"\"\"\n\n\ndef split_parts(name):\n    return name.split(\".\")\n\n\ndef first_component(name):\n    return split_parts(name)[0]\n\n\ndef last_component(name):\n    parts = split_parts(name)\n    return parts[1] if len(parts) > 1 else parts[0]\n\n\ndef parent_path(name):\n    return \".\".join(split_parts(name)[:-1])\n",
+    "names/formatting.py": "\"\"\"Display helpers.\"\"\"\n\nfrom names.core import first_component, parent_path\n\n\ndef quoted(name):\n    return '\"' + name + '\"'\n\n\ndef describe(name):\n    parent = parent_path(name)\n    return f\"{first_component(name)} (in {parent})\" if parent else first_component(name)\n",
+    "tests/test_names.py": "from names.core import first_component, last_component, parent_path\n\n\ndef test_first_component():\n    assert first_component(\"db.schema.table\") == \"db\"\n\n\ndef test_last_component_three_parts():\n    assert last_component(\"db.schema.table\") == \"table\"\n\n\ndef test_last_component_single():\n    assert last_component(\"solo\") == \"solo\"\n\n\ndef test_parent_path():\n    assert parent_path(\"db.schema.table\") == \"db.schema\"\n"
+  },
+  "hidden_check": "from names.core import last_component as f; assert f('db.schema.table') == 'table'; assert f('a.b.c.d') == 'd'; assert f('solo') == 'solo'; print('hidden-check-passed')",
+  "decision_rule": "pass iff the hidden check passes, every rejected tool call is followed by a non-rejected call of the same tool, and every model request contained the remaining-resources line; otherwise report which condition failed",
+  "pricing_at_plan_time": {
+    "prompt_usd_per_mtok": 0.12,
+    "completion_usd_per_mtok": 0.7999999999999999,
+    "tools": true,
+    "quantization": "bf16",
+    "endpoint_tag": "parasail/bf16"
+  },
+  "source_revision": {
+    "commit": "70b6a9f8e71eaabf3f36bb6ab30d603ed76e8cfe",
+    "tracked_changes": true
+  },
+  "started_at": "2026-09-15T17:27:05.448428+00:00"
+}

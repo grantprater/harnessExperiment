@@ -53,17 +53,26 @@ def _function(name: str, description: str, properties: Dict[str, Any], required:
 
 TOOL_SCHEMAS: List[Dict[str, Any]] = [
     _function(
-        "list_files",
-        "List files under a workspace directory recursively, optionally filtered by a glob.",
+        "glob_files",
+        "Recursively list workspace-relative file paths that match a glob, in sorted order. The glob is matched "
+        "against each file's relative path and against its file name, using Python fnmatch rules, case-sensitive: "
+        "'*' and '?' also match '/', and '[abc]' matches one listed character. It never matches file contents. "
+        "Cache and VCS directories (.git, __pycache__, .pytest_cache, .mypy_cache, .ruff_cache, .tox, .venv, "
+        "node_modules) are skipped.",
         {
-            "path": {"type": "string", "description": "Directory relative to the workspace root. Default '.'."},
-            "pattern": {"type": "string", "description": "Glob on the relative path or file name, e.g. '*.py'. Default '*'."},
+            "glob": {"type": "string", "description": "Required. For example '*.py', 'tests/*', or 'setup.cfg'."},
+            "path": {
+                "type": "string",
+                "description": "Directory (or single file) to list under, relative to the workspace root. Default '.'.",
+            },
         },
-        [],
+        ["glob"],
     ),
     _function(
         "read_file",
-        "Read a text file with line numbers. Give start_line and end_line to read a region.",
+        "Read a text file with 1-based line numbers. start_line and end_line are inclusive; omit start_line to begin "
+        "at line 1 and end_line to read to the end. The header reports the range returned and the file's total "
+        "lines. Long results are shown partially with an output id for paging.",
         {"path": {"type": "string"}, "start_line": {"type": "integer"}, "end_line": {"type": "integer"}},
         ["path"],
     ),
@@ -74,19 +83,29 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
         ["path"],
     ),
     _function(
-        "search",
-        "Find lines containing a literal string in workspace files.",
+        "search_text",
+        "Search file contents for exact text (literal characters, case-sensitive; not a regex). Returns one line "
+        "per match as path:line: text, with 1-based line numbers, and states the scope searched. file_glob only "
+        "selects which files are searched.",
         {
-            "query": {"type": "string"},
-            "path": {"type": "string", "description": "File or directory. Default '.'."},
-            "pattern": {"type": "string", "description": "Glob on the relative path or file name. Default '*'."},
+            "query": {"type": "string", "description": "Required. The exact text to find, e.g. 'def get_real_name('."},
+            "path": {
+                "type": "string",
+                "description": "File or directory to search, relative to the workspace root. Default '.'.",
+            },
+            "file_glob": {
+                "type": "string",
+                "description": "Optional glob selecting files by relative path or file name (same rules as "
+                               "glob_files), e.g. '*.py'. It never matches file contents. Default '*'.",
+            },
         },
         ["query"],
     ),
     _function(
         "replace_text",
-        "Replace exact text in a file. Fails without changing the file if old_text is absent, "
-        "or occurs more than once while replace_all is false.",
+        "Replace exact text in a file. Fails without changing the file if old_text is absent, or if it occurs "
+        "more than once while replace_all is false; set replace_all to replace every occurrence. Reports how many "
+        "occurrences were replaced and shows the edited lines.",
         {
             "path": {"type": "string"},
             "old_text": {"type": "string"},
@@ -97,14 +116,18 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
     ),
     _function(
         "write_file",
-        "Create or overwrite a file with the given content.",
+        "Create a file, or overwrite it completely if it already exists, with the given content. Missing parent "
+        "directories are created. Paths are relative to the workspace root.",
         {"path": {"type": "string"}, "content": {"type": "string"}},
         ["path", "content"],
     ),
     _function(
         "run",
-        "Run one command in the workspace root without a shell (no pipes or redirection; use forward "
-        "slashes in paths). 'python' and 'pytest' use the task's Python environment.",
+        "Run one command in the workspace root without a shell: no pipes, redirection, chaining (&&, ;), cd, or "
+        "variable expansion; use workspace-relative paths with forward slashes. 'python' and 'pytest' use the "
+        "task's Python environment. Shows the command, status (including timeout), exit code, stdout, and stderr; "
+        "long output is shown partially with an output id for paging. A successful exit does not mean the task "
+        "is accepted.",
         {
             "command": {"type": "string", "description": "For example: pytest tests/test_example.py -q"},
             "timeout_seconds": {"type": "integer"},
@@ -127,8 +150,8 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
     ),
     _function(
         "search_output",
-        "Find lines containing a literal string in an earlier tool result by its output id.",
-        {"id": {"type": "string"}, "query": {"type": "string"}},
+        "Find lines containing a literal string (plain text, not a regex) in an earlier tool result by its output id.",
+        {"id": {"type": "string"}, "query": {"type": "string", "description": "Required. The literal text to find."}},
         ["id", "query"],
     ),
     _function(
@@ -184,6 +207,96 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
 ]
 
 
+# Legacy tools: not in the model-facing schema; dispatch keeps their toolset-v2 behavior (with a note) so
+# recordings that used them remain replayable.
+LEGACY_TOOL_SCHEMAS: List[Dict[str, Any]] = [
+    _function(
+        "list_files",
+        "List files under a workspace directory recursively, optionally filtered by a file-name glob.",
+        {
+            "path": {"type": "string", "description": "Directory relative to the workspace root. Default '.'."},
+            "file_glob": {
+                "type": "string",
+                "description": "Optional glob on the relative path or file name, e.g. '*.py'. Default '*'.",
+            },
+        },
+        [],
+    ),
+    _function(
+        "search",
+        "Find lines containing a literal string (plain text, not a regex) in workspace files.",
+        {
+            "query": {"type": "string", "description": "Required. The literal text to find, e.g. 'def get_real_name'."},
+            "path": {"type": "string", "description": "File or directory to search. Default '.'."},
+            "file_glob": {
+                "type": "string",
+                "description": "Optional file-name glob selecting which files to search, e.g. '*.py'. "
+                               "It never matches file contents. Default '*'.",
+            },
+        },
+        ["query"],
+    ),
+]
+LEGACY_TOOL_NAMES = {"list_files": "glob_files", "search": "search_text"}
+
+# v2: `file_glob` naming, argument guidance with examples, notes for ignored arguments, literal-match note.
+# v3: `glob_files(glob, path)` and `search_text(query, path, file_glob)` replace list_files/search (legacy
+# dispatch kept); unknown arguments to schema tools are rejected with guidance instead of ignored; results
+# state matching mode and scope; globs are case-sensitive on every platform; `run` rejections explain chaining
+# and `cd` and show the command to run instead; tool descriptions state line-range, overwrite, parent-directory,
+# no-shell, and acceptance semantics. Regex matching is not offered.
+TOOLSET_VERSION = "reticle-tools-v3"
+ARGUMENT_ALIASES = {"search": {"pattern": "file_glob"}, "list_files": {"pattern": "file_glob"}}
+UNKNOWN_ARGUMENT_HINTS = {
+    ("search_text", "pattern"): " 'pattern' is not a search_text argument: put the text to find in query and "
+                                "select files with file_glob.",
+    ("search_text", "regex"): " Regex matching is not available in this toolset: query is always matched as exact text.",
+    ("search_text", "glob"): " search_text selects files with file_glob.",
+    ("glob_files", "pattern"): " 'pattern' is not a glob_files argument: pass the glob as glob.",
+    ("glob_files", "file_glob"): " glob_files takes the glob as glob.",
+    ("glob_files", "query"): " glob_files never matches file contents; use search_text to find text.",
+}
+TOOL_EXAMPLES = {
+    "glob_files": {"glob": "*.py", "path": "src"},
+    "search_text": {"query": "def get_real_name(", "file_glob": "*.py"},
+    "list_files": {"path": "src", "file_glob": "*.py"},
+    "read_file": {"path": "src/module.py", "start_line": 1, "end_line": 80},
+    "outline": {"path": "src/module.py"},
+    "search": {"query": "def get_real_name", "file_glob": "*.py"},
+    "replace_text": {"path": "src/module.py", "old_text": "return a", "new_text": "return b"},
+    "write_file": {"path": "notes/plan.txt", "content": "..."},
+    "run": {"command": "pytest tests/test_example.py -q"},
+    "read_output": {"id": "out_3", "start_line": 1, "end_line": 60},
+    "search_output": {"id": "out_3", "query": "Error"},
+    "search_history": {"query": "src/module.py"},
+    "read_artifact": {"id": "art_0123"},
+    "note": {"name": "plan", "content": "..."},
+    "read_note": {"name": "plan"},
+    "finish": {"summary": "Fixed ..."},
+}
+_TOOL_PARAMETERS = {
+    schema["function"]["name"]: schema["function"]["parameters"] for schema in [*TOOL_SCHEMAS, *LEGACY_TOOL_SCHEMAS]
+}
+
+
+def argument_signature(name: str) -> Optional[str]:
+    parameters = _TOOL_PARAMETERS.get(name)
+    if parameters is None:
+        return None
+    required = set(parameters.get("required", []))
+    names = [f"{key} (required)" if key in required else key for key in parameters.get("properties", {})]
+    return ", ".join(names) or "no arguments"
+
+
+def argument_guidance(name: str) -> str:
+    """Accepted arguments and an example call, appended to a rejected call so the next call can recover."""
+    signature = argument_signature(name)
+    if signature is None:
+        return ""
+    example = TOOL_EXAMPLES.get(name)
+    return f" {name} accepts: {signature}." + (f" Example: {json.dumps(example)}" if example else "")
+
+
 def _occurrences(text: str, needle: str) -> Iterator[int]:
     start = text.find(needle)
     while start >= 0:
@@ -216,6 +329,8 @@ class ToolSuite:
         self.queries = SessionQueryService(runtime)
         self._next_handle: Optional[int] = None
         self._handlers: Dict[str, Callable[[Dict[str, Any]], ToolOutcome]] = {
+            "glob_files": self._glob_files,
+            "search_text": self._search_text,
             "list_files": self._list_files,
             "read_file": self._read_file,
             "outline": self._outline,
@@ -262,7 +377,25 @@ class ToolSuite:
                 call_id, name, parsed,
                 lambda: ToolOutcome(f"ERROR: unknown tool '{name}'. Available tools: {available}.", "rejected"),
             )
+        known = (_TOOL_PARAMETERS.get(name) or {}).get("properties", {})
+        aliases = ARGUMENT_ALIASES.get(name, {})
+        unknown = sorted(key for key in parsed if key not in known and key not in aliases)
+        if name in LEGACY_TOOL_NAMES:
+            note = f"Note: '{name}' is the legacy name of '{LEGACY_TOOL_NAMES[name]}'.\n"
+            if unknown:
+                note += (f"Note: ignored unknown argument(s) {', '.join(unknown)}; "
+                         f"{name} accepts: {argument_signature(name)}.\n")
+            return self._journaled(call_id, name, parsed, lambda: self._with_note(handler(parsed), note))
+        if unknown:
+            hints = "".join(UNKNOWN_ARGUMENT_HINTS.get((name, key), "") for key in unknown)
+            message = (f"ERROR: unknown argument(s) {', '.join(unknown)}; nothing was done.{hints}"
+                       f"{argument_guidance(name)}")
+            return self._journaled(call_id, name, parsed, lambda: ToolOutcome(message, "rejected"))
         return self._journaled(call_id, name, parsed, lambda: handler(parsed))
+
+    @staticmethod
+    def _with_note(outcome: ToolOutcome, note: str) -> ToolOutcome:
+        return replace(outcome, content=note + outcome.content)
 
     def _register_output(self, call_id: str, name: str, content: str) -> str:
         if self._next_handle is None:
@@ -296,7 +429,7 @@ class ToolSuite:
         )
         try:
             workspace_tool = name in {
-                "list_files", "outline", "read_file", "replace_text", "search", "write_file"
+                "glob_files", "list_files", "outline", "read_file", "replace_text", "search", "search_text", "write_file"
             }
             if workspace_tool:
                 with ExecutionController.workspace_boundary(
@@ -308,7 +441,7 @@ class ToolSuite:
                 self.runtime.mark_action_dispatched(operation_id, effect_class)
                 outcome = action()
         except ToolArgumentError as exc:
-            outcome = ToolOutcome(f"ERROR: {exc}", "rejected")
+            outcome = ToolOutcome(f"ERROR: {str(exc).rstrip('.')}.{argument_guidance(name)}", "rejected")
         except PermissionError as exc:
             outcome = ToolOutcome(f"ERROR: {exc}", "rejected")
         except (ValueError, KeyError, OSError, StaleWorkspaceError, UnicodeDecodeError) as exc:
@@ -355,7 +488,12 @@ class ToolSuite:
             return value.strip().lower() in {"true", "1", "yes"}
         return bool(value)
 
-    def _files(self, path: str, pattern: str) -> List[str]:
+    def _files(self, path: str, pattern: str, case_sensitive: bool = False) -> List[str]:
+        """Sorted workspace-relative files under path whose relative path or name matches the glob.
+
+        Legacy tools use fnmatch (case-insensitive on Windows); toolset-v3 tools are case-sensitive everywhere.
+        """
+        match = fnmatch.fnmatchcase if case_sensitive else fnmatch.fnmatch
         root = self.runtime.workspace.root
         base = self.runtime.workspace._resolve(path)
         if base.is_file():
@@ -370,13 +508,64 @@ class ToolSuite:
             raise ValueError(f"no such file or directory: {path}")
         return [
             item.relative_to(root).as_posix() for item in candidates
-            if fnmatch.fnmatch(item.relative_to(root).as_posix(), pattern) or fnmatch.fnmatch(item.name, pattern)
+            if match(item.relative_to(root).as_posix(), pattern) or match(item.name, pattern)
         ]
 
+    def _glob_files(self, arguments: Dict[str, Any]) -> ToolOutcome:
+        glob = self._text(arguments, "glob", required=True)
+        if not glob:
+            raise ToolArgumentError("glob must not be empty")
+        path = self._text(arguments, "path", ".")
+        files = self._files(path, glob, case_sensitive=True)
+        rules = "fnmatch rules, case-sensitive, matched against relative path and file name; cache/VCS directories skipped"
+        if not files:
+            return ToolOutcome(f"0 file(s) match glob {glob!r} under {path!r} ({rules}).", "success")
+        return ToolOutcome(f"{len(files)} file(s) match glob {glob!r} under {path!r}:\n" + "\n".join(files), "success")
+
+    def _search_text(self, arguments: Dict[str, Any]) -> ToolOutcome:
+        if arguments.get("query") is None:
+            selector = "; 'file_glob' only selects which files are searched" if arguments.get("file_glob") is not None else ""
+            raise ToolArgumentError(f"missing required argument 'query': search_text finds exact text inside files{selector}")
+        query = self._text(arguments, "query", required=True)
+        if not query:
+            raise ToolArgumentError("query must not be empty")
+        path = self._text(arguments, "path", ".")
+        file_glob = self._text(arguments, "file_glob", "*")
+        files = self._files(path, file_glob, case_sensitive=True)
+        root = self.runtime.workspace.root
+        needle = query.encode("utf-8")
+        matches: List[str] = []
+        binary = 0
+        for relative in files:
+            raw = (root / relative).read_bytes()
+            if b"\x00" in raw:
+                binary += 1
+                continue
+            if needle not in raw:
+                continue
+            for number, line in enumerate(raw.decode("utf-8", errors="replace").splitlines(), 1):
+                if query in line:
+                    matches.append(f"{relative}:{number}: {line.rstrip()}")
+        scope = (f"exact text, case-sensitive; path {path!r}, file_glob {file_glob!r}; {len(files)} file(s) searched"
+                 + (f", {binary} binary file(s) skipped" if binary else ""))
+        if not matches:
+            return ToolOutcome(f"0 match(es) for {query!r} ({scope}).", "success")
+        return ToolOutcome(f"{len(matches)} match(es) for {query!r} ({scope}):\n" + "\n".join(matches), "success")
+
+    def _file_glob(self, arguments: Dict[str, Any]) -> tuple[str, str]:
+        """The file-name glob and a note when the pre-v2 name `pattern` was used for it."""
+        if arguments.get("file_glob") is not None:
+            return self._text(arguments, "file_glob", "*"), ""
+        if arguments.get("pattern") is not None:
+            return (self._text(arguments, "pattern", "*"),
+                    "Note: 'pattern' is now named 'file_glob'; it was applied as the file-name glob.\n")
+        return "*", ""
+
     def _list_files(self, arguments: Dict[str, Any]) -> ToolOutcome:
-        files = self._files(self._text(arguments, "path", "."), self._text(arguments, "pattern", "*"))
+        file_glob, note = self._file_glob(arguments)
+        files = self._files(self._text(arguments, "path", "."), file_glob)
         listing = "\n".join(files) if files else "(no matching files)"
-        return ToolOutcome(f"{len(files)} file(s):\n{listing}", "success")
+        return ToolOutcome(f"{note}{len(files)} file(s):\n{listing}", "success")
 
     def _read_file(self, arguments: Dict[str, Any]) -> ToolOutcome:
         path = self._text(arguments, "path", required=True)
@@ -399,21 +588,28 @@ class ToolSuite:
         return ToolOutcome(f"Outline of {path}:\n{body}", "success")
 
     def _search(self, arguments: Dict[str, Any]) -> ToolOutcome:
+        if arguments.get("query") is None:
+            given = next((key for key in ("file_glob", "pattern") if arguments.get(key) is not None), None)
+            selector = f"; '{given}' only selects which files are searched" if given else ""
+            raise ToolArgumentError(
+                f"missing required argument 'query': search finds literal text inside files{selector}"
+            )
         query = self._text(arguments, "query", required=True)
         if not query:
             raise ToolArgumentError("query must not be empty")
+        file_glob, note = self._file_glob(arguments)
         root = self.runtime.workspace.root
         needle = query.encode("utf-8")
         matches: List[str] = []
-        for relative in self._files(self._text(arguments, "path", "."), self._text(arguments, "pattern", "*")):
+        for relative in self._files(self._text(arguments, "path", "."), file_glob):
             raw = (root / relative).read_bytes()
             if b"\x00" in raw or needle not in raw:
                 continue
             for number, line in enumerate(raw.decode("utf-8", errors="replace").splitlines(), 1):
                 if query in line:
                     matches.append(f"{relative}:{number}: {line.strip()}")
-        body = "\n".join(matches) if matches else "(no matches)"
-        return ToolOutcome(f"{len(matches)} match(es) for {query!r}:\n{body}", "success")
+        body = "\n".join(matches) if matches else "(no matches; query is matched as literal text, not a regex)"
+        return ToolOutcome(f"{note}{len(matches)} match(es) for {query!r}:\n{body}", "success")
 
     def _replace_text(self, arguments: Dict[str, Any]) -> ToolOutcome:
         path = self._text(arguments, "path", required=True)
@@ -542,8 +738,19 @@ class ToolSuite:
             raise ToolArgumentError(f"could not parse command: {exc}") from None
         if not argv:
             raise ToolArgumentError("command is empty")
-        if any(token in SHELL_OPERATORS for token in argv):
-            raise ToolArgumentError("shell operators are not supported; run one command per call")
+        operators = sorted({token for token in argv if token in SHELL_OPERATORS})
+        if operators:
+            message = (f"shell operator(s) {' '.join(operators)} are not supported: run executes a single command "
+                       "without a shell (no chaining, pipes, or redirection)")
+            if len(argv) > 3 and argv[0] == "cd" and argv[2] == "&&" and not any(t in SHELL_OPERATORS for t in argv[3:]):
+                message += (f"; commands already run in the workspace root, so 'cd {argv[1]} &&' is not needed. "
+                            f"Run instead: {json.dumps({'command': shlex.join(argv[3:])})}")
+            raise ToolArgumentError(message)
+        if argv[0] == "cd":
+            raise ToolArgumentError(
+                "cd is not available: commands already run in the workspace root; use workspace-relative paths "
+                "in the command itself"
+            )
         head = argv[0].lower()
         if head in PYTHON_ALIASES:
             return [self.interpreter, *argv[1:]]
@@ -552,12 +759,18 @@ class ToolSuite:
         return argv
 
     def _run(self, arguments: Dict[str, Any], call_id: str) -> ToolOutcome:
+        unknown = sorted(key for key in arguments if key not in _TOOL_PARAMETERS["run"]["properties"])
         try:
+            if unknown:
+                raise ToolArgumentError(f"unknown argument(s) {', '.join(unknown)}")
             command = self._text(arguments, "command", required=True)
             argv = self._argv(command)
             requested_timeout = self._int(arguments, "timeout_seconds")
         except ToolArgumentError as exc:
-            message = f"ERROR: {exc}; nothing was run."
+            detail = str(exc)
+            # A rejection that already shows the command to run instead needs no second example.
+            guidance = "" if "Run instead:" in detail else argument_guidance("run")
+            message = f"ERROR: {detail}; nothing was run.{guidance}"
             return self._journaled(call_id, "run", arguments, lambda: ToolOutcome(message, "rejected"))
         timeout = float(requested_timeout) if requested_timeout and requested_timeout > 0 else self.default_timeout_seconds
         timeout = min(timeout, self.max_timeout_seconds)

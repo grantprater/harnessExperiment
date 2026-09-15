@@ -43,6 +43,10 @@ experiments/p6_pilot/runs/*/sessions/
 # E2 runs: same convention; card/calls/results are kept
 experiments/session_harness/e2_runs/*/session/
 experiments/session_harness/e2_runs/*/workspace/
+# S2b boundary probes: card/results/raw are kept; per-backend workspaces and sessions are not
+experiments/session_harness/s2b_runs/*/*/
+# U1 usability fixture: card/calls/results are kept; sessions and workspaces are not
+experiments/session_harness/u1_runs/*/sessions/
 *.blend
 *.blend1
 

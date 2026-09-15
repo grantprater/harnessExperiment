@@ -163,7 +163,7 @@ class AgentControllerTests(unittest.TestCase):
 
         piped = tools.dispatch("run", {"command": "python -c 1 | more"}, "p1")
         self.assertEqual(piped.status, "rejected")
-        self.assertIn("shell operators are not supported", piped.content)
+        self.assertIn("shell operator(s) | are not supported", piped.content)
 
         large = tools.dispatch("run", {"command": "python -c \"print('y' * 30000)\""}, "big")
         self.assertEqual(large.status, "success")

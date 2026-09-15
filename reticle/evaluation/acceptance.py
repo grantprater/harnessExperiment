@@ -137,6 +137,9 @@ class AcceptanceRunner:
                     timeout_seconds=timeout_seconds,
                     output_limit_bytes=1_000_000,
                     mutates_workspace=False,
+                    # The evaluation root is a private copy outside the candidate workspace;
+                    # evaluators install fixed inputs and write reports there.
+                    writable_mount=True,
                 )
             )
             measurements, outcomes, infrastructure_failure = self._measure_results(

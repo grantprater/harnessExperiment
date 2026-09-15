@@ -1,7 +1,11 @@
 # Reticle: durable sessions, replaceable harnesses, fast experiments
 
 Date: 2026-09-15.
-Status: current implementation direction; S1 mechanics are delivered and later runtime changes are planned.
+Status: S1/S2 mechanics delivered; one E2 live fixture accepted. E3 (one session): runner
+accounting and no-API controls passed. Run 1 stopped on provider HTTP 429; an endpoint probe returned
+48/48 valid; run 2 (gemma @ Cloudflare) ended in a repeat stop, and run 3 (Qwen3-Coder-Next @ Parasail)
+reached its 20-response budget; neither edited the library. After an interface revision, run 4 (Qwen, pressure-recent-v2,
+toolset v2) again reached its budget without a library edit (section 7). Semantic retrieval and learned-procedure transfer remain unrun.
 Supersedes: [the September 14 plan](IMPLEMENTATION_PLAN_2026-09-14.md), including its
 P0-P9 sequence and continuation instructions. That document preserves the implementation
 ledger, commit identifiers, wheel checks, and historical experiment decisions.
@@ -19,9 +23,11 @@ responsibilities and lifetimes, even when they run on one host.
 evidence before claiming a general improvement.** Do not complete another long substrate
 roadmap before observing whether a model can use the interface.
 
-The first research question is narrow: does retaining full recent observations until
-context pressure requires reduction improve accepted repairs relative to the current
-512/4,000-byte views? This is a hypothesis, not a promised result.
+The next research questions are whether semantic retrieval helps agents recover relevant
+experience, and whether procedures learned from earlier tasks improve later repairs enough
+to repay retrieval and learning costs. These are hypotheses, not promised results. Establish
+a competent repair control first. Keep observation retention fixed during these studies;
+the 512/4,000-byte versus pressure-based retention comparison is deferred.
 
 Initial workload: pinned Python repository repairs, plus small behavioral exercises for
 history retrieval, context pressure, and interrupted work. Preserve support for human or
@@ -40,12 +46,14 @@ implementation choices and experiments are proposals, not results established by
 - Persist task budgets and pending operations across controller replacement.
 - Test the actual runner's execution/evaluator boundary, not just isolated components.
 - Run model usability experiments alongside implementation as prerequisites become ready.
-- Ship one installed session workflow before expanding a program library.
+- Establish a live repair control before testing cross-task memory and learned procedures.
+- Defer installed-workflow polish and the retention comparison as experiment prerequisites.
 - Search policies only after a competent control and trustworthy evaluator exist.
 
 Non-goals for this sequence: hosted services, distributed scheduling, concurrent controller
-swarms, universal memory ontologies, mandatory cognitive phases, automatic cross-session
-consolidation, and recreating every historical modality demo.
+swarms, universal memory ontologies, mandatory cognitive phases, an autonomous consolidation
+daemon, and recreating every historical modality demo. Bounded procedure learning is in scope;
+symbolic reasoning is a separate deferred experiment.
 
 ## 2. Starting evidence
 
@@ -278,7 +286,149 @@ accepted and noop/breaker/known gamer rejected; caches do not falsely report sou
 Skipped OCI tests do not satisfy the boundary gate. A cheap fixture smoke may use the existing
 isolated backend before full repository provisioning is ready, with that limited scope recorded.
 
-### S3 - Installed vertical slice and competent control
+### S3 - Competent live repair control
+
+Depends on S1/S2 mechanics and the actual execution/evaluator gates. Reuse the existing
+runner; an installed CLI is not a prerequisite.
+
+1. Have `experiments/p6_pilot/run_pilot.py`'s provider client adopt the attempt-reporting
+   protocol so every HTTP retry reserves and reconciles durable task resources. Verify retry
+   exhaustion and resume without provider calls before live execution.
+2. Select one development repair compatible with the current pinned OCI image. Initially
+   exclude tasks needing missing linkify-it-py or suites exceeding the selected command
+   timeout. Record exclusions and timeout in the card before assignment. If changing the
+   image, rerun affected boundary and pipeline controls.
+3. Run the provider/tool-schema smoke and E3: one task, at most three before trajectory
+   review, with explicit attempt, tool, elapsed, token/cost, and campaign limits.
+4. Fix demonstrated interface problems and freeze one usable model/provider, context policy,
+   tool set, environment, evaluator, and budget configuration for the memory comparisons.
+
+Use `pressure-recent-v1` as the initial fixed context policy; this is an operational choice,
+not a claim that it beat the legacy retention policy. Add a stronger model only as a separately
+labeled and budgeted diagnostic. Do not vary model, tools, and policy simultaneously.
+
+Exit: valid live runs produce meaningful accepted repairs with trustworthy accounting and
+evidence. If everything fails or passes, diagnose infrastructure/usability and adjust development
+difficulty before comparing treatments. E2's one accepted changed-file fixture establishes
+limited retrieval usability, not this repair gate. Remaining E2 fixtures are targeted diagnostics,
+not a requirement to finish every fixture before E3.
+
+### Coding-tool interface contract
+
+Use familiar capabilities with explicit semantics; there is no universal coding-tool naming
+standard. The interface is part of the versioned harness, not neutral plumbing. Keep the
+canonical design here rather than adding another specification document.
+
+| Target tool | Contract |
+|---|---|
+| `glob_files(glob, path=".")` | Recursively return matching workspace-relative file paths in stable order. `glob` matches filenames/paths, never file contents. Document the exact glob dialect and directory rules. |
+| `search_text(query, path=".", file_glob="*", regex=false)` | Search file contents and return path, 1-based line number, and matching text. Literal matching is the default; regex is explicit, never inferred from punctuation. File selection is separate from content matching. |
+| `read_file(path, start_line?, end_line?)` | 1-based inclusive line ranges; omitted bounds mean beginning/end. Report actual range and truncation, with an exact retrieval reference for omitted output. |
+| `replace_text(path, old_text, new_text, replace_all=false)` | Exact text replacement; missing or ambiguous matches fail without mutation unless all matches were explicitly requested. Report replacement count. |
+| `write_file(path, content)` | Create or overwrite the named workspace file. Explicitly document overwrite and parent-directory creation behavior. |
+| `run(command, timeout_seconds?)` | Execute without shell interpretation, preserving the current backend contract. No implicit pipes, redirection, or variable expansion. Show command, exit code, timeout status, stdout/stderr, and output retrieval references. |
+
+Keep authorized history, output paging, notes, and completion tools as supporting capabilities.
+Do not expose duplicate synonymous tools in the same model-facing schema. Preserve existing
+path confinement, resource accounting, immutable evidence, and independent acceptance.
+
+Errors name the rejected argument, explain its meaning, and give one valid example. A missing
+content query with `pattern`/`file_glob` supplied must explain that file selection is not a text
+query; do not guess the user's intended expression. Unknown or conflicting arguments must be
+reported rather than silently changing meaning. Empty results explicitly state the matching
+mode and searched scope. Truncation is not an empty result. Process success is not task acceptance.
+
+Remaining responses (including the current response), HTTP attempts, tool actions, active
+time, and monetary resources appear automatically in every request from authoritative ledger
+state, respecting tighter invocation limits. Original limits are labeled separately. This
+information must survive context pressure; the agent should not need a status-tool call to
+discover that its next response is its last. Missing billing remains explicitly unknown.
+
+Migration status: toolset v2 and `pressure-recent-v2` already implement `file_glob`, improved
+errors, and resource visibility; see the S3 delivery record. Pending card 004 retains its
+existing `search`/`list_files` names and literal-only matching. Do not mutate that frozen card
+or imply it tests the target names above. A subsequent toolset version can rename them to
+`search_text`/`glob_files`; retain legacy dispatch for old recordings, with explicit alias
+semantics. Regex support is an additional capability, not a rename: before exposing it,
+specify dialect, case sensitivity, invalid-pattern errors, and bounded execution. Never
+advertise `regex=true` until implemented and verified. Current literal mode remains valid
+while this capability is pending.
+
+For each implementation version, check a small usability fixture covering file discovery,
+literal punctuation, file filtering, line boundaries, edit ambiguity, actionable error
+recovery, and remaining-resource visibility. Add regex cases only for a regex-capable version.
+Record schema/runner/policy versions and update affected controls before the next live card.
+Measure rejected calls, recovery turns, failed lookups, first meaningful action, and accepted
+repairs within budget. This is baseline usability work; bundled changes do not establish the
+causal benefit of each individual rename or capability.
+
+### D1 - Scientific-discovery simulator baseline (next workload after E3)
+
+Use [D1's bounded design](experiments/session_harness/D1-discovery-simulator.md): identify a
+hidden five-switch response rule through limited probes, then submit independently scored
+predictions. Design/offline controls can overlap E3; live calibration follows its review and
+a reliable inference configuration. Establish a no-memory simulator baseline before applying
+S4/S5 treatments to this workload. D1 is a workload calibration, not another harness feature
+or a substitute for the accepted-repair gate. One smoke and at most three development devices
+before review; exact live budgets and devices belong in the run card.
+
+### S4 - Semantic history retrieval pilot
+
+Offline implementation can overlap S3; repair-utility comparisons require the S3 control.
+Reuse the authorized history view and artifact store. Add a rebuildable semantic index with
+stable session/event/artifact references. Index only authorized, redacted observations;
+exclude credentials, controller records, hidden evaluator data, and retrieval-generated echoes.
+Recheck authorization on reads. Record embedding model/version, chunking, corpus snapshot,
+ranking parameters, query, returned IDs, latency, and indexing/retrieval cost.
+
+Start with one bounded same-session fixture: the question paraphrases relevant old evidence,
+the live source has changed, and plausible distractors exist. Compare literal versus semantic
+retrieval over identical frozen history. Keep the tool contract, result rendering, context,
+and budgets matched; declare any unavoidable interface differences. Results must link to
+original evidence, and unavailable sources must remain explicitly unavailable.
+
+Gate: source/authorization/rebuild checks pass; a live model recovers and correctly uses the
+evidence. Retrieval calls or ranking scores alone are not success. Use E2-sized discovery
+limits, then E4 paired screening and E5 confirmation only if justified.
+
+Next, test cross-task retrieval on S3-compatible repair families. Export only an explicitly
+authorized training-history corpus, with origin and outcome metadata, through the same read
+boundary; session membership alone never grants cross-session access. Give both retrieval
+arms the same corpus. Freeze it before later-task evaluation and prevent evaluation sessions
+from entering another run's memory. Compare literal and semantic search; include a reset/no-prior-
+memory reference when measuring the benefit of having prior experience at all.
+
+Exit: report improvement, regression, or uncertainty, with accepted artifacts, cost, latency,
+retrieval failures, and misleading-memory cases. A negative result completes the experiment.
+
+### S5 - Persistent learned-procedure transfer pilot
+
+Requires the S3 control and a usable S4 retrieval path, not a statistically significant S4 win.
+Learn a small versioned library from completed training tasks. Start with textual procedures;
+add executable skills only when the hypothesis requires them. Reuse `ProgramRegistry` and
+supervised execution for executable variants rather than building a new runtime.
+
+Each procedure records source episodes/artifacts, derivation prompt/model, version, intended
+scope, preconditions, known failures, validation outcomes, and creation cost. It is derived
+data, never a higher-priority instruction. Keep candidates distinct from validated procedures;
+successful registration or three uses is not a promotion rule. Support rejection/retirement
+without deleting source evidence. No autonomous consolidation daemon is required.
+
+Compare retrieval-only against the same retrieval plus learned procedures on unseen task
+variations. Match training exposure, task order, base tools, context policy, model, and task
+budgets; procedure access is the declared treatment. Separate training, selection, and sealed
+evaluation tasks by family/repository where feasible. Freeze corpus and library before
+evaluation; reset each run to those snapshots. Charge learning, validation, rejected candidates,
+and retrieval costs as well as later task execution. Evaluate whether later gains amortize them.
+
+Use E4 discovery first and E5 only for a promising frozen candidate. Audit inappropriate reuse,
+stale assumptions, and negative transfer. Any later adaptive-library arm needs its own protocol
+with predeclared task order and update rules; do not pool it with frozen-library results.
+
+Exit: measured transfer benefit, regression, or uncertainty. Broad capability or learning
+claims require held-out gains, not counts of memories saved or procedures generated.
+
+### Deferred track - Installed vertical slice
 
 Depends on S1/S2 for production readiness. Development behavioral work need not wait for CLI polish.
 
@@ -293,15 +443,10 @@ against actual imports/dependencies. Document supported environments and clear e
 Replace stale README/architecture/board content with implemented contracts and linked historical
 reports; do not wait for S5 to make public documentation accurate.
 
-Calibrate one pinned, reliable model/provider on development repairs (E3). Add a stronger model
-only as a separately labeled and budgeted interface diagnostic if needed. Do not vary model,
-provider, tools, and policy simultaneously while diagnosing a failure.
+Exit: installed workflow passes. This remains a delivery requirement before advertising the
+installed session workflow, but does not gate S3-S5 experiments through the existing runner.
 
-Exit: installed workflow passes and valid model runs produce meaningful accepted artifacts.
-This establishes a usable control, not superiority. If everything fails or passes, investigate
-infrastructure/usability and change development difficulty before a comparative study.
-
-### S4 - First controlled comparison
+### Deferred experiment - Observation-retention comparison
 
 Requires usable control plus actual evaluator/authority/resource gates; it need not wait for
 unrelated CLI documentation polish. Deliver versioned protocol, paired assignments, artifacts,
@@ -329,9 +474,10 @@ does not mention the history tools, although both arms receive the same tool sch
 Exit: report improvement, regression, or uncertainty. A negative result completes the experiment.
 Default promotion follows section 5; passing engineering gates does not establish policy superiority.
 
-### S5 - Bounded policy search
+### Deferred track - Bounded policy search and symbolic reasoning
 
-Conditional on S4 and a trustworthy control. Keep a frozen incumbent and candidate archive.
+Revisit after the memory/procedure pilots and a trustworthy control. It is not a prerequisite
+for them. Keep a frozen incumbent and candidate archive.
 Start with manual/model-assisted offline proposals, not an autonomous recursive framework.
 Execute model-authored policies in isolation with an authorized read-only session view.
 
@@ -343,9 +489,10 @@ Loop: inspect failure -> predict effect -> propose -> contract-test -> screen ->
 confirm or reject. Allocate further trials by a declared rule. Preserve negative results.
 Stop when candidate search fails to produce worthwhile gains within its budget.
 
-Later work is conditional: semantic retrieval, learned context allocation, reusable programs,
-cross-task transfer, more models/domains, and multiple workers. Each needs a hypothesis and
-cost account. Provisional program use is allowed; promotion never relies on a three-use rule.
+Later work is conditional: learned context allocation, broader executable libraries, more
+models/domains, and multiple workers. Symbolic reasoning is a separate tool-ablation study on
+tasks with checkable constraints, not part of the memory treatments. Each needs a hypothesis
+and cost account. Provisional program use is allowed; promotion never relies on a three-use rule.
 
 ## 5. Experiment protocol: fail fast without fooling ourselves
 
@@ -363,6 +510,23 @@ old outcomes remain visible and are not pooled as if the treatment were unchange
 Do not use confirmatory machinery to slow routine diagnosis. Do not use rapid diagnosis
 results as if they were confirmed general gains.
 
+### Experiment selection and documentation
+
+Keep one competent baseline and at most one active challenger initially. Choose a recurring
+failure from observed trajectories, state a falsifiable hypothesis, and change one mechanism.
+Pair tasks and match model, environment, evaluator, and budgets; randomize arm order. Move
+from mechanism check to development screen to confirmation on unseen tasks. Examine combinations
+only when there is a specific interaction hypothesis: one feature could change another's benefit.
+A shelved or negative result is useful evidence, not a reason to expand the feature matrix.
+
+[The experiment register](experiments/REGISTER.md) holds one row per candidate, its smallest
+comparison, status, and evidence link. Ideas need no separate proposal documents. This plan
+owns sequencing and gates; the register is a backlog, not an implementation commitment.
+Only an active experiment needs the concrete run card required below. Reuse existing report
+and artifact locations; reports answer what changed, what happened, and what happens next.
+Link results from the register rather than duplicating them. Keep historical delivery records
+in place for now; do not create a separate methodology document.
+
 ### 5.2 Experiment ladder and default allocation
 
 These are initial screening caps, not statistical sample sizes or spending authorization.
@@ -374,7 +538,7 @@ Each run card can lower them. Raise a cap only with a recorded reason and availa
 | E1 | Does context rendering preserve the required evidence? | Three fixtures: ample budget, forced pressure, oversized latest exchange; no model calls | Missing latest outcome, unreachable history, or overflow ends trial immediately |
 | E2 | Can the model discover and use omitted history? | One fixture first, up to 8 model turns; at most 3 fixtures before review | Audit first failure immediately; distinguish retrieval, tool schema, or provider failure |
 | E3 | Can the control repair real code? | One development bug first, up to 20 model turns and a declared wall/cost cap; at most 3 tasks before review | Do not launch a batch behind a broken first trajectory; calibrate difficulty/provider |
-| E4 | Does one policy change look promising? | Three matched development task pairs, one run/arm/task before review | Stop on integrity failure; drop a clearly dominated candidate or allocate a second small block |
+| E4 | Does one retrieval/procedure treatment (or later policy change) look promising? | Three matched development task pairs, one run/arm/task before review | Stop on integrity failure; drop a clearly dominated candidate or allocate a second small block |
 | E5 | Does the apparent gain generalize? | Unseen tasks; size chosen from practical effect and pilot variability | Predeclared fixed-sample or valid sequential rule; report uncertainty and negative results |
 
 E2 fixtures should include: an earlier file observation after the live file changes; an old
@@ -413,13 +577,16 @@ Store cards and reports under `experiments/session_harness/`; reuse the current 
 possible instead of creating a second agent loop. Version runner/protocol changes explicitly.
 
 ```yaml
-id: E4-retention-001
+id: E4-semantic-001
 status: proposed  # running | completed | invalidated | inconclusive
-hypothesis: Full prior observations reduce rereads and increase accepted repairs within budget.
-mechanism: Relevant previously read source remains visible for the next decision.
-one_change: observation retention policy
-control: legacy-views-on-repaired-substrate
-candidate: pressure-recent-v1
+hypothesis: Semantic search recovers relevant paraphrased evidence and improves repairs within budget.
+mechanism: Relevant old observations can be found without matching their original wording.
+one_change: history retrieval ranking
+control: literal-history-search
+candidate: semantic-history-search
+context_policy: pressure-recent-v1  # fixed across arms
+memory_corpus_hash: null  # same authorized frozen corpus in both arms
+library_hash: null  # no procedure library in this retrieval-only study
 tasks_partition: development
 task_ids: []  # pin before execution
 runtime_tools_evaluator_environment_hashes: {}  # required before execution
@@ -429,7 +596,7 @@ campaign_cap: {}  # explicit, independently enforced
 assignment_seed: null  # record before randomization
 primary_endpoint: accepted final artifact within the declared resource contract
 diagnostics: [identical_rereads, history_retrieval_success, context_bytes, cost, elapsed]
-failure_prediction: Old evidence remains inaccessible, or added input cost erases the benefit.
+failure_prediction: Irrelevant memories displace useful evidence, or retrieval cost erases the benefit.
 stop_rule: first three pairs, then review; integrity failures stop immediately
 decision_rule: advance, revise, provisionally reject, or inconclusive with stated evidence
 evidence_bundle: null  # required at completion, including failed/aborted trials
@@ -524,18 +691,48 @@ records and decisions exist.
 |---|---|---|
 | S0 | Complete | Replacement plan, preserved historical ledger, current-direction notices; documentation only |
 | S1 | Complete (mechanics) | S1a-S1c offline gates pass; E1 passes; E2 `changed-file` run once (gemma-4-26b/DeepInfra, accepted); other E2 fixtures unrun |
-| S2 | In progress | S2a delivery 1 passes offline; finish attempt/deadline accounting, then run S2b isolation controls |
-| S3 | Not started | Installed session workflow plus usable control |
-| S4 | Not started | Small paired retention screen; confirmation only if justified |
-| S5 | Deferred | Bounded policy search after trustworthy comparison |
+| S2 | Complete (mechanics, no-API gates) | S2a offline gates; S2b E0 probes 24/24 and OCI controls 70/70 on 14 tasks; Docker, installed wheel, and live runs unrun |
+| S3 | In progress (E3 session) | Smoke passed; E3 run 1 stopped on DeepInfra HTTP 429 after 4 responses (infrastructure class, no library edit, not accepted); [report](experiments/session_harness/E3-sqlparse-gemma-deepinfra-1.md). Endpoint probe: 6 routes, 48/48 valid ([results](experiments/session_harness/E3-endpoint-probe-1.md)). Run 2 @ Cloudflare: 18 responses, 0 provider errors, repeat stop, no library edit ([report](experiments/session_harness/E3-sqlparse-gemma-cloudflare-2.md)). Run 3 Qwen3-Coder-Next @ Parasail: 20 responses, response budget reached, 4 rejected `search` calls, no edit ([report](experiments/session_harness/E3-sqlparse-qwen-parasail-3.md)). Interface revised (pressure-recent-v2, toolset v2, runner v6; offline gates pass); [card 004](experiments/session_harness/E3-repair-control-004.md): U1 passed, run 4 reached 20 responses with no library edit and 3 rejected `cd /testbed && ...` commands ([report](experiments/session_harness/E3-sqlparse-qwen-parasail-4.md)). Toolset v3 (interface contract) passes offline and no-API gates; [card 005](experiments/session_harness/E3-repair-control-005.md) (U2 gate, then run 5) awaits approval |
+| S4 | Not started | Semantic index and paraphrase fixture; paired retrieval screen, then cross-task utility |
+| D1 | Designed; not implemented | After E3 review: offline simulator controls, then no-memory discovery calibration; [design](experiments/session_harness/D1-discovery-simulator.md) |
+| S5 | Not started | Versioned learned procedures; frozen-library transfer versus retrieval-only |
+| Installed workflow | Deferred | Wheel/CLI delivery checks; not an experiment prerequisite |
+| Retention comparison | Deferred | Matched legacy versus pressure-policy study if still useful |
+| Policy search / symbolic reasoning | Deferred | Separate hypotheses after memory/procedure pilots |
 
-**Next implementation:** finish S2a by exposing individual provider attempts to the durable
-ledger, defining paused/deadline semantics, and adding a supervisor adjustment for reconciled
-billing. Then run S2b no-API isolation/evaluator controls. E2 `changed-file` ran once
-(see `experiments/session_harness/E2-changed-file.md`); the next empirical action is the
-second E2 fixture (old failure whose output ID is no longer visible) under a new approved card,
-at most three fixtures before review. Do not start a new consolidation engine, board
-policy, or broad model matrix.
+**Current execution:** one session owns E3. Runs 1-4 on `sqlparse-865` made no library edit: run 1
+(gemma @ DeepInfra) stopped on HTTP 429; run 2 (gemma @ Cloudflare) ended in a repeat stop; runs 3-4
+(Qwen3-Coder-Next @ Parasail) reached the 20-response budget, run 4 on toolset v2 with `pressure-recent-v2`.
+Reports are under `experiments/session_harness/E3-*.md`. Toolset v3, implementing the coding-tool interface
+contract above, has passed offline and no-API gates. `E3-repair-control-005` (U2 fixture gate, then run 5)
+awaits approval. Do not launch a duplicate calibration.
+Freeze the usable configuration before comparing memory treatments. S4 offline index and
+fixture work can overlap this calibration; no new CLI or general consolidation engine is needed.
+
+**Implementation choices before any E3 model run in OCI** (from
+`experiments/session_harness/S2b-oci-boundaries-controls.md`):
+
+1. Done offline: the OpenRouter client in `run_pilot.py` (runner v4) reports every HTTP attempt to
+   the task ledger; evidence is in the S3 step 1 delivery record. Live retry behavior is not yet observed.
+2. Record a command timeout and initially select tasks whose suites fit it. Exclude the slow
+   more-itertools suite from this first calibration (297.6 s OCI versus 13.7 s trusted-local).
+3. Keep the current image initially; exclude tasks requiring missing linkify-it-py. If later
+   adding that dependency, pin the new image and rerun the 70 controls and E0 probes.
+
+Choices 2-3 are settled in `experiments/session_harness/E3-repair-control-001.md`: default `run`
+timeout 120 s (600 s maximum), task `sqlparse-865`, current image, with markdown-it-py and
+more-itertools excluded.
+
+Resolve these routine choices in the run card. Model/provider selection and new spend remain
+subject to the explicit campaign scope in section 5; this plan revision launches no paid runs.
+
+Known S2b limitations carried forward: candidate code can tamper with in-container grading
+artifacts (only the conftest gamer is tested); native file tools run on the host (path-confined);
+Docker, installed-wheel, and live model runs are unrun. E2 `changed-file` ran once
+(see `experiments/session_harness/E2-changed-file.md`); the next empirical action is E3 repair
+calibration after runner accounting is connected. Other E2 fixtures remain available for
+targeted diagnosis. Keep symbolic reasoning, boards, a consolidation daemon, and a broad model
+matrix out of this first memory/procedure sequence.
 
 Per delivery record: exact source identifier, changed contracts/files, validation commands
 and results, empirical gates run/unrun, failed hypotheses, remaining limitations, and next
@@ -620,3 +817,98 @@ history, escaping authority, renewing its budget, or changing the meaning of suc
 - Validation at handoff: 12 focused S2a tests passed; the full offline suite passed 179 tests
   with three OCI integration tests skipped. E2, live OCI boundaries, installed-wheel checks,
   and S2b evaluator controls were not run. No provider/network calls or new spend occurred.
+
+### Delivery record: S2a durable resources, slice 2 (S2a complete)
+
+- Source base: `70b6a9f` plus working-tree changes to `reticle/runtime/budgets.py`,
+  `controller.py`, `__init__.py`, and `tests/test_s2_resources.py`.
+- Opt-in `ProviderAttemptRecorder` journals and reserves every underlying provider attempt,
+  including retries, with per-attempt cost reservation; the attempt budget stops retries
+  without leaving an ambiguous request. Non-reporting clients keep one charge per request.
+- Pause/deadline: `active_seconds` accrues only while a controller owns the session and is
+  charged at each dispatch boundary; `deadline_utc` is wall-clock, runs while paused, and
+  stops as `task_deadline_reached`.
+- Supervisor-only `TaskBudgetLedger.adjust` replaces a reconciled charge with a journaled
+  `task_resource_adjusted` audit event.
+- Validation: focused S2 resource tests 18 passed; full offline suite 185 passed, three OCI
+  skipped. Limitations, and runners not yet adopting the protocol, are in the
+  [S2a report](experiments/session_harness/S2a-durable-resources-recovery.md). No provider
+  calls or spend.
+
+### Delivery record: S2b pinned OCI path, boundary probes, and pipeline controls
+
+- Source base: `70b6a9f` plus the dirty tree; exact hashes in
+  `experiments/session_harness/S2b-source-manifest.sha256`. Image ID `8b74015e5079…` (Podman 5.8.6).
+- Runner v3 selects `trusted-local` or `oci` for both candidate commands and evaluation with guest
+  interpreter and paths, pinned by image ID, recorded in the protocol hash; no fallback.
+  `writable_mount` lets the evaluator write inside its private copy. Tool cache directories are
+  outside source revision scope and evaluator snapshots.
+- Failed hypothesis preserved: guest `--user 65534:65534` was sufficient for candidate work. Round 1
+  controls all passed, but the tester control exposed `chmod` EPERM on the bind mount, which breaks
+  pytest's cache in candidate runs. The fix is Podman `--userns keep-id`; every probe and control was rerun.
+- Validation: full suite 191 passed with live OCI tests enabled (0 skipped); E0 probes 22/22 and 24/24;
+  controls 70/70 matching expectation in both rounds. Report:
+  [S2b](experiments/session_harness/S2b-oci-boundaries-controls.md).
+- Limitations: in-container grader/candidate tampering remains a residual threat; native file tools
+  run on the host (path-confined); Docker, installed wheel, and live model runs unrun; the full
+  more-itertools suite is about 22 times slower in OCI; linkify-it-py is absent from both environments. No provider calls or spend.
+
+### Delivery record: S3 step 1, runner v4 durable attempt accounting
+
+- Source base: `70b6a9f` plus the dirty tree; hashes in `experiments/session_harness/E3-source-manifest.sha256`.
+- `run_pilot.py` runner v4: the OpenRouter client is attempt-reporting. Each HTTP attempt checks
+  the campaign cap, reserves task resources, is dispatched, and is reconciled, and is linked to its
+  `calls.jsonl` row by `provider_attempt_id`. There are at most two retries per request. Per-run
+  `model_responses`, `model_attempts`, `tool_actions`, `active_seconds`, and `cost_usd` (with a
+  worst-case per-attempt reservation) are durable task budgets. The campaign cap and the opt-in
+  repeat stop end a run as a recorded model error, never an aborted controller. `pressure-recent-v1`
+  is available as an arm.
+- Offline verification with a local HTTP stub (no provider calls): retries are reserved, reconciled,
+  and logged; retry exhaustion stops, and resume then makes zero provider calls; a non-retryable
+  status is charged once; the campaign cap leaves no phantom attempt; cost is reserved before
+  dispatch. `tests/test_run_pilot_guards.py`: 10 passed. Full offline suite: 201 passed, 4 OCI skipped.
+- No-API controls under the E3 configuration (OCI, `pressure-recent-v1`, repeat stop, E3 budgets):
+  gold accepted, noop rejected on `sqlparse-865`.
+- Python range check for the deferred installed track: `experiments/session_harness/python-range-check-2026-09-15.md`
+  (3.9 fails in experiment code, 3.10 fails the output-flood test; 3.11, 3.13, and 3.14 pass).
+- Next: approval of `experiments/session_harness/E3-repair-control-001.md` (a smoke of at most 3 attempts,
+  then one E3 run of at most 30 attempts; at most $0.108 worst case). No provider calls or spend so far.
+
+### Delivery record: S3 interface revision after E3 runs 1-3
+
+- Observed usability issues, kept with E3 ([run 3 report](experiments/session_harness/E3-sqlparse-qwen-parasail-3.md)):
+  the `search.pattern` name was read as a text pattern (4 of 20 calls rejected); rejections gave no recovery
+  guidance; only static budget limits were visible, and run 3 ended at the response limit while exploring.
+- `pressure-recent-v2` (new version; `pressure-recent-v1` unchanged): each request states remaining model
+  responses, HTTP attempts, tool actions, active seconds, and cost, from the ledger and invocation limit at build
+  time. The context builder's legacy fallback never receives the status.
+- Toolset `reticle-tools-v2`: `file_glob` replaces `pattern` in `search`/`list_files` (the old name still works,
+  with a note); rejections list accepted arguments and an example; ignored unknown arguments are reported; empty
+  searches state literal matching. Matching semantics unchanged. Runner v6 records the toolset version in the protocol hash.
+- Friction metrics from saved logs (`experiments/session_harness/interface_friction.py`): rejected rate, recovery
+  turns, failed lookups, first command, first edit. Baseline for runs 1-3 is in the run 3 report.
+- U1 usability fixture (`experiments/session_harness/run_u1.py`) with a fixed pass rule; no-API gold passed, noop failed.
+- Validation: `tests/test_s3_interface.py` 12 passed; full offline suite 228 passed, 4 OCI skipped; no-API v6
+  controls on `sqlparse-865`: gold accepted, noop rejected. No provider calls.
+- Next: approval of [E3-repair-control-004](experiments/session_harness/E3-repair-control-004.md).
+
+### Delivery record: toolset v3, implementing the coding-tool interface contract
+
+- Source: hashes in `experiments/session_harness/E3-source-manifest.sha256`.
+- `reticle-tools-v3`: `glob_files(glob, path)` and `search_text(query, path, file_glob)` replace `list_files`/`search`
+  in the model-facing schema; the legacy names are dispatch-only, keep v2 behavior, and carry an explicit note.
+  Globs use documented fnmatch rules and are case-sensitive on every platform (v2 was case-insensitive on Windows).
+  Search results state mode and scope (path, file_glob, files searched, binary files skipped). Unknown arguments to
+  schema tools are rejected with specific hints; `regex` is rejected as unavailable and not advertised. `run` explains
+  shell operators and `cd`, and shows the command to run instead. Tool descriptions state line-range, overwrite,
+  parent-directory, no-shell, paging, and acceptance semantics.
+- `pressure-recent-v3`: labels original limits separately ("X remaining (limit Y)") and states attempts whose billing
+  is unknown (`TaskBudgetLedger.unknown_billing_count`); `pressure-recent-v2` output unchanged. Runner v7.
+- U2 usability fixture (`run_u1.py --fixture u2`) covers file discovery, literal punctuation, file selection, line
+  boundaries, edit ambiguity (identical defective lines), error recovery, and resource visibility. No-API: gold
+  passed, noop failed. Regex cases are omitted because no regex capability exists.
+- Validation: `tests/test_toolset_v3.py` 16 passed; legacy behavior covered in `tests/test_s3_interface.py`; one
+  controller test updated to the new shell-operator wording; full offline suite 244 passed, 4 OCI skipped. No-API
+  controls on `sqlparse-865` under runner v7 and `pressure-recent-v3`: gold accepted, noop rejected. No provider calls.
+- Limitation: these interface changes are bundled; outcomes cannot attribute benefit to an individual change.
+- Next: approval of [E3-repair-control-005](experiments/session_harness/E3-repair-control-005.md).

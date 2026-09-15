@@ -612,18 +612,10 @@ class PressureRecentContextPolicy(BaselineContextPolicy):
         # it as over budget rather than dropping the latest outcome.
         return assemble(VIEW_NOTE_RESERVE_BYTES)
 
-    def build(
-        self,
-        runtime: LocalRuntime,
-        task: TaskEnvelope,
-        transcript: List[Dict[str, Any]],
-        tools: List[Dict[str, Any]],
-        max_context_bytes: int,
-        diagnostics: Optional[List[str]] = None,
-    ) -> ContextBuildResult:
-        if max_context_bytes <= 0:
-            raise ValueError("Context budget must be positive")
-        notes = list(diagnostics or [])
+    def _opening(
+        self, task: TaskEnvelope, resource_status: Optional[Dict[str, Any]] = None
+    ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """The contract and original task. pressure-recent-v1 ignores resource_status."""
         authority = json.dumps(task.authority, sort_keys=True)
         budgets = json.dumps(task.budgets, sort_keys=True)
         criteria = json.dumps(task.criteria, sort_keys=True)
@@ -646,6 +638,22 @@ class PressureRecentContextPolicy(BaselineContextPolicy):
             {"kind": "contract", "rendering": "full"},
             {"kind": "task", "task_id": task.task_id, "rendering": "full"},
         ]
+        return messages, selected
+
+    def build(
+        self,
+        runtime: LocalRuntime,
+        task: TaskEnvelope,
+        transcript: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        max_context_bytes: int,
+        diagnostics: Optional[List[str]] = None,
+        resource_status: Optional[Dict[str, Any]] = None,
+    ) -> ContextBuildResult:
+        if max_context_bytes <= 0:
+            raise ValueError("Context budget must be positive")
+        notes = list(diagnostics or [])
+        messages, selected = self._opening(task, resource_status)
         omitted: List[Dict[str, Any]] = []
         pin_overflow: List[Dict[str, Any]] = []
         units = self._paired_units(transcript)
@@ -791,6 +799,78 @@ class PressureRecentContextPolicy(BaselineContextPolicy):
         )
 
 
+RESOURCE_STATUS_PREFIX = "Remaining task resources before this response (the run stops when one is exhausted): "
+_RESOURCE_LABELS = (
+    ("model_responses", "model responses, including this one", "{:.0f}"),
+    ("model_attempts", "HTTP attempts, retries included", "{:.0f}"),
+    ("tool_actions", "tool actions", "{:.0f}"),
+    ("active_seconds", "active seconds", "{:.0f}"),
+    ("cost_usd", "cost USD", "{:.4f}"),
+)
+
+
+def render_resource_status(status: Dict[str, Any], labeled_limits: bool = False) -> Optional[str]:
+    """pressure-recent-v2 renders "X of Y". pressure-recent-v3 (labeled_limits) renders "X remaining (limit Y)"
+    and states how many attempts had no reported cost."""
+    parts = []
+    for key, label, number in _RESOURCE_LABELS:
+        item = status.get(key)
+        if item:
+            remaining, limit = number.format(max(0.0, item["remaining"])), number.format(item["limit"])
+            if not labeled_limits:
+                parts.append(f"{label}: {remaining} of {limit}")
+                continue
+            text = f"{label}: {remaining} remaining (limit {limit})"
+            unknown = status.get("cost_unknown_billing_attempts") if key == "cost_usd" else None
+            if unknown:
+                text += (f", after charging {unknown} attempt(s) with no reported cost at their reservation "
+                         "(actual billing unknown)")
+            parts.append(text)
+    if not parts:
+        return None
+    reservation = status.get("attempt_cost_reservation_usd")
+    if reservation:
+        parts.append(f"each model attempt first reserves ${reservation:.4f}")
+    return RESOURCE_STATUS_PREFIX + "; ".join(parts) + "."
+
+
+class PressureRecentContextPolicyV2(PressureRecentContextPolicy):
+    """pressure-recent-v1 plus the controller's remaining-resource status in every request.
+
+    The status comes from the durable task ledger and the invocation limit at build time, and is
+    placed after the original task. Everything else is identical to pressure-recent-v1.
+    """
+
+    policy_version = "pressure-recent-v2"
+    renders_resource_status = True
+
+    def _opening(
+        self, task: TaskEnvelope, resource_status: Optional[Dict[str, Any]] = None
+    ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        messages, selected = super()._opening(task)
+        text = render_resource_status(resource_status or {})
+        if text:
+            messages.append({"role": "system", "content": text, "_context_id": "resource-status"})
+            selected.append({"kind": "resource_status", "rendering": "full"})
+        return messages, selected
+
+
+class PressureRecentContextPolicyV3(PressureRecentContextPolicyV2):
+    """pressure-recent-v2 with original limits labeled separately and unknown billing stated."""
+
+    policy_version = "pressure-recent-v3"
+
+    def _opening(
+        self, task: TaskEnvelope, resource_status: Optional[Dict[str, Any]] = None
+    ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        messages, selected = PressureRecentContextPolicy._opening(self, task)
+        text = render_resource_status(resource_status or {}, labeled_limits=True)
+        if text:
+            messages.append({"role": "system", "content": text, "_context_id": "resource-status"})
+            selected.append({"kind": "resource_status", "rendering": "full"})
+        return messages, selected
+
+
 class ContextBuilder:
     """Run a selected policy with a visible bounded-baseline fallback."""
 
@@ -804,4 +884,5 @@ class ContextBuilder:
         except Exception as exc:
             diagnostic = f"Policy {self.policy.policy_version} failed: {type(exc).__name__}: {exc}"
             kwargs["diagnostics"] = [diagnostic]
+            kwargs.pop("resource_status", None)  # the legacy fallback does not render resource status
             return self.baseline.build(*args, **kwargs)

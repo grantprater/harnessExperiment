@@ -33,6 +33,10 @@ class ExecutionRequest:
     output_limit_bytes: int = 1_000_000
     environment: Dict[str, str] = field(default_factory=dict)
     mutates_workspace: bool = False
+    # Isolated backends mount the working directory writable iff this is true; None follows
+    # mutates_workspace. Set it for a private copy (e.g. an evaluation root) whose writes
+    # are not mutations of the session workspace.
+    writable_mount: Optional[bool] = None
 
     def __post_init__(self) -> None:
         if not self.command or not all(isinstance(part, str) and part for part in self.command):
@@ -377,10 +381,22 @@ class IsolatedOCIBackend:
             diagnostic=result.diagnostic,
         )
 
+    def user_arguments(self) -> List[str]:
+        """Run as a non-root guest user that can manage its own workspace files.
+
+        Rootless Podman's keep-id maps the guest user to the unprivileged host user, so bind
+        mounted files are owned by the guest and chmod works (pytest's cache and shutil.copy2
+        need it). Docker keeps the fixed nobody user; chmod on its bind mounts may be denied.
+        """
+        if "podman" in Path(self.engine).name.lower():
+            return ["--userns", "keep-id"]
+        return ["--user", "65534:65534"]
+
     def build_command(self, request: ExecutionRequest, container_name: str) -> List[str]:
         workspace = Path(request.working_directory).resolve()
         mount = f"type=bind,src={workspace},dst=/workspace"
-        if not request.mutates_workspace:
+        writable = request.mutates_workspace if request.writable_mount is None else request.writable_mount
+        if not writable:
             mount += ",readonly"
         command = [
             self.engine,
@@ -393,7 +409,7 @@ class IsolatedOCIBackend:
             "--security-opt", "no-new-privileges",
             "--pids-limit", "128",
             "--memory", "512m",
-            "--user", "65534:65534",
+            *self.user_arguments(),
             "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
             "--mount", mount,
             "--workdir", "/workspace",

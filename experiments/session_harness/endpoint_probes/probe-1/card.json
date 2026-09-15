@@ -1,0 +1,533 @@
+{
+  "probe_version": 1,
+  "rounds": 8,
+  "spacing_seconds": 5.0,
+  "seed": 20260915,
+  "timeout_seconds": 300,
+  "consecutive_failure_stop": 3,
+  "source_calls": "experiments\\p6_pilot\\runs\\e3-sqlparse-gemma-deepinfra-1\\calls.jsonl",
+  "source_request": {
+    "model": "google/gemma-4-26b-a4b-it",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Reticle runtime contract. Preserve tool-call/result pairing. Partial results name an exact read_output/search_output retrieval. Use search_history to discover omitted actions or observations, history to page the session, and read_artifact for an authorized artifact ID. Earlier exchanges may be omitted under context pressure. Authority: {\"execution\": \"isolated OCI: task workspace mount only, no network, unprivileged user\", \"filesystem\": \"task workspace\", \"network\": \"not provided to tasks\"}. Budgets: {\"active_seconds\": 480.0, \"context_bytes\": 80000, \"cost_usd\": 0.1, \"model_attempt_cost_reservation\": 0.00326, \"model_attempts\": 24, \"model_responses\": 20, \"tool_actions\": 40}. Criteria: [{\"id\": \"hidden-upstream-tests\", \"kind\": \"executable\", \"visibility\": \"hidden\"}]."
+      },
+      {
+        "role": "user",
+        "content": "You are working in a source checkout of sqlparse (https://github.com/andialbrecht/sqlparse) at an upstream commit. The following problem was reported:\n\n`get_real_name()` returns the wrong component for names with more than two dotted parts: `sqlparse.parse('db.schema.tbl.col')[0].tokens[0].get_real_name()` returns `'schema'` but should return `'col'` (and `get_name()` should also return `'col'`), while `get_parent_name()` remains `'db'`. For `x.y.z AS w` the real name should be `'z'` with alias `'w'`; `mydb.sch.func(1)` should give `'func'`. Two-part names such as `a.b` -> `'b'` already work.\n\nChange the library so the reported behavior is correct. Hidden upstream tests will be run on your final workspace; tests you add or edit are not used for acceptance, but you may write and run tests to check your work (for example `pytest tests/test_example.py -q` with the run tool). Call finish when you are done."
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "list_files",
+          "description": "List files under a workspace directory recursively, optionally filtered by a glob.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Directory relative to the workspace root. Default '.'."
+              },
+              "pattern": {
+                "type": "string",
+                "description": "Glob on the relative path or file name, e.g. '*.py'. Default '*'."
+              }
+            },
+            "required": []
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "read_file",
+          "description": "Read a text file with line numbers. Give start_line and end_line to read a region.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "start_line": {
+                "type": "integer"
+              },
+              "end_line": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "outline",
+          "description": "List the classes and functions of a Python file with line numbers.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "search",
+          "description": "Find lines containing a literal string in workspace files.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string",
+                "description": "File or directory. Default '.'."
+              },
+              "pattern": {
+                "type": "string",
+                "description": "Glob on the relative path or file name. Default '*'."
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "replace_text",
+          "description": "Replace exact text in a file. Fails without changing the file if old_text is absent, or occurs more than once while replace_all is false.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "old_text": {
+                "type": "string"
+              },
+              "new_text": {
+                "type": "string"
+              },
+              "replace_all": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "path",
+              "old_text",
+              "new_text"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "write_file",
+          "description": "Create or overwrite a file with the given content.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "content"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "run",
+          "description": "Run one command in the workspace root without a shell (no pipes or redirection; use forward slashes in paths). 'python' and 'pytest' use the task's Python environment.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "For example: pytest tests/test_example.py -q"
+              },
+              "timeout_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "command"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "read_output",
+          "description": "Read part of an earlier tool result by its output id (for example out_12). Results that were shown partially say which id and range to request. Give start_line/end_line, or start_byte/end_byte for very long lines.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "start_line": {
+                "type": "integer"
+              },
+              "end_line": {
+                "type": "integer"
+              },
+              "start_byte": {
+                "type": "integer"
+              },
+              "end_byte": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "search_output",
+          "description": "Find lines containing a literal string in an earlier tool result by its output id.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "query": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "query"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "history",
+          "description": "Page through authorized durable session history. The response includes a stable next_cursor.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "after_sequence": {
+                "type": "integer"
+              },
+              "before_sequence": {
+                "type": "integer"
+              },
+              "as_of_sequence": {
+                "type": "integer"
+              },
+              "kinds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "limit": {
+                "type": "integer"
+              },
+              "cursor": {
+                "type": "string"
+              }
+            },
+            "required": []
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "search_history",
+          "description": "Find literal text in authorized prior actions and observations without knowing an output ID.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              },
+              "kinds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "source": {
+                "type": "string"
+              },
+              "as_of_sequence": {
+                "type": "integer"
+              },
+              "limit": {
+                "type": "integer"
+              },
+              "cursor": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "read_artifact",
+          "description": "Read an authorized session artifact by ID, optionally using an exact byte range.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "start_byte": {
+                "type": "integer"
+              },
+              "end_byte": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "note",
+          "description": "Save a named plain-text note that persists across turns. Pinned notes are placed in context when space allows.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              },
+              "pin": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "content"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "read_note",
+          "description": "Read a saved note by name.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "finish",
+          "description": "Declare the work complete. The final workspace is then checked independently.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "summary": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "summary"
+            ]
+          }
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "temperature": 0,
+    "max_tokens": 4096,
+    "provider": {
+      "order": [
+        "deepinfra"
+      ],
+      "allow_fallbacks": false,
+      "require_parameters": true
+    }
+  },
+  "source_request_sha256": "57327a5a8399ef5c8456737a4be9a5f4e4448bafa9e4d54c7e5b090ec7a076db",
+  "routing": {
+    "allow_fallbacks": false,
+    "require_parameters": true
+  },
+  "endpoints": [
+    {
+      "model": "google/gemma-4-26b-a4b-it",
+      "slug": "deepinfra",
+      "endpoint_tags": [
+        "deepinfra/fp8"
+      ],
+      "quantizations": [
+        "fp8"
+      ],
+      "status": [
+        0
+      ],
+      "uptime_last_1d": [
+        99.5893995499596
+      ],
+      "prompt_usd_per_mtok_max": 0.07,
+      "completion_usd_per_mtok_max": 0.33999999999999997,
+      "worst_case_usd_per_request": 0.0015668466666666665
+    },
+    {
+      "model": "google/gemma-4-26b-a4b-it",
+      "slug": "cloudflare",
+      "endpoint_tags": [
+        "cloudflare"
+      ],
+      "quantizations": [
+        "unknown"
+      ],
+      "status": [
+        0
+      ],
+      "uptime_last_1d": [
+        99.8951085018039
+      ],
+      "prompt_usd_per_mtok_max": 0.09999999999999999,
+      "completion_usd_per_mtok_max": 0.3,
+      "worst_case_usd_per_request": 0.0014776666666666664
+    },
+    {
+      "model": "google/gemma-4-26b-a4b-it",
+      "slug": "dekallm",
+      "endpoint_tags": [
+        "dekallm/bf16"
+      ],
+      "quantizations": [
+        "bf16"
+      ],
+      "status": [
+        0
+      ],
+      "uptime_last_1d": [
+        99.93371102211995
+      ],
+      "prompt_usd_per_mtok_max": 0.06,
+      "completion_usd_per_mtok_max": 0.33,
+      "worst_case_usd_per_request": 0.001501
+    },
+    {
+      "model": "deepseek/deepseek-v4-flash",
+      "slug": "novita",
+      "endpoint_tags": [
+        "novita/fp8"
+      ],
+      "quantizations": [
+        "fp8"
+      ],
+      "status": [
+        0
+      ],
+      "uptime_last_1d": [
+        99.90974174351079
+      ],
+      "prompt_usd_per_mtok_max": 0.14,
+      "completion_usd_per_mtok_max": 0.28,
+      "worst_case_usd_per_request": 0.0014952933333333336
+    },
+    {
+      "model": "qwen/qwen3-coder-next",
+      "slug": "parasail",
+      "endpoint_tags": [
+        "parasail/bf16"
+      ],
+      "quantizations": [
+        "bf16"
+      ],
+      "status": [
+        0
+      ],
+      "uptime_last_1d": [
+        99.91692165478023
+      ],
+      "prompt_usd_per_mtok_max": 0.12,
+      "completion_usd_per_mtok_max": 0.7999999999999999,
+      "worst_case_usd_per_request": 0.0035754399999999996
+    },
+    {
+      "model": "mistralai/devstral-2512",
+      "slug": "mistral",
+      "endpoint_tags": [
+        "mistral/eu"
+      ],
+      "quantizations": [
+        "unknown"
+      ],
+      "status": [
+        0
+      ],
+      "uptime_last_1d": [
+        100
+      ],
+      "prompt_usd_per_mtok_max": 0.39999999999999997,
+      "completion_usd_per_mtok_max": 2.0,
+      "worst_case_usd_per_request": 0.009187466666666666
+    }
+  ],
+  "planned_requests": 48,
+  "worst_case_usd": 0.15042970666666666,
+  "decision_rule": "An endpoint is eligible iff every one of its planned requests was sent and returned HTTP 200 with at least one tool call whose name is a runner tool and whose arguments parse as a JSON object. Choosing among eligible endpoints is reported for review, not made by this script.",
+  "created_at": "2026-09-15T16:46:15.333801+00:00",
+  "source_revision": {
+    "commit": "70b6a9f8e71eaabf3f36bb6ab30d603ed76e8cfe",
+    "tracked_changes": true
+  },
+  "max_requests": 48
+}

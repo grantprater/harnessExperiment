@@ -1,0 +1,110 @@
+[
+  {
+    "model": "google/gemma-4-26b-a4b-it",
+    "slug": "deepinfra",
+    "planned": 8,
+    "sent": 8,
+    "valid_tool_calls": 8,
+    "outcomes": {
+      "valid_tool_call": 8
+    },
+    "served_by": {
+      "DeepInfra": 8
+    },
+    "latency_median_s": 1.9449999999999998,
+    "latency_p90_s": 4.28,
+    "latency_max_s": 4.31,
+    "reported_cost_usd": 0.000988,
+    "eligible": true
+  },
+  {
+    "model": "google/gemma-4-26b-a4b-it",
+    "slug": "cloudflare",
+    "planned": 8,
+    "sent": 8,
+    "valid_tool_calls": 8,
+    "outcomes": {
+      "valid_tool_call": 8
+    },
+    "served_by": {
+      "Cloudflare": 8
+    },
+    "latency_median_s": 0.8,
+    "latency_p90_s": 0.99,
+    "latency_max_s": 1.56,
+    "reported_cost_usd": 0.00139,
+    "eligible": true
+  },
+  {
+    "model": "google/gemma-4-26b-a4b-it",
+    "slug": "dekallm",
+    "planned": 8,
+    "sent": 8,
+    "valid_tool_calls": 8,
+    "outcomes": {
+      "valid_tool_call": 8
+    },
+    "served_by": {
+      "DekaLLM": 8
+    },
+    "latency_median_s": 1.0,
+    "latency_p90_s": 1.17,
+    "latency_max_s": 1.36,
+    "reported_cost_usd": 0.000851,
+    "eligible": true
+  },
+  {
+    "model": "deepseek/deepseek-v4-flash",
+    "slug": "novita",
+    "planned": 8,
+    "sent": 8,
+    "valid_tool_calls": 8,
+    "outcomes": {
+      "valid_tool_call": 8
+    },
+    "served_by": {
+      "Novita": 8
+    },
+    "latency_median_s": 3.24,
+    "latency_p90_s": 3.94,
+    "latency_max_s": 4.56,
+    "reported_cost_usd": 0.001915,
+    "eligible": true
+  },
+  {
+    "model": "qwen/qwen3-coder-next",
+    "slug": "parasail",
+    "planned": 8,
+    "sent": 8,
+    "valid_tool_calls": 8,
+    "outcomes": {
+      "valid_tool_call": 8
+    },
+    "served_by": {
+      "Parasail": 8
+    },
+    "latency_median_s": 0.98,
+    "latency_p90_s": 1.47,
+    "latency_max_s": 2.28,
+    "reported_cost_usd": 0.002073,
+    "eligible": true
+  },
+  {
+    "model": "mistralai/devstral-2512",
+    "slug": "mistral",
+    "planned": 8,
+    "sent": 8,
+    "valid_tool_calls": 8,
+    "outcomes": {
+      "valid_tool_call": 8
+    },
+    "served_by": {
+      "Mistral": 8
+    },
+    "latency_median_s": 1.105,
+    "latency_p90_s": 1.45,
+    "latency_max_s": 1.54,
+    "reported_cost_usd": 0.006298,
+    "eligible": true
+  }
+]
