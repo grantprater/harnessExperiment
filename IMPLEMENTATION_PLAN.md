@@ -1,6 +1,6 @@
 # Reticle: general adaptive runtime implementation plan
 
-Status: proposed architecture and staged delivery plan; implementation has not started.
+Status: staged delivery plan; P0–P5 engineering stages are complete (see section 14).
 Created: 2026-09-14.
 Owner: Grant; implementation owners assigned when work is scheduled.
 
@@ -792,6 +792,35 @@ was authorized or performed.
   fingerprints, and Python environment revisions through the legacy falsification
   evaluation loop. This fixed the only full-suite regression without weakening the
   partial-run rule. All 121 tests pass with the P4 and P5 live OCI gates enabled.
+- 2026-09-15 tree cleanup: the working tree was committed as `d711084` (unrelated
+  evaluation fixes plus raw falsification run logs), `e51aa33` (P2–P4 substrate),
+  `3ea3057` (P1 legacy repairs, which depend on `reticle.execution`), `e725e3e`
+  (P5 checkpoints 1–4), and `b260659` (this plan). Each commit's staged snapshot
+  was exported with `git checkout-index` and its focused tests passed in isolation;
+  the final snapshot ran the full offline suite.
+- P5 checkpoint 5 (complete). The installed-wheel gate exposed a real defect:
+  `reticle.cognitive.__init__` eagerly imported the root-level `stateless_harness`
+  module, so `reticle.cognitive.falsification` could not be imported from a wheel.
+  Legacy harness names are now resolved lazily; `InstalledPackageImportTests`
+  blocks root checkout modules and fails without the fix. Validation: 122 tests
+  pass with `RETICLE_OCI_TEST_IMAGE=python:3.13-alpine`; the 29-test supplemental
+  suite, `py_compile`, and `git diff --check` pass. Wheel
+  `.runtime/wheel-test-p5/reticle-0.2.0-py3-none-any.whl` (SHA-256
+  `a5878a93da2d14db4489d1f56836c34cde78ef1336760481956a11e3e87d2b60`) was extracted
+  to `C:\Users\grant\AppData\Local\Temp\reticle-p5-wheel-1789453116` and run with
+  `python -P` so the checkout was not importable. That run (smoke script SHA-256
+  `d519df83b176f998507142eb75ad224da8afd28c9b27ba77e050ed41a8b66beb`) showed:
+  (1) with a candidate-authored always-passing test, the fixed OCI evaluator
+  rejected a wrong answer and accepted the correct one; (2) with real `unittest -v`
+  output, a partial run of `test_b` left the `test_a` dead end unresolved;
+  (3) human/unmeasurable criteria returned `needs_review` with a review artifact
+  preserving criterion wording. A first smoke attempt used hand-written unittest
+  output without the `====` separator; the parser correctly classified it as a
+  collection error, so it was discarded as a script defect, not product evidence.
+- Unresolved risk carried to P9: `reticle run` and `reticle.cognitive.stateless_harness`
+  still require the root `stateless_harness.py` and `perception.py` modules (the
+  latter imports only the standard library). An installed wheel cannot run the
+  legacy CLI path until those move into the package behind root shims.
 
 | Stage | Status | Completion evidence | Next action |
 |---|---|---|---|
@@ -800,8 +829,8 @@ was authorized or performed.
 | P2 | Complete | Restart, exact-output, stale-write, incomplete-action, and external wheel gates pass | P3 complete; retain substrate for P4 |
 | P3 | Complete | Restart/small-context, exact evidence, paired tools, pin overflow, fallback, and external wheel gates pass | Spike P4 Windows execution backends |
 | P4 | Complete | 105 tests pass with real filesystem/network and isolated-worker OCI gates; external wheel smoke passes | Define P5 evidence and final-revision acceptance contracts |
-| P5 | In progress | 121 tests pass with live OCI acceptance; conditional coverage/version regression fixed | Run supplemental and installed-wheel acceptance gates |
-| P6 | Not started | — | Draft matched-budget protocol |
+| P5 | Complete | 122 tests pass with live OCI acceptance; supplemental suite passes; installed-wheel smoke passes all three exit gates after fixing the eager root import | Retained for P6 evaluator inputs |
+| P6 | Not started | — | Choose the pinned task set, model(s), and budget rules; build the shared offline runner before any paid pilot |
 | P7 | Not started | — | Versioned library + optional adaptive policy |
 | P8 | Not started | — | Transfer and scaling study |
 | P9 | Not started | — | Reconcile CLI/docs and rollout defaults |

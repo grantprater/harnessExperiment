@@ -286,5 +286,30 @@ class IndependentAcceptanceTests(unittest.TestCase):
         self.assertEqual(decision.status, "accepted")
 
 
+class InstalledPackageImportTests(unittest.TestCase):
+    def test_evidence_modules_import_without_root_checkout_modules(self):
+        # A wheel ships only the package; root-level legacy modules must not be required.
+        script = (
+            "import importlib.abc, sys\n"
+            "class Block(importlib.abc.MetaPathFinder):\n"
+            "    def find_spec(self, name, path=None, target=None):\n"
+            "        if name.split('.')[0] in {'stateless_harness', 'perception', 'harness'}:\n"
+            "            raise ImportError('root checkout module: ' + name)\n"
+            "sys.meta_path.insert(0, Block())\n"
+            "import reticle.cognitive, reticle.cognitive.falsification, reticle.evaluation\n"
+            "print('ok')\n"
+        )
+        import subprocess
+        import sys
+
+        root = Path(__file__).resolve().parents[1]
+        proc = subprocess.run(
+            [sys.executable, "-B", "-c", script], cwd=root,
+            capture_output=True, text=True, timeout=60,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(proc.stdout.strip(), "ok")
+
+
 if __name__ == "__main__":
     unittest.main()
