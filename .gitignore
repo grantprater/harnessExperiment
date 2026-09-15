@@ -49,4 +49,9 @@ package-lock.json
 traces/
 mc_trace_*.json
 
+# Aider logs
+.aider*
+*.png
+!experiments/**/*.png
+
 

@@ -11,10 +11,10 @@
 
 | Metric | Arm A (Monolithic Baseline) | Arm B (Cognitive Harness) | Delta / Impact |
 | :--- | :---: | :---: | :---: |
-| **Invariant Pass Rate** | 60.0% (3/5) | **100.0% (5/5)** | **+40.0%** |
-| **bpy Execution Success** | ✅ | ✅ | Consistent |
-| **Headless Visual Render Still** | ❌ | **✅** | **Verified Render (1280x720)** |
-| **Turnaround Latency** | 39.40s | **9.26s** | **4.25x faster** |
+| **Invariant Pass Rate** | 80.0% (4/5) | 80.0% (4/5) | **+0.0%** |
+| **bpy Execution Success** | ✅ | ✅ | **Consistent** |
+| **Headless Visual Render Still** | ❌ | ❌ | **Unverified** |
+| **Turnaround Latency** | 45.75s | 9.29s | 0.20x |
 
 ---
 
@@ -23,10 +23,10 @@
 | Invariant Target | Arm A Result | Arm B Result |
 | :--- | :---: | :---: |
 | `Chassis_Base Bevel modifier (width=0.05, segments>=3)` | ✅ | ✅ |
-| `Sensor_Array Cyber_Glow emission shader (strength>=10)` | ❌ | ✅ |
+| `Sensor_Array Cyber_Glow emission shader (strength>=10)` | ✅ | ✅ |
 | `Key_Light energy boosted to >= 700W` | ✅ | ✅ |
 | `Studio_Camera focal length 55mm with Depth of Field` | ✅ | ✅ |
-| `Headless visual still rendered successfully` | ❌ | ✅ |
+| `Headless visual still rendered successfully` | ❌ | ❌ |
 
 ---
 
@@ -39,31 +39,30 @@
 ```python
 import bpy
 
-def modify_scene():
-    # 1. On object 'Chassis_Base': Add a Bevel modifier with width=0.05 and segments=3
-    chassis = bpy.data.objects.get('Chassis_Base')
-    if chassis:
-        bevel_mod = chassis.modifiers.new(name='Bevel', type='BEVEL')
-        bevel_mod.width = 0.05
-        bevel_mod.segments = 3
+# 1. On object 'Chassis_Base': Add a Bevel modifier (type='BEVEL') with width=0.05 and segments=3.
+chassis = bpy.data.objects.get("Chassis_Base")
+if chassis:
+    bevel_mod = chassis.modifiers.new(name="Bevel", type='BEVEL')
+    bevel_mod.width = 0.05
+    bevel_mod.segments = 3
 
-    # 2. On object 'Sensor_Array': Create 'Cyber_Glow' material with Emission shader node
-    sensor = bpy.data.objects.get('Sensor_Array')
-    if sensor:
-        mat = bpy.data.mat...
+# 2. On object 'Sensor_Array': Create a new material named 'Cyber_Glow' with use_nodes=True. 
+# Add an Emission shader node with emission color (0.0, 0.8, 1.0, 1.0) and strength=15.0, 
+# and connect its Emissi...
 ```
 
 ### Arm B Generated Code (Sample)
 ```python
 import bpy
 
-# ------------------------------------------------------------------------------
-# 1. On object 'Chassis_Base': Add a Bevel modifier with width=0.05 and segments=3
-# ------------------------------------------------------------------------------
-chassis_obj = bpy.data.objects.get("Chassis_Base")
-if chassis_obj:
-    # Check if a Bevel modifier already exists, or create a new one
-    bevel_mod = chassis_obj.modifiers.get("Bevel")
-    if not bevel_mod:
-        bevel_mod = chassis_obj.mod...
+# 1. On object 'Chassis_Base': Add a Bevel modifier (type='BEVEL') with width=0.05 and segments=3.
+chassis = bpy.data.objects.get("Chassis_Base")
+if chassis:
+    bevel_mod = chassis.modifiers.new(name="Bevel", type='BEVEL')
+    bevel_mod.width = 0.05
+    bevel_mod.segments = 3
+
+# 2. On object 'Sensor_Array': Create a new material named 'Cyber_Glow' with use_nodes=True.
+# Add an Emission shader node with emission color (0.0, 0.8, 1.0, 1.0) and strength=15.0,
+# and connect its Emission...
 ```

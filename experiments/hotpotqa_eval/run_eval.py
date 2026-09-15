@@ -87,13 +87,14 @@ def load_openrouter_key() -> str | None:
     return os.environ.get("OPENROUTER_API_KEY")
 
 
-def chat(api_key: str, model: str, prompt: str, timeout: int = 120):
-    """One chat completion. Returns (content, prompt_tokens, completion_tokens, attempts).
+def chat(api_key: str, model: str, prompt, timeout: int = 120):
+    """One chat completion for a user prompt string or a full message list.
 
-    Token counts are exactly what the API reports (None if absent). Raises ApiError after 4 attempts.
+    Returns (content, prompt_tokens, completion_tokens, attempts). Token counts are exactly what
+    the API reports (None if absent). Raises ApiError after 4 attempts.
     """
-    body = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}],
-                       "temperature": 0}).encode("utf-8")
+    messages = [{"role": "user", "content": prompt}] if isinstance(prompt, str) else prompt
+    body = json.dumps({"model": model, "messages": messages, "temperature": 0}).encode("utf-8")
     last_error = "no attempt made"
     for attempt in range(1, 5):
         req = urllib.request.Request(f"{BASE_URL}/chat/completions", data=body, method="POST",

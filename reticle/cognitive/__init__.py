@@ -1,6 +1,14 @@
 from reticle.cognitive.llm_client import LLMClient, StepMetric, MODEL_PRICING
 from reticle.cognitive.capability_ledger import CapabilityLedger
 from reticle.cognitive.autotelic_drive import AutotelicDriveEngine
+from reticle.cognitive.falsification import (
+    DeadEnd,
+    DeadEndLedger,
+    RunReport,
+    code_fingerprint,
+    parse_approach,
+    parse_unittest_output,
+)
 from reticle.cognitive.stateless_harness import (
     BlankSlateHarness,
     EpistemicNoteBoard,
@@ -15,6 +23,12 @@ __all__ = [
     "MODEL_PRICING",
     "CapabilityLedger",
     "AutotelicDriveEngine",
+    "DeadEnd",
+    "DeadEndLedger",
+    "RunReport",
+    "code_fingerprint",
+    "parse_approach",
+    "parse_unittest_output",
     "BlankSlateHarness",
     "EpistemicNoteBoard",
     "DynamicToolRegistry",

@@ -41,7 +41,8 @@ def run_blender_script(
     blend_file: Optional[Union[Path, str]] = None,
     args: Optional[List[str]] = None,
     timeout: int = 60,
-    blender_exe: Optional[Path] = None
+    blender_exe: Optional[Path] = None,
+    cwd: Optional[Union[Path, str]] = None
 ) -> BlenderRunResult:
     """Execute a Python script inside Blender in background mode."""
     exe = blender_exe or get_blender_path()
@@ -66,7 +67,8 @@ def run_blender_script(
             cmd,
             capture_output=True,
             text=True,
-            timeout=timeout
+            timeout=timeout,
+            cwd=str(cwd) if cwd else None
         )
         elapsed = time.time() - t0
         stdout = proc.stdout or ""
