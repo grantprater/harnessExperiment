@@ -887,6 +887,16 @@ was authorized or performed.
   unknown ids, scripted-model paging round trip); 140 tests pass. `run_pilot.py` runner v2
   adds `--provider MODEL=SLUG` pinning (no fallbacks) recorded in the protocol hash, and
   `report.py` counts paging calls, repeated identical calls, and replies without tool calls.
+- P6 pilot 2 (`runs/pilot2-transcript`, runner v2, protocol `f955736eb747`; qwen -> Venice,
+  gemma-4-26b-a4b -> DeepInfra fp8, nemotron:free -> Nvidia; 250-attempt cap reached; $0.0606
+  reported): 0/9 accepted. Three runs were cut short by infrastructure (qwen Venice HTTP 429s: 65
+  of 120 attempts; Nvidia "overloaded" bodies; the pilot cap). Two runs edited the fixed file:
+  qwen changed `int(...)` to `round(...)` (fail-to-pass passed, 15 pass-to-pass failed) and
+  nemotron overwrote it with empty content from its own arguments. All 47 repeated identical
+  observation calls followed an earlier result that was visible only as a <=512-byte older view;
+  none followed a fully visible result. After 16 partial newest views models called read_output
+  0 times. Details in `AUDIT.md`. Open decisions: older-result view size, whether rate-limit
+  retries count toward the cap, and retry backoff for pinned providers.
 
 | Stage | Status | Completion evidence | Next action |
 |---|---|---|---|
