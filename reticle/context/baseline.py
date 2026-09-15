@@ -1,0 +1,368 @@
+"""Bounded recent transcript policy with exact, persisted manifests."""
+
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+import json
+from typing import Any, Dict, Iterable, List, Optional, Protocol
+
+from reticle._schema import SCHEMA_VERSION
+from reticle.runtime.contracts import TaskEnvelope
+from reticle.runtime.session import LocalRuntime
+
+
+def _encoded(value: Any) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode(
+        "utf-8"
+    )
+
+
+def _estimate_tokens(byte_length: int) -> int:
+    return (byte_length + 3) // 4
+
+
+@dataclass(frozen=True)
+class ContextManifest:
+    policy_version: str
+    task_id: str
+    max_context_bytes: int
+    materialized_request_artifact_id: str
+    materialized_request_hash: str
+    selected_items: List[Dict[str, Any]]
+    message_order: List[str]
+    selected_tool_schemas: List[Dict[str, Any]]
+    token_estimate: int
+    pin_overflow: List[Dict[str, Any]] = field(default_factory=list)
+    diagnostics: List[str] = field(default_factory=list)
+    provider_hidden_context: str = "unavailable"
+    schema_version: int = SCHEMA_VERSION
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ContextBuildResult:
+    messages: List[Dict[str, Any]]
+    tools: List[Dict[str, Any]]
+    manifest: ContextManifest
+    over_budget: bool
+
+
+class TranscriptStore:
+    """Persist provider messages exactly, independently of rendered context."""
+
+    def __init__(self, runtime: LocalRuntime):
+        self.runtime = runtime
+
+    def append(self, message: Dict[str, Any]) -> str:
+        raw = _encoded(message)
+        event_id = self.runtime.journal.new_event_id()
+        artifact = self.runtime.artifacts.put(
+            raw,
+            "application/json",
+            event_id,
+            labels=["transcript-message", str(message.get("role", "unknown"))],
+        )
+        self.runtime.journal.append(
+            "transcript_message",
+            {"artifact_id": artifact.artifact_id, "role": message.get("role")},
+            event_id=event_id,
+        )
+        return artifact.artifact_id
+
+    def load(self) -> List[Dict[str, Any]]:
+        messages: List[Dict[str, Any]] = []
+        for event in self.runtime.journal.read_all():
+            if event.kind != "transcript_message":
+                continue
+            raw = self.runtime.artifacts.read(event.payload["artifact_id"])
+            message = json.loads(raw.decode("utf-8"))
+            # Private provenance travels only as far as context construction and
+            # is stripped from the provider request below.
+            message["_reticle_artifact_id"] = event.payload["artifact_id"]
+            messages.append(message)
+        return messages
+
+
+class ContextPolicy(Protocol):
+    policy_version: str
+
+    def build(
+        self,
+        runtime: LocalRuntime,
+        task: TaskEnvelope,
+        transcript: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        max_context_bytes: int,
+        diagnostics: Optional[List[str]] = None,
+    ) -> ContextBuildResult: ...
+
+
+class BaselineContextPolicy:
+    policy_version = "bounded-recent-v1"
+
+    def __init__(self, tool_preview_bytes: int = 512, pin_preview_bytes: int = 512):
+        self.tool_preview_bytes = tool_preview_bytes
+        self.pin_preview_bytes = pin_preview_bytes
+
+    @staticmethod
+    def _tool_ids(message: Dict[str, Any]) -> List[str]:
+        if message.get("role") != "assistant":
+            return []
+        return [call.get("id") for call in message.get("tool_calls", []) if call.get("id")]
+
+    def _paired_units(self, transcript: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
+        """Group assistant tool calls with all matching results; discard orphans."""
+        units: List[List[Dict[str, Any]]] = []
+        index = 0
+        while index < len(transcript):
+            message = transcript[index]
+            call_ids = self._tool_ids(message)
+            if call_ids:
+                unit = [message]
+                found = set()
+                cursor = index + 1
+                while cursor < len(transcript) and transcript[cursor].get("role") == "tool":
+                    result = transcript[cursor]
+                    if result.get("tool_call_id") in call_ids:
+                        unit.append(result)
+                        found.add(result.get("tool_call_id"))
+                    cursor += 1
+                if found == set(call_ids):
+                    units.append(unit)
+                index = cursor
+                continue
+            if message.get("role") != "tool":
+                units.append([message])
+            index += 1
+        return units
+
+    def _spill_tool_message(
+        self, runtime: LocalRuntime, message: Dict[str, Any]
+    ) -> tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+        content = message.get("content")
+        if message.get("role") != "tool" or not isinstance(content, str):
+            return message, None
+        raw = content.encode("utf-8")
+        if len(raw) <= self.tool_preview_bytes:
+            return message, None
+        event_id = runtime.journal.new_event_id()
+        artifact = runtime.artifacts.put(
+            raw,
+            "text/plain; charset=utf-8",
+            event_id,
+            labels=["spilled-observation", str(message.get("tool_call_id", "unknown"))],
+        )
+        runtime.journal.append(
+            "observation_spill",
+            {"artifact": artifact.to_dict(), "tool_call_id": message.get("tool_call_id")},
+            event_id=event_id,
+        )
+        preview = raw[:self.tool_preview_bytes].decode("utf-8", errors="replace")
+        rendered = dict(message)
+        rendered["content"] = (
+            f"{preview}\n[truncated: {len(raw) - self.tool_preview_bytes} bytes omitted; "
+            f"exact observation: {artifact.artifact_id}]"
+        )
+        return rendered, {
+            "artifact_id": artifact.artifact_id,
+            "range": [0, self.tool_preview_bytes],
+            "rendering": "truthful-preview",
+            "source_byte_length": len(raw),
+        }
+
+    def _record(
+        self,
+        runtime: LocalRuntime,
+        task: TaskEnvelope,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        max_context_bytes: int,
+        selected: List[Dict[str, Any]],
+        pin_overflow: List[Dict[str, Any]],
+        diagnostics: List[str],
+    ) -> ContextBuildResult:
+        message_order = [
+            str(message.get("_context_id", index)) for index, message in enumerate(messages)
+        ]
+        public_messages = [
+            {
+                key: value for key, value in message.items()
+                if key not in {"_context_id", "_reticle_artifact_id"}
+            }
+            for message in messages
+        ]
+        request = {"messages": public_messages, "tools": tools}
+        raw = _encoded(request)
+        event_id = runtime.journal.new_event_id()
+        request_artifact = runtime.artifacts.put(
+            raw, "application/json", event_id, labels=["materialized-context-request"]
+        )
+        manifest = ContextManifest(
+            policy_version=self.policy_version,
+            task_id=task.task_id,
+            max_context_bytes=max_context_bytes,
+            materialized_request_artifact_id=request_artifact.artifact_id,
+            materialized_request_hash=request_artifact.content_hash,
+            selected_items=selected,
+            message_order=message_order,
+            selected_tool_schemas=tools,
+            token_estimate=_estimate_tokens(len(raw)),
+            pin_overflow=pin_overflow,
+            diagnostics=diagnostics,
+        )
+        runtime.journal.append(
+            "context_manifest",
+            {"manifest": manifest.to_dict()},
+            event_id=event_id,
+        )
+        return ContextBuildResult(public_messages, tools, manifest, len(raw) > max_context_bytes)
+
+    def build(
+        self,
+        runtime: LocalRuntime,
+        task: TaskEnvelope,
+        transcript: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        max_context_bytes: int,
+        diagnostics: Optional[List[str]] = None,
+    ) -> ContextBuildResult:
+        if max_context_bytes <= 0:
+            raise ValueError("Context budget must be positive")
+        notes = list(diagnostics or [])
+        authority = json.dumps(task.authority, sort_keys=True)
+        budgets = json.dumps(task.budgets, sort_keys=True)
+        criteria = json.dumps(task.criteria, sort_keys=True)
+        diagnostic_text = ""
+        if notes:
+            diagnostic_text = " Context diagnostics: " + " | ".join(notes)
+        messages: List[Dict[str, Any]] = [
+            {
+                "role": "system",
+                "content": (
+                    "Reticle runtime contract. Preserve tool-call/result pairing. "
+                    "Retrieve omitted exact evidence by artifact ID. "
+                    f"Authority: {authority}. Budgets: {budgets}. Criteria: {criteria}."
+                    f"{diagnostic_text}"
+                ),
+                "_context_id": "contract",
+            },
+            {"role": "user", "content": task.description, "_context_id": "original-task"},
+        ]
+        selected: List[Dict[str, Any]] = [
+            {"kind": "contract", "rendering": "full"},
+            {"kind": "task", "task_id": task.task_id, "rendering": "full"},
+        ]
+        pin_overflow: List[Dict[str, Any]] = []
+
+        base_size = len(_encoded({"messages": messages, "tools": tools}))
+        remaining = max(0, max_context_bytes - base_size)
+        pins = sorted(
+            runtime.scratch.pins().items(),
+            key=lambda item: (-int(item[1]["priority"]), item[0]),
+        )
+        for ref, pin in pins:
+            read = runtime.scratch.read(pin["artifact_id"])
+            raw = read.content
+            full_text = raw.decode("utf-8", errors="replace")
+            message = {
+                "role": "system",
+                "content": f"Pinned scratch {ref} ({read.artifact.artifact_id}):\n{full_text}",
+                "_context_id": f"pin:{ref}",
+            }
+            cost = len(_encoded(message))
+            if cost <= remaining:
+                messages.append(message)
+                remaining -= cost
+                selected.append({
+                    "kind": "pin",
+                    "ref": ref,
+                    "artifact_id": read.artifact.artifact_id,
+                    "reference_version": pin["reference_version"],
+                    "range": [0, len(raw)],
+                    "rendering": "full",
+                })
+                continue
+            preview_length = min(len(raw), self.pin_preview_bytes, max(0, remaining // 2))
+            overflow = {
+                "ref": ref,
+                "artifact_id": read.artifact.artifact_id,
+                "requested_bytes": len(raw),
+                "delivered_bytes": preview_length,
+                "reason": "pin_exceeds_remaining_context_budget",
+            }
+            pin_overflow.append(overflow)
+            if preview_length:
+                preview = raw[:preview_length].decode("utf-8", errors="replace")
+                compact = {
+                    "role": "system",
+                    "content": (
+                        f"PIN OVERFLOW for {ref}: {preview}\n"
+                        f"[{len(raw) - preview_length} bytes omitted; exact: {read.artifact.artifact_id}]"
+                    ),
+                    "_context_id": f"pin-overflow:{ref}",
+                }
+                messages.append(compact)
+                remaining = max(0, remaining - len(_encoded(compact)))
+                selected.append({
+                    "kind": "pin",
+                    "ref": ref,
+                    "artifact_id": read.artifact.artifact_id,
+                    "reference_version": pin["reference_version"],
+                    "range": [0, preview_length],
+                    "rendering": "overflow-preview",
+                })
+        if pin_overflow:
+            notes.append("One or more pins overflowed; baseline compact previews were used.")
+
+        rendered_units: List[tuple[List[Dict[str, Any]], List[Dict[str, Any]], int]] = []
+        for unit_index, unit in enumerate(self._paired_units(transcript)):
+            rendered: List[Dict[str, Any]] = []
+            unit_selected: List[Dict[str, Any]] = []
+            for message_index, original in enumerate(unit):
+                value, spill = self._spill_tool_message(runtime, original)
+                value = dict(value)
+                transcript_artifact_id = value.pop("_reticle_artifact_id", None)
+                value["_context_id"] = f"transcript:{unit_index}:{message_index}"
+                rendered.append(value)
+                item = {
+                    "kind": "transcript",
+                    "role": value.get("role"),
+                    "artifact_id": transcript_artifact_id,
+                    "rendering": "full",
+                }
+                if spill:
+                    item.update(spill)
+                unit_selected.append(item)
+            rendered_units.append((rendered, unit_selected, len(_encoded(rendered))))
+
+        recent: List[tuple[List[Dict[str, Any]], List[Dict[str, Any]]]] = []
+        for rendered, unit_selected, cost in reversed(rendered_units):
+            if cost > remaining:
+                continue
+            recent.append((rendered, unit_selected))
+            remaining -= cost
+        for rendered, unit_selected in reversed(recent):
+            messages.extend(rendered)
+            selected.extend(unit_selected)
+
+        return self._record(
+            runtime, task, messages, tools, max_context_bytes, selected, pin_overflow, notes
+        )
+
+
+class ContextBuilder:
+    """Run a selected policy with a visible bounded-baseline fallback."""
+
+    def __init__(self, policy: ContextPolicy, baseline: Optional[BaselineContextPolicy] = None):
+        self.policy = policy
+        self.baseline = baseline or BaselineContextPolicy()
+
+    def build(self, *args: Any, **kwargs: Any) -> ContextBuildResult:
+        try:
+            return self.policy.build(*args, **kwargs)
+        except Exception as exc:
+            diagnostic = f"Policy {self.policy.policy_version} failed: {type(exc).__name__}: {exc}"
+            kwargs["diagnostics"] = [diagnostic]
+            return self.baseline.build(*args, **kwargs)
