@@ -866,6 +866,15 @@ was authorized or performed.
   on 8 other qwen requests, so the failure is request-dependent there. Not separated: whether
   replayed reasoning contributes. Planned runner change for later runs: pin one provider per
   model (excluding one that fails this replay) and record provider routing in the protocol.
+- P6 pilot 1 (`runs/pilot1-transcript`, protocol `b9b409abdb36`, source `70b15f1`; 186 HTTP
+  attempts of the 250 cap; $0.0432 reported): 0/9 accepted, 9 rejected; no run edited the fixed
+  source file or called finish. Audit (`AUDIT.md`) found a harness defect that invalidates the
+  runs as capability measurements: `BaselineContextPolicy` spilled every tool result over 512
+  bytes, including the newest, to a 512-byte preview naming an artifact, and no tool can read an
+  artifact ID. qwen repeated identical reads up to 11 times. gemma's 3 runs failed on upstream
+  HTTP 429 (13/14 attempts); nemotron had 21 HTTP-200 "overloaded" error bodies. Next: keep the
+  newest tool exchange unspilled (or size previews to the tool's own preview limit), add an
+  artifact read tool so previews are recoverable, pin providers, then rerun only with approval.
 
 | Stage | Status | Completion evidence | Next action |
 |---|---|---|---|
