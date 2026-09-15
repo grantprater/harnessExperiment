@@ -73,6 +73,7 @@ class AcceptanceRunner:
         *,
         evaluator_root: Optional[str | Path] = None,
         budget: Optional[EvaluationBudget] = None,
+        timeout_seconds: float = 60,
     ) -> AcceptanceDecision:
         final_revision = self.runtime.workspace.revision()
         automated = [c for c in plan.criteria if c.kind in {"executable", "graded"}]
@@ -133,7 +134,7 @@ class AcceptanceRunner:
                 ExecutionRequest(
                     command=command,
                     working_directory=evaluation_root,
-                    timeout_seconds=60,
+                    timeout_seconds=timeout_seconds,
                     output_limit_bytes=1_000_000,
                     mutates_workspace=False,
                 )

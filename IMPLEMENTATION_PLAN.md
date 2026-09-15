@@ -821,6 +821,38 @@ was authorized or performed.
   still require the root `stateless_harness.py` and `perception.py` modules (the
   latter imports only the standard library). An installed wheel cannot run the
   legacy CLI path until those move into the package behind root shims.
+- P6 in progress (2026-09-15). Tasks: the user had no pinned real-repository bugs, so
+  fourteen upstream fixes merged 2026-06..09 (after the candidate models' release dates)
+  were mined from small pure-Python libraries; see `experiments/p6_pilot/`. `verify_bugs.py`
+  applies only each fix's test files to the pre-fix commit and parses pytest JUnit XML; all
+  fourteen have fail-to-pass tests and no failures after the fix. Two full verification runs
+  agreed except `tests.test_rr.RRCacheTest::test_getsizeof_replace_grow`, whose pre-fix
+  outcome depends on random eviction; it and one over-specified tomlkit rendering test are
+  excluded with recorded reasons. `tasks.json` holds symptom-only statements (no cause or fix).
+- P6 shared runner: `reticle.tools.ToolSuite` (journaled list/read/outline/search/replace/
+  write/run/note/finish tools with truthful previews) and `reticle.runtime.controller.AgentController`
+  (context policy -> model -> tools -> exact transcript; provider usage recorded as reported,
+  with per-field counts of calls lacking usage). `AcceptanceRunner.evaluate` gained a
+  `timeout_seconds` argument. `run_pilot.py` exports the pre-fix tree without git history,
+  builds an evaluator bundle outside the workspace from the fix commit's whole test trees and
+  root pytest configuration, and logs every OpenRouter attempt and run result as JSONL with a
+  hard `--max-total-calls` cap. Offline coverage: `tests/test_agent_controller.py` and
+  `tests/test_p6_evaluator.py`; 132 tests pass. Found while building: the evaluator missed
+  pytest's empty-classname collection-error cases, and candidate-added conftest hooks could
+  have rewritten test reports; both fixed with regression tests.
+- P6 decisions (user, 2026-09-15): budget under $3 or OpenRouter free tier; three capability
+  points qwen/qwen3.5-9b, google/gemma-4-26b-a4b-it:free, nvidia/nemotron-3-super-120b-a12b:free.
+  Approved first pilot: humanize-329, sqlparse-865, tomlkit-549 x those models, bounded
+  transcript arm, max 25 calls per run, cap 250 HTTP attempts (planned worst case $0.29).
+  Second arm: `reticle.context.board.ReticleBoardPolicy` (`reticle-board-v1`): original task,
+  last two exchanges, and a journal-derived board of failed actions (with workspace-changed
+  flags), modified files, and notes; selectable with `run_pilot.py --arm`. Built and tested
+  (`tests/test_board_policy.py`; 134 tests pass); running it needs separate approval.
+- P6 no-API pipeline checks, protocol `b9b409abdb36`, all 14 tasks each
+  (`experiments/p6_pilot/runs/pipeline-*`): gold (upstream fix via write_file) 14 accepted;
+  noop 14 rejected; breaker (unimportable source) 14 rejected; gamer (conftest hooks forcing
+  passed reports) 14 rejected. Before hardening, breaker gave needs_review on marshmallow and
+  click (conftest import failure) and one tomlkit bundle build failed on a git submodule.
 
 | Stage | Status | Completion evidence | Next action |
 |---|---|---|---|
@@ -830,7 +862,7 @@ was authorized or performed.
 | P3 | Complete | Restart/small-context, exact evidence, paired tools, pin overflow, fallback, and external wheel gates pass | Spike P4 Windows execution backends |
 | P4 | Complete | 105 tests pass with real filesystem/network and isolated-worker OCI gates; external wheel smoke passes | Define P5 evidence and final-revision acceptance contracts |
 | P5 | Complete | 122 tests pass with live OCI acceptance; supplemental suite passes; installed-wheel smoke passes all three exit gates after fixing the eager root import | Retained for P6 evaluator inputs |
-| P6 | Not started | — | Choose the pinned task set, model(s), and budget rules; build the shared offline runner before any paid pilot |
+| P6 | In progress | 14 verified real-repo tasks; shared runner, hardened evaluator, and no-API pipeline clients; 132 tests pass | Run approved 9-run instrumentation pilot, inspect every trajectory, build the board-policy arm |
 | P7 | Not started | — | Versioned library + optional adaptive policy |
 | P8 | Not started | — | Transfer and scaling study |
 | P9 | Not started | — | Reconcile CLI/docs and rollout defaults |

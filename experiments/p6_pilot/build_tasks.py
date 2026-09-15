@@ -139,6 +139,11 @@ EXCLUDED_ACCEPTANCE_TESTS = {
             "requires one specific rendering; stating it would reveal the fix and other renderings "
             "that round-trip correctly are equally valid",
     },
+    "cachetools-408": {
+        "tests.test_rr.RRCacheTest::test_getsizeof_replace_grow":
+            "RRCache evicts a random entry, so the pre-fix outcome is nondeterministic: it failed in the "
+            "first verification run and passed in the second",
+    },
 }
 
 
@@ -150,9 +155,9 @@ def main():
         if not record.get("verified"):
             raise SystemExit(f"{task_id} is not verified")
         excluded = EXCLUDED_ACCEPTANCE_TESTS.get(task_id, {})
-        unknown = set(excluded) - set(record["fail_to_pass"])
+        unknown = set(excluded) - set(record["fail_to_pass"]) - set(record["pass_to_pass"])
         if unknown:
-            raise SystemExit(f"{task_id}: excluded tests not in fail_to_pass: {sorted(unknown)}")
+            raise SystemExit(f"{task_id}: excluded tests not among verified tests: {sorted(unknown)}")
         tasks.append({
             "task_id": task_id,
             "repo": record["repo"],
@@ -164,7 +169,8 @@ def main():
             "evaluator_test_files": record["test_files"],
             "fail_to_pass": [t for t in record["fail_to_pass"] if t not in excluded],
             "excluded_fail_to_pass": excluded,
-            "pass_to_pass_count": record["pass_to_pass_count"],
+            "pass_to_pass": [t for t in record["pass_to_pass"] if t not in excluded],
+            "skipped_after_fix": record["skipped_after_fix"],
             "gold_source_files": record["source_files"],
         })
     (HERE / "tasks.json").write_text(json.dumps({"schema_version": 1, "tasks": tasks}, indent=2) + "\n",

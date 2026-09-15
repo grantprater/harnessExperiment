@@ -30,7 +30,8 @@ CANDIDATES = [
 
 
 def git(repo, *args):
-    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=True).stdout
+    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, encoding="utf-8",
+                          errors="replace", check=True).stdout
 
 
 def is_test(path):
@@ -91,7 +92,8 @@ def verify(repo_name, merge, pr):
     return {
         "repo": repo_name, "pr": pr, "fix_commit": fix, "base_commit": base,
         "source_files": sources, "test_files": tests,
-        "fail_to_pass": fail_to_pass, "pass_to_pass_count": len(pass_to_pass),
+        "fail_to_pass": fail_to_pass, "pass_to_pass_count": len(pass_to_pass), "pass_to_pass": pass_to_pass,
+        "skipped_after_fix": sorted(t for t in after if after[t] == "skip"),
         "failing_after_fix": broken_after, "tests_before": len(before), "tests_after": len(after),
         "rc_before": rc_before, "rc_after": rc_after,
         "tail_before": tail_before if not before else "", "tail_after": tail_after if (not after or broken_after) else "",

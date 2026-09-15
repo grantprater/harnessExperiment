@@ -1,0 +1,263 @@
+{
+  "runner_version": 1,
+  "protocol_hash": "b9b409abdb36",
+  "arm": "bounded-transcript-v1",
+  "client": "breaker",
+  "models": [
+    "breaker-client"
+  ],
+  "tasks": [
+    "boltons-474",
+    "boltons-475",
+    "more-itertools-1270",
+    "more-itertools-1279",
+    "packaging-1330",
+    "tomlkit-549",
+    "tomlkit-551",
+    "pyparsing-639",
+    "cachetools-408",
+    "humanize-329",
+    "sqlparse-865",
+    "marshmallow-3016",
+    "markdown-it-py-416",
+    "click-3805"
+  ],
+  "max_calls_per_run": 25,
+  "max_context_bytes": 80000,
+  "max_tokens": 8192,
+  "pytest_timeout_seconds": 600,
+  "temperature": 0,
+  "max_attempts_per_call": 4,
+  "max_total_calls": null,
+  "instructions": "You are working in a source checkout of {repo} ({repo_url}) at an upstream commit. The following problem was reported:\n\n{statement}\n\nChange the library so the reported behavior is correct. Hidden upstream tests will be run on your final workspace; tests you add or edit are not used for acceptance, but you may write and run tests to check your work (for example `pytest tests/test_example.py -q` with the run tool). Call finish when you are done.",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "list_files",
+        "description": "List files under a workspace directory recursively, optionally filtered by a glob.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Directory relative to the workspace root. Default '.'."
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Glob on the relative path or file name, e.g. '*.py'. Default '*'."
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_file",
+        "description": "Read a text file with line numbers. Give start_line and end_line to read a region.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "start_line": {
+              "type": "integer"
+            },
+            "end_line": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "path"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "outline",
+        "description": "List the classes and functions of a Python file with line numbers.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "search",
+        "description": "Find lines containing a literal string in workspace files.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string",
+              "description": "File or directory. Default '.'."
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Glob on the relative path or file name. Default '*'."
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "replace_text",
+        "description": "Replace exact text in a file. Fails without changing the file if old_text is absent, or occurs more than once while replace_all is false.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "old_text": {
+              "type": "string"
+            },
+            "new_text": {
+              "type": "string"
+            },
+            "replace_all": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "path",
+            "old_text",
+            "new_text"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "write_file",
+        "description": "Create or overwrite a file with the given content.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "content"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "run",
+        "description": "Run one command in the workspace root without a shell (no pipes or redirection; use forward slashes in paths). 'python' and 'pytest' use the task's Python environment.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "For example: pytest tests/test_example.py -q"
+            },
+            "timeout_seconds": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "command"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "note",
+        "description": "Save a named plain-text note that persists across turns. Pinned notes are placed in context when space allows.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "pin": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name",
+            "content"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_note",
+        "description": "Read a saved note by name.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "finish",
+        "description": "Declare the work complete. The final workspace is then checked independently.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "summary": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "summary"
+          ]
+        }
+      }
+    }
+  ],
+  "created_at": "2026-09-15T07:00:09.330953+00:00",
+  "source_revision": {
+    "commit": "c0bbc7e557111bf110173808389fa03f92c96790",
+    "tracked_changes": true
+  }
+}

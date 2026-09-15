@@ -38,6 +38,8 @@ experiments/comparison_general/
 experiments/comparison_bench/
 experiments/blender_bench/work_arm_*/
 experiments/reticle_sample_frames/
+# P6 pilot: per-run workspaces and runtime stores are large; config/calls/results are kept
+experiments/p6_pilot/runs/*/sessions/
 *.blend
 *.blend1
 
