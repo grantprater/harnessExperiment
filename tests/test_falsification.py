@@ -110,9 +110,13 @@ class FingerprintAndApproachTests(unittest.TestCase):
         self.assertEqual(parse_approach("```python\npass\n```"), ("", False))
 
 
-def report_failing(*tests, ran=4, exc="AssertionError"):
+def report_failing(*tests, ran=4, exc="AssertionError", observed=None, suite_version="unknown"):
     blocks = [("FAIL", t, f"{exc}: wrong") for t in tests]
-    return parse_unittest_output(failure_output(blocks, ran=ran, summary=f"FAILED (failures={len(tests)})"))
+    return parse_unittest_output(
+        failure_output(blocks, ran=ran, summary=f"FAILED (failures={len(tests)})"),
+        observed_test_ids=list(observed or tests),
+        suite_version=suite_version,
+    )
 
 
 class DeadEndLedgerTests(unittest.TestCase):
@@ -128,7 +132,10 @@ class DeadEndLedgerTests(unittest.TestCase):
     def test_resolved_when_cited_tests_pass_and_reopened_on_recurrence(self):
         ledger = DeadEndLedger()
         ledger.record_attempt(1, "first idea", "x = 1", report_failing("test_a"))
-        ledger.record_attempt(2, "second idea", "x = 2", report_failing("test_b"))
+        ledger.record_attempt(
+            2, "second idea", "x = 2",
+            report_failing("test_b", observed=["test_a", "test_b"]),
+        )
         f1, f2 = ledger.dead_ends
         self.assertEqual(f1.resolved_turn, 2)
         self.assertFalse(f2.resolved)
@@ -137,7 +144,10 @@ class DeadEndLedgerTests(unittest.TestCase):
         self.assertNotIn("first idea", rendered)
         self.assertIn("1 earlier dead end(s) resolved", rendered)
 
-        ledger.record_attempt(3, "first idea again", "x = 3", report_failing("test_a"))
+        ledger.record_attempt(
+            3, "first idea again", "x = 3",
+            report_failing("test_a", observed=["test_a", "test_b"]),
+        )
         self.assertFalse(f1.resolved)
         self.assertEqual(f2.resolved_turn, 3)
 
@@ -159,7 +169,10 @@ class DeadEndLedgerTests(unittest.TestCase):
     def test_passing_attempt_resolves_everything(self):
         ledger = DeadEndLedger()
         ledger.record_attempt(1, "idea", "x = 1", report_failing("test_a"))
-        self.assertIsNone(ledger.record_attempt(2, "fix", "x = 2", parse_unittest_output(OK_OUTPUT)))
+        self.assertIsNone(ledger.record_attempt(
+            2, "fix", "x = 2",
+            parse_unittest_output(OK_OUTPUT, observed_test_ids=["test_a"]),
+        ))
         self.assertTrue(all(d.resolved for d in ledger.dead_ends))
         self.assertTrue(ledger.render().startswith("No unresolved dead ends."))
 
@@ -176,7 +189,7 @@ class DeadEndLedgerTests(unittest.TestCase):
         for turn in range(1, 8):
             ledger.record_attempt(turn, f"idea {turn}", f"x = {turn}", report_failing(*[f"test_{i}" for i in range(turn)]))
         rendered = ledger.render()
-        self.assertIn("Do not retry them", rendered)
+        self.assertIn("recorded conditions", rendered)
         self.assertLess(rendered.index("f_07"), rendered.index("f_03"))
         self.assertNotIn("f_02", rendered)
         self.assertIn("2 older unresolved dead end(s) not shown", rendered)
@@ -192,6 +205,52 @@ class DeadEndLedgerTests(unittest.TestCase):
         d = ledger.record_attempt(1, "idea", "x = 1", report_failing("test_a", "test_b", "test_c", ran=5))
         self.assertEqual(d.evidence, ["test_a: AssertionError: wrong", "test_b: AssertionError: wrong",
                                       "...and 1 more failing test(s)"])
+
+    def test_partial_run_does_not_resolve_an_unobserved_failure(self):
+        ledger = DeadEndLedger()
+        ledger.record_attempt(1, "idea", "x = 1", report_failing("test_a"))
+        ledger.record_attempt(2, "different test", "x = 2", report_failing("test_b"))
+        self.assertFalse(ledger.dead_ends[0].resolved)
+
+    def test_resolution_requires_same_suite_version(self):
+        ledger = DeadEndLedger()
+        ledger.record_attempt(
+            1, "idea", "x = 1", report_failing("test_a", suite_version="v1")
+        )
+        ledger.record_attempt(
+            2, "new suite", "x = 2",
+            parse_unittest_output(
+                OK_OUTPUT, observed_test_ids=["test_a"], suite_version="v2"
+            ),
+        )
+        self.assertFalse(ledger.dead_ends[0].resolved)
+        ledger.record_attempt(
+            3, "matching suite", "x = 3",
+            parse_unittest_output(
+                OK_OUTPUT, observed_test_ids=["test_a"], suite_version="v1"
+            ),
+        )
+        self.assertTrue(ledger.dead_ends[0].resolved)
+
+    def test_attempt_record_preserves_versions_action_and_conditions(self):
+        ledger = DeadEndLedger()
+        dead_end = ledger.record_attempt(
+            4,
+            "cache the response",
+            "x = 1",
+            report_failing("test_cache"),
+            program_version="sha256:program-v2",
+            environment_revision="env:python-3.13",
+            action="write cache.py",
+            observations=["obs_test_cache_failed"],
+            conditions={"platform": "windows", "cache": "cold"},
+        )
+        attempt = dead_end.attempt_records[0]
+        self.assertEqual(attempt.program_version, "sha256:program-v2")
+        self.assertEqual(attempt.environment_revision, "env:python-3.13")
+        self.assertEqual(attempt.failure_category, "assertion_failure")
+        self.assertEqual(attempt.observations, ["obs_test_cache_failed"])
+        self.assertEqual(attempt.conditions["cache"], "cold")
 
 
 if __name__ == "__main__":

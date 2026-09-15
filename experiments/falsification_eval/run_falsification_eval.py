@@ -152,12 +152,29 @@ def run_tests(task, code: str):
         (tmp / f"{snake}.py").write_text(code, encoding="utf-8")
         (tmp / f"{snake}_test.py").write_text(task["test_code"], encoding="utf-8")
         try:
-            proc = subprocess.run([sys.executable, "-B", "-m", "unittest", f"{snake}_test.py"], cwd=tmp,
+            proc = subprocess.run([sys.executable, "-B", "-m", "unittest", "-v", f"{snake}_test.py"], cwd=tmp,
                                   capture_output=True, text=True, timeout=TEST_TIMEOUT_S)
             output, timed_out = proc.stdout + proc.stderr, False
         except subprocess.TimeoutExpired:
             output, timed_out = "", True
-    return parse_unittest_output(output, timed_out=timed_out), output
+    try:
+        tree = ast.parse(task["test_code"])
+        expected_tests = sorted({
+            node.name for node in ast.walk(tree)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name.startswith("test")
+        })
+    except (SyntaxError, ValueError):
+        expected_tests = []
+    suite_version = "sha256:" + hashlib.sha256(task["test_code"].encode("utf-8")).hexdigest()
+    return parse_unittest_output(
+        output,
+        timed_out=timed_out,
+        suite_id=f"exercism:{task['slug']}",
+        suite_version=suite_version,
+        environment_revision=f"python:{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        expected_test_ids=expected_tests,
+    ), output
 
 
 def format_feedback(report, output: str) -> str:
@@ -240,7 +257,18 @@ class Runner:
                 report, output = run_tests(task, code)
                 feedback = format_feedback(report, output)
                 if ledger is not None:
-                    ledger.record_attempt(turn, approach, code, report)
+                    ledger.record_attempt(
+                        turn,
+                        approach,
+                        code,
+                        report,
+                        program_version=f"ast:{fingerprint}",
+                        action=f"replace {snake}.py",
+                        conditions={
+                            "suite_id": report.suite_id,
+                            "suite_version": report.suite_version,
+                        },
+                    )
                 rec["turns"].append({
                     "turn": turn, "approach": approach, "approach_found": approach_found,
                     "fingerprint": fingerprint, "repeat_of_turn": repeat_of_turn, "signature": report.signature,

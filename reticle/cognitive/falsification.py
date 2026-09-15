@@ -5,7 +5,8 @@ paired with evidence parsed from the test run rather than written by the model.
 The ledger stays small enough to render into every blank-slate prompt:
 
 - attempts with the same failure signature merge into one dead end;
-- a dead end is resolved once none of the tests it cited still fail;
+- a dead end is resolved only when its cited tests are observed passing under the
+  same suite version;
 - code whose syntax tree matches an already-failed attempt is flagged as a repeat;
 - rendering shows only the most recent unresolved dead ends in full.
 """
@@ -24,6 +25,7 @@ HEADER_RE = re.compile(r"^(FAIL|ERROR): (\S+) \(([^)]*)\)")
 RAN_RE = re.compile(r"^Ran (\d+) tests? in ", re.MULTILINE)
 EXCEPTION_LINE_RE = re.compile(r"^[A-Za-z_][\w.]*(?:Error|Exception|Exit|Interrupt)(?::.*)?$")
 APPROACH_RE = re.compile(r"^\s*[*_`]*approach[*_`]*\s*:\s*[*_`]*\s*(.+)$", re.IGNORECASE | re.MULTILINE)
+VERBOSE_TEST_RE = re.compile(r"^(\S+) \([^)]+\) \.\.\. (?:ok|FAIL|ERROR|skipped)", re.MULTILINE)
 
 MESSAGE_CHARS = 200
 EVIDENCE_CHARS = 160
@@ -48,6 +50,11 @@ class RunReport:
     failures: Tuple[FailureDetail, ...]
     passed: bool
     collection_error: Optional[str] = None  # tests could not run at all (syntax/import error, timeout)
+    observed_tests: FrozenSet[str] = frozenset()
+    suite_id: str = "unittest"
+    suite_version: str = "unknown"
+    environment_revision: str = "unknown"
+    coverage_complete: bool = False
 
     @property
     def failing_tests(self) -> FrozenSet[str]:
@@ -60,7 +67,8 @@ class RunReport:
             key = "collection:" + exception_type(self.collection_error)
         else:
             key = "|".join(sorted(f"{f.test}:{exception_type(f.message)}" for f in self.failures))
-        return hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
+        scoped = f"{self.suite_id}@{self.suite_version}|{key}"
+        return hashlib.sha256(scoped.encode("utf-8")).hexdigest()[:12]
 
 
 def _last_exception_line(output: str) -> Optional[str]:
@@ -70,16 +78,33 @@ def _last_exception_line(output: str) -> Optional[str]:
     return None
 
 
-def parse_unittest_output(output: str, timed_out: bool = False) -> RunReport:
+def parse_unittest_output(
+    output: str,
+    timed_out: bool = False,
+    *,
+    suite_id: str = "unittest",
+    suite_version: str = "unknown",
+    environment_revision: str = "unknown",
+    observed_test_ids: Optional[List[str]] = None,
+    expected_test_ids: Optional[List[str]] = None,
+) -> RunReport:
     """Parse `python -m unittest` output into failing tests and their final exception lines."""
     if timed_out:
-        return RunReport(ran=0, failures=(), passed=False,
-                         collection_error="Timeout: tests did not finish within the time limit")
+        return RunReport(
+            ran=0, failures=(), passed=False,
+            collection_error="Timeout: tests did not finish within the time limit",
+            suite_id=suite_id, suite_version=suite_version,
+            environment_revision=environment_revision,
+        )
     ran_match = RAN_RE.search(output)
     if not ran_match:
         # The loader itself crashed, e.g. a SyntaxError in the solution file.
-        return RunReport(ran=0, failures=(), passed=False,
-                         collection_error=_last_exception_line(output) or "RunnerError: no test summary in output")
+        return RunReport(
+            ran=0, failures=(), passed=False,
+            collection_error=_last_exception_line(output) or "RunnerError: no test summary in output",
+            suite_id=suite_id, suite_version=suite_version,
+            environment_revision=environment_revision,
+        )
     ran = int(ran_match.group(1))
 
     failures: List[FailureDetail] = []
@@ -93,15 +118,35 @@ def parse_unittest_output(output: str, timed_out: bool = False) -> RunReport:
         content = [l for l in body.splitlines() if l.strip() and set(l.strip()) != {"-"}]
         message = content[-1].strip()[:MESSAGE_CHARS] if len(content) > 1 else ""
         if "unittest.loader._FailedTest" in header.group(3):
-            return RunReport(ran=ran, failures=(), passed=False,
-                             collection_error=message or "ImportError: failed to import test module")
+            return RunReport(
+                ran=ran, failures=(), passed=False,
+                collection_error=message or "ImportError: failed to import test module",
+                suite_id=suite_id, suite_version=suite_version,
+                environment_revision=environment_revision,
+            )
         failures.append(FailureDetail(test=header.group(2), kind=header.group(1), message=message))
 
     passed = not failures and ran > 0 and re.search(r"^OK\b", output, re.MULTILINE) is not None
     if not passed and not failures:
         reason = "RunnerError: no tests ran" if ran == 0 else "RunnerError: tests failed but no failure details were parsed"
-        return RunReport(ran=ran, failures=(), passed=False, collection_error=reason)
-    return RunReport(ran=ran, failures=tuple(failures), passed=passed)
+        return RunReport(
+            ran=ran, failures=(), passed=False, collection_error=reason,
+            suite_id=suite_id, suite_version=suite_version,
+            environment_revision=environment_revision,
+        )
+    observed = set(observed_test_ids or VERBOSE_TEST_RE.findall(output))
+    observed.update(f.test for f in failures)
+    expected = set(expected_test_ids or [])
+    return RunReport(
+        ran=ran,
+        failures=tuple(failures),
+        passed=passed,
+        observed_tests=frozenset(observed),
+        suite_id=suite_id,
+        suite_version=suite_version,
+        environment_revision=environment_revision,
+        coverage_complete=bool(expected) and expected.issubset(observed),
+    )
 
 
 class _StripDocstrings(ast.NodeTransformer):
@@ -136,6 +181,22 @@ def parse_approach(reply: str, limit: int = MESSAGE_CHARS) -> Tuple[str, bool]:
 
 
 @dataclass
+class AttemptRecord:
+    attempt_id: str
+    turn: int
+    program_version: str
+    environment_revision: str
+    action: str
+    observations: List[str]
+    approach: str
+    failure_category: str
+    conditions: Dict[str, str]
+    suite_id: str
+    suite_version: str
+    failure_signature: str
+
+
+@dataclass
 class DeadEnd:
     dead_end_id: str
     signature: str
@@ -148,6 +209,12 @@ class DeadEnd:
     last_turn: int = 0
     resolved_turn: Optional[int] = None
     collection_error: bool = False
+    suite_id: str = "unittest"
+    suite_version: str = "unknown"
+    failure_category: str = "assertion_failure"
+    environment_revisions: List[str] = field(default_factory=list)
+    conditions: Dict[str, str] = field(default_factory=dict)
+    attempt_records: List[AttemptRecord] = field(default_factory=list)
 
     @property
     def resolved(self) -> bool:
@@ -178,12 +245,26 @@ class DeadEndLedger:
         fingerprint = code_fingerprint(code)
         return next((d for d in self.dead_ends if fingerprint in d.fingerprints), None)
 
-    def record_attempt(self, turn: int, approach: str, code: str, report: RunReport) -> Optional[DeadEnd]:
+    def record_attempt(
+        self,
+        turn: int,
+        approach: str,
+        code: str,
+        report: RunReport,
+        *,
+        program_version: str = "unknown",
+        environment_revision: Optional[str] = None,
+        action: str = "replace_candidate",
+        observations: Optional[List[str]] = None,
+        conditions: Optional[Dict[str, str]] = None,
+    ) -> Optional[DeadEnd]:
         """Add one tested attempt; returns the dead end it joined or created, or None if it passed."""
         self._resolve(turn, report)
         if report.passed:
             return None
         dead_end = next((d for d in self.dead_ends if d.signature == report.signature), None)
+        category = self._failure_category(report)
+        revision = environment_revision or report.environment_revision
         if dead_end is None:
             dead_end = DeadEnd(
                 dead_end_id=f"f_{len(self.dead_ends) + 1:02d}",
@@ -192,6 +273,10 @@ class DeadEndLedger:
                 evidence=[],
                 first_turn=turn,
                 collection_error=report.collection_error is not None,
+                suite_id=report.suite_id,
+                suite_version=report.suite_version,
+                failure_category=category,
+                conditions=dict(conditions or {}),
             )
             self.dead_ends.append(dead_end)
         dead_end.attempts += 1
@@ -204,13 +289,44 @@ class DeadEndLedger:
         if approach and approach not in dead_end.approaches:
             dead_end.approaches.append(approach)
             del dead_end.approaches[:-self.max_approaches]
+        if revision not in dead_end.environment_revisions:
+            dead_end.environment_revisions.append(revision)
+        dead_end.attempt_records.append(AttemptRecord(
+            attempt_id=f"attempt_{len(dead_end.attempt_records) + 1:03d}",
+            turn=turn,
+            program_version=program_version,
+            environment_revision=revision,
+            action=action,
+            observations=list(observations or dead_end.evidence),
+            approach=approach,
+            failure_category=category,
+            conditions=dict(conditions or {}),
+            suite_id=report.suite_id,
+            suite_version=report.suite_version,
+            failure_signature=report.signature,
+        ))
         return dead_end
+
+    @staticmethod
+    def _failure_category(report: RunReport) -> str:
+        if report.collection_error:
+            return "timeout" if report.collection_error.startswith("Timeout:") else "collection_error"
+        if any(failure.kind == "ERROR" for failure in report.failures):
+            return "test_error"
+        return "assertion_failure"
 
     def _resolve(self, turn: int, report: RunReport) -> None:
         if report.collection_error:
             return  # a run that could not collect tests says nothing about individual tests
         for d in self.dead_ends:
-            if not d.resolved and (d.collection_error or report.failing_tests.isdisjoint(d.failing_tests)):
+            same_suite = d.suite_id == report.suite_id and d.suite_version == report.suite_version
+            cited = set(d.failing_tests)
+            cited_observed_passing = (
+                bool(cited)
+                and cited.issubset(report.observed_tests)
+                and report.failing_tests.isdisjoint(cited)
+            )
+            if not d.resolved and same_suite and (d.collection_error or cited_observed_passing):
                 d.resolved_turn = turn
 
     def render(self) -> str:
@@ -221,7 +337,10 @@ class DeadEndLedger:
         resolved_note = f"({resolved} earlier dead end(s) resolved: their failing tests now pass)" if resolved else ""
         if not open_ends:
             return f"No unresolved dead ends. {resolved_note}".strip()
-        lines = ["These approaches were already contradicted by the tests. Do not retry them; try something different."]
+        lines = [
+            "These attempts were contradicted under the recorded conditions. "
+            "Retry only when the program, environment, or applicable conditions changed."
+        ]
         for d in open_ends[:self.max_rendered]:
             turns = f"turn {d.first_turn}" if d.first_turn == d.last_turn else f"turns {d.first_turn}-{d.last_turn}"
             approaches = "; ".join(d.approaches) if d.approaches else "(approach not stated)"
