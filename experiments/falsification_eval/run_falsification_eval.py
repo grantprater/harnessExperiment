@@ -22,10 +22,12 @@ Usage (from the repo root):
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import importlib.util
 import json
 import math
+import re
 import statistics
 import subprocess
 import sys
@@ -40,7 +42,6 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "experiments" / "exercism_bench"))
 
 import exercism_loader
-from run_aider_bench import extract_python_code
 from reticle.cognitive.falsification import DeadEndLedger, code_fingerprint, parse_approach, parse_unittest_output
 
 
@@ -115,8 +116,32 @@ DECISION_RULE = ("On pass rate within the turn budget, an arm is called better t
                  "McNemar test on paired task outcomes gives p < 0.05. Repeat rates and token use are descriptive.")
 
 
+EXTRACTOR_VERSION = 2  # 2: block defining the stub's names, not the last block
+
+
 class BudgetExceeded(Exception):
     pass
+
+
+def _top_level_names(code: str) -> set:
+    try:
+        tree = ast.parse(code)
+    except (SyntaxError, ValueError):
+        return set()
+    return {n.name for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))}
+
+
+def extract_solution_code(reply: str, stub: str) -> str:
+    """The code block defining the most top-level names from the stub (ties: the longest).
+
+    Models often follow the solution with an "Example usage" block, so taking the last block
+    would test the example instead of the solution.
+    """
+    blocks = re.findall(r"```python\s*(.*?)\s*```", reply, re.DOTALL) or re.findall(r"```\s*(.*?)\s*```", reply, re.DOTALL)
+    if not blocks:
+        return reply.strip()
+    wanted = _top_level_names(stub)
+    return max(blocks, key=lambda b: (len(wanted & _top_level_names(b)), len(b))).strip()
 
 
 def run_tests(task, code: str):
@@ -181,7 +206,7 @@ class Runner:
     def run_task_arm(self, task, arm: str, max_turns: int) -> dict:
         snake = task["snake_name"]
         rec = {"slug": task["slug"], "arm": arm, "model": self.model, "prompt_hash": PROMPT_HASH,
-               "max_turns": max_turns, "passed": False, "turns": [], "prompt_tokens": 0, "completion_tokens": 0}
+               "extractor_version": EXTRACTOR_VERSION, "max_turns": max_turns, "passed": False, "turns": [], "prompt_tokens": 0, "completion_tokens": 0}
         text = task_text(task)
         ledger = DeadEndLedger() if arm == "ledger" else None
         transcript = [{"role": "system", "content": SYSTEM_PROMPT},
@@ -201,7 +226,7 @@ class Runner:
                                 {"role": "user", "content": RETRY_PROMPT.format(
                                     task=text, snake=snake, code=code, feedback=feedback, ledger=ledger_section)}]
                 reply, p_tok, _ = self.call(rec, turn, messages)
-                code = extract_python_code(reply)
+                code = extract_solution_code(reply, task["stub"])
                 approach, approach_found = parse_approach(reply)
                 fingerprint = code_fingerprint(code)
                 repeat_of_turn = first_seen.get(fingerprint)

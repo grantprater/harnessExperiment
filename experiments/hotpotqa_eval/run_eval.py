@@ -117,8 +117,19 @@ def chat(api_key: str, model: str, prompt, timeout: int = 120):
             last_error = json.dumps(data)[:300]
             time.sleep(5 * attempt)
             continue
-        content = data["choices"][0]["message"].get("content") or ""
+        message = data["choices"][0].get("message") or {}
+        content = message.get("content") or ""
+        if isinstance(content, list):  # some providers return a list of content parts
+            content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
         usage = data.get("usage") or {}
+        if not content.strip():
+            # Billed output with no text would otherwise be scored as an empty answer.
+            last_error = "empty content; " + json.dumps({
+                "finish_reason": data["choices"][0].get("finish_reason"), "provider": data.get("provider"),
+                "message_keys": sorted(message), "reasoning_chars": len(message.get("reasoning") or ""),
+                "completion_tokens": usage.get("completion_tokens")})
+            time.sleep(5 * attempt)
+            continue
         return content, usage.get("prompt_tokens"), usage.get("completion_tokens"), attempt
     raise ApiError(last_error)
 

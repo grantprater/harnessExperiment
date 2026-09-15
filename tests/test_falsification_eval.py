@@ -34,6 +34,8 @@ TASK = {
 CONSTANT = "APPROACH: return a constant\n```python\ndef add(a, b):\n    return 3\n```"
 CONSTANT_REFORMATTED = "APPROACH: return a constant again\n```python\ndef add( a, b ):\n    # same idea\n    return (3)\n```"
 CORRECT = "APPROACH: sum the arguments\n```python\ndef add(a, b):\n    return a + b\n```"
+SOLUTION_THEN_EXAMPLE = ("APPROACH: sum the arguments\n\n```python\ndef add(a, b):\n    return a + b\n```\n\n"
+                         "Example usage:\n```python\nprint(add(1, 2))\n```")
 
 
 class FakeChat:
@@ -105,6 +107,18 @@ class FalsificationEvalLoopTests(unittest.TestCase):
     def test_call_cap_stops_the_loop(self):
         with self.assertRaises(runner_module.BudgetExceeded):
             self.run_arm("ledger", [CONSTANT] * 4, max_calls=2)
+
+    def test_extraction_prefers_solution_over_example_usage(self):
+        # Shape of the real custom-set / word-search / pov replies: solution, then "Example usage".
+        reply = SOLUTION_THEN_EXAMPLE
+        self.assertEqual(runner_module.extract_solution_code(reply, TASK["stub"]), "def add(a, b):\n    return a + b")
+        broken_example = reply.replace("print(add(1, 2))", "print(add(1, 2)))")
+        self.assertIn("return a + b", runner_module.extract_solution_code(broken_example, TASK["stub"]))
+
+    def test_loop_tests_the_solution_block(self):
+        rec, _ = self.run_arm("last_failure", [SOLUTION_THEN_EXAMPLE])
+        self.assertTrue(rec["passed"])
+        self.assertEqual(rec["turns_used"], 1)
 
     def test_exact_mcnemar(self):
         self.assertEqual(runner_module.exact_mcnemar(0, 0), 1.0)

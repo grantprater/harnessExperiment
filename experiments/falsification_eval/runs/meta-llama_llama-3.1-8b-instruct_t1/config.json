@@ -1,0 +1,43 @@
+{
+  "model": "meta-llama/llama-3.1-8b-instruct",
+  "arms": [
+    "last_failure"
+  ],
+  "tasks": [
+    "binary-search-tree",
+    "bowling",
+    "camicia",
+    "custom-set",
+    "dot-dsl",
+    "forth",
+    "knapsack",
+    "rational-numbers",
+    "relative-distance",
+    "zebra-puzzle",
+    "affine-cipher",
+    "alphametics",
+    "bank-account",
+    "react",
+    "two-bucket",
+    "word-search",
+    "zipper",
+    "book-store",
+    "dominoes",
+    "satellite",
+    "sgf-parsing",
+    "rest-api",
+    "pov"
+  ],
+  "max_turns": 1,
+  "prompt_hash": "e829dc56f1",
+  "decision_rule": "On pass rate within the turn budget, an arm is called better than another only if the exact McNemar test on paired task outcomes gives p < 0.05. Repeat rates and token use are descriptive.",
+  "test_timeout_s": 10,
+  "feedback_chars": 2500,
+  "prompts": {
+    "system": "You are an expert Python engineer implementing a programming exercise so that its unit tests pass.\nEvery reply must have exactly this form:\nAPPROACH: <one sentence describing the implementation strategy of this attempt>\n```python\n<the complete contents of the solution file>\n```",
+    "task": "# Exercise: {slug}\n\n## Instructions\n{instructions}\n\n## Starting stub ({snake}.py)\n```python\n{stub}\n```",
+    "first": "{task}\n\nImplement the complete {snake}.py. Reply with the APPROACH line and the complete file.",
+    "retry": "{task}\n\n## Your current implementation ({snake}.py)\n```python\n{code}\n```\n\n## Latest test result\n{feedback}\n{ledger}\nFix the implementation. Reply with the APPROACH line and the complete {snake}.py.",
+    "transcript_retry": "## Latest test result\n{feedback}\n\nFix the implementation. Reply with the APPROACH line and the complete {snake}.py."
+  }
+}
