@@ -21,7 +21,7 @@ EDIT_ACTIONS = {"write_file", "replace_text"}
 
 
 class _BoardRenderer(BaselineContextPolicy):
-    policy_version = "reticle-board-v1"
+    policy_version = "reticle-board-v2"
 
 
 class ReticleBoardPolicy:

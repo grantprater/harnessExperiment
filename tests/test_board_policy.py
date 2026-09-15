@@ -59,7 +59,7 @@ class BoardPolicyTests(unittest.TestCase):
         self.assertIn("replace_text", board)
         self.assertIn("old_text was not found", board)
         self.assertNotIn("Do not", board)
-        self.assertEqual(built.manifest.policy_version, "reticle-board-v1")
+        self.assertEqual(built.manifest.policy_version, "reticle-board-v2")
 
     def test_board_without_history_still_carries_task(self):
         built = ReticleBoardPolicy().build(self.runtime, self.task, [], self.tools.schemas(), 60_000)

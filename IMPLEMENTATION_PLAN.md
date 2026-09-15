@@ -875,6 +875,18 @@ was authorized or performed.
   HTTP 429 (13/14 attempts); nemotron had 21 HTTP-200 "overloaded" error bodies. Next: keep the
   newest tool exchange unspilled (or size previews to the tool's own preview limit), add an
   artifact read tool so previews are recoverable, pin providers, then rerun only with approval.
+- P6 output paging (decision with the user, 2026-09-15; revisit later): tools now return complete
+  output and every result is registered under a handle (`out_N`, `tool_output` journal event).
+  One place bounds what the model sees: `BaselineContextPolicy` (`bounded-recent-v2`) renders
+  handle-bearing tool results as whole-line views, 4,000 bytes for the newest exchange and 512
+  for older ones; command output keeps its end (summaries such as pytest's come last). Each
+  partial view ends with the exact `read_output(id, start_line, end_line)` call for the next
+  omitted lines (byte ranges for over-long lines) and a `search_output` hint. The contract no
+  longer promises artifact-ID retrieval without a tool. `reticle-board-v2` inherits the views.
+  Tests: `tests/test_output_paging.py` (view bounds, older shrink, command tails, byte ranges,
+  unknown ids, scripted-model paging round trip); 140 tests pass. `run_pilot.py` runner v2
+  adds `--provider MODEL=SLUG` pinning (no fallbacks) recorded in the protocol hash, and
+  `report.py` counts paging calls, repeated identical calls, and replies without tool calls.
 
 | Stage | Status | Completion evidence | Next action |
 |---|---|---|---|

@@ -11,13 +11,15 @@ Clients:
   gamer       adds conftest hooks that report every test as passed (pipeline check, no API)
 
 Arms (same tools, instructions, evaluator, and limits; only the context policy differs):
-  bounded-transcript-v1  original task + as much recent transcript as fits
-  reticle-board-v1       original task + last two exchanges + journal-derived board
+  bounded-transcript-v2  original task + as much recent transcript as fits; tool results shown
+                         as bounded views that name the read_output call for the rest
+  reticle-board-v2       original task + last two exchanges + journal-derived board
 
 Usage (from the repo root):
   python experiments/p6_pilot/run_pilot.py --client gold --run-name gold-check
   python experiments/p6_pilot/run_pilot.py --client openrouter --models qwen/qwen3.5-9b \\
-      --tasks humanize-329 --run-name pilot-a --max-total-calls 30 --dry-run
+      --provider qwen/qwen3.5-9b=venice --tasks humanize-329 --run-name pilot-a \\
+      --max-total-calls 30 --dry-run
 """
 
 from __future__ import annotations
@@ -53,14 +55,15 @@ HERE = Path(__file__).resolve().parent
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
 TASK_PYTHON = ROOT / ".runtime" / "bugs-venv" / "Scripts" / "python.exe"
 BASE_URL = "https://openrouter.ai/api/v1"
-RUNNER_VERSION = 1
+RUNNER_VERSION = 2  # 2: complete tool outputs with bounded views and read_output/search_output
 ARMS = {
-    "bounded-transcript-v1": BaselineContextPolicy,
-    "reticle-board-v1": ReticleBoardPolicy,
+    "bounded-transcript-v2": BaselineContextPolicy,
+    "reticle-board-v2": ReticleBoardPolicy,
 }
 RETRYABLE_HTTP = {408, 429, 500, 502, 503, 504}
 MAX_ATTEMPTS = 4
 MANAGED_ROOT_FILES = ("conftest.py", "pytest.ini", "setup.cfg", "tox.ini", "pyproject.toml")
+UNPINNED_ROUTING = {"require_parameters": True}
 
 INSTRUCTIONS = (
     "You are working in a source checkout of {repo} ({repo_url}) at an upstream commit. "
@@ -72,12 +75,12 @@ INSTRUCTIONS = (
 )
 
 
-def protocol_hash(arm: str) -> str:
+def protocol_hash(arm: str, routing: dict) -> str:
     return hashlib.sha256(
         json.dumps({
             "runner_version": RUNNER_VERSION, "arm": arm, "instructions": INSTRUCTIONS, "tools": TOOL_SCHEMAS,
             "evaluator": hashlib.sha256((HERE / "evaluate_task.py").read_bytes()).hexdigest(),
-            "managed_root_files": MANAGED_ROOT_FILES,
+            "managed_root_files": MANAGED_ROOT_FILES, "provider_routing": routing,
         }, sort_keys=True).encode("utf-8")
     ).hexdigest()[:12]
 
@@ -226,16 +229,16 @@ class CallBudget:
 
 class OpenRouterClient:
     def __init__(self, api_key: str, model: str, calls_path: Path, run_id: str, budget: CallBudget,
-                 max_tokens: int, timeout: int = 300):
+                 max_tokens: int, routing: dict, timeout: int = 300):
         self.api_key, self.model, self.calls_path, self.run_id = api_key, model, calls_path, run_id
-        self.budget, self.max_tokens, self.timeout = budget, max_tokens, timeout
+        self.budget, self.max_tokens, self.routing, self.timeout = budget, max_tokens, routing, timeout
         self.call_index = 0
 
     def complete(self, messages, tools) -> ModelResponse:
         self.call_index += 1
         body = {
             "model": self.model, "messages": messages, "tools": tools, "tool_choice": "auto",
-            "temperature": 0, "max_tokens": self.max_tokens, "provider": {"require_parameters": True},
+            "temperature": 0, "max_tokens": self.max_tokens, "provider": self.routing,
         }
         raw = json.dumps(body, ensure_ascii=False).encode("utf-8")
         request_sha256 = hashlib.sha256(raw).hexdigest()
@@ -311,9 +314,12 @@ def scripted_client(kind: str, task: dict, repo: Path) -> ScriptedWriteClient:
     return ScriptedWriteClient([], "no change")
 
 
-def fetch_pricing(models):
+def fetch_catalog():
     with urllib.request.urlopen(f"{BASE_URL}/models", timeout=60) as response:
-        catalog = {m["id"]: m for m in json.load(response)["data"]}
+        return {m["id"]: m for m in json.load(response)["data"]}
+
+
+def model_pricing(catalog, models):
     pricing = {}
     for model in models:
         if model not in catalog:
@@ -322,6 +328,21 @@ def fetch_pricing(models):
         pricing[model] = {"prompt_usd_per_mtok": float(price.get("prompt") or 0) * 1e6,
                           "completion_usd_per_mtok": float(price.get("completion") or 0) * 1e6}
     return pricing
+
+
+def endpoint_pricing(model: str, provider_slug: str):
+    """Price of the pinned endpoint (it can differ from the model's lowest listed price)."""
+    with urllib.request.urlopen(f"{BASE_URL}/models/{model}/endpoints", timeout=60) as response:
+        endpoints = json.load(response)["data"]["endpoints"]
+    for endpoint in endpoints:
+        tag = (endpoint.get("tag") or "").lower()
+        if tag == provider_slug or tag.split("/", 1)[0] == provider_slug:
+            price = endpoint.get("pricing") or {}
+            return {"prompt_usd_per_mtok": float(price.get("prompt") or 0) * 1e6,
+                    "completion_usd_per_mtok": float(price.get("completion") or 0) * 1e6,
+                    "tools": "tools" in (endpoint.get("supported_parameters") or []),
+                    "quantization": endpoint.get("quantization"), "endpoint_tag": endpoint.get("tag")}
+    raise SystemExit(f"No endpoint '{provider_slug}' for {model}; available: {[e.get('tag') for e in endpoints]}")
 
 
 def evaluator_details(runtime: LocalRuntime, report_artifact_id: str) -> dict:
@@ -349,9 +370,11 @@ def evaluator_details(runtime: LocalRuntime, report_artifact_id: str) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--client", required=True, choices=["openrouter", "gold", "noop", "breaker", "gamer"])
-    parser.add_argument("--arm", default="bounded-transcript-v1", choices=sorted(ARMS))
+    parser.add_argument("--arm", default="bounded-transcript-v2", choices=sorted(ARMS))
     parser.add_argument("--run-name", required=True)
     parser.add_argument("--models", nargs="*", default=[])
+    parser.add_argument("--provider", action="append", default=[], metavar="MODEL=SLUG",
+                        help="pin a model to one OpenRouter provider, no fallbacks (repeatable)")
     parser.add_argument("--tasks", nargs="*", default=None)
     parser.add_argument("--max-calls-per-run", type=int, default=25)
     parser.add_argument("--max-context-bytes", type=int, default=80_000)
@@ -360,7 +383,6 @@ def main() -> None:
     parser.add_argument("--pytest-timeout", type=int, default=600)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    arm, arm_hash = args.arm, protocol_hash(args.arm)
 
     tasks = json.loads((HERE / "tasks.json").read_text(encoding="utf-8"))["tasks"]
     if args.tasks:
@@ -374,19 +396,35 @@ def main() -> None:
         models = args.models
     else:
         models = [f"{args.client}-client"]
+    pins = {}
+    for item in args.provider:
+        model, _, provider_slug = item.partition("=")
+        if model not in models or not provider_slug:
+            raise SystemExit(f"--provider {item!r} must be MODEL=SLUG for a model in --models")
+        pins[model] = provider_slug.lower()
+    routing = {model: ({"order": [pins[model]], "allow_fallbacks": False, "require_parameters": True}
+                       if model in pins else dict(UNPINNED_ROUTING)) for model in models}
+    arm = args.arm
+    arm_hash = protocol_hash(arm, routing)
     runs = [(task, model) for model in models for task in tasks]
 
     run_dir = HERE / "runs" / args.run_name
     config = {
         "runner_version": RUNNER_VERSION, "protocol_hash": arm_hash, "arm": arm, "client": args.client,
-        "models": models, "tasks": [t["task_id"] for t in tasks], "max_calls_per_run": args.max_calls_per_run,
-        "max_context_bytes": args.max_context_bytes, "max_tokens": args.max_tokens,
-        "pytest_timeout_seconds": args.pytest_timeout, "temperature": 0, "max_attempts_per_call": MAX_ATTEMPTS,
-        "max_total_calls": args.max_total_calls, "instructions": INSTRUCTIONS, "tools": TOOL_SCHEMAS,
+        "models": models, "provider_routing": routing, "tasks": [t["task_id"] for t in tasks],
+        "max_calls_per_run": args.max_calls_per_run, "max_context_bytes": args.max_context_bytes,
+        "max_tokens": args.max_tokens, "pytest_timeout_seconds": args.pytest_timeout, "temperature": 0,
+        "max_attempts_per_call": MAX_ATTEMPTS, "max_total_calls": args.max_total_calls,
+        "instructions": INSTRUCTIONS, "tools": TOOL_SCHEMAS,
     }
 
     if args.client == "openrouter":
-        pricing = fetch_pricing(models)
+        catalog = fetch_catalog()
+        pricing = model_pricing(catalog, models)
+        for model, provider_slug in pins.items():
+            pricing[model] = endpoint_pricing(model, provider_slug)
+            if not pricing[model]["tools"]:
+                raise SystemExit(f"Pinned endpoint {provider_slug} for {model} does not list tool support")
         planned_calls = len(runs) * args.max_calls_per_run
         print(f"{len(runs)} runs ({len(tasks)} tasks x {len(models)} models), arm {arm}, protocol {arm_hash}")
         print(f"model calls: at most {args.max_calls_per_run} per run -> at most {planned_calls} calls "
@@ -395,7 +433,8 @@ def main() -> None:
             price = pricing[model]
             input_tokens = args.max_context_bytes / 3  # planning bound only; billing uses reported usage.cost
             per_call = (input_tokens * price["prompt_usd_per_mtok"] + args.max_tokens * price["completion_usd_per_mtok"]) / 1e6
-            print(f"  {model}: ${price['prompt_usd_per_mtok']:.3f}/M in, ${price['completion_usd_per_mtok']:.3f}/M out; "
+            where = f"pinned to {pins[model]} ({price.get('quantization')})" if model in pins else "unpinned routing"
+            print(f"  {model} [{where}]: ${price['prompt_usd_per_mtok']:.3f}/M in, ${price['completion_usd_per_mtok']:.3f}/M out; "
                   f"worst case <= ${per_call:.4f}/call, <= ${per_call * args.max_calls_per_run * len(tasks):.2f} for its runs")
         config["pricing_at_plan_time"] = pricing
         if args.dry_run:
@@ -450,7 +489,7 @@ def main() -> None:
             budgets={"model_calls": args.max_calls_per_run, "context_bytes": args.max_context_bytes},
         )
         if args.client == "openrouter":
-            client = OpenRouterClient(api_key, model, calls_path, run_id, budget, args.max_tokens)
+            client = OpenRouterClient(api_key, model, calls_path, run_id, budget, args.max_tokens, routing[model])
         else:
             client = scripted_client(args.client, task, repo)
 

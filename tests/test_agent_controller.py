@@ -149,7 +149,7 @@ class AgentControllerTests(unittest.TestCase):
         self.assertEqual(decision.status, "rejected")
 
     def test_ambiguous_edit_shell_operators_and_large_output_are_truthful(self):
-        tools = ToolSuite(self.runtime, interpreter=sys.executable, preview_bytes=1_000)
+        tools = ToolSuite(self.runtime, interpreter=sys.executable)
         tools.dispatch("write_file", {"path": "pkg/dup.py", "content": "x = 1\nx = 1\n"}, "w1")
         ambiguous = tools.dispatch("replace_text", {"path": "pkg/dup.py", "old_text": "x = 1", "new_text": "x = 2"}, "r1")
         self.assertEqual(ambiguous.status, "error")
@@ -167,7 +167,10 @@ class AgentControllerTests(unittest.TestCase):
 
         large = tools.dispatch("run", {"command": "python -c \"print('y' * 30000)\""}, "big")
         self.assertEqual(large.status, "success")
-        self.assertIn("bytes omitted; exact: art_", large.content)
+        self.assertIn("y" * 30_000, large.content)  # tools return complete output; policies bound views
+        self.assertTrue(large.handle.startswith("out_"))
+        page = tools.dispatch("read_output", {"id": large.handle, "start_byte": 0, "end_byte": 5}, "page")
+        self.assertTrue(page.content.startswith(f"{large.handle} bytes 0-5 of "))
         outcome = next(
             event.payload["result"] for event in self.runtime.journal.read_all()
             if event.kind == "action_outcome" and event.payload["result"]["call_id"] == "big"

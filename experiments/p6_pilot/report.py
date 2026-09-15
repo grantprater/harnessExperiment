@@ -3,13 +3,15 @@
 Usage: python experiments/p6_pilot/report.py experiments/p6_pilot/runs/<run-name>
 
 Numbers only: per-run outcomes, calls, provider-reported tokens and cost, calls without
-reported usage, and provider errors. No conclusions are written.
+reported usage, paging and repeated tool calls, and provider errors. No conclusions are written.
 """
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 import json
 from pathlib import Path
 import sys
+
+PAGING_TOOLS = {"read_output", "search_output"}
 
 
 def read_jsonl(path: Path):
@@ -42,6 +44,31 @@ def usage_totals(calls):
     return totals
 
 
+def tool_call_stats(calls):
+    """Counts over model responses: paging calls, repeated identical calls, replies without tool calls."""
+    seen, stats = Counter(), {"paging_calls": 0, "repeated_calls": 0, "no_tool_call_replies": 0}
+    for call in calls:
+        choices = (call.get("response") or {}).get("choices")
+        if not choices:
+            continue
+        tool_calls = (choices[0].get("message") or {}).get("tool_calls") or []
+        if not tool_calls:
+            stats["no_tool_call_replies"] += 1
+        for tool_call in tool_calls:
+            function = tool_call.get("function") or {}
+            name, arguments = function.get("name"), function.get("arguments") or ""
+            try:
+                arguments = json.dumps(json.loads(arguments), sort_keys=True)
+            except (json.JSONDecodeError, TypeError):
+                pass
+            if name in PAGING_TOOLS:
+                stats["paging_calls"] += 1
+            if seen[(name, arguments)]:
+                stats["repeated_calls"] += 1
+            seen[(name, arguments)] += 1
+    return stats
+
+
 def main() -> None:
     run_dir = Path(sys.argv[1])
     config = json.loads((run_dir / "config.json").read_text(encoding="utf-8"))
@@ -53,8 +80,10 @@ def main() -> None:
     lines = [
         f"# P6 pilot run: {run_dir.name}",
         "",
-        f"- Arm: `{config['arm']}`; protocol `{config['protocol_hash']}`; source `{config['source_revision']}`",
+        f"- Arm: `{config['arm']}`; protocol `{config['protocol_hash']}`; runner v{config.get('runner_version')}; "
+        f"source `{config['source_revision']}`",
         f"- Models: {', '.join(config['models'])}",
+        f"- Provider routing: `{json.dumps(config.get('provider_routing', 'unpinned (not recorded)'))}`",
         f"- Tasks: {', '.join(config['tasks'])}",
         f"- Limits: {config['max_calls_per_run']} model calls/run, {config['max_context_bytes']} context bytes, "
         f"{config['max_tokens']} max output tokens, total HTTP attempt cap {config.get('max_total_calls')}",
@@ -63,11 +92,13 @@ def main() -> None:
         "## Runs",
         "",
         "| task | model | stop | model calls | tool calls | acceptance | fail-to-pass | pass-to-pass | failing f2p/p2p | "
-        "HTTP attempts | HTTP errors | prompt tok | completion tok | cost (reported) | missing usage |",
-        "|---|---|---|---:|---:|---|---|---|---|---:|---:|---:|---:|---:|---:|",
+        "paging calls | repeated calls | no-tool replies | HTTP attempts | HTTP errors | prompt tok | completion tok | "
+        "cost (reported) | missing usage |",
+        "|---|---|---|---:|---:|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for result in results:
-        usage = usage_totals(calls_by_run[result["run_id"]])
+        calls = calls_by_run[result["run_id"]]
+        usage, tools = usage_totals(calls), tool_call_stats(calls)
         agent, acceptance = result["agent"], result["acceptance"]
         criteria = acceptance.get("criteria") or {}
         failing = "/".join(str(len((criteria.get(name) or {}).get("failing", []))) for name in ("fail-to-pass", "pass-to-pass"))
@@ -75,7 +106,8 @@ def main() -> None:
         lines.append(
             f"| {result['task_id']} | {result['model']} | {agent.get('stop_reason')} | {agent.get('model_calls', '')} | "
             f"{agent.get('tool_calls', '')} | {acceptance['status']} | {outcomes.get('fail-to-pass')} | "
-            f"{outcomes.get('pass-to-pass')} | {failing} | {usage['attempts']} | {usage['http_errors']} | "
+            f"{outcomes.get('pass-to-pass')} | {failing} | {tools['paging_calls']} | {tools['repeated_calls']} | "
+            f"{tools['no_tool_call_replies']} | {usage['attempts']} | {usage['http_errors']} | "
             f"{usage['prompt_tokens']} | {usage['completion_tokens']} | ${usage['cost']:.4f} | "
             f"{usage['responses_missing_usage']} |"
         )
@@ -95,9 +127,10 @@ def main() -> None:
             f"{usage['reasoning_tokens']} | ${usage['cost']:.4f} | {usage['responses_missing_cost']} |"
         )
 
-    errors = [(c["run_id"], c.get("http_status"), (c.get("error") or "")[:160])
-              for calls in calls_by_run.values() for c in calls if "response" not in c]
-    lines += ["", "## Provider errors", ""]
+    errors = [(c["run_id"], c.get("http_status"), (c.get("error") or json.dumps((c.get("response") or {}).get("error")))[:160])
+              for calls in calls_by_run.values() for c in calls
+              if "response" not in c or (c.get("response") or {}).get("error")]
+    lines += ["", "## Provider errors (HTTP errors and error bodies)", ""]
     lines += [f"- {run_id}: HTTP {status}: {message}" for run_id, status, message in errors] or ["- none"]
     lines += ["", "Generated by `report.py` from config.json, calls.jsonl, and results.jsonl only.", ""]
     (run_dir / "REPORT.md").write_text("\n".join(lines), encoding="utf-8")

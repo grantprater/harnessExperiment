@@ -166,7 +166,7 @@ class P3RuntimeTests(unittest.TestCase):
             [],
             800,
         )
-        self.assertEqual(result.manifest.policy_version, "bounded-recent-v1")
+        self.assertEqual(result.manifest.policy_version, "bounded-recent-v2")
         self.assertIn("selection exploded", result.manifest.diagnostics[0])
         self.assertIn("selection exploded", result.messages[0]["content"])
         self.assertTrue(any(message.get("content") == "survive policy failure" for message in result.messages))

@@ -177,19 +177,23 @@ class AgentController:
             finished = False
             for call in calls:
                 function = call["function"]
+                message = {"role": "tool", "tool_call_id": call["id"]}
                 if finished:
-                    content = "Not executed: finish was requested earlier in this response."
+                    message["content"] = "Not executed: finish was requested earlier in this response."
                     self.runtime.journal.append(
                         "tool_call_skipped", {"call_id": call["id"], "name": function["name"], "reason": "after_finish"}
                     )
                 else:
                     tool_calls += 1
                     outcome = self.tools.dispatch(function["name"], function["arguments"], call["id"])
-                    content = outcome.content
+                    message["content"] = outcome.content
+                    if outcome.handle:
+                        # Private key: lets context policies show a bounded view that names this output.
+                        message["_reticle_output"] = {"handle": outcome.handle, "tool": function["name"]}
                     if outcome.finished:
                         finished = True
                         finish_summary = self._summary(function["arguments"])
-                transcript.append({"role": "tool", "tool_call_id": call["id"], "content": content})
+                transcript.append(message)
             if finished:
                 stop_reason = "finish_requested"
                 break

@@ -11,6 +11,10 @@ from reticle.runtime.contracts import TaskEnvelope
 from reticle.runtime.session import LocalRuntime
 
 
+# Space reserved inside a view budget for the retrieval note.
+VIEW_NOTE_RESERVE_BYTES = 320
+
+
 def _encoded(value: Any) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode(
         "utf-8"
@@ -19,6 +23,84 @@ def _encoded(value: Any) -> bytes:
 
 def _estimate_tokens(byte_length: int) -> int:
     return (byte_length + 3) // 4
+
+
+def _kb(byte_length: int) -> str:
+    return f"{byte_length / 1000:.1f} KB"
+
+
+def render_output_view(text: str, handle: str, budget: int, tail_heavy: bool) -> tuple[str, Dict[str, Any]]:
+    """Render a bounded, line-based view of a tool output and say exactly how to get the rest.
+
+    Whole lines are shown from the start, or mostly from the end for command output
+    (summaries such as pytest's come last). The note names the output handle, what was
+    shown, and the read_output call that returns the next omitted lines.
+    """
+    raw = text.encode("utf-8")
+    if len(raw) <= budget:
+        return text, {"rendering": "full", "source_bytes": len(raw)}
+    lines = text.splitlines(keepends=True)
+    total = len(lines)
+    content_budget = max(0, budget - VIEW_NOTE_RESERVE_BYTES)
+    head_budget = content_budget // 4 if tail_heavy else content_budget
+    head: List[str] = []
+    used = 0
+    for line in lines:
+        size = len(line.encode("utf-8"))
+        if used + size > head_budget:
+            break
+        head.append(line)
+        used += size
+    tail: List[str] = []
+    used_tail = 0
+    if tail_heavy:
+        for line in reversed(lines[len(head):]):
+            size = len(line.encode("utf-8"))
+            if used + used_tail + size > content_budget:
+                break
+            tail.append(line)
+            used_tail += size
+        tail.reverse()
+
+    if not head and not tail:
+        prefix = raw[:content_budget].decode("utf-8", errors="ignore")
+        shown = len(prefix.encode("utf-8"))
+        note = (
+            f"[output {handle}: line 1 alone is {_kb(len(lines[0].encode('utf-8')))}; showing its first "
+            f"{_kb(shown)} of {_kb(len(raw))}. More: read_output(id=\"{handle}\", start_byte={shown}, "
+            f"end_byte={shown + max(content_budget, 1)})]"
+        )
+        return f"{prefix}\n{note}", {
+            "rendering": "byte-prefix", "output_handle": handle, "shown_bytes": [0, shown], "source_bytes": len(raw),
+        }
+
+    first_omitted = len(head) + 1
+    tail_start = total - len(tail) + 1
+    last_omitted = tail_start - 1 if tail else total
+    page = max(1, len(head) or len(tail))
+    next_last = min(last_omitted, first_omitted + page - 1)
+    if tail and head:
+        shown = f"lines 1-{len(head)} and {tail_start}-{total}"
+    elif tail:
+        shown = f"lines {tail_start}-{total}"
+    else:
+        shown = f"lines 1-{len(head)}"
+    body = "".join(head)
+    if tail:
+        if body and not body.endswith("\n"):
+            body += "\n"
+        body += f"[... lines {first_omitted}-{last_omitted} omitted ...]\n" + "".join(tail)
+    if not body.endswith("\n"):
+        body += "\n"
+    note = (
+        f"[output {handle}: showing {shown} of {total} ({_kb(used + used_tail)} of {_kb(len(raw))}). "
+        f"More: read_output(id=\"{handle}\", start_line={first_omitted}, end_line={next_last}); "
+        f"find text: search_output(id=\"{handle}\", query=\"...\")]"
+    )
+    return body + note, {
+        "rendering": "line-view", "output_handle": handle, "shown": shown, "total_lines": total,
+        "omitted_lines": [first_omitted, last_omitted], "source_bytes": len(raw),
+    }
 
 
 @dataclass(frozen=True)
@@ -100,11 +182,17 @@ class ContextPolicy(Protocol):
 
 
 class BaselineContextPolicy:
-    policy_version = "bounded-recent-v1"
+    policy_version = "bounded-recent-v2"
 
-    def __init__(self, tool_preview_bytes: int = 512, pin_preview_bytes: int = 512):
+    def __init__(
+        self,
+        tool_preview_bytes: int = 512,
+        pin_preview_bytes: int = 512,
+        newest_tool_view_bytes: int = 4_000,
+    ):
         self.tool_preview_bytes = tool_preview_bytes
         self.pin_preview_bytes = pin_preview_bytes
+        self.newest_tool_view_bytes = newest_tool_view_bytes
 
     @staticmethod
     def _tool_ids(message: Dict[str, Any]) -> List[str]:
@@ -172,6 +260,22 @@ class BaselineContextPolicy:
             "source_byte_length": len(raw),
         }
 
+    def _render_tool_message(
+        self, runtime: LocalRuntime, message: Dict[str, Any], newest: bool
+    ) -> tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+        output = message.get("_reticle_output")
+        content = message.get("content")
+        if message.get("role") != "tool" or not isinstance(output, dict) or not isinstance(content, str):
+            # Messages without a retrievable output handle keep the artifact spill behavior.
+            return self._spill_tool_message(runtime, message)
+        budget = self.newest_tool_view_bytes if newest else self.tool_preview_bytes
+        text, rendering = render_output_view(content, output["handle"], budget, tail_heavy=output.get("tool") == "run")
+        if rendering["rendering"] == "full":
+            return message, None
+        rendered = dict(message)
+        rendered["content"] = text
+        return rendered, {**rendering, "view_budget_bytes": budget, "newest_exchange": newest}
+
     def _record(
         self,
         runtime: LocalRuntime,
@@ -187,10 +291,7 @@ class BaselineContextPolicy:
             str(message.get("_context_id", index)) for index, message in enumerate(messages)
         ]
         public_messages = [
-            {
-                key: value for key, value in message.items()
-                if key not in {"_context_id", "_reticle_artifact_id"}
-            }
+            {key: value for key, value in message.items() if not key.startswith("_")}
             for message in messages
         ]
         request = {"messages": public_messages, "tools": tools}
@@ -242,7 +343,7 @@ class BaselineContextPolicy:
                 "role": "system",
                 "content": (
                     "Reticle runtime contract. Preserve tool-call/result pairing. "
-                    "Retrieve omitted exact evidence by artifact ID. "
+                    "Partial tool results name the read_output call for the rest. "
                     f"Authority: {authority}. Budgets: {budgets}. Criteria: {criteria}."
                     f"{diagnostic_text}"
                 ),
@@ -316,12 +417,14 @@ class BaselineContextPolicy:
         if pin_overflow:
             notes.append("One or more pins overflowed; baseline compact previews were used.")
 
+        units = self._paired_units(transcript)
+        newest_exchange = max((i for i, unit in enumerate(units) if self._tool_ids(unit[0])), default=None)
         rendered_units: List[tuple[List[Dict[str, Any]], List[Dict[str, Any]], int]] = []
-        for unit_index, unit in enumerate(self._paired_units(transcript)):
+        for unit_index, unit in enumerate(units):
             rendered: List[Dict[str, Any]] = []
             unit_selected: List[Dict[str, Any]] = []
             for message_index, original in enumerate(unit):
-                value, spill = self._spill_tool_message(runtime, original)
+                value, view = self._render_tool_message(runtime, original, unit_index == newest_exchange)
                 value = dict(value)
                 transcript_artifact_id = value.pop("_reticle_artifact_id", None)
                 value["_context_id"] = f"transcript:{unit_index}:{message_index}"
@@ -332,10 +435,11 @@ class BaselineContextPolicy:
                     "artifact_id": transcript_artifact_id,
                     "rendering": "full",
                 }
-                if spill:
-                    item.update(spill)
+                if view:
+                    item.update(view)
                 unit_selected.append(item)
-            rendered_units.append((rendered, unit_selected, len(_encoded(rendered))))
+            public = [{k: v for k, v in message.items() if not k.startswith("_")} for message in rendered]
+            rendered_units.append((rendered, unit_selected, len(_encoded(public))))
 
         recent: List[tuple[List[Dict[str, Any]], List[Dict[str, Any]]]] = []
         for rendered, unit_selected, cost in reversed(rendered_units):

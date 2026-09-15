@@ -1,12 +1,13 @@
 """General file, search, edit, execution, and note tools over the runtime substrate.
 
-Every call is journaled with its exact result. Large results are shown as truthful
-previews that name the artifact holding the exact bytes.
+Tools return their complete output. Every result is journaled and registered under a short
+output handle (``out_N``); context policies decide how much of it to show, and
+``read_output`` / ``search_output`` retrieve any part of an earlier result exactly.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import fnmatch
 import json
 import shlex
@@ -31,6 +32,7 @@ class ToolOutcome:
     content: str
     status: str  # a ToolResultEnvelope status
     finished: bool = False
+    handle: Optional[str] = None  # output handle for read_output / search_output
 
 
 class ToolArgumentError(ValueError):
@@ -109,6 +111,26 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
         ["command"],
     ),
     _function(
+        "read_output",
+        "Read part of an earlier tool result by its output id (for example out_12). Results that "
+        "were shown partially say which id and range to request. Give start_line/end_line, or "
+        "start_byte/end_byte for very long lines.",
+        {
+            "id": {"type": "string"},
+            "start_line": {"type": "integer"},
+            "end_line": {"type": "integer"},
+            "start_byte": {"type": "integer"},
+            "end_byte": {"type": "integer"},
+        },
+        ["id"],
+    ),
+    _function(
+        "search_output",
+        "Find lines containing a literal string in an earlier tool result by its output id.",
+        {"id": {"type": "string"}, "query": {"type": "string"}},
+        ["id", "query"],
+    ),
+    _function(
         "note",
         "Save a named plain-text note that persists across turns. Pinned notes are placed in context "
         "when space allows.",
@@ -142,24 +164,19 @@ class ToolSuite:
         interpreter: str,
         backend=None,
         environment: Optional[Dict[str, str]] = None,
-        preview_bytes: int = 12_000,
         default_timeout_seconds: float = 120,
         max_timeout_seconds: float = 600,
         output_limit_bytes: int = 2_000_000,
-        max_listed_files: int = 500,
-        max_search_matches: int = 200,
     ):
         self.runtime = runtime
         self.interpreter = interpreter
         self.backend = backend or TrustedLocalBackend()
         self.environment = dict(environment or {})
-        self.preview_bytes = preview_bytes
         self.default_timeout_seconds = default_timeout_seconds
         self.max_timeout_seconds = max_timeout_seconds
         self.output_limit_bytes = output_limit_bytes
-        self.max_listed_files = max_listed_files
-        self.max_search_matches = max_search_matches
         self.observations = ObservationService(runtime)
+        self._next_handle: Optional[int] = None
         self._handlers: Dict[str, Callable[[Dict[str, Any]], ToolOutcome]] = {
             "list_files": self._list_files,
             "read_file": self._read_file,
@@ -167,6 +184,8 @@ class ToolSuite:
             "search": self._search,
             "replace_text": self._replace_text,
             "write_file": self._write_file,
+            "read_output": self._read_output,
+            "search_output": self._search_output,
             "note": self._note,
             "read_note": self._read_note,
             "finish": self._finish,
@@ -176,6 +195,10 @@ class ToolSuite:
         return json.loads(json.dumps(TOOL_SCHEMAS))
 
     def dispatch(self, name: str, arguments: Any, call_id: str) -> ToolOutcome:
+        outcome = self._dispatch(name, arguments, call_id)
+        return replace(outcome, handle=self._register_output(call_id, name, outcome.content))
+
+    def _dispatch(self, name: str, arguments: Any, call_id: str) -> ToolOutcome:
         if isinstance(arguments, str):
             try:
                 parsed = json.loads(arguments) if arguments.strip() else {}
@@ -199,6 +222,25 @@ class ToolSuite:
                 lambda: ToolOutcome(f"ERROR: unknown tool '{name}'. Available tools: {available}.", "rejected"),
             )
         return self._journaled(call_id, name, parsed, lambda: handler(parsed))
+
+    def _register_output(self, call_id: str, name: str, content: str) -> str:
+        if self._next_handle is None:
+            self._next_handle = 1 + sum(1 for e in self.runtime.journal.read_all() if e.kind == "tool_output")
+        handle = f"out_{self._next_handle}"
+        self._next_handle += 1
+        raw = content.encode("utf-8")
+        artifact = self.runtime.record_observation(raw, "text/plain; charset=utf-8", labels=["tool-output", name, handle])
+        self.runtime.journal.append("tool_output", {
+            "handle": handle, "artifact_id": artifact.artifact_id, "call_id": call_id, "tool": name,
+            "byte_length": len(raw), "line_count": len(content.splitlines()),
+        })
+        return handle
+
+    def _resolve_output(self, handle: str) -> bytes:
+        for event in self.runtime.journal.read_all():
+            if event.kind == "tool_output" and event.payload.get("handle") == handle:
+                return self.runtime.artifacts.read(event.payload["artifact_id"])
+        raise ToolArgumentError(f"unknown output id '{handle}'")
 
     def _journaled(
         self, call_id: str, name: str, arguments: Dict[str, Any], action: Callable[[], ToolOutcome]
@@ -254,24 +296,6 @@ class ToolSuite:
             return value.strip().lower() in {"true", "1", "yes"}
         return bool(value)
 
-    def _preview(self, text: str, exact_ref: str, hint: str = "") -> str:
-        raw = text.encode("utf-8")
-        if len(raw) <= self.preview_bytes:
-            return text
-        shown = raw[:self.preview_bytes].decode("utf-8", errors="ignore")
-        return f"{shown}\n[truncated: {len(raw) - self.preview_bytes} bytes omitted{hint}; exact: {exact_ref}]"
-
-    def _head_tail(self, data: bytes, ref: Optional[str]) -> str:
-        budget = max(1, self.preview_bytes // 2)
-        if len(data) <= budget:
-            return data.decode("utf-8", errors="replace")
-        head_bytes = min(1_500, budget // 3)
-        tail_bytes = budget - head_bytes
-        head = data[:head_bytes].decode("utf-8", errors="ignore")
-        tail = data[-tail_bytes:].decode("utf-8", errors="ignore")
-        omitted = len(data) - head_bytes - tail_bytes
-        return f"{head}\n[... {omitted} bytes omitted; exact: {ref} ...]\n{tail}"
-
     def _files(self, path: str, pattern: str) -> List[str]:
         root = self.runtime.workspace.root
         base = self.runtime.workspace._resolve(path)
@@ -292,10 +316,7 @@ class ToolSuite:
 
     def _list_files(self, arguments: Dict[str, Any]) -> ToolOutcome:
         files = self._files(self._text(arguments, "path", "."), self._text(arguments, "pattern", "*"))
-        shown = files[:self.max_listed_files]
-        listing = "\n".join(shown) if shown else "(no matching files)"
-        if len(files) > len(shown):
-            listing += f"\n[{len(files) - len(shown)} more files not listed; narrow the path or pattern]"
+        listing = "\n".join(files) if files else "(no matching files)"
         return ToolOutcome(f"{len(files)} file(s):\n{listing}", "success")
 
     def _read_file(self, arguments: Dict[str, Any]) -> ToolOutcome:
@@ -310,14 +331,13 @@ class ToolSuite:
         if total and first > last:
             raise ToolArgumentError(f"invalid line range {first}-{last}; {path} has {total} lines")
         numbered = "\n".join(f"{number:>5}| {lines[number - 1]}" for number in range(first, last + 1))
-        text = f"{path} (lines {first}-{last} of {total})\n{numbered}"
-        return ToolOutcome(self._preview(text, view.raw_artifact.artifact_id, "; read a smaller line range"), "success")
+        return ToolOutcome(f"{path} (lines {first}-{last} of {total})\n{numbered}", "success")
 
     def _outline(self, arguments: Dict[str, Any]) -> ToolOutcome:
         path = self._text(arguments, "path", required=True)
         view = self.observations.observe(path, "outline")
         body = view.content.decode("utf-8", errors="replace") or "(no classes or functions found)"
-        return ToolOutcome(self._preview(f"Outline of {path}:\n{body}", view.view_artifact.artifact_id), "success")
+        return ToolOutcome(f"Outline of {path}:\n{body}", "success")
 
     def _search(self, arguments: Dict[str, Any]) -> ToolOutcome:
         query = self._text(arguments, "query", required=True)
@@ -332,15 +352,9 @@ class ToolSuite:
                 continue
             for number, line in enumerate(raw.decode("utf-8", errors="replace").splitlines(), 1):
                 if query in line:
-                    matches.append(f"{relative}:{number}: {line.strip()[:300]}")
-        artifact = self.runtime.record_observation(
-            "\n".join(matches).encode("utf-8"), "text/plain; charset=utf-8", labels=["search-results", query]
-        )
-        shown = matches[:self.max_search_matches]
-        body = "\n".join(shown) if shown else "(no matches)"
-        if len(matches) > len(shown):
-            body += f"\n[{len(matches) - len(shown)} more matches not shown; exact: {artifact.artifact_id}]"
-        return ToolOutcome(self._preview(f"{len(matches)} match(es) for {query!r}:\n{body}", artifact.artifact_id), "success")
+                    matches.append(f"{relative}:{number}: {line.strip()}")
+        body = "\n".join(matches) if matches else "(no matches)"
+        return ToolOutcome(f"{len(matches)} match(es) for {query!r}:\n{body}", "success")
 
     def _replace_text(self, arguments: Dict[str, Any]) -> ToolOutcome:
         path = self._text(arguments, "path", required=True)
@@ -371,7 +385,7 @@ class ToolSuite:
         updated_lines = updated.splitlines()
         start_line = updated.count("\n", 0, first_index) + 1
         low = max(1, start_line - 2)
-        high = min(len(updated_lines), start_line + new.count("\n") + 2, low + 80)
+        high = min(len(updated_lines), start_line + new.count("\n") + 2)
         snippet = "\n".join(f"{number:>5}| {updated_lines[number - 1]}" for number in range(low, high + 1))
         replaced = count if replace_all else 1
         return ToolOutcome(f"Replaced {replaced} occurrence(s) in {path}. Lines {low}-{high} now:\n{snippet}", "success")
@@ -386,6 +400,38 @@ class ToolSuite:
         self.runtime.workspace.write(path, raw)
         verb = "Overwrote" if existed else "Created"
         return ToolOutcome(f"{verb} {path} ({len(raw)} bytes, {len(content.splitlines())} lines).", "success")
+
+    def _read_output(self, arguments: Dict[str, Any]) -> ToolOutcome:
+        handle = self._text(arguments, "id", required=True).strip()
+        raw = self._resolve_output(handle)
+        start_byte, end_byte = self._int(arguments, "start_byte"), self._int(arguments, "end_byte")
+        if start_byte is not None or end_byte is not None:
+            low = max(0, start_byte or 0)
+            high = len(raw) if end_byte is None else min(len(raw), end_byte)
+            if low > high:
+                raise ToolArgumentError(f"invalid byte range {low}-{high}; {handle} has {len(raw)} bytes")
+            return ToolOutcome(
+                f"{handle} bytes {low}-{high} of {len(raw)}:\n{raw[low:high].decode('utf-8', errors='replace')}", "success"
+            )
+        lines = raw.decode("utf-8", errors="replace").splitlines()
+        total = len(lines)
+        start, end = self._int(arguments, "start_line"), self._int(arguments, "end_line")
+        first = 1 if start is None else max(1, start)
+        last = total if end is None else min(total, end)
+        if total and first > last:
+            raise ToolArgumentError(f"invalid line range {first}-{last}; {handle} has {total} lines")
+        body = "\n".join(lines[first - 1:last])
+        return ToolOutcome(f"{handle} lines {first}-{last} of {total}:\n{body}", "success")
+
+    def _search_output(self, arguments: Dict[str, Any]) -> ToolOutcome:
+        handle = self._text(arguments, "id", required=True).strip()
+        query = self._text(arguments, "query", required=True)
+        if not query:
+            raise ToolArgumentError("query must not be empty")
+        lines = self._resolve_output(handle).decode("utf-8", errors="replace").splitlines()
+        matches = [f"L{number}: {line}" for number, line in enumerate(lines, 1) if query in line]
+        body = "\n".join(matches) if matches else "(no matches)"
+        return ToolOutcome(f"{len(matches)} match(es) for {query!r} in {handle} ({len(lines)} lines):\n{body}", "success")
 
     def _argv(self, command: str) -> List[str]:
         try:
@@ -430,9 +476,9 @@ class ToolSuite:
             parts.append(f"diagnostic: {execution.diagnostic}")
         if execution.output_truncated:
             parts.append(f"[output exceeded {self.output_limit_bytes} bytes; the process was stopped]")
-        for label, data, ref in (("stdout", execution.stdout, result.stdout_ref), ("stderr", execution.stderr, result.stderr_ref)):
+        for label, data in (("stdout", execution.stdout), ("stderr", execution.stderr)):
             if data:
-                parts.append(f"--- {label} ---\n{self._head_tail(data, ref)}")
+                parts.append(f"--- {label} ---\n{data.decode('utf-8', errors='replace')}")
         return ToolOutcome("\n".join(parts), result.status)
 
     def _note(self, arguments: Dict[str, Any]) -> ToolOutcome:
@@ -454,7 +500,7 @@ class ToolSuite:
     def _read_note(self, arguments: Dict[str, Any]) -> ToolOutcome:
         name = self._text(arguments, "name", required=True).strip()
         read = self.runtime.scratch.read(f"notes/{name}")
-        return ToolOutcome(self._preview(read.content.decode("utf-8", errors="replace"), read.artifact.artifact_id), "success")
+        return ToolOutcome(read.content.decode("utf-8", errors="replace"), "success")
 
     def _finish(self, arguments: Dict[str, Any]) -> ToolOutcome:
         return ToolOutcome("Finish recorded. The final workspace will be evaluated independently.", "success", finished=True)
