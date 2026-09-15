@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import contextmanager
 import threading
 from typing import Optional
 from uuid import uuid4
@@ -55,12 +56,26 @@ class ExecutionController:
     _gates = {}
     _gates_lock = threading.Lock()
 
+    @classmethod
+    def _gate_for(cls, runtime: LocalRuntime) -> _ReadWriteGate:
+        key = str(runtime.session_dir)
+        with cls._gates_lock:
+            return cls._gates.setdefault(key, _ReadWriteGate())
+
+    @classmethod
+    @contextmanager
+    def workspace_boundary(cls, runtime: LocalRuntime, mutating: bool):
+        gate = cls._gate_for(runtime)
+        gate.enter(mutating)
+        try:
+            yield
+        finally:
+            gate.exit(mutating)
+
     def __init__(self, runtime: LocalRuntime, backend):
         self.runtime = runtime
         self.backend = backend
-        key = str(runtime.session_dir)
-        with self._gates_lock:
-            self._gate = self._gates.setdefault(key, _ReadWriteGate())
+        self._gate = self._gate_for(runtime)
 
     def execute(
         self,
@@ -84,6 +99,9 @@ class ExecutionController:
         self._gate.enter(request.mutates_workspace)
         try:
             before = self.runtime.workspace.revision()
+            self.runtime.mark_action_dispatched(
+                operation_id, "workspace_mutation" if request.mutates_workspace else "read_only"
+            )
             execution = self.backend.run(request, cancellation_event)
             after = self.runtime.workspace.revision()
             tool_result = self.runtime.record_tool_result(

@@ -114,7 +114,7 @@ class EventJournal:
                 continue
             if event.kind == "action_intent":
                 pending[event.operation_id] = event
-            elif event.kind == "action_outcome":
+            elif event.kind in {"action_outcome", "action_abandoned"}:
                 pending.pop(event.operation_id, None)
         return pending
 

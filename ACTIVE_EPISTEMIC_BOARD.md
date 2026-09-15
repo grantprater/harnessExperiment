@@ -1,5 +1,9 @@
 # ACTIVE EPISTEMIC BOARD (Self-Injected Dogfooding State)
 
+> Historical board, not active instructions. As of 2026-09-15, use the stage ledger in
+> [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Counts, pointers, rejected-path rules,
+> and completion claims below have not been revalidated and must not direct current work.
+
 ## 1. GOAL & INVARIANTS (ACCEPTANCE CRITERIA)
 **Goal:** Incrementally optimize and harden the Reticle Cognitive Harness architecture using its own "Notes-as-State, Tools-as-Opcodes" principles.
 

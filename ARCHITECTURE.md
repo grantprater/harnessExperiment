@@ -1,5 +1,9 @@
 # Architecture Design Document: The Cognitive Harness (Reticle)
 
+> Historical architecture, superseded as implementation direction on 2026-09-15 by
+> [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). The mandatory cognitive rules and roadmap
+> below are preserved as historical hypotheses, not requirements for new work.
+
 ## 1. Executive Summary & Philosophical Foundations
 
 Current AI agent frameworks suffer from a fundamental mismatch between architecture and cognitive realities:

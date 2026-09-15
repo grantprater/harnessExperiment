@@ -114,6 +114,8 @@ class ContextManifest:
     message_order: List[str]
     selected_tool_schemas: List[Dict[str, Any]]
     token_estimate: int
+    request_bytes: int = 0
+    omitted_items: List[Dict[str, Any]] = field(default_factory=list)
     pin_overflow: List[Dict[str, Any]] = field(default_factory=list)
     diagnostics: List[str] = field(default_factory=list)
     provider_hidden_context: str = "unavailable"
@@ -153,9 +155,11 @@ class TranscriptStore:
         )
         return artifact.artifact_id
 
-    def load(self) -> List[Dict[str, Any]]:
+    def load(self, as_of_sequence: Optional[int] = None) -> List[Dict[str, Any]]:
         messages: List[Dict[str, Any]] = []
         for event in self.runtime.journal.read_all():
+            if as_of_sequence is not None and event.sequence > as_of_sequence:
+                break
             if event.kind != "transcript_message":
                 continue
             raw = self.runtime.artifacts.read(event.payload["artifact_id"])
@@ -286,6 +290,7 @@ class BaselineContextPolicy:
         selected: List[Dict[str, Any]],
         pin_overflow: List[Dict[str, Any]],
         diagnostics: List[str],
+        omitted_items: Optional[List[Dict[str, Any]]] = None,
     ) -> ContextBuildResult:
         message_order = [
             str(message.get("_context_id", index)) for index, message in enumerate(messages)
@@ -310,6 +315,8 @@ class BaselineContextPolicy:
             message_order=message_order,
             selected_tool_schemas=tools,
             token_estimate=_estimate_tokens(len(raw)),
+            request_bytes=len(raw),
+            omitted_items=list(omitted_items or []),
             pin_overflow=pin_overflow,
             diagnostics=diagnostics,
         )
@@ -442,8 +449,12 @@ class BaselineContextPolicy:
             rendered_units.append((rendered, unit_selected, len(_encoded(public))))
 
         recent: List[tuple[List[Dict[str, Any]], List[Dict[str, Any]]]] = []
-        for rendered, unit_selected, cost in reversed(rendered_units):
+        omitted: List[Dict[str, Any]] = []
+        for unit_index in reversed(range(len(rendered_units))):
+            rendered, unit_selected, cost = rendered_units[unit_index]
             if cost > remaining:
+                # Recorded only so manifests and comparisons show the drop; rendering is unchanged.
+                omitted.append({"kind": "transcript_unit", "unit_index": unit_index, "reason": "context_budget"})
                 continue
             recent.append((rendered, unit_selected))
             remaining -= cost
@@ -452,7 +463,331 @@ class BaselineContextPolicy:
             selected.extend(unit_selected)
 
         return self._record(
-            runtime, task, messages, tools, max_context_bytes, selected, pin_overflow, notes
+            runtime, task, messages, tools, max_context_bytes, selected, pin_overflow, notes,
+            omitted_items=sorted(omitted, key=lambda item: item["unit_index"]),
+        )
+
+
+class PressureRecentContextPolicy(BaselineContextPolicy):
+    """Keep recent observations whole until the materialized request is under pressure.
+
+    The latest complete assistant/tool exchange and every message after it are required.
+    Older units are admitted newest-first as a contiguous run, then pins. If the latest
+    result is itself too large, it is rendered with an exact output handle; if even that
+    protocol-valid view cannot fit, ``over_budget`` remains true so the controller can
+    checkpoint without calling the provider.
+    """
+
+    policy_version = "pressure-recent-v1"
+
+    @staticmethod
+    def _public(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        return [
+            {key: value for key, value in message.items() if not key.startswith("_")}
+            for message in messages
+        ]
+
+    def _request_size(self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> int:
+        return len(_encoded({"messages": self._public(messages), "tools": tools}))
+
+    def _pressure_message(
+        self,
+        original: Dict[str, Any],
+        *,
+        view_budget: Optional[int] = None,
+    ) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        value = dict(original)
+        transcript_artifact_id = value.pop("_reticle_artifact_id", None)
+        output = value.pop("_reticle_output", None)
+        item: Dict[str, Any] = {
+            "kind": "transcript",
+            "role": value.get("role"),
+            "artifact_id": transcript_artifact_id,
+            "rendering": "full",
+        }
+        content = value.get("content")
+        if value.get("role") != "tool" or not isinstance(content, str):
+            return value, item
+
+        if isinstance(output, dict) and output.get("handle"):
+            handle = str(output["handle"])
+            status = str(output.get("status", "unknown"))
+            prefix = f"[tool result status={status}; output={handle}]\n"
+            item.update({
+                "output_handle": handle,
+                "status": status,
+                "source_bytes": len(content.encode("utf-8")),
+            })
+            if view_budget is not None:
+                rendered, rendering = render_output_view(
+                    content,
+                    handle,
+                    view_budget,
+                    tail_heavy=output.get("tool") == "run",
+                )
+                value["content"] = prefix + rendered
+                if rendering["rendering"] != "full":
+                    item.update(rendering)
+                    item["view_budget_bytes"] = view_budget
+                    item["newest_exchange"] = True
+            else:
+                value["content"] = prefix + content
+            return value, item
+
+        # Controller-produced results always have an output handle. Retain the exact
+        # transcript artifact reference for imported or historical messages that do not.
+        item["retrieval_artifact_id"] = transcript_artifact_id
+        return value, item
+
+    def _render_unit(
+        self,
+        unit: List[Dict[str, Any]],
+        unit_index: int,
+        *,
+        view_budget: Optional[int] = None,
+    ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        rendered: List[Dict[str, Any]] = []
+        selected: List[Dict[str, Any]] = []
+        for message_index, original in enumerate(unit):
+            value, item = self._pressure_message(original, view_budget=view_budget)
+            value["_context_id"] = f"transcript:{unit_index}:{message_index}"
+            rendered.append(value)
+            selected.append(item)
+        return rendered, selected
+
+    def _required_tail(
+        self,
+        base: List[Dict[str, Any]],
+        units: List[List[Dict[str, Any]]],
+        start: int,
+        tools: List[Dict[str, Any]],
+        max_context_bytes: int,
+    ) -> List[tuple[int, List[Dict[str, Any]], List[Dict[str, Any]]]]:
+        """Render ``units[start:]``, reducing only the leading exchange's results to fit.
+
+        Units after the latest exchange (a text-only reply, the no-tool-call prompt, a user
+        correction) stay whole: dropping them would re-send the previous turn unchanged.
+        """
+        trailing = [
+            (index, *self._render_unit(units[index], index))
+            for index in range(start + 1, len(units))
+        ]
+
+        def assemble(view_budget: Optional[int]):
+            rendered, selected = self._render_unit(units[start], start, view_budget=view_budget)
+            return [(start, rendered, selected), *trailing]
+
+        def fits(tail) -> bool:
+            tail_messages = [message for _, rendered, _ in tail for message in rendered]
+            return self._request_size([*base, *tail_messages], tools) <= max_context_bytes
+
+        full = assemble(None)
+        if fits(full):
+            return full
+
+        # View sizes below the retrieval-note reserve are not useful and can be larger
+        # than their nominal budget. Find the largest useful common result view that fits.
+        upper = max(
+            [
+                len(str(message.get("content", "")).encode("utf-8"))
+                for message in units[start]
+                if message.get("role") == "tool"
+            ]
+            or [0]
+        )
+        low = VIEW_NOTE_RESERVE_BYTES
+        best = None
+        while low <= upper:
+            middle = (low + upper) // 2
+            candidate = assemble(middle)
+            if fits(candidate):
+                best = candidate
+                low = middle + 1
+            else:
+                upper = middle - 1
+        if best is not None:
+            return best
+
+        # Return the smallest meaningful representation. The caller deliberately records
+        # it as over budget rather than dropping the latest outcome.
+        return assemble(VIEW_NOTE_RESERVE_BYTES)
+
+    def build(
+        self,
+        runtime: LocalRuntime,
+        task: TaskEnvelope,
+        transcript: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        max_context_bytes: int,
+        diagnostics: Optional[List[str]] = None,
+    ) -> ContextBuildResult:
+        if max_context_bytes <= 0:
+            raise ValueError("Context budget must be positive")
+        notes = list(diagnostics or [])
+        authority = json.dumps(task.authority, sort_keys=True)
+        budgets = json.dumps(task.budgets, sort_keys=True)
+        criteria = json.dumps(task.criteria, sort_keys=True)
+        messages: List[Dict[str, Any]] = [
+            {
+                "role": "system",
+                "content": (
+                    "Reticle runtime contract. Preserve tool-call/result pairing. "
+                    "Partial results name an exact read_output/search_output retrieval. "
+                    "Use search_history to discover omitted actions or observations, history "
+                    "to page the session, and read_artifact for an authorized artifact ID. "
+                    "Earlier exchanges may be omitted under context pressure. "
+                    f"Authority: {authority}. Budgets: {budgets}. Criteria: {criteria}."
+                ),
+                "_context_id": "contract",
+            },
+            {"role": "user", "content": task.description, "_context_id": "original-task"},
+        ]
+        selected: List[Dict[str, Any]] = [
+            {"kind": "contract", "rendering": "full"},
+            {"kind": "task", "task_id": task.task_id, "rendering": "full"},
+        ]
+        omitted: List[Dict[str, Any]] = []
+        pin_overflow: List[Dict[str, Any]] = []
+        units = self._paired_units(transcript)
+        required_start = max(
+            (index for index, unit in enumerate(units) if self._tool_ids(unit[0])),
+            default=None,
+        )
+        if required_start is None and units:
+            # No tool exchange yet: protect from the model's latest reply onward.
+            required_start = max(
+                (index for index, unit in enumerate(units) if unit[0].get("role") == "assistant"),
+                default=len(units) - 1,
+            )
+        required = (
+            self._required_tail(messages, units, required_start, tools, max_context_bytes)
+            if required_start is not None
+            else []
+        )
+        required_messages = [message for _, rendered, _ in required for message in rendered]
+
+        # Older history is a contiguous run back from the required tail: the first unit that
+        # does not fit ends selection, so a newer unit is never dropped to admit an older one.
+        chosen: List[tuple[int, List[Dict[str, Any]], List[Dict[str, Any]]]] = []
+        chosen_messages: List[Dict[str, Any]] = []
+        for unit_index in reversed(range(required_start or 0)):
+            rendered, unit_selected = self._render_unit(units[unit_index], unit_index)
+            if self._request_size(
+                [*messages, *rendered, *chosen_messages, *required_messages], tools
+            ) > max_context_bytes:
+                omitted.extend(
+                    {"kind": "transcript_unit", "unit_index": index, "reason": "context_pressure"}
+                    for index in range(unit_index + 1)
+                )
+                break
+            chosen.insert(0, (unit_index, rendered, unit_selected))
+            chosen_messages = [*rendered, *chosen_messages]
+
+        omission_message: List[Dict[str, Any]] = []
+        if omitted:
+            marker = {
+                "role": "system",
+                "content": (
+                    "Context pressure omitted earlier transcript exchanges. Exact prior tool "
+                    "results remain persisted; use search_history without an output ID, then "
+                    "read_output/search_output or read_artifact using the returned reference."
+                ),
+                "_context_id": "history-omission",
+            }
+            def with_marker() -> List[Dict[str, Any]]:
+                return [
+                    *messages,
+                    marker,
+                    *[message for _, rendered, _ in chosen for message in rendered],
+                    *required_messages,
+                ]
+
+            # Removing the oldest chosen unit keeps the retained history contiguous.
+            while chosen and self._request_size(with_marker(), tools) > max_context_bytes:
+                removed_index, _, _ = chosen.pop(0)
+                omitted.append({
+                    "kind": "transcript_unit",
+                    "unit_index": removed_index,
+                    "reason": "context_pressure_for_omission_marker",
+                })
+            if self._request_size(with_marker(), tools) <= max_context_bytes:
+                omission_message = [marker]
+                selected.append({"kind": "history_omission", "rendering": "full"})
+
+        transcript_messages = [
+            *[message for _, rendered, _ in chosen for message in rendered],
+            *required_messages,
+        ]
+        transcript_selected = [item for _, _, items in [*chosen, *required] for item in items]
+
+        # Pins are optional and cannot displace the authoritative contract or transcript.
+        pin_messages: List[Dict[str, Any]] = []
+        pin_selected: List[Dict[str, Any]] = []
+        for ref, pin in sorted(
+            runtime.scratch.pins().items(),
+            key=lambda item: (-int(item[1]["priority"]), item[0]),
+        ):
+            read = runtime.scratch.read(pin["artifact_id"])
+            message = {
+                "role": "system",
+                "content": (
+                    f"Pinned scratch {ref} ({read.artifact.artifact_id}):\n"
+                    f"{read.content.decode('utf-8', errors='replace')}"
+                ),
+                "_context_id": f"pin:{ref}",
+            }
+            candidate = [
+                *messages,
+                *pin_messages,
+                message,
+                *omission_message,
+                *transcript_messages,
+            ]
+            if self._request_size(candidate, tools) <= max_context_bytes:
+                pin_messages.append(message)
+                pin_selected.append({
+                    "kind": "pin",
+                    "ref": ref,
+                    "artifact_id": read.artifact.artifact_id,
+                    "reference_version": pin["reference_version"],
+                    "range": [0, len(read.content)],
+                    "rendering": "full",
+                })
+            else:
+                pin_overflow.append({
+                    "ref": ref,
+                    "artifact_id": read.artifact.artifact_id,
+                    "requested_bytes": len(read.content),
+                    "delivered_bytes": 0,
+                    "reason": "pin_exceeds_remaining_context_budget",
+                })
+
+        final_messages = [
+            *messages,
+            *pin_messages,
+            *omission_message,
+            *transcript_messages,
+        ]
+        selected.extend(pin_selected)
+        selected.extend(transcript_selected)
+        if omitted:
+            notes.append(
+                f"{len(omitted)} earlier transcript unit(s) omitted under context pressure; "
+                "tool results remain available by their output handles."
+            )
+        return self._record(
+            runtime,
+            task,
+            final_messages,
+            tools,
+            max_context_bytes,
+            selected,
+            pin_overflow,
+            notes,
+            omitted_items=sorted(
+                {item["unit_index"]: item for item in omitted}.values(),
+                key=lambda item: item["unit_index"],
+            ),
         )
 
 

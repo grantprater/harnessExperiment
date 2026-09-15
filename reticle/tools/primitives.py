@@ -16,6 +16,7 @@ from uuid import uuid4
 
 from reticle.execution import ExecutionController, ExecutionRequest, TrustedLocalBackend
 from reticle.runtime.observations import ObservationService
+from reticle.runtime.queries import SessionQueryService
 from reticle.runtime.session import LocalRuntime
 from reticle.runtime.workspace import StaleWorkspaceError
 
@@ -131,6 +132,42 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
         ["id", "query"],
     ),
     _function(
+        "history",
+        "Page through authorized durable session history. The response includes a stable next_cursor.",
+        {
+            "after_sequence": {"type": "integer"},
+            "before_sequence": {"type": "integer"},
+            "as_of_sequence": {"type": "integer"},
+            "kinds": {"type": "array", "items": {"type": "string"}},
+            "limit": {"type": "integer"},
+            "cursor": {"type": "string"},
+        },
+        [],
+    ),
+    _function(
+        "search_history",
+        "Find literal text in authorized prior actions and observations without knowing an output ID.",
+        {
+            "query": {"type": "string"},
+            "kinds": {"type": "array", "items": {"type": "string"}},
+            "source": {"type": "string"},
+            "as_of_sequence": {"type": "integer"},
+            "limit": {"type": "integer"},
+            "cursor": {"type": "string"},
+        },
+        ["query"],
+    ),
+    _function(
+        "read_artifact",
+        "Read an authorized session artifact by ID, optionally using an exact byte range.",
+        {
+            "id": {"type": "string"},
+            "start_byte": {"type": "integer"},
+            "end_byte": {"type": "integer"},
+        },
+        ["id"],
+    ),
+    _function(
         "note",
         "Save a named plain-text note that persists across turns. Pinned notes are placed in context "
         "when space allows.",
@@ -176,6 +213,7 @@ class ToolSuite:
         self.max_timeout_seconds = max_timeout_seconds
         self.output_limit_bytes = output_limit_bytes
         self.observations = ObservationService(runtime)
+        self.queries = SessionQueryService(runtime)
         self._next_handle: Optional[int] = None
         self._handlers: Dict[str, Callable[[Dict[str, Any]], ToolOutcome]] = {
             "list_files": self._list_files,
@@ -186,6 +224,9 @@ class ToolSuite:
             "write_file": self._write_file,
             "read_output": self._read_output,
             "search_output": self._search_output,
+            "history": self._history,
+            "search_history": self._search_history,
+            "read_artifact": self._read_artifact,
             "note": self._note,
             "read_note": self._read_note,
             "finish": self._finish,
@@ -248,9 +289,27 @@ class ToolSuite:
         operation_id = f"tool-{uuid4().hex}"
         before = self.runtime.workspace.revision()
         self.runtime.begin_action(operation_id, name, {"call_id": call_id, "arguments": arguments})
+        effect_class = (
+            "workspace_mutation" if name in {"replace_text", "write_file"}
+            else "session_mutation" if name in {"note", "finish"}
+            else "read_only"
+        )
         try:
-            outcome = action()
+            workspace_tool = name in {
+                "list_files", "outline", "read_file", "replace_text", "search", "write_file"
+            }
+            if workspace_tool:
+                with ExecutionController.workspace_boundary(
+                    self.runtime, effect_class == "workspace_mutation"
+                ):
+                    self.runtime.mark_action_dispatched(operation_id, effect_class)
+                    outcome = action()
+            else:
+                self.runtime.mark_action_dispatched(operation_id, effect_class)
+                outcome = action()
         except ToolArgumentError as exc:
+            outcome = ToolOutcome(f"ERROR: {exc}", "rejected")
+        except PermissionError as exc:
             outcome = ToolOutcome(f"ERROR: {exc}", "rejected")
         except (ValueError, KeyError, OSError, StaleWorkspaceError, UnicodeDecodeError) as exc:
             outcome = ToolOutcome(f"ERROR: {type(exc).__name__}: {exc}", "error")
@@ -432,6 +491,49 @@ class ToolSuite:
         matches = [f"L{number}: {line}" for number, line in enumerate(lines, 1) if query in line]
         body = "\n".join(matches) if matches else "(no matches)"
         return ToolOutcome(f"{len(matches)} match(es) for {query!r} in {handle} ({len(lines)} lines):\n{body}", "success")
+
+    @staticmethod
+    def _history_kinds(arguments: Dict[str, Any]) -> Optional[List[str]]:
+        kinds = arguments.get("kinds")
+        if kinds is None:
+            return None
+        if not isinstance(kinds, list) or any(not isinstance(kind, str) for kind in kinds):
+            raise ToolArgumentError("argument 'kinds' must be an array of strings")
+        return kinds
+
+    def _history(self, arguments: Dict[str, Any]) -> ToolOutcome:
+        limit = self._int(arguments, "limit")
+        page = self.queries.history(
+            after_sequence=self._int(arguments, "after_sequence") or 0,
+            before_sequence=self._int(arguments, "before_sequence"),
+            as_of_sequence=self._int(arguments, "as_of_sequence"),
+            kinds=self._history_kinds(arguments),
+            limit=20 if limit is None else limit,
+            cursor=self._text(arguments, "cursor"),
+        )
+        # Indented so a bounded context view can page the result by line.
+        return ToolOutcome(json.dumps(page.to_dict(), sort_keys=True, ensure_ascii=False, indent=1), "success")
+
+    def _search_history(self, arguments: Dict[str, Any]) -> ToolOutcome:
+        limit = self._int(arguments, "limit")
+        page = self.queries.search(
+            self._text(arguments, "query", required=True),
+            kinds=self._history_kinds(arguments),
+            source=self._text(arguments, "source"),
+            as_of_sequence=self._int(arguments, "as_of_sequence"),
+            limit=20 if limit is None else limit,
+            cursor=self._text(arguments, "cursor"),
+        )
+        # Indented so a bounded context view can page the result by line.
+        return ToolOutcome(json.dumps(page.to_dict(), sort_keys=True, ensure_ascii=False, indent=1), "success")
+
+    def _read_artifact(self, arguments: Dict[str, Any]) -> ToolOutcome:
+        result = self.queries.read_artifact(
+            self._text(arguments, "id", required=True).strip(),
+            start_byte=self._int(arguments, "start_byte") or 0,
+            end_byte=self._int(arguments, "end_byte"),
+        )
+        return ToolOutcome(json.dumps(result, sort_keys=True, ensure_ascii=False, indent=1), "success")
 
     def _argv(self, command: str) -> List[str]:
         try:

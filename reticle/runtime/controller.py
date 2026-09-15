@@ -8,10 +8,14 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 import json
+from time import monotonic
 from typing import Any, Dict, List, Optional, Protocol
+from uuid import uuid4
 
 from reticle.context.baseline import BaselineContextPolicy, ContextBuilder, ContextPolicy, TranscriptStore
 from reticle.runtime.contracts import TaskEnvelope
+from reticle.runtime.budgets import TaskBudgetExhausted, TaskBudgetLedger
+from reticle.runtime.ownership import SessionWriterLock
 from reticle.runtime.session import LocalRuntime
 from reticle.tools.primitives import ToolSuite
 
@@ -50,7 +54,7 @@ class AgentLimits:
 @dataclass(frozen=True)
 class AgentRunResult:
     task_id: str
-    stop_reason: str  # finish_requested | model_call_limit | model_error
+    stop_reason: str  # finish_requested | model_call_limit | model_error | context/task budget exhausted
     model_calls: int
     tool_calls: int
     final_workspace_revision: str
@@ -58,6 +62,7 @@ class AgentRunResult:
     calls_missing_usage: Dict[str, int]
     finish_summary: Optional[str] = None
     error: Optional[str] = None
+    task_resources: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -114,8 +119,81 @@ class AgentController:
         return str(summary)[:2_000] if summary is not None else None
 
     def run(self) -> AgentRunResult:
+        owner_id = f"controller-{uuid4().hex}"
+        writer = SessionWriterLock(self.runtime.session_dir).acquire(owner_id)
+        try:
+            return self._run_owned()
+        finally:
+            writer.release()
+
+    def _resume_recorded_actions(
+        self, transcript: TranscriptStore, budget: TaskBudgetLedger
+    ) -> tuple[int, bool, Optional[str], Optional[str]]:
+        messages = transcript.load()
+        completed = {
+            message.get("tool_call_id") for message in messages if message.get("role") == "tool"
+        }
+        pending = [
+            call
+            for message in messages if message.get("role") == "assistant"
+            for call in message.get("tool_calls", [])
+            if call.get("id") not in completed
+        ]
+        not_started = {
+            state.call_id: state.operation_id
+            for state in self.runtime.recovery.pending_operations
+            if state.classification == "known_not_started" and state.call_id
+        }
+        tool_calls = 0
+        finished = False
+        finish_summary: Optional[str] = None
+        error: Optional[str] = None
+        for call in pending:
+            function = call.get("function") or {}
+            call_id = str(call.get("id"))
+            message: Dict[str, Any] = {"role": "tool", "tool_call_id": call_id}
+            if finished:
+                message["content"] = "Not executed: finish was requested earlier in this response."
+                transcript.append(message)
+                continue
+            old_operation = not_started.get(call_id)
+            if old_operation:
+                self.runtime.abandon_not_started_action(
+                    old_operation, "superseded by durable response continuation"
+                )
+            try:
+                resource_operation = budget.reserve("tool_actions", 1)
+            except TaskBudgetExhausted as exc:
+                message["content"] = f"Not executed: {exc}"
+                error = str(exc)
+                finished = True
+            else:
+                tool_calls += 1
+                outcome = self.tools.dispatch(
+                    str(function.get("name") or ""), function.get("arguments", "{}"), call_id
+                )
+                budget.reconcile(resource_operation, 1, outcome=outcome.status)
+                message["content"] = outcome.content
+                if outcome.handle:
+                    message["_reticle_output"] = {
+                        "handle": outcome.handle,
+                        "tool": function.get("name"),
+                        "status": outcome.status,
+                    }
+                if outcome.finished:
+                    finished = True
+                    finish_summary = self._summary(str(function.get("arguments", "{}")))
+            transcript.append(message)
+        return tool_calls, finished, finish_summary, error
+
+    def _run_owned(self) -> AgentRunResult:
+        self.runtime.repair_model_response_publications()
+        self.runtime.repair_completed_action_publications()
         transcript = TranscriptStore(self.runtime)
         builder = ContextBuilder(self.policy)
+        self.runtime.persist_task_contract(self.task)
+        budget = TaskBudgetLedger(self.runtime, self.task.task_id, self.task.budgets)
+        started_at = monotonic()
         reported = {name: 0.0 for name in USAGE_FIELDS}
         missing = {name: 0 for name in USAGE_FIELDS}
         model_calls = 0
@@ -123,26 +201,155 @@ class AgentController:
         stop_reason = "model_call_limit"
         finish_summary: Optional[str] = None
         error: Optional[str] = None
+        ambiguous = [
+            state for state in self.runtime.recovery.pending_operations
+            if state.classification == "unknown_external_outcome" and not state.replay_safe
+        ]
+        recovery_blocked = bool(ambiguous)
+        if recovery_blocked:
+            stop_reason = "needs_reconciliation"
+            error = "Unknown external outcome for: " + ", ".join(
+                state.operation_id for state in ambiguous
+            )
+            self.runtime.journal.append("controller_needs_reconciliation", {
+                "task_id": self.task.task_id,
+                "operation_ids": [state.operation_id for state in ambiguous],
+            })
 
-        while model_calls < self.limits.max_model_calls:
+        if not recovery_blocked:
+            resumed_calls, resumed_finished, resumed_summary, resumed_error = self._resume_recorded_actions(
+                transcript, budget
+            )
+            tool_calls += resumed_calls
+            if resumed_error:
+                stop_reason, error = "task_budget_exhausted", resumed_error
+                recovery_blocked = True
+            elif resumed_finished:
+                stop_reason, finish_summary = "finish_requested", resumed_summary
+                recovery_blocked = True
+
+        while not recovery_blocked and model_calls < self.limits.max_model_calls:
+            active_limit = budget.snapshot().remaining.get("active_seconds")
+            if active_limit is not None and monotonic() - started_at >= active_limit:
+                stop_reason = "task_budget_exhausted"
+                error = "Task active-time budget exhausted before model dispatch"
+                break
             built = builder.build(
                 self.runtime, self.task, transcript.load(), self.tools.schemas(), self.limits.max_context_bytes
             )
-            model_calls += 1
+            materialized = self.runtime.artifacts.read(
+                built.manifest.materialized_request_artifact_id
+            )
+            request_envelope = self.runtime.artifacts.get_envelope(
+                built.manifest.materialized_request_artifact_id
+            )
+            expected = json.dumps(
+                {"messages": built.messages, "tools": built.tools},
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ).encode("utf-8")
+            if materialized != expected:
+                raise RuntimeError("materialized context request does not match the provider request")
+            if (
+                request_envelope.content_hash != built.manifest.materialized_request_hash
+                or len(materialized) != built.manifest.request_bytes
+            ):
+                raise RuntimeError("context manifest size or hash does not match its request artifact")
+            if len(materialized) > self.limits.max_context_bytes or built.over_budget:
+                stop_reason = "context_budget_exhausted"
+                error = (
+                    f"materialized request is {len(materialized)} bytes; "
+                    f"limit is {self.limits.max_context_bytes} bytes"
+                )
+                self.runtime.journal.append(
+                    "context_budget_exhausted",
+                    {
+                        "request_artifact_id": built.manifest.materialized_request_artifact_id,
+                        "request_hash": built.manifest.materialized_request_hash,
+                        "request_bytes": len(materialized),
+                        "max_context_bytes": self.limits.max_context_bytes,
+                        "policy_version": built.manifest.policy_version,
+                    },
+                )
+                break
+            try:
+                attempt_operation = budget.reserve("model_attempts", 1)
+            except TaskBudgetExhausted as exc:
+                stop_reason, error = "task_budget_exhausted", str(exc)
+                self.runtime.journal.append("task_budget_exhausted", {
+                    "task_id": self.task.task_id,
+                    "resource": exc.resource,
+                    "requested": exc.requested,
+                    "remaining": exc.remaining,
+                })
+                break
             request_ref = {
-                "call_index": model_calls,
+                "call_index": model_calls + 1,
+                "attempt_id": attempt_operation,
                 "request_artifact_id": built.manifest.materialized_request_artifact_id,
                 "request_hash": built.manifest.materialized_request_hash,
                 "context_over_budget": built.over_budget,
             }
             try:
+                response_operation = budget.reserve("model_responses", 1)
+            except TaskBudgetExhausted as exc:
+                budget.reconcile(attempt_operation, 0, outcome="not_dispatched_response_budget_exhausted")
+                stop_reason, error = "task_budget_exhausted", str(exc)
+                break
+            cost_operation: Optional[str] = None
+            if "cost_usd" in budget.limits:
+                reservation = self.task.budgets.get("model_attempt_cost_reservation")
+                if isinstance(reservation, bool) or not isinstance(reservation, (int, float)) or reservation <= 0:
+                    budget.reconcile(attempt_operation, 0, outcome="not_dispatched_missing_cost_reservation")
+                    budget.reconcile(response_operation, 0, outcome="not_dispatched_missing_cost_reservation")
+                    stop_reason = "task_budget_exhausted"
+                    error = "A positive model_attempt_cost_reservation is required with cost_usd"
+                    self.runtime.journal.append("task_budget_exhausted", {
+                        "task_id": self.task.task_id,
+                        "resource": "cost_usd",
+                        "reason": "missing_conservative_reservation",
+                    })
+                    break
+                try:
+                    cost_operation = budget.reserve("cost_usd", float(reservation))
+                except TaskBudgetExhausted as exc:
+                    budget.reconcile(attempt_operation, 0, outcome="not_dispatched_cost_exhausted")
+                    budget.reconcile(response_operation, 0, outcome="not_dispatched_cost_exhausted")
+                    stop_reason, error = "task_budget_exhausted", str(exc)
+                    self.runtime.journal.append("task_budget_exhausted", {
+                        "task_id": self.task.task_id,
+                        "resource": exc.resource,
+                        "requested": exc.requested,
+                        "remaining": exc.remaining,
+                    })
+                    break
+            self.runtime.journal.append("model_request_intent", {
+                "task_id": self.task.task_id,
+                **request_ref,
+            }, operation_id=attempt_operation)
+            model_calls += 1
+            try:
                 response = self.client.complete(built.messages, built.tools)
             except ModelClientError as exc:
+                budget.reconcile(attempt_operation, 1, outcome="provider_error")
+                budget.reconcile(response_operation, 0, outcome="provider_error")
+                if cost_operation is not None:
+                    budget.reconcile(cost_operation, None, outcome="unknown_billing_after_provider_error")
                 self.runtime.journal.append("model_call_failed", {**request_ref, "error": str(exc)})
                 stop_reason, error = "model_error", str(exc)
                 break
 
             usage = response.usage if isinstance(response.usage, dict) else None
+            budget.reconcile(attempt_operation, 1, outcome="response")
+            budget.reconcile(response_operation, 1, outcome="response_persisted")
+            if cost_operation is not None:
+                actual_cost = usage.get("cost") if usage else None
+                if isinstance(actual_cost, bool) or not isinstance(actual_cost, (int, float)):
+                    actual_cost = None
+                budget.reconcile(cost_operation, actual_cost, outcome=(
+                    "reported" if actual_cost is not None else "unknown_billing"
+                ))
             for name in USAGE_FIELDS:
                 value = usage.get(name) if usage else None
                 if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -168,6 +375,7 @@ class AgentController:
             )
 
             message = self._normalize(response.message, model_calls)
+            message["_reticle_attempt_id"] = attempt_operation
             transcript.append(message)
             calls = message.get("tool_calls") or []
             if not calls:
@@ -184,19 +392,43 @@ class AgentController:
                         "tool_call_skipped", {"call_id": call["id"], "name": function["name"], "reason": "after_finish"}
                     )
                 else:
-                    tool_calls += 1
-                    outcome = self.tools.dispatch(function["name"], function["arguments"], call["id"])
-                    message["content"] = outcome.content
-                    if outcome.handle:
-                        # Private key: lets context policies show a bounded view that names this output.
-                        message["_reticle_output"] = {"handle": outcome.handle, "tool": function["name"]}
-                    if outcome.finished:
+                    try:
+                        tool_operation = budget.reserve("tool_actions", 1)
+                    except TaskBudgetExhausted as exc:
+                        message["content"] = f"Not executed: {exc}"
+                        stop_reason, error = "task_budget_exhausted", str(exc)
                         finished = True
-                        finish_summary = self._summary(function["arguments"])
+                        self.runtime.journal.append("task_budget_exhausted", {
+                            "task_id": self.task.task_id,
+                            "resource": exc.resource,
+                            "requested": exc.requested,
+                            "remaining": exc.remaining,
+                            "call_id": call["id"],
+                        })
+                    else:
+                        tool_calls += 1
+                        outcome = self.tools.dispatch(function["name"], function["arguments"], call["id"])
+                        budget.reconcile(tool_operation, 1, outcome=outcome.status)
+                        message["content"] = outcome.content
+                        if outcome.handle:
+                            # Private key: lets context policies show a bounded view that names this output.
+                            message["_reticle_output"] = {
+                                "handle": outcome.handle,
+                                "tool": function["name"],
+                                "status": outcome.status,
+                            }
+                        if outcome.finished:
+                            finished = True
+                            finish_summary = self._summary(function["arguments"])
                 transcript.append(message)
             if finished:
-                stop_reason = "finish_requested"
+                if stop_reason != "task_budget_exhausted":
+                    stop_reason = "finish_requested"
                 break
+
+        active_elapsed = monotonic() - started_at
+        budget.charge("active_seconds", active_elapsed, outcome="controller_invocation")
+        task_snapshot = budget.snapshot()
 
         result = AgentRunResult(
             task_id=self.task.task_id,
@@ -208,6 +440,13 @@ class AgentController:
             calls_missing_usage=missing,
             finish_summary=finish_summary,
             error=error,
+            task_resources={
+                "limits": task_snapshot.limits,
+                "consumed": task_snapshot.consumed,
+                "reserved": task_snapshot.reserved,
+                "remaining": task_snapshot.remaining,
+                "pending": task_snapshot.pending,
+            },
         )
         self.runtime.journal.append("agent_run_result", {"result": result.to_dict()})
         return result

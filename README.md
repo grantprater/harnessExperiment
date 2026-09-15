@@ -1,5 +1,10 @@
 # Reticle: The Cognitive Harness Framework
 
+> Current direction (2026-09-15): [durable sessions, replaceable harnesses, and fast experiments](IMPLEMENTATION_PLAN.md).
+> The capabilities, benchmark claims, CLI examples, and test counts below describe the historical
+> prototype; they do not validate the new runtime. See the current plan for implemented assets,
+> observed limitations, and delivery gates. Detailed documentation replacement ships with S3.
+
 A lightweight, multimodal cognitive agent harness based on systems theory, biological sensory transduction, epistemic working memory ledgers, and formal invariant verification.
 
 Tested and benchmarked on low-capability models (**`gemini-3.6-flash-low`** with `--effort low`) across 5 domains.

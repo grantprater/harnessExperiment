@@ -1,946 +1,622 @@
-# Reticle: general adaptive runtime implementation plan
+# Reticle: durable sessions, replaceable harnesses, fast experiments
 
-Status: staged delivery plan; P0–P5 engineering stages are complete (see section 14).
-Created: 2026-09-14.
-Owner: Grant; implementation owners assigned when work is scheduled.
+Date: 2026-09-15.
+Status: current implementation direction; S1 mechanics are delivered and later runtime changes are planned.
+Supersedes: [the September 14 plan](IMPLEMENTATION_PLAN_2026-09-14.md), including its
+P0-P9 sequence and continuation instructions. That document preserves the implementation
+ledger, commit identifiers, wheel checks, and historical experiment decisions.
 
-## 1. Purpose and reading guide
+## 1. Objective and operating rule
 
-Build a general, durable scratchpad and execution environment around an LLM that
-expands what the model can accomplish. The runtime should benefit from stronger
-models, more available computation, accumulated experience, and better programs.
-It should allow strategies to evolve without requiring kernel changes.
+Build a dependable session runtime in which different harness policies can be operated
+and compared. Find useful improvements through short, discriminating experiments.
 
-This document turns the repository critique into implementation decisions,
-migration stages, acceptance criteria, and experiments. It is a design proposal,
-not evidence that the proposed architecture improves performance. Subsequent
-sessions should update its decision log and work ledger rather than reconstruct
-the rationale from conversation history.
+The session records what happened. Context is the selected view for one model invocation.
+The harness decides how to continue. Execution environments perform work. Separate their
+responsibilities and lifetimes, even when they run on one host.
 
-Read sections 2–5 for the design, 6–10 for contracts, 11 for implementation order,
-and 12–15 for evaluation, risks, and continuation instructions.
+**Fail fast on broken mechanisms; iterate quickly on development tasks; require stronger
+evidence before claiming a general improvement.** Do not complete another long substrate
+roadmap before observing whether a model can use the interface.
 
-Relevant existing sources:
+The first research question is narrow: does retaining full recent observations until
+context pressure requires reduction improve accepted repairs relative to the current
+512/4,000-byte views? This is a hypothesis, not a promised result.
 
-- [Current design](ARCHITECTURE.md) and [README](README.md).
-- [Current CLI-backed runtime](stateless_harness.py).
-- [Earlier phased runtime](harness.py).
-- [Failure evidence implementation](reticle/cognitive/falsification.py).
-- [Capability ledger](reticle/cognitive/capability_ledger.py).
-- [Larger observation experiment](experiments/large_v1/REPORT.md).
-- [Reading pilot](experiments/pilot/REPORT.md).
-- [Autotelic limitations](experiments/AUTOTELIC_GROUNDING.md).
-- [Sutton's Bitter Lesson](https://www.cs.utexas.edu/~eunsol/courses/data/bitter_lesson.pdf).
+Initial workload: pinned Python repository repairs, plus small behavioral exercises for
+history retrieval, context pressure, and interrupted work. Preserve support for human or
+incomplete acceptance criteria; passing available tests does not establish every user goal.
 
-The September 14 review was primarily static. Small runtime reproductions could
-not run because the available virtual-environment launcher failed with permission
-denied. Reproduce suspected defects before claiming they have been fixed. The
-working tree already contains unrelated evaluation changes; preserve them.
+Anthropic's April 8 publication separates durable session history from replaceable context
+management and execution environments. This plan applies that distinction locally. Its
+implementation choices and experiments are proposals, not results established by Anthropic.
+[Source: Scaling Managed Agents](https://www.anthropic.com/engineering/managed-agents).
 
-## 2. Outcomes, boundaries, and non-goals
+### Changes from the prior plan
 
-### Desired outcomes
+- Reuse the journal, artifacts, workers, and evidence machinery already implemented.
+- Restore useful context and discoverable history before adding cognitive machinery.
+- Treat boards, foveation, summaries, and forgetting as replaceable experimental choices.
+- Persist task budgets and pending operations across controller replacement.
+- Test the actual runner's execution/evaluator boundary, not just isolated components.
+- Run model usability experiments alongside implementation as prerequisites become ready.
+- Ship one installed session workflow before expanding a program library.
+- Search policies only after a competent control and trustworthy evaluator exist.
 
-1. The model can preserve arbitrary useful state and recover exact observations.
-2. The model can create, execute, compose, inspect, revise, and reuse programs.
-3. Observation and memory strategies can vary by task and model.
-4. Execution failures do not destroy the supervising session.
-5. Reported completion describes the final artifact and actual evidence.
-6. Improvements are measured against a competent general agent baseline.
-7. Reusable artifacts improve later held-out tasks after their creation cost is
-   included; mere artifact accumulation is not counted as learning.
+Non-goals for this sequence: hosted services, distributed scheduling, concurrent controller
+swarms, universal memory ontologies, mandatory cognitive phases, automatic cross-session
+consolidation, and recreating every historical modality demo.
 
-### Scope
+## 2. Starting evidence
 
-Start with a single-host, single-controller runtime, local file artifacts, and
-code/text tasks. Preserve extension points for media and external environments.
-Support multiple isolated execution jobs when needed; do not initially build a
-distributed scheduler, a swarm framework, or a universal knowledge graph.
+Review baseline: `08871ac3d083bd72b33ac18499d0391c9c9cd20e`; tracked tree was clean before
+this documentation change. Review-time offline command:
 
-The LLM-as-CPU analogy assigns responsibilities: an inference engine uses an
-active working set, durable memory, execution facilities, and I/O. It does not
-imply deterministic instructions, exact internal state, or reliable CPU-like
-execution by a model. Contracts validate proposed operations at the boundary.
+```powershell
+.\.runtime\test-venv\Scripts\python.exe -m unittest discover -s tests -q
+```
 
-### Non-goals for the initial implementation
+Result: 140 tests ran, no failures, three OCI integration tests skipped. This does not
+claim fresh validation of OCI boundaries or installed packaging during the review.
 
-- Training model weights or implementing reinforcement learning infrastructure.
-- Encoding a universal theory of goals, salience, curiosity, or intelligence.
-- Requiring every task to have a complete deterministic success oracle.
-- Making every task start without useful libraries or existing tools.
-- Automatically enabling external effects or unlimited background compute.
-- Reproducing every historical modality demo before the core is usable.
+Confirmed by review reproductions:
 
-## 3. Principles and proposed decisions
+- A 200,000-byte context budget produced a roughly 9,388-byte request for two reads, with
+  just 361 bytes of the older result and 3,834 bytes of the newest result visible.
+- With 6,000 or 8,000 bytes, the same policy kept the older exchange and omitted the newest
+  while reporting `over_budget=false`.
+- Two controller invocations on one session with one-call invocation limits persisted two
+  model calls; each invocation reported one. No cumulative task limit was enforced.
 
-These are the proposed defaults. A change should identify which decision it
-revises and provide either a correctness argument or relevant experimental data.
+Other inspected limits:
 
-| ID | Decision | Rationale and tradeoff |
+- `ToolSuite` and `AcceptanceRunner` default to trusted local execution. The P6 runner
+  keeps evaluator files beside the workspace without enforcing their inaccessibility.
+- `reticle run` uses the legacy harness; its package shim imports root source.
+- Workspace revisions scan all files; journal/transcript queries repeatedly read full
+  history. Scaling cost is a concern to measure, not a measured performance regression.
+
+The generated larger study reached a success ceiling. Each recent P6 pilot recorded 0/9
+accepted with substantial harness/provider interference. Neither demonstrates a clean
+harness effect. Existing inspected tasks are development material, not a pristine holdout.
+
+- [Larger-repository experiment](experiments/large_v1/REPORT.md)
+- [Pilot 1 audit](experiments/p6_pilot/runs/pilot1-transcript/AUDIT.md)
+- [Pilot 2 audit](experiments/p6_pilot/runs/pilot2-transcript/AUDIT.md)
+
+Retain and extend `LocalRuntime`, `EventJournal`, `ArtifactStore`, `TranscriptStore`,
+`AgentController`, `ToolSuite`, and `AcceptanceRunner`. Do not rebuild completed work just
+to rename it. Old P2-P5 completion is evidence about components, not these new end-to-end gates.
+
+## 3. Architecture and contracts
+
+```text
+Task + authority + resource contract
+                  |
+          replaceable harness
+            /           \
+   session read API      execution interface
+         |                       |
+  events + artifacts        task workspace / tools
+         |
+  context policy -> validated request manifest -> model
+
+Independent evaluator <- final candidate snapshot
+```
+
+| Component | Owns | Does not own |
 |---|---|---|
-| D01 | Keep the trusted runtime small and operational. | It owns persistence, dispatch, budgets, cancellation, permissions, and event integrity. Cognitive behavior belongs in replaceable policies. |
-| D02 | Use files and a small metadata index for durable memory. | Arbitrary formats remain possible; avoid requiring an ontology before useful work. Indexes are rebuildable accelerators. |
-| D03 | Preserve raw observation artifacts; derive context views. | Compression can be revised. Disk use grows, so retention must be explicit and metered. |
-| D04 | Offer full reads, search, regions, outlines, and media views together. | Observation scale is a choice. Fixed restrictions remain available as experimental arms. |
-| D05 | Provide a bounded recent-transcript policy first. | It is a credible baseline and a recovery path. Blank-slate and adaptive policies are optional implementations of the same contract. |
-| D06 | Permit arbitrary scratch content. | Plans, prose, tables, code, hypotheses, and incomplete work must not be forced into grounding-pointer fields. |
-| D07 | Treat failures as conditional evidence. | Retry decisions depend on state and circumstances. No permanent global prohibition on repeating an action. |
-| D08 | Separate execution, measurements, interpretations, and acceptance. | Exit zero, syntax validity, and task success carry different meanings. |
-| D09 | Execute generated programs outside the controller. | Ordinary Python module semantics, cancellation, and containment enable more ambitious experimentation. |
-| D10 | Store reusable programs as versioned artifacts. | Registry schemas are discovery metadata, not the sole representation of a skill. |
-| D11 | Allow immediate provisional reuse. | No arbitrary three-example gate. Broader promotion depends on measured utility, scope, and evaluation risk. |
-| D12 | Keep domain priors in adapters and libraries. | Minecraft inventory gains and recipe chains do not define general capability. |
-| D13 | Meter all adaptation. | Context construction, retries, policy search, evaluation, and consolidation consume the same accountable resource budget. |
-| D14 | Introduce policy adaptation only after an auditable baseline. | Otherwise gains and regressions cannot be attributed or recovered from. |
+| Session | Task, authorized updates, events, artifact references, usage, pending work | A mandatory attention strategy |
+| Context policy | Selection, ordering, rendering, optional summaries | Authoritative deletion, authority, evaluator access |
+| Harness/controller | Model/tool protocol, dispatch, lifecycle transitions | Essential state available only in process memory |
+| Execution backend | Resources, enforced authority, supervision | Provider secrets, journal authority, hidden acceptance inputs |
+| Evaluator | Fixed criteria, measurements, final-artifact decisions | Trust in the model's success claim |
+| Experiment runner | Assignment, protocol versions, budgets, reporting | Undocumented arm changes or exclusions |
 
-The Bitter Lesson motivates testing methods that continue to benefit from
-computation and learning. It does not establish that minimal tooling, pure model
-discretion, or any particular adaptive policy will win. Supplied libraries and
-heuristics are useful starting points when they remain replaceable and measured.
+These are logical boundaries. Keep one host and one active controller per session. No
+network services or generic plugin framework are required. Extend interfaces for real callers.
 
-## 4. Target architecture
+### 3.1 Durable, interrogable sessions
+
+Proposed operations, implemented incrementally through the existing package:
 
 ```text
-User task + resource/authority contract
-                 |
-                 v
-       Controller / small runtime
-        |         |          |
-        |         |          +--> accepted final artifact + evidence
-        |         +--> versioned event journal / artifact store
-        v
- Context policy --> explicit context manifest --> model invocation
-        ^                                      |
-        |                                      v
-        +------- observations <-- action dispatcher
-                                      |
-                          isolated execution workers
-                                      |
-                      files / tools / environment adapters
+open_session(id) -> contract, status, event cursor, usage, pending operations
+append_event(expected_sequence, operation_id?, kind, payload_refs) -> event
+get_events(after_sequence?, before_sequence?, kinds?, limit, as_of_sequence?) -> page
+search_events(query, kinds?, source?, cursor?, limit, as_of_sequence?) -> matches
+read_artifact(id, byte_range?) -> bytes or explicit unavailable status
+checkpoint() -> reconstruction cursor and workspace identity
 ```
 
-### Proposed module ownership
-
-```text
-reticle/
-  runtime/       controller, contracts, events, budgets, cancellation
-  storage/       artifacts, references, atomic writes, retention
-  execution/     worker protocol, local backend, isolated backend
-  context/       manifests, transcript policy, adaptive policy interface
-  tools/         file/search/edit/run/scratch primitives, discovery
-  evaluation/    measurements, acceptance policies, result reports
-  library/       reusable artifact manifests, retrieval, lifecycle
-  adapters/      domain and environment integrations
-  cli.py         entry points and configuration
-experiments/     fixed policies, benchmarks, adaptation experiments
-```
-
-Do not create empty abstractions for every directory immediately. Add modules
-when a stage implements their contracts. Package code must be authoritative;
-root-level compatibility modules may import from it temporarily, never the reverse.
-
-### Controller sequence
-
-1. Load task, permissions, limits, policy version, and durable session state.
-2. Recover any incomplete events/jobs conservatively.
-3. Ask the context policy for a manifest within its budget.
-4. Validate references and limits; materialize messages and record the manifest.
-5. Invoke the model; record provider metadata and actual usage when available.
-6. Validate requested actions; dispatch with explicit dependencies.
-7. Persist raw results before presenting derived views.
-8. Update measurements, workspace revision, and budget consumption.
-9. Continue, checkpoint, or evaluate a finish request.
-10. Emit a final status referring to a specific artifact/workspace revision.
-
-A model may ask to finish. It cannot make an executable acceptance check pass by
-asserting completion. Conversely, tasks with partial or human acceptance criteria
-must remain deliverable with an honest "needs review" status.
-
-## 5. Memory and context contracts
-
-### Artifact storage
-
-Start with a session directory containing an append-only JSONL event journal,
-immutable content-addressed blobs, and mutable named references written atomically.
-Use a single journal writer initially. Introduce SQLite only if measured indexing
-or concurrency needs justify it; do not build two authoritative metadata stores.
-
-Minimum artifact envelope:
-
-```text
-artifact_id, content_hash, media_type, byte_length, created_at
-producer_event_id, parent_artifact_ids, optional labels
-```
-
-Artifact payloads are arbitrary bytes. Scratch content has no required semantic
-schema. Named references such as `scratch/current-plan` point to immutable
-versions; updates carry an expected prior version to detect stale writes.
-
-Workspace files remain ordinary editable files. Observed bytes are snapshotted or
-hashed when read. An address into a live file must record its revision/hash and
-locator. After mutation, either resolve against the original snapshot or explicitly
-revalidate against the new version. Never silently relabel a stale locator verified.
-
-### Initial scratch operations
-
-- `read(ref, range?)`: materialize exact bytes or a declared view.
-- `write(name, content, expected_version?)`: create a version and update a name.
-- `list(prefix?, labels?)` and `search(query, scope?)`: discover stored work.
-- `pin(ref, priority?)` / `unpin(ref)`: express active-context preferences.
-- `forget(name)`: remove a working reference, distinct from deleting audit history.
-
-Reuse file operations where practical. Avoid redundant tool schemas that require
-the model to learn separate APIs for identical operations.
-
-### Context manifest
-
-Each model call records the exact selected artifact versions, ranges, rendering
-methods, message order, selected tool schemas, policy version, and token estimate.
-Store hashes/references for the materialized request so the delivered input can be
-audited. Provider-hidden prompts and hidden state must be marked unavailable.
-
-Non-evictable contract material includes the user task, current authority and
-budget boundaries, protocol essentials, and a way to retrieve omitted evidence.
-Model-pinned content competes within the remaining budget. If pins overflow, return
-an explicit overflow result and compact under a documented fallback; never imply
-all pins were delivered when they were not.
-
-The baseline policy retains bounded recent exchanges plus selected durable notes.
-It preserves tool-call/result pairing required by the provider. It may spill large
-outputs to artifacts with truthful previews. It does not summarize or remove the
-only copy of an observation.
-
-Adaptive policies can choose summaries, retrieval, recent history, raw views, and
-tool descriptions. Context construction has its own metered sub-budget. On failure,
-use the baseline policy with a visible diagnostic. No unbounded recursive calls to
-the same policy/model to decide what to put in context.
-
-### Retention
-
-Default: retain a run's raw observations through its evaluation and review window.
-Record disk usage and support configurable quotas. Explicit garbage collection
-operates on unreferenced blobs after checkpoints; report missing artifacts as
-unavailable, never reconstruct them as if original. Keep secrets out of telemetry
-through redaction at ingestion; document any resulting limits on exact replay.
-
-## 6. Execution and sandbox contract
-
-### Tool result envelope
-
-```text
-call_id, status(success|error|timeout|cancelled|rejected)
-exit_code?, stdout_ref?, stderr_ref?, output_refs[]
-preview, preview_truncated, duration_ms, usage
-workspace_revision_before, workspace_revision_after
-error_kind?, retry_hint?, external_effect_status?
-```
+- Preserve stable IDs, sequence order, source references, and exact observations. Pages
+  include a next cursor and explicit truncation. Use a fixed high-water mark across search
+  pages so retrieval events do not create an endlessly expanding search.
+- Start with positional slices and literal search over authorized action/observation text.
+  Return tool, path/source, sequence, status, and snippet; the model must be able to find
+  an old action without remembering its output ID. Report search scope and coverage.
+- Expose `history`, `search_history`, and session-scoped `read_artifact` tools. Keep current
+  `read_output`/`search_output` as compatibility conveniences. Avoid duplicate abstractions.
+- Model-visible history excludes credentials, hidden evaluator inputs, and controller-only
+  records. Session membership is not universal read permission. Test this authorization.
+- Summaries and notes are derived, labeled artifacts citing source versions. They never
+  replace source evidence or acquire system-instruction authority merely through pinning.
+- Persist later authorized task corrections; they must survive compaction and restart.
+- Keep a single event authority. Indexes/checkpoints are rebuildable. Add a cross-process
+  writer lock before promising safe controller replacement; reject concurrent owners.
+- Retain evidence through evaluation/review. Set explicit storage quotas and report missing,
+  redacted, or expired artifacts honestly. Stop before executing work whose evidence cannot
+  be recorded. No garbage collection controlled by a context policy.
+
+### 3.2 Pressure-based context control
+
+Add `pressure-recent-v1` as a separate policy. Preserve old policy version semantics.
+
+1. Include task/current authorized instructions, authority, remaining task resources, and
+   concise history-retrieval instructions.
+2. Reserve a valid representation of the latest assistant/tool exchange, including every
+   result's status and retrieval reference. Older exchanges cannot substitute for it.
+3. Retain recent observations in full while space permits. No automatic age-based shrink
+   to 512 bytes with unused space available for the original material.
+4. Under actual pressure, reduce older material first with declared views/omissions. If an
+   entire exchange leaves context, retain an indication of omitted history and how to find it.
+5. Bound an oversized newest exchange with useful line/byte views. Requested retrieval pages
+   receive newest-result priority. Record loops where a retrieved page is immediately hidden.
+6. Fit optional pins/summaries after required material. Report overflow; pins cannot displace
+   the latest exchange or authoritative contract.
+
+Validate the final materialized request in the controller. If the contract and minimum
+protocol-valid latest exchange cannot fit, checkpoint and stop with an explicit
+`context_budget_exhausted` reason. Do not send an over-budget request or silently lose feedback.
+
+Each manifest records selected/omitted event ranges, artifact versions, views, message order,
+tool schemas, policy version, request hash, and size accounting. Provider adaptation records
+the actual submitted request, including reasoning-field transformations.
+
+Keep the deterministic byte limit, clearly named as bytes. Also respect provider context
+limits using supported token counting or a documented conservative bound plus output reserve.
+Actual usage is separate; bytes/4 is not billed usage. Measure prompt-cache and retransmission
+effects instead of assuming shorter context is always cheaper overall.
+
+### 3.3 Durable resources and recovery
+
+Separate task budgets from invocation limits. Persist model attempts, successful responses,
+tool work, active elapsed time, deadline semantics, and monetary usage. Define whether paused
+time counts toward each deadline. Reserve final evaluation resources separately.
+
+- Admit work against a reservation before dispatch; reconcile usage afterward. Record failed
+  HTTP attempts separately from model turns. Retries do not consume another run's allocation.
+- Unknown billing remains unknown. Keep conservative reservations for ambiguous attempts
+  until reconciled when enforcing a hard monetary cap.
+- Resume cumulative consumption with monotonic invocation/attempt/action IDs. Starting a
+  new controller never silently renews a task budget.
+- Persist model request intent and returned responses before executing actions. A recorded
+  response resumes at its first uncompleted action, rather than being regenerated.
+- Repair a crash between action-outcome persistence and transcript publication without
+  repeating a completed mutation. Deduplicate bookkeeping by operation ID.
+- Classify pending work as known complete, known not started, or unknown external outcome.
+  Reconcile observable state; replay only with justified idempotency. Otherwise stop with
+  `needs_reconciliation` and actionable evidence. Never infer exactly-once external effects.
+- Acquire/release one session writer lock across controller lifetimes. Preserve torn-journal
+  evidence when repairing a tail. Use existing conservative recovery mechanisms where possible.
+
+Keep controller stop reason, acceptance outcome, and resource status separate: an interrupted
+run may leave an accepted artifact, and a normal finish may leave a rejected artifact.
+
+### 3.4 Actual execution and evaluator boundaries
+
+Use existing OCI execution for candidate commands in benchmark runs. Provision a pinned
+task-compatible image/environment and map guest paths/interpreters. Do not pass host Windows
+interpreter paths to the guest. A candidate sees only its workspace and declared resources,
+not the journal, secrets, fix repositories, evaluator inputs, or other runs. Disable task
+networking for the first repair study. Trusted-local remains explicit for trusted work;
+an unavailable isolated backend never silently falls back.
+
+Evaluate a candidate snapshot in a separate invocation with fixed inputs. Candidate code
+remains untrusted during test execution and may share a process with grader code. Use read-only
+fixed inputs, supervisor-owned reporting where practical, expected coverage checks, and
+targeted tampering probes. Host isolation alone does not establish grader integrity.
+
+Retain golden/noop/breaker/gamer controls through this real path. State the residual threat
+model; do not claim arbitrary adversarial grader resistance from a conftest regression test.
+
+Define source revision scope separately from full execution snapshot identity. Cache files
+must not masquerade as relevant source changes. Final acceptance still covers all declared
+deliverables and is invalidated by applicable subsequent mutations.
+
+## 4. Delivery: small slices with early experiments
+
+Stage IDs below replace P0-P9. Engineering and empirical gates are separate. Model smokes
+can run before every production feature is complete if their actual prerequisites hold.
+An unmet unrelated stage is not a reason to delay a safe, discriminating experiment.
+
+### S0 - One current plan (this documentation change)
 
-Return useful content for observation tools, including outlines and successful
-shell commands. Output limits limit the inline view, not silently discard the raw
-result. Preserve stdout and stderr separately. Distinguish parser errors, invalid
-arguments, tool failures, and evaluator failures.
+Preserve the old ledger; label the older architecture/board/README claims historical; publish
+this plan and experiment protocol. No runtime implementation is claimed by this stage.
+Exit: links resolve and old continuation instructions no longer direct new work.
 
-### Worker model
-
-Generated code is an ordinary module/program loaded inside a worker. Registration
-stores source and metadata; it does not execute arbitrary top-level code in the
-controller. Validate entry-point existence and signatures in the worker. Helpers,
-imports, recursion, module globals, and asynchronous entry points either work
-normally or receive an explicit unsupported-feature result.
-
-Each job declares working directory, mounted resources, environment, timeout,
-output limit, and available authority. Credentials are passed only when a job
-requires the corresponding authorized capability, not inherited wholesale.
+### S1 - Useful context and history discovery
 
-Separate two guarantees:
-
-1. **Process supervision:** cancellation, process-tree termination, bounded output,
-   and controller survival. This is available in an explicitly trusted local mode.
-2. **Host isolation:** enforced filesystem/network/process/resource boundaries.
-   This requires an OS-backed backend; changing cwd and launching a subprocess do
-   not provide it.
-
-On the current Windows host, implement a backend spike comparing a disposable
-container/VM option with available local tooling. Use Windows Job Objects or an
-equivalent backend facility for descendant termination. Select one supported
-isolated backend first. If isolation is requested but unavailable, fail explicitly;
-do not fall back silently to trusted local execution. Avoid importing the entire
-host workspace or credential environment into the guest.
-
-### Edits and side effects
-
-- Prefer exact-match or version-checked patches over unguarded line replacement.
-- Snapshot before mutation; a conflicting revision produces a recoverable conflict.
-- Permit intermediate syntax errors in a task workspace. Optional atomic validated
-  edits are conveniences, not the only way to construct a multi-file change.
-- Filesystem snapshots do not roll back email, network operations, or game actions.
-  Adapters declare irreversible effects and support operation IDs where possible.
-- After a crash, an action with unknown external outcome is reconciled or reported
-  unknown. Do not automatically replay it as though it never happened.
-
-Concurrent read-only jobs may run independently. Mutating jobs are serialized by
-default, or use explicit separate snapshots/branches and a merge step. Do not
-promise transactional semantics for arbitrary shell commands.
-
-## 7. Evidence, failure memory, and acceptance
-
-### Evidence distinctions
-
-Store four separate concepts:
-
-1. Observation: what an instrument returned, with source and version.
-2. Measurement: a named procedure applied to inputs, with result and scope.
-3. Interpretation: a model or user claim linked to evidence.
-4. Acceptance decision: application of task criteria to the final artifact.
-
-No default `verified=True` or confidence `1.0` for an unmeasured assertion. Source
-quote matching and claim entailment are different checks. Scores have an explicit
-scale and meaning; avoid the existing ambiguous 0–1 versus 0–100 convention.
-
-### Failure records
-
-Record attempt/program version, relevant environment revision, action, observations,
-stated approach if available, failure category, and applicable conditions. Optional
-interpretations include "likely repeat" and "possibly invalidated by environment
-change." They never erase evidence or universally forbid an approach.
-
-Failure signatures group similar observations for retrieval. They are not causal
-proofs. A test can be marked resolved only when its identity is observed to pass
-under the relevant suite/version; absence from a partial test run is insufficient.
-Detect regressions and reopen records. Keep timeout, collection failure, and
-unknown outcomes distinct from failed assertions.
-
-### Acceptance protocol
-
-Task contracts declare criteria as executable, graded, human-reviewed, or currently
-unmeasurable. Preserve their original wording and evaluator versions.
-
-Proposed final states: `accepted`, `rejected`, `needs_review`, `budget_exhausted`,
-`cancelled`, `runtime_error`. Also store criterion-level outcomes: pass, fail,
-unknown, not_run. This prevents infrastructure failures from being flattened into
-task failure or success.
-
-For executable checks, evaluate the final workspace revision after the last
-mutation. A mutation invalidates earlier applicable acceptance measurements.
-Reserve resources for final evaluation; if it cannot run, report unknown/needs
-review or budget exhaustion instead of inheriting an old pass.
-
-Evaluation fixtures and hidden answers live outside agent-writable workspaces.
-The harness can run agent-authored tests as useful probes, but those do not replace
-the fixed independent acceptance procedure. Isolated evaluators receive a candidate
-snapshot. Report semantic limits even when all executable checks pass.
+Files: `reticle/context/baseline.py`, `reticle/runtime/events.py`,
+`reticle/runtime/observations.py`, `reticle/tools/primitives.py`, controller validation,
+and focused context/controller/paging tests. Add a session query module if needed.
 
-## 8. Reusable programs and adaptive policies
+Deliver in independent slices:
 
-### Artifact lifecycle
+- **S1a:** Reproduce the review failures; add the pressure policy and latest-exchange
+  protection while retaining the named legacy renderer. Run experiment E1 immediately.
+- **S1b:** Add history/search/authorized artifact tools. Prove discovery after full exchange
+  eviction and restart without a remembered handle. Run E2 as soon as its fixture is isolated.
+- **S1c:** Add checkpoint-based context comparison output: exact visible/omitted material,
+  request size, policy identity, and retrieval entry points. This is diagnostic replay only.
 
-Use `candidate`, `evaluated`, `preferred`, and `retired` as operational states,
-not universal truth labels. A manifest records entry point, parameters, dependency
-lock or environment reference, author/producer, version, examples, observed scope,
-trial references, and costs. Programs remain inspectable and editable.
-
-A candidate may be tried immediately in its sandbox. Promotion to preferred use
-requires comparison against an alternative on an appropriate validation set.
-Thresholds vary with the cost and consequences of misuse; the original three-trial
-rule remains a named experimental policy if useful.
+Tests cover large-budget full retention, small-budget latest continuity/explicit stop,
+multi-tool pairing, huge arguments/results, UTF-8 long lines, pin overflow, later user
+corrections, cursor stability, missing artifacts, and denied controller-only history reads.
 
-Search/index the library and expose a bounded set of relevant descriptions. Do not
-inject every registered schema on every model call. Provide an explicit discovery
-tool and ordinary `run` access to stored programs. Track retrieval misses, failed
-reuse, dependencies, version changes, and retirement decisions.
-
-### Policy adaptation
-
-Policies receive a read-only session view and return a context manifest or proposed
-actions. They cannot alter the task contract, audit records, budget accounting, or
-evaluation oracle. They run under the same execution boundaries as other generated
-programs when model-authored.
+Exit: mechanical gates pass; actual model usability is separately recorded as passed,
+failed, or unrun. A scripted model cannot satisfy the behavioral gate.
 
-Begin with offline candidate generation and paired evaluation, then enable bounded
-within-task trials. Version every policy; preserve the baseline for recovery. A new
-policy is activated only after protocol validation and an explicit selection event.
-Optimization data, validation data, and final held-out evaluation remain separate.
-
-Candidate objectives may include task quality, cost, latency, or later-task utility.
-Do not embed a universal weighted score prematurely. Report a quality/cost frontier
-and let task configuration specify tradeoffs. Novelty, inventory changes, and number
-of tools created are diagnostics, not stand-ins for general competence.
-
-## 9. Budgeting and recovery
+### S2 - Reliable continuation and isolated experiment path
 
-Track wall time, model calls, provider-reported input/output/reasoning/cache usage
-where available, tool CPU/time, storage, and monetary cost when pricing is known.
-Unknown usage remains null with provenance; character counts remain character counts.
+Depends on S1 mechanics; boundary work may overlap S1. Files: runtime controller/session/
+contracts/events, execution controller/backends, acceptance, and P6 runner. Add a small
+`runtime/budgets.py` ledger; reuse existing stores and supervised execution.
 
-Budgets cover foreground work and all policy/consolidation experiments. Reserve
-space for final observations and evaluation. Bound tool output, number of concurrent
-jobs, and recursive model invocations independently. Reaching a limit produces an
-explicit recoverable status and checkpoint.
-
-Journal action intention before dispatch and outcome afterward. On resume, load
-the last consistent checkpoint and reconcile incomplete jobs. Use operation IDs to
-deduplicate runtime bookkeeping. Exactly-once external side effects are not assumed.
-Replay reconstructs recorded state and inputs; stochastic model responses and
-changing environments are not promised to reproduce bit-for-bit.
+- **S2a:** Persist task/resources, writer ownership, and crash transitions. Coordinate native
+  file edits and command mutations under the same workspace mutation boundary. Run E0 recovery probes.
+- **S2b:** Wire pinned OCI environments into actual candidate/evaluator runs. Run no-API
+  pipeline controls and boundary probes before any capability comparison.
 
-## 10. Migration policy
+Gates: exhausted-task resume makes no extra provider call; crash points before/after dispatch,
+outcome persistence, and transcript publication produce no duplicate known mutation; ambiguous
+effects stop visibly; a second controller is rejected and a replacement can take ownership;
+candidate cannot access sibling paths, harmless credential sentinels, or network; golden
+accepted and noop/breaker/known gamer rejected; caches do not falsely report source edits.
 
-Maintain historical experiment artifacts and original reports. They establish what
-was measured under older protocols. New runs record runtime, prompt, policy, tool,
-dataset, evaluator, and source revisions; do not compare incompatible reports as if
-they were the same treatment.
+Skipped OCI tests do not satisfy the boundary gate. A cheap fixture smoke may use the existing
+isolated backend before full repository provisioning is ready, with that limited scope recorded.
 
-The new package implementation becomes authoritative incrementally. Preserve public
-imports through small deprecated shims for a stated transition period. Run a wheel
-installation test outside the checkout to catch dependencies on root-level modules.
+### S3 - Installed vertical slice and competent control
 
-Keep current behavior selectable as `legacy_stateless` for reproductions. The new
-CLI accepts explicit policy/backend choices; change the default only at the rollout
-gate. Check configuration schema versions on load and provide actionable migration
-errors. Preserve legacy ledger imports as provenance-bearing historical records;
-do not upgrade old `verified` flags into new measurement evidence.
+Depends on S1/S2 for production readiness. Development behavioral work need not wait for CLI polish.
 
-Update README, ARCHITECTURE, and ACTIVE_EPISTEMIC_BOARD once the corresponding code
-lands. Separate implemented behavior, hypotheses, and historical results. Replace
-blanket claims of formal verification or general capability with measured scope.
-Do not rewrite those documents now as if this proposal were implemented.
+Proposed commands: `reticle session start`, `resume`, `inspect`, and `evaluate`. Use the same
+controller/tools/evaluator as experiments. Make policy/backend/provider/task budgets explicit.
+Keep `reticle run` visibly legacy until migration; move authoritative legacy implementations
+behind package imports before advertising their installed support.
 
-## 11. Implementation stages and acceptance gates
+Test an installed wheel outside the checkout with a scripted client: start, interrupt,
+inspect, resume, retrieve history, and evaluate. Resolve the advertised Python >=3.9 range
+against actual imports/dependencies. Document supported environments and clear errors.
+Replace stale README/architecture/board content with implemented contracts and linked historical
+reports; do not wait for S5 to make public documentation accurate.
 
-Stages are ordered by dependency, not calendar promises. Each should be delivered
-as a reviewable change with recorded validation. A failed empirical gate may retain
-a useful optional policy while preventing its promotion to default.
+Calibrate one pinned, reliable model/provider on development repairs (E3). Add a stronger model
+only as a separately labeled and budgeted interface diagnostic if needed. Do not vary model,
+provider, tools, and policy simultaneously while diagnosing a failure.
 
-### P0 — Establish a reproducible development baseline
+Exit: installed workflow passes and valid model runs produce meaningful accepted artifacts.
+This establishes a usable control, not superiority. If everything fails or passes, investigate
+infrastructure/usability and change development difficulty before a comparative study.
 
-Work:
+### S4 - First controlled comparison
 
-- Inventory active entry points, compatibility imports, tests, and archived code.
-- Establish a working interpreter and dependency installation without modifying
-  unrelated local evaluation work; record Python and platform versions.
-- Run targeted current-runtime tests; classify pre-existing failures separately.
-- Record current commit and dirty-tree diff hashes for reproducible local runs.
-- Add a baseline runtime inventory and validation commands to the work ledger.
+Requires usable control plus actual evaluator/authority/resource gates; it need not wait for
+unrelated CLI documentation polish. Deliver versioned protocol, paired assignments, artifacts,
+results, failure audit, and a decision. Run E4 screening, then E5 only if justified.
 
-Exit: one documented command runs the selected offline core suite. Existing failures
-and unavailable integration backends are listed; no unsupported green-suite claim.
+| Arm | Observation retention |
+|---|---|
+| A | Current 512/4,000-byte views on the repaired shared substrate |
+| B | pressure-recent-v1, full recent observations until pressure requires reduction |
 
-### P1 — Repair the feedback and completion loop
+Both arms get identical history tools, latest-exchange protocol protection, task budgets,
+model/provider, authority, prompts, evaluator, and fixtures. Assign a new composite arm version
+to A: this is an ablation on repaired infrastructure, not a rerun of the historical broken pilot.
+Do not add a board, summaries, or new tools only to B.
 
-Depends on P0.
+Known arm-version difference: B prefixes every handled tool result with
+`[tool result status=...; output=...]`, including full results; A shows handles only in
+partial views and never shows status. Report it as part of B's version, or equalize it in a
+new A version before assignment. A turn whose manifest `policy_version` differs from its
+assigned arm (the `ContextBuilder` fallback) invalidates that run for the comparison; count
+and report such runs rather than pooling them. B's contract message also names
+`search_history`, `history`, and `read_artifact` and B emits an omission marker; A's contract
+does not mention the history tools, although both arms receive the same tool schemas.
 
-Work primarily in `stateless_harness.py`, `harness.py`, and their focused tests:
+Exit: report improvement, regression, or uncertainty. A negative result completes the experiment.
+Default promotion follows section 5; passing engineering gates does not establish policy superiority.
 
-- Return outline contents and useful stdout/stderr, with explicit truncation.
-- Ensure final verification determines completion after every mutation.
-- Remove mandatory never-repeat instructions; preserve conditional failure history.
-- Default pointers to unvalidated and expose stale addresses honestly.
-- Repair module namespace behavior for dynamic tools as an interim compatibility
-  fix; clearly label in-process execution until P4 replaces it.
-- Disable the mandatory legacy editorial pass by default. If explicitly used,
-  validate its final output and restore a filesystem checkpoint on failed local
-  edits; report rollback failure separately.
+### S5 - Bounded policy search
 
-Meaningful regression cases:
+Conditional on S4 and a trustworthy control. Keep a frozen incumbent and candidate archive.
+Start with manual/model-assisted offline proposals, not an autonomous recursive framework.
+Execute model-authored policies in isolation with an authorized read-only session view.
 
-- An outline request returns a known symbol; `echo`/search output reaches the model.
-- Verify passes, then a later edit breaks tests in the same batch: final state fails.
-- A failed test command can be rerun after repair.
-- A generated entry point calls its sibling helper/import successfully.
-- A locator is stale after an intervening edit.
+Candidate record: source/prompt hash, parent, hypothesis, intended change, task/model scope,
+development/selection results, costs, and disposition. Candidates cannot change the evaluator,
+budgets, authority, or held-out data. Use E4/E5 gates for selection and promotion.
 
-Exit: these cases pass and existing supported behavior remains reproducible. This
-stage fixes correctness without claiming an adaptive architecture exists.
+Loop: inspect failure -> predict effect -> propose -> contract-test -> screen -> select ->
+confirm or reject. Allocate further trials by a declared rule. Preserve negative results.
+Stop when candidate search fails to produce worthwhile gains within its budget.
 
-### P2 — Introduce contracts, journal, and artifact storage
+Later work is conditional: semantic retrieval, learned context allocation, reusable programs,
+cross-task transfer, more models/domains, and multiple workers. Each needs a hypothesis and
+cost account. Provisional program use is allowed; promotion never relies on a three-use rule.
 
-Depends on P1.
+## 5. Experiment protocol: fail fast without fooling ourselves
 
-- Add versioned tool result, artifact, event, task, and final-result envelopes.
-- Implement atomic blob/reference writes and a single-writer journal.
-- Persist exact observation artifacts and provide honest previews/references.
-- Implement workspace revision tracking and version-checked edits.
-- Add checkpoint/resume for local operations and explicit incomplete-job states.
-- Move authoritative runtime code into the package with compatibility shims.
+### 5.1 Two speeds
 
-Exit: a scripted session survives restart, recovers exact prior output, rejects a
-stale write, and detects an incomplete action without blindly replaying it. A wheel
-installed outside the repository can import and invoke the offline runtime.
+**Development discovery:** small, sequential, heavily inspected experiments. Stop early when
+an observable failure invalidates the mechanism. Change one variable and retry on development
+tasks. Findings are provisional and may overfit these tasks; no significance claim is needed
+to fix a reproducible defect or reject an obviously unusable interface.
 
-### P3 — General scratchpad and bounded baseline context
+**Confirmation:** freeze candidates/protocol, predeclare endpoints, sample size and stopping
+rule, and run on unseen tasks. No tuning on this set. A mid-study fix creates a new protocol;
+old outcomes remain visible and are not pooled as if the treatment were unchanged.
 
-Depends on P2.
+Do not use confirmatory machinery to slow routine diagnosis. Do not use rapid diagnosis
+results as if they were confirmed general gains.
 
-- Implement arbitrary scratch operations and reference discovery.
-- Add context manifests, bounded transcript policy, pinning, and overflow behavior.
-- Preserve provider tool-message protocol and original user task across compaction.
-- Add full/region/outline/search choices through a shared observation interface.
-- Remove mandatory two-phase reasoning and prescribed note categories from the new
-  baseline. Keep ledgers available as optional renderers.
+### 5.2 Experiment ladder and default allocation
 
-Exit: a multi-step task can save an unfinished plan, spill a large observation,
-resume later, retrieve exact evidence, and finish without relying on a fixed board.
-Forced small-context tests exercise recovery and pin overflow, not just rendering.
+These are initial screening caps, not statistical sample sizes or spending authorization.
+Each run card can lower them. Raise a cap only with a recorded reason and available authority.
 
-### P4 — Supervised and isolated execution
-
-Design spike may overlap P2; integration depends on P2 and P3.
-
-- Select one OS-backed isolated backend and document actual guarantees.
-- Implement worker lifecycle, ordinary module loading, output artifacts, cancellation,
-  descendant termination, and clean environment provisioning.
-- Replace controller `exec`; register programs without host-side evaluation.
-- Implement trusted-local mode as explicitly different from isolated mode.
-- Separate concurrent reads from serialized mutations and candidate snapshots.
-
-Exit: infinite loops, excessive output, worker crashes, and spawned child processes
-cannot hang the controller. Boundary tests demonstrate the advertised filesystem
-and network restrictions in isolated mode. Backend-unavailable errors fail clearly.
-
-### P5 — Scoped evidence and independent final evaluation
-
-Depends on P2 and P4; selected evidence work may begin earlier.
-
-- Implement observations/measurements/interpretations/acceptance distinctions.
-- Migrate failure memory to conditional attempt records and version-aware resolution.
-- Add final-revision acceptance, resource reservation, and graded/human criteria.
-- Keep fixed evaluator inputs outside the candidate's authority.
-- Report test coverage identity and infrastructure failures separately.
-
-Exit: editing candidate tests does not alter independent acceptance; partial suite
-execution does not falsely resolve missing tests; a task lacking an executable
-oracle produces a useful artifact with an accurate review status.
-
-### P6 — Establish the strong baseline and experimental protocol
-
-Depends on P3–P5.
-
-- Build one shared runner for transcript, legacy fixed, and adaptive-policy arms.
-- Pin tasks, tools, source snapshots, prompts, evaluators, and budget rules.
-- Capture actual usage and all unsuccessful attempts, including policy overhead.
-- Run a small instrumentation pilot and inspect complete trajectories.
-- Freeze the comparison protocol before the confirmatory run.
-
-Exit: reports can trace every outcome to final artifacts and evaluator inputs;
-paired arms receive equal authority and resource budgets. No architectural advantage
-is claimed from the instrumentation pilot alone.
-
-### P7 — Reusable program library and optional adaptive context
-
-Depends on P4 and P6.
-
-- Add versioned manifests, library search, bounded discovery, and lifecycle tracking.
-- Implement a model-selectable context policy with baseline fallback.
-- Allow optional candidate creation and reuse without fixed repetition thresholds.
-- Compare fixed representations with model-selected mixtures under matched budgets.
-
-Exit: the agent can discover, inspect, reuse, revise, and retire a program across
-sessions; adaptive context failures recover without losing state. Promotion of an
-adaptive policy requires the predefined empirical gate, not a successful demo.
-
-### P8 — Measure adaptation and cross-task transfer
-
-Depends on P7.
-
-- Add bounded policy/program candidate search in isolated child experiments.
-- Evaluate later held-out tasks with and without accumulated artifacts.
-- Measure discovery, validation, retrieval, failed reuse, and maintenance costs.
-- Compare multiple model capability levels and compute budgets.
-- Stress domain shifts, stale memories, misleading summaries, and irrelevant tools.
-
-Exit: a report supports a scoped claim of improvement or records a negative result.
-If adaptation does not help, keep the substrate and revise the policy; do not add
-more mandatory cognitive machinery to rescue the narrative.
-
-### P9 — Default rollout and documentation reconciliation
-
-Depends on engineering gates P0–P7; empirical adaptation claims depend on P8.
-
-- Promote the reliable general runtime after CLI, packaging, recovery, and core
-  regression checks pass. Adaptive policy promotion is a separate decision.
-- Update architecture, README, examples, and stale active-board instructions.
-- Publish backend guarantees, migration commands, supported platforms, and limits.
-- Retain an explicit legacy mode and a rollback path through the transition window.
-
-Exit: a new user can install, run, inspect artifacts, resume, and understand results
-without root-checkout imports or assumptions from old experiment reports.
-
-## 12. Evaluation design
-
-### Primary questions
-
-1. Does the general runtime preserve baseline task quality while improving reliability
-   of execution, recovery, and evidence reporting?
-2. Does adaptive context improve quality/cost tradeoffs over bounded transcript and
-   fixed Reticle policies?
-3. Do accumulated programs/memories improve later-task outcomes after all costs?
-4. Do improvements persist as models and compute budgets change?
-
-### Arms and controls
-
-- A: competent model + general tools + bounded transcript + optional plain notes.
-- B: same substrate and authority + fixed Reticle context/ledger policies.
-- C: same substrate and authority + adaptive context and artifact selection.
-- D, later: C with cross-task artifact/policy learning enabled.
-
-Use ablations to separate scratch persistence, observation choice, failure memory,
-program reuse, and context adaptation. Keep interface capabilities constant unless
-the specific experiment tests the interface itself. Match total budgets rather than
-only number of model turns. Account for input caching and actual billed usage.
-
-### Task coverage
-
-Start with pinned real-repository bugs and multi-document synthesis. Include small
-files where full reads should win, cross-file invariants, long interruptions,
-context overflow, tool failures, changing state, and tasks without perfect oracles.
-Add media tasks after the common contracts work; reuse the runtime unchanged.
-
-Use task families and instances split before adaptation. Separate development,
-selection, and final evaluation data. Do not allow hidden answers into memory or
-artifact training histories. If public benchmark contamination is plausible, include
-new private/generated instances and state remaining limitations.
-
-### Metrics and inference
-
-Primary: independently measured task quality/success at a fixed total budget.
-Secondary: monetary cost, latency, provider tokens, tool compute, recovery rate,
-false-success rate, useful artifact reuse, and cost per successful later task.
-Report creation and failed-use costs, including unsuccessful runs.
-
-Choose a minimum practically meaningful effect and, where applicable, a noninferiority
-margin before the main run. Use pilot variance to size the study. Use paired
-comparisons and uncertainty intervals; account for clustering by task family and
-repeated trials. Predeclare primary endpoints and avoid selecting the best-looking
-model/task subset afterward. Ceiling scores require harder tasks, not equivalence
-claims. Missing provider usage is reported as missing, never inferred from characters.
-
-For adaptation, plot held-out quality against cumulative total compute and task
-experience. Include a no-memory/reset condition, a retrieval-only condition, and a
-frozen-library condition to identify where any benefit comes from.
-
-### Promotion gates
-
-- Engineering: no known false-success path; required boundary and recovery cases pass.
-- Default policy: meets predefined quality floor and provides a meaningful measured
-  benefit on the target workload, with uncertainty reported.
-- General capability claim: transfer demonstrated beyond construction cases and
-  repeated on more than one task family/model setting.
-
-Numerical thresholds remain open until the intended workload and pilot variability
-are known. Do not invent confidence from an arbitrary trial count.
-
-## 13. Risks and decisions to revisit
-
-| Risk / question | Initial treatment | Revisit when |
-|---|---|---|
-| Scratchpad becomes another context dump | Cheap durable storage, bounded manifests, explicit retrieval | Retrieval misses or repeated rereads dominate cost |
-| Model cannot manage memory well | Strong baseline, supplied policies, fallback | Paired experiments identify a superior policy |
-| Raw traces consume excessive disk | Quotas, references, explicit retention | Real workloads establish retention needs |
-| Adaptive policies game metrics | Protected evaluators and held-out tasks | New adaptation objectives or domains are added |
-| Library grows without benefit | Retrieval accounting, versions, retirement | Search overhead exceeds reuse benefit |
-| Isolation is impractical on local Windows setup | Backend spike; truthful trusted-local mode | Available virtualization/tooling changes |
-| Context building costs more than it saves | Shared budget and usage telemetry | Measured break-even differs by model/workload |
-| General API becomes lowest common denominator | Arbitrary artifacts and extensible adapters | A modality requires richer streaming or interaction |
-| Strong models are constrained by harness defaults | Raw access, replaceable policies, baseline comparisons | Stronger-model evaluations expose regressions |
-| Program portability fails | Environment manifests and explicit dependencies | Cross-machine reuse becomes a real requirement |
-| Recovery duplicates external effects | Journal + reconciliation; unknown outcome state | An adapter offers stronger idempotency guarantees |
-
-Deferred decisions: exact isolated backend, retention duration, context-token
-allocation defaults, library retrieval algorithm, statistical sample sizes, and
-legacy support duration. Resolve these through the relevant stage; none blocks P0/P1.
-
-## 14. Work ledger and durable decision process
-
-P0 and P1 were implemented in the working tree on 2026-09-14. No benchmark spend
-was authorized or performed.
-
-### 2026-09-14 baseline and P1 implementation record
-
-- Source baseline: commit `d26a4c9e6c2e622cd9633909e159f52c3576ee57`.
-  The pre-implementation tracked diff hash was
-  `64a07b72b52568aec59b2812e736cb21b8959f8f`; it covered unrelated evaluation
-  changes in `experiments/falsification_eval/run_falsification_eval.py`,
-  `experiments/hotpotqa_eval/run_eval.py`, and
-  `tests/test_falsification_eval.py`. Those changes and the pre-existing untracked
-  evaluation artifacts were preserved.
-- Active entry points: the installed `reticle` script and `python -m reticle`
-  dispatch through `reticle.cli`; `stateless_harness.py` and `harness.py` are
-  root-level legacy runtime entry points. `reticle.cognitive.stateless_harness`
-  is currently a compatibility import of the root module. Historical runtime and
-  modality code under `archive/` is excluded from the active offline suite.
-- Interpreter: `.runtime/test-venv/Scripts/python.exe`, CPython 3.13.15 on
-  Windows 11 build 26200. The `.venv/Scripts/python.exe` uv trampoline remains
-  unusable (`permission denied`), and the bare bundled interpreter lacks project
-  dependencies. No dependency installation was needed.
-- Selected offline core command:
-  `.\\.runtime\\test-venv\\Scripts\\python.exe -m unittest discover -s tests -q`.
-  Before P1 it ran 79 tests with one environment-sensitive stateless harness
-  failure caused by invoking only the interpreter basename. After P1 it ran 86
-  tests successfully. The supplemental root-module command ran 29 tests:
-  `.\\.runtime\\test-venv\\Scripts\\python.exe -m unittest test_general_harness test_advanced_harness test_perception test_doc_generator test_calculator -q`.
-- Integration status: Blender 5.0 is detected at the installed program path, but
-  Blender execution and provider/network integration are outside the offline core
-  suite. An OS-backed isolated worker backend does not exist yet and remains P4.
-- P1 changed `stateless_harness.py`, `harness.py`, and focused tests. Regression
-  evidence covers returned outline/command content and truncation, final-revision
-  verification, conditional retry, dynamic module namespace behavior, pointer
-  invalidation, the disabled-by-default editorial pass, and successful rollback
-  after a failed editorial edit. The tracked P1 diff identifier is
-  `c9ae0a54e54d84d9cd717f23f518dcdc1093593e`; the new legacy regression file has
-  SHA-256 `1d9f9b427498c450fc9859fc5b0a5870eff105859ea9a40787c9f16866bc3615`.
-  `py_compile` and `git diff --check` also passed.
-- P2 added the authoritative new-runtime substrate under `reticle.runtime` and
-  `reticle.storage`. Versioned task, tool-result, event, artifact, and final-result
-  envelopes share schema version 1. The implementation provides immutable
-  content-addressed blobs, integrity-checked reads, atomic reference updates,
-  append-only single-writer events, operation-ID deduplication, conservative
-  incomplete-tail handling, byte-derived workspace revisions, version-checked
-  writes, checkpoints, and restart recovery that reports incomplete actions without
-  replaying them. The P2 source manifest identifier is
-  `931e3f31c909d618e0c82094db3f9d18cf3187ad`.
-- P2 validation: the offline suite ran 91 tests successfully. A final wheel built
-  offline with
-  `uv build --offline --wheel --python .\\.runtime\\test-venv\\Scripts\\python.exe --cache-dir .\\.runtime\\uv-cache`.
-  Its 31-file contents excluded the accidentally discovered nested `node_modules`
-  tree. The wheel was extracted and invoked from
-  `C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-p2-final-7696000969a3416b831a40bfe7d3274d`;
-  that installed copy persisted exact output, checkpointed an interrupted action,
-  and recovered it as incomplete after restart. The existing setuptools license
-  table emits a future deprecation warning; it does not affect this stage's wheel.
-- P3 added arbitrary byte/string scratch write, exact/ranged read, reference and
-  label listing, scoped search, durable priority pins, unpin, and reference-only
-  forget operations. Immutable history remains readable after a name is forgotten.
-  The shared observation service supports full, line-region, Python/text outline,
-  and search views; every raw/view result is an artifact and bounded previews name
-  the exact artifact and omitted byte count.
-- P3 added persisted exact transcript messages and the `bounded-recent-v1` context
-  policy. It retains the original task and contract, selects recent messages as
-  protocol-safe tool-call/result units, spills large tool results to exact artifacts,
-  records the actual provider request plus ordered selection provenance, reports
-  pin overflow explicitly, and exposes a visible baseline fallback diagnostic when
-  another policy fails. Context size is currently a deterministic byte budget with
-  a declared approximate token estimate; actual provider token accounting remains
-  P6 work. Non-evictable contract material may truthfully set `over_budget` when the
-  configured limit cannot contain even the contract.
-- P3 acceptance coverage is in `tests/test_context_runtime.py`: an unfinished plan,
-  pin state, exact large evidence, and transcript survive restart; a forced 1,900-byte
-  context retains both sides of a provider tool exchange; a forced 500-byte context
-  exercises explicit pin overflow; observation modes, discovery, forgetting, and
-  policy fallback are also covered. The offline suite ran 96 tests successfully and
-  the supplemental root suite ran 29. `py_compile` and `git diff --check` passed.
-  An offline wheel at `.runtime/wheel-test-p3/reticle-0.2.0-py3-none-any.whl`
-  (SHA-256 `10126c31870213f00e223eeef9962a780b0e16298d24745da627da5aaf1580c7`)
-  contained the new package directories and passed a restart/context smoke from
-  `C:\Users\grant\AppData\Local\Temp\reticle-p3-c74d6b2a4e4f4843b8c8ad806b12df0f`.
-  The P3 source manifest identifier is
-  `37b2abe93e7cd36de37ff50d81f2dbfc188586bed539f95123349fe8d552d590`;
-  it covers the P3 context, scratch, observation, session/export, artifact-store,
-  and acceptance-test files. The known setuptools license warning remains
-  non-blocking. No provider/network or benchmark run was performed.
-- P4 is complete. The backend spike selected a hardened local OCI container as
-  the first host-isolated backend and documents its trust boundary in
-  `reticle/execution/BACKENDS.md`. `IsolatedOCIBackend` requires Docker or Podman,
-  uses only the declared workspace mount, disables networking, makes the container
-  root read-only, drops capabilities, enables `no-new-privileges`, runs as an
-  unprivileged user, and applies PID, memory, and temporary-filesystem limits. It
-  raises `BackendUnavailableError` instead of falling back to local execution.
-- P4 implemented a distinct `TrustedLocalBackend`. On Windows it launches a waiting
-  bootstrap, assigns that process to a kill-on-close Job Object, and only then
-  releases the requested command. Tests show that success, nonzero exits, infinite
-  loops, output floods, cancellation, worker crashes, and spawned descendants do
-  not hang or escape the controller. Its allowlisted child environment does not
-  imply filesystem or network isolation. Read-only executions can overlap while
-  mutations use a session-scoped writer gate; concurrent identical artifact writes
-  and journal reads were locked after the concurrency tests exposed the races.
-- Generated program registration now parses metadata without evaluation. Ordinary
-  modules, imports, globals, sibling helpers, and async entry points load in a
-  supervised worker, and stdout/stderr are persisted through P2 tool-result
-  artifacts. The legacy synthesized-tool path also has no remaining active
-  controller-side `exec`. P4 tests are in `tests/test_execution_runtime.py`.
-- Final P4 validation uses Podman 5.8.3 with a rootless WSL 2 machine and
-  `python:3.13-alpine`. All 105 tests pass with both real-OCI gates enabled; the
-  gates prove that the container started before rejecting an undeclared workspace
-  write and outbound network connection, and exercise a registered program through
-  the isolated worker with persisted stdout. All 29 supplemental tests pass;
-  `py_compile` and `git diff --check` pass. The offline wheel
-  `.runtime/wheel-test-p4-final/reticle-0.2.0-py3-none-any.whl` (SHA-256
-  `35a023f80212df6f0d2b0cc76835030d3b6b2da1de823a72022a88702523a63f`)
-  passed an installed isolated-worker/output-artifact smoke from
-  `C:\Users\grant\AppData\Local\Temp\reticle-p4-final-c8a71adcdc5b40fca0d4b4351ab4aa76`.
-  The final P4 source manifest identifier is
-  `c445ea0fd3df13bbff066383a0c656dc903bb02277db70726b49d3a4a7bc195e`;
-  it covers the execution package, backend contract, and P4 acceptance test.
-- P5 is in progress. Checkpoint 1 adds durable, separately typed observation,
-  measurement, and interpretation records in `reticle/evaluation`. Measurements
-  carry procedure/scope/revision provenance; numeric values require an explicit
-  bounded scale; interpretations must cite evidence. The three focused evidence
-  tests in `tests/test_evaluation_runtime.py` pass.
-- P5 checkpoint 2 adds independent acceptance over a controller-created candidate
-  snapshot. Fixed evaluator inputs must resolve outside candidate authority;
-  candidate-authored tests cannot replace them. Criterion coverage identity,
-  evaluator infrastructure failures, human/unmeasurable outcomes, review artifacts,
-  and reserved final-evaluation budget are reported separately. All nine focused
-  P5 tests pass at this checkpoint.
-- P5 checkpoint 3 migrates falsification memory to conditional attempt records
-  containing program/environment versions, action, observations, failure category,
-  and applicable conditions. Resolution requires the cited test identities to be
-  observed passing under the same suite version, so partial runs and version drift
-  cannot silently clear evidence. Acceptance now validates evaluator versions,
-  graded scales/thresholds, final-revision stability, and the live OCI evaluator
-  path. The combined P5/falsification checkpoint passes 34 focused tests.
-- P5 checkpoint 4 propagates observed test IDs, fixed-suite hashes, program
-  fingerprints, and Python environment revisions through the legacy falsification
-  evaluation loop. This fixed the only full-suite regression without weakening the
-  partial-run rule. All 121 tests pass with the P4 and P5 live OCI gates enabled.
-- 2026-09-15 tree cleanup: the working tree was committed as `d711084` (unrelated
-  evaluation fixes plus raw falsification run logs), `e51aa33` (P2–P4 substrate),
-  `3ea3057` (P1 legacy repairs, which depend on `reticle.execution`), `e725e3e`
-  (P5 checkpoints 1–4), and `b260659` (this plan). Each commit's staged snapshot
-  was exported with `git checkout-index` and its focused tests passed in isolation;
-  the final snapshot ran the full offline suite.
-- P5 checkpoint 5 (complete). The installed-wheel gate exposed a real defect:
-  `reticle.cognitive.__init__` eagerly imported the root-level `stateless_harness`
-  module, so `reticle.cognitive.falsification` could not be imported from a wheel.
-  Legacy harness names are now resolved lazily; `InstalledPackageImportTests`
-  blocks root checkout modules and fails without the fix. Validation: 122 tests
-  pass with `RETICLE_OCI_TEST_IMAGE=python:3.13-alpine`; the 29-test supplemental
-  suite, `py_compile`, and `git diff --check` pass. Wheel
-  `.runtime/wheel-test-p5/reticle-0.2.0-py3-none-any.whl` (SHA-256
-  `a5878a93da2d14db4489d1f56836c34cde78ef1336760481956a11e3e87d2b60`) was extracted
-  to `C:\Users\grant\AppData\Local\Temp\reticle-p5-wheel-1789453116` and run with
-  `python -P` so the checkout was not importable. That run (smoke script SHA-256
-  `d519df83b176f998507142eb75ad224da8afd28c9b27ba77e050ed41a8b66beb`) showed:
-  (1) with a candidate-authored always-passing test, the fixed OCI evaluator
-  rejected a wrong answer and accepted the correct one; (2) with real `unittest -v`
-  output, a partial run of `test_b` left the `test_a` dead end unresolved;
-  (3) human/unmeasurable criteria returned `needs_review` with a review artifact
-  preserving criterion wording. A first smoke attempt used hand-written unittest
-  output without the `====` separator; the parser correctly classified it as a
-  collection error, so it was discarded as a script defect, not product evidence.
-- Unresolved risk carried to P9: `reticle run` and `reticle.cognitive.stateless_harness`
-  still require the root `stateless_harness.py` and `perception.py` modules (the
-  latter imports only the standard library). An installed wheel cannot run the
-  legacy CLI path until those move into the package behind root shims.
-- P6 in progress (2026-09-15). Tasks: the user had no pinned real-repository bugs, so
-  fourteen upstream fixes merged 2026-06..09 (after the candidate models' release dates)
-  were mined from small pure-Python libraries; see `experiments/p6_pilot/`. `verify_bugs.py`
-  applies only each fix's test files to the pre-fix commit and parses pytest JUnit XML; all
-  fourteen have fail-to-pass tests and no failures after the fix. Two full verification runs
-  agreed except `tests.test_rr.RRCacheTest::test_getsizeof_replace_grow`, whose pre-fix
-  outcome depends on random eviction; it and one over-specified tomlkit rendering test are
-  excluded with recorded reasons. `tasks.json` holds symptom-only statements (no cause or fix).
-- P6 shared runner: `reticle.tools.ToolSuite` (journaled list/read/outline/search/replace/
-  write/run/note/finish tools with truthful previews) and `reticle.runtime.controller.AgentController`
-  (context policy -> model -> tools -> exact transcript; provider usage recorded as reported,
-  with per-field counts of calls lacking usage). `AcceptanceRunner.evaluate` gained a
-  `timeout_seconds` argument. `run_pilot.py` exports the pre-fix tree without git history,
-  builds an evaluator bundle outside the workspace from the fix commit's whole test trees and
-  root pytest configuration, and logs every OpenRouter attempt and run result as JSONL with a
-  hard `--max-total-calls` cap. Offline coverage: `tests/test_agent_controller.py` and
-  `tests/test_p6_evaluator.py`; 132 tests pass. Found while building: the evaluator missed
-  pytest's empty-classname collection-error cases, and candidate-added conftest hooks could
-  have rewritten test reports; both fixed with regression tests.
-- P6 decisions (user, 2026-09-15): budget under $3 or OpenRouter free tier; three capability
-  points qwen/qwen3.5-9b, google/gemma-4-26b-a4b-it:free, nvidia/nemotron-3-super-120b-a12b:free.
-  Approved first pilot: humanize-329, sqlparse-865, tomlkit-549 x those models, bounded
-  transcript arm, max 25 calls per run, cap 250 HTTP attempts (planned worst case $0.29).
-  Second arm: `reticle.context.board.ReticleBoardPolicy` (`reticle-board-v1`): original task,
-  last two exchanges, and a journal-derived board of failed actions (with workspace-changed
-  flags), modified files, and notes; selectable with `run_pilot.py --arm`. Built and tested
-  (`tests/test_board_policy.py`; 134 tests pass); running it needs separate approval.
-- P6 no-API pipeline checks, protocol `b9b409abdb36`, all 14 tasks each
-  (`experiments/p6_pilot/runs/pipeline-*`): gold (upstream fix via write_file) 14 accepted;
-  noop 14 rejected; breaker (unimportable source) 14 rejected; gamer (conftest hooks forcing
-  passed reports) 14 rejected. Before hardening, breaker gave needs_review on marshmallow and
-  click (conftest import failure) and one tomlkit bundle build failed on a git submodule.
-- P6 pilot 1 observation: qwen/qwen3.5-9b call 2 of `tomlkit-549` returned no content and no
-  tool calls (finish=stop); its tool call was markup inside `reasoning`. Runner choices that
-  could contribute were identified: temperature 0, no provider pinning (one run was routed to
-  five providers), and replaying `reasoning_details` across providers.
-- P6 diagnostic (user-approved 20 calls, $0.003694 reported;
-  `experiments/p6_pilot/diagnose_empty_reply.py`, `runs/diag-qwen-empty-reply/`): that exact
-  request replayed 5x per condition, interleaved, no fallbacks or retries. SiliconFlow:
-  temperature 0 -> 5/5 markup in reasoning, unparsed; temperature 0.6 -> 5/5 same. Venice:
-  temperature 0 -> 4/4 parsed tool calls plus 1 upstream HTTP 429; temperature 0.6 -> 5/5
-  parsed. Raw replies were audited against the labels. In pilot 1, SiliconFlow parsed tool calls
-  on 8 other qwen requests, so the failure is request-dependent there. Not separated: whether
-  replayed reasoning contributes. Planned runner change for later runs: pin one provider per
-  model (excluding one that fails this replay) and record provider routing in the protocol.
-- P6 pilot 1 (`runs/pilot1-transcript`, protocol `b9b409abdb36`, source `70b15f1`; 186 HTTP
-  attempts of the 250 cap; $0.0432 reported): 0/9 accepted, 9 rejected; no run edited the fixed
-  source file or called finish. Audit (`AUDIT.md`) found a harness defect that invalidates the
-  runs as capability measurements: `BaselineContextPolicy` spilled every tool result over 512
-  bytes, including the newest, to a 512-byte preview naming an artifact, and no tool can read an
-  artifact ID. qwen repeated identical reads up to 11 times. gemma's 3 runs failed on upstream
-  HTTP 429 (13/14 attempts); nemotron had 21 HTTP-200 "overloaded" error bodies. Next: keep the
-  newest tool exchange unspilled (or size previews to the tool's own preview limit), add an
-  artifact read tool so previews are recoverable, pin providers, then rerun only with approval.
-- P6 output paging (decision with the user, 2026-09-15; revisit later): tools now return complete
-  output and every result is registered under a handle (`out_N`, `tool_output` journal event).
-  One place bounds what the model sees: `BaselineContextPolicy` (`bounded-recent-v2`) renders
-  handle-bearing tool results as whole-line views, 4,000 bytes for the newest exchange and 512
-  for older ones; command output keeps its end (summaries such as pytest's come last). Each
-  partial view ends with the exact `read_output(id, start_line, end_line)` call for the next
-  omitted lines (byte ranges for over-long lines) and a `search_output` hint. The contract no
-  longer promises artifact-ID retrieval without a tool. `reticle-board-v2` inherits the views.
-  Tests: `tests/test_output_paging.py` (view bounds, older shrink, command tails, byte ranges,
-  unknown ids, scripted-model paging round trip); 140 tests pass. `run_pilot.py` runner v2
-  adds `--provider MODEL=SLUG` pinning (no fallbacks) recorded in the protocol hash, and
-  `report.py` counts paging calls, repeated identical calls, and replies without tool calls.
-- P6 pilot 2 (`runs/pilot2-transcript`, runner v2, protocol `f955736eb747`; qwen -> Venice,
-  gemma-4-26b-a4b -> DeepInfra fp8, nemotron:free -> Nvidia; 250-attempt cap reached; $0.0606
-  reported): 0/9 accepted. Three runs were cut short by infrastructure (qwen Venice HTTP 429s: 65
-  of 120 attempts; Nvidia "overloaded" bodies; the pilot cap). Two runs edited the fixed file:
-  qwen changed `int(...)` to `round(...)` (fail-to-pass passed, 15 pass-to-pass failed) and
-  nemotron overwrote it with empty content from its own arguments. All 47 repeated identical
-  observation calls followed an earlier result that was visible only as a <=512-byte older view;
-  none followed a fully visible result. After 16 partial newest views models called read_output
-  0 times. Details in `AUDIT.md`. Open decisions: older-result view size, whether rate-limit
-  retries count toward the cap, and retry backoff for pinned providers.
-
-| Stage | Status | Completion evidence | Next action |
+| ID | Question | Initial allocation | Stop / next action |
 |---|---|---|---|
-| P0 | Complete | Baseline record above; 86-test offline command passes | Baseline retained for later stages |
-| P1 | Complete | Focused regressions plus offline and supplemental suites pass | Define P2 minimal versioned envelopes |
-| P2 | Complete | Restart, exact-output, stale-write, incomplete-action, and external wheel gates pass | P3 complete; retain substrate for P4 |
-| P3 | Complete | Restart/small-context, exact evidence, paired tools, pin overflow, fallback, and external wheel gates pass | Spike P4 Windows execution backends |
-| P4 | Complete | 105 tests pass with real filesystem/network and isolated-worker OCI gates; external wheel smoke passes | Define P5 evidence and final-revision acceptance contracts |
-| P5 | Complete | 122 tests pass with live OCI acceptance; supplemental suite passes; installed-wheel smoke passes all three exit gates after fixing the eager root import | Retained for P6 evaluator inputs |
-| P6 | In progress | 14 verified real-repo tasks; shared runner, hardened evaluator, and no-API pipeline clients; 132 tests pass | Run approved 9-run instrumentation pilot, inspect every trajectory, build the board-policy arm |
-| P7 | Not started | — | Versioned library + optional adaptive policy |
-| P8 | Not started | — | Transfer and scaling study |
-| P9 | Not started | — | Reconcile CLI/docs and rollout defaults |
+| E0 | Are mechanics, recovery, and boundaries correct? | Focused offline reproductions plus golden/noop/breaker/gamer; no model calls | Any contract failure blocks dependent model runs; fix smallest cause |
+| E1 | Does context rendering preserve the required evidence? | Three fixtures: ample budget, forced pressure, oversized latest exchange; no model calls | Missing latest outcome, unreachable history, or overflow ends trial immediately |
+| E2 | Can the model discover and use omitted history? | One fixture first, up to 8 model turns; at most 3 fixtures before review | Audit first failure immediately; distinguish retrieval, tool schema, or provider failure |
+| E3 | Can the control repair real code? | One development bug first, up to 20 model turns and a declared wall/cost cap; at most 3 tasks before review | Do not launch a batch behind a broken first trajectory; calibrate difficulty/provider |
+| E4 | Does one policy change look promising? | Three matched development task pairs, one run/arm/task before review | Stop on integrity failure; drop a clearly dominated candidate or allocate a second small block |
+| E5 | Does the apparent gain generalize? | Unseen tasks; size chosen from practical effect and pilot variability | Predeclared fixed-sample or valid sequential rule; report uncertainty and negative results |
 
-For each completed stage, record commit/diff identifier, changed entry points,
-validation command and outcome, artifact/report links, deviations, and unresolved
-risks. Use `in progress`, `blocked`, `complete`, or `superseded` when appropriate.
-Completion means the stage's exit criteria are met, not that its code was drafted.
+E2 fixtures should include: an earlier file observation after the live file changes; an old
+failure whose output ID is no longer visible; and a revised user constraint across context
+pressure. Grade correct use of recovered evidence, not just calling a retrieval tool.
+Choose one fixture for the suspected mechanism before using the others as transfer checks.
 
-Decision changes use this template:
+Each live experiment has explicit attempt, token/cost, tool, and elapsed-time limits. A turn
+cap alone is not a monetary limit. E2's fixture execution is isolated; E3-E5 require actual
+repository/evaluator boundary gates. No dependencies are waived to obtain a quick green result.
 
-```text
-Date / decision ID:
-Previous decision:
-Proposed replacement:
-Reason and alternatives considered:
-Evidence or experiment needed:
-Compatibility / migration impact:
-Status: proposed | accepted | superseded
+### 5.3 Fast-stop rules
+
+- Stop a run/campaign immediately on evaluator leakage, false acceptance, evidence loss,
+  authority escape, budget violation, or corrupted protocol. Keep the artifacts and repair.
+- Before a live batch, perform one provider/tool-schema smoke and one no-API pipeline control.
+  Reuse a valid control only while its exact runtime/environment/evaluator inputs are unchanged.
+- Initially allow at most two retries after the first provider attempt, with recorded
+  backoff. After three consecutive failed attempts, checkpoint and stop that provider block.
+  Do not burn the whole campaign cap on an unavailable free endpoint. Revise these defaults
+  only as an explicit protocol change supported by provider behavior.
+- Three identical observation calls without a relevant source change or new visible evidence
+  trigger an immediate diagnostic flag and trajectory review. In E2/E3 discovery runs, stop
+  at that point by default; label it diagnostic termination, not natural task failure.
+  In E4/E5 use an identical predeclared rule across arms or only flag it without termination.
+- Review every E2/E3 trajectory and every initial E4 pair before expanding. No unattended
+  larger matrix until its first block produces interpretable outcomes.
+- If a small E4 block is uniformly no better in acceptance and worse in both cost and latency,
+  provisionally shelve the candidate. This is resource triage, not proof of statistical inferiority.
+- If the study hits a ceiling/floor, stop expanding the same task set. Diagnose infrastructure
+  first, then change development difficulty under a new protocol.
+
+### 5.4 One experiment card per hypothesis
+
+Store cards and reports under `experiments/session_harness/`; reuse the current runner where
+possible instead of creating a second agent loop. Version runner/protocol changes explicitly.
+
+```yaml
+id: E4-retention-001
+status: proposed  # running | completed | invalidated | inconclusive
+hypothesis: Full prior observations reduce rereads and increase accepted repairs within budget.
+mechanism: Relevant previously read source remains visible for the next decision.
+one_change: observation retention policy
+control: legacy-views-on-repaired-substrate
+candidate: pressure-recent-v1
+tasks_partition: development
+task_ids: []  # pin before execution
+runtime_tools_evaluator_environment_hashes: {}  # required before execution
+model_provider_sampling: {}  # required before execution
+budgets_per_run: {}  # attempts, turns, tokens/cost, tools, elapsed, final evaluation reserve
+campaign_cap: {}  # explicit, independently enforced
+assignment_seed: null  # record before randomization
+primary_endpoint: accepted final artifact within the declared resource contract
+diagnostics: [identical_rereads, history_retrieval_success, context_bytes, cost, elapsed]
+failure_prediction: Old evidence remains inaccessible, or added input cost erases the benefit.
+stop_rule: first three pairs, then review; integrity failures stop immediately
+decision_rule: advance, revise, provisionally reject, or inconclusive with stated evidence
+evidence_bundle: null  # required at completion, including failed/aborted trials
+next_action: null  # required at completion
 ```
 
-Initial decision record: D01–D14 are proposed in this document on 2026-09-14.
-No adaptive policy has been selected as the new default.
+The card must be concrete before live execution: no empty tasks, environment, budgets, or
+provider configuration. Record source content hashes for dirty work; a dirty boolean is
+insufficient. Preserve exact model requests/responses, tool outcomes, manifests, initial/final
+source, evaluator inputs/results, failure classifications, and all attempts. Raw bundles may
+live outside git but need a retained location, hash manifest, and retention policy.
 
-## 15. Instructions for the next implementation session
+### 5.5 Pairing, infrastructure, and outcomes
 
-1. Read this plan and applicable repository instructions; inspect the current diff.
-2. Confirm which stages have evidence of completion. Do not trust stale board claims.
-3. Start at P0, then P1. Preserve unrelated evaluation work and historical artifacts.
-4. Implement the smallest coherent change satisfying the current stage's gate.
-5. Run focused checks covering actual failure modes; broaden only as needed.
-6. Update the work ledger with exact evidence and the next actionable step.
-7. If findings contradict this proposal, revise the relevant decision explicitly.
+- Match task, provider/model, environment, resources, tools, evaluator, and instructions.
+  Interleave randomized arm order within task blocks. Avoid model-major scheduling that lets
+  early provider failures consume later participants' opportunities.
+- Allocate resources per run. Keep a campaign safety cap, but launch a pair only when both
+  allocations fit. Mark an interrupted/incomplete pair explicitly rather than dropping it.
+- Record 429s, HTTP-200 error bodies, empty responses, malformed calls, timeouts, retries,
+  and unknown billing. Provider compatibility is a measured prerequisite, not an assumption.
+- Primary endpoint: fraction of accepted final artifacts within the per-run contract. Also
+  report controller stop reason, criterion coverage, operational success including outages,
+  and separately labeled results under predeclared infrastructure-valid conditions.
+- Do not decide exclusions after seeing which arm won. Retain diagnostic terminations and
+  evaluator failures as such; do not relabel every unsuccessful run as model inability.
+- Secondary measures: all provider tokens/cache usage, money, latency, tool compute, context
+  construction cost, rereads, retrieval success, false finishes, recovery failures, and storage.
+  Token compression, notes saved, and programs generated are not task success metrics.
 
-The enduring test of the design is simple: can a stronger model or a better learned
-program improve how the system works without fighting hard-coded cognitive rules?
-The runtime should make that improvement executable, recoverable, and measurable.
+### 5.6 Confirmation and default promotion
+
+Split development, selection, and sealed final tasks by repository/family where feasible.
+The already inspected P6 tasks may inform development; use unseen tasks for final claims.
+Public fix dates do not by themselves prove lack of model contamination.
+
+Before E5, declare a minimum useful effect, any quality noninferiority margin, study size,
+and analysis/stopping rule. Use pilot variability to allocate enough independent tasks.
+Report paired effects and uncertainty, accounting for repository/family clustering; repeated
+attempts on one bug are not independent tasks. Do not select the best-looking subset afterward.
+
+Promote a candidate only if it meets engineering gates and either demonstrates the predeclared
+meaningful acceptance gain under matched limits, or meets quality noninferiority while
+delivering a meaningful cost/latency benefit. Otherwise keep it experimental, retain the
+incumbent, or state that the result is inconclusive. Correctness fixes need no statistical gate.
+
+Repeated candidate screening spends selection data. Keep the final set sealed from the
+proposal generator, evaluate only finalists, and record each exposure. Further tuning requires
+new final tasks. Avoid optional stopping unless the chosen sequential method supports it.
+
+### 5.7 Cost of search and practical optimality
+
+Charge proposal generation, evaluation, discarded candidates, retries, retrieval, and
+maintenance to adaptation. Report marginal deployment cost separately from total search cost.
+Recorded-session comparisons diagnose selection but do not prove task utility: changed
+contexts cause different actions and later histories. Require live continuations/rollouts.
+
+Later program/memory studies compare reset/no-memory, frozen-library, retrieval-only, and
+adaptive conditions on unseen later tasks. Show amortized benefit before calling accumulation
+learning. The target is a measured quality/cost frontier for a specified workload/model/budget,
+not a universally optimal harness. Recalibrate when the model or workload changes.
+
+Exact model choices, new spend, and confirmatory sample sizes belong in the run card. Prior
+P6 authorizations cover named historical runs, not a new campaign. Complete offline work and
+prepare a concrete priced protocol before any required spending approval. Reuse standing
+authorization within its actual scope; do not interrupt every iteration to reapprove it.
+
+## 6. Validation and implementation discipline
+
+Keep separate gates for mechanics, actual model usability, and task utility. Scripted models
+test mechanics. E2/E3 test usability. E4/E5 test comparative utility. Report skipped/unrun gates.
+
+Run focused tests per slice and the offline suite at integrated milestones. Run installed
+wheel checks for packaging changes and live OCI gates for boundary changes. Do not encode
+arbitrary preview sizes as requirements of the new control; test continuity, discoverability,
+protocol validity, resource limits, and recovery. Preserve explicit old-arm tests separately.
+
+Measure query/context latency and storage growth on short/long synthetic sessions, and
+workspace tracking on representative repositories. Profile before selecting SQLite, persistent
+indexes, or incremental hashing. Remove repeated full scans only without weakening final
+artifact identity. Performance work requires an observed bottleneck or a failing scale probe.
+
+Each implementation slice should answer one question and produce reviewable evidence. If it
+needs several unrelated changes to make progress, split the slice or revise the hypothesis.
+Automate report generation from raw logs; concise reports must include failures and a next
+decision, not only successful trajectories. Avoid building a research dashboard before these
+records and decisions exist.
+
+## 7. Work ledger and next action
+
+| Stage | Status | Next evidence |
+|---|---|---|
+| S0 | Complete | Replacement plan, preserved historical ledger, current-direction notices; documentation only |
+| S1 | Complete (mechanics) | S1a-S1c offline gates pass; E1 passes; E2 `changed-file` run once (gemma-4-26b/DeepInfra, accepted); other E2 fixtures unrun |
+| S2 | In progress | S2a delivery 1 passes offline; finish attempt/deadline accounting, then run S2b isolation controls |
+| S3 | Not started | Installed session workflow plus usable control |
+| S4 | Not started | Small paired retention screen; confirmation only if justified |
+| S5 | Deferred | Bounded policy search after trustworthy comparison |
+
+**Next implementation:** finish S2a by exposing individual provider attempts to the durable
+ledger, defining paused/deadline semantics, and adding a supervisor adjustment for reconciled
+billing. Then run S2b no-API isolation/evaluator controls. E2 `changed-file` ran once
+(see `experiments/session_harness/E2-changed-file.md`); the next empirical action is the
+second E2 fixture (old failure whose output ID is no longer visible) under a new approved card,
+at most three fixtures before review. Do not start a new consolidation engine, board
+policy, or broad model matrix.
+
+Per delivery record: exact source identifier, changed contracts/files, validation commands
+and results, empirical gates run/unrun, failed hypotheses, remaining limitations, and next
+slice. Update this table; do not restart at historical P0. Revise decisions when evidence
+contradicts them and preserve the negative result.
+
+The governing test: can a better model or policy improve task outcomes here without losing
+history, escaping authority, renewing its budget, or changing the meaning of success?
+
+### Delivery record: S1a pressure and continuity mechanics
+
+- Source base: `08871ac3d083bd72b33ac18499d0391c9c9cd20e`, with the S0 documentation
+  changes already present in the working tree.
+- Added `pressure-recent-v1` while retaining `bounded-recent-v2` unchanged as the named
+  legacy arm. The new policy reserves the latest paired assistant/tool exchange, retains
+  full recent observations while the serialized request fits, and creates exact output
+  views only under pressure.
+- Context manifests now record exact request bytes and omitted transcript units. Tool views
+  carry outcome status and output handles. The controller verifies the materialized request,
+  manifest hash/size, and byte limit before provider dispatch; impossible requests stop as
+  `context_budget_exhausted` with zero model calls.
+- E1 offline fixtures: ample budget retained two complete 3 KB observations; forced pressure
+  omitted the older observation and retained the latest error result; an oversized latest
+  observation fit through an exact `read_output` view. The named legacy preview limits also
+  remain covered.
+- Review fixes: the required context is now the latest exchange plus every later unit (a
+  text-only reply, the no-tool-call prompt, a user correction); previously these could be
+  omitted, re-sending the prior turn unchanged. Older history is retained as a contiguous run
+  back from that tail; previously a newer unit could be skipped to admit an older one.
+  Regressions cover the trailing prompt, a later correction, and contiguity.
+- Controller semantics change for every policy, including `bounded-recent-v2`: an over-budget
+  request now stops the run instead of dispatching with `context_over_budget: true` (that
+  request field is now always false). No pilot 1/2 or pipeline log recorded a true value, so
+  historical runs are unaffected.
+- Validation: focused context/controller tests, 25 passed; full offline suite, 149 passed
+  with three OCI integration tests skipped. After the review fixes: focused 28 passed; full
+  offline suite 161 passed, three skipped (this count includes the S1b tests, so it supersedes
+  the S1b record's 158). No model usability run was attempted; E2 remains
+  gated on S1b discoverable history. Live OCI boundaries remain unrun for this slice.
+
+### Delivery record: S1b history discovery and S1c comparison replay
+
+- Added a model-visible session query boundary with allowlisted event kinds, bounded history
+  pages, literal search, stable high-water cursors, structured credential redaction, and
+  explicit scope/coverage metadata. Retrieval operations exclude their own records.
+- Added `history`, `search_history`, and session-scoped `read_artifact` tools. Search results
+  include sequence, kind, tool/source, path when available, outcome status, snippet, output
+  handle, and authorized artifact references. Raw controller/evaluator context and raw
+  transcript artifacts are denied through this view.
+- The restart fixture reads an old file observation, changes the live file, forces that
+  exchange completely out of context, opens a new runtime, discovers it without a remembered
+  output handle, and recovers the immutable old bytes. Tests also cover cursor stability,
+  later user corrections, missing blobs, denied controller records, and bounded large pages.
+- Added diagnostic-only checkpoint comparison. Multiple policies render the transcript as of
+  one fixed event sequence; the persisted comparison identifies each exact request artifact,
+  policy version, byte count, visible/omitted records, and recovery calls. It does not invoke
+  a model or dispatch tools. Scratch pins are honestly labeled as current at replay time until
+  S2 persists full task state at checkpoints.
+- Review fixes (details in the S1 report): call metadata is indexed up to the high-water mark
+  so paging and explicit windows cannot drop path/status or return retrieval records; each
+  call is one search record with linked artifacts; JSON tool-call argument strings are
+  redacted; legacy manifests record omitted units for comparison; history tool results are
+  indented for line paging.
+- Validation: focused S1 tests, 21 passed; full offline suite, 161 passed with three OCI
+  integration tests skipped. After review fixes: focused S1 files 27 passed; full offline
+  suite 175 passed, three skipped (includes concurrent work). E2 actual model usability is unrun. No provider/network calls
+  or new spend occurred.
+
+### Delivery record: S2a durable resources and crash transitions, slice 1
+
+- Persisted the full task contract plus journal-authoritative reservations and reconciliation
+  for model attempts/responses, tool actions, active time, and monetary usage. Task limits do
+  not renew when a controller is replaced; unknown billing retains its conservative charge.
+- Added an OS-backed single-writer lease for controller lifetimes and a shared workspace
+  mutation boundary for native file tools and command execution.
+- Added durable model-request intent and response linkage. Recovery distinguishes known not
+  started, known complete but unpublished, and unknown external outcomes. It republishes
+  completed results without repeating mutations, resumes recorded unfinished tool calls without
+  regenerating the response, and stops ambiguous effects as `needs_reconciliation`.
+- Evidence, exact source hashes, remaining limitations, and validation commands are recorded in
+  [the S2a delivery report](experiments/session_harness/S2a-durable-resources-recovery.md).
+- Validation at handoff: 12 focused S2a tests passed; the full offline suite passed 179 tests
+  with three OCI integration tests skipped. E2, live OCI boundaries, installed-wheel checks,
+  and S2b evaluator controls were not run. No provider/network calls or new spend occurred.
