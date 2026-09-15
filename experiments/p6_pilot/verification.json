@@ -1,0 +1,377 @@
+{
+  "boltons-474": {
+    "repo": "boltons",
+    "pr": 474,
+    "fix_commit": "a180020c760b532e8889f161d97d05647adfee8c",
+    "base_commit": "e00c10a809525027b8167fbb7ac233cfc25a01f5",
+    "source_files": [
+      "boltons/setutils.py"
+    ],
+    "test_files": [
+      "tests/test_setutils.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_setutils::test_indexed_set_update_multiple_iterables[iter]",
+      "tests.test_setutils::test_indexed_set_update_multiple_iterables[list]",
+      "tests.test_setutils::test_indexed_set_update_multiple_iterables[tuple]",
+      "tests.test_setutils::test_indexed_set_update_multiple_iterables_with_tuple_items"
+    ],
+    "pass_to_pass_count": 12,
+    "failing_after_fix": [],
+    "tests_before": 16,
+    "tests_after": 16,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "boltons-475": {
+    "repo": "boltons",
+    "pr": 475,
+    "fix_commit": "45a251181fba4c5a4ecc05e838da1c394e1ed0e4",
+    "base_commit": "1cdc0e9d36f3eb32608f3b34885717697643e9b8",
+    "source_files": [
+      "boltons/strutils.py"
+    ],
+    "test_files": [
+      "tests/test_strutils.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_strutils::test_indent_unicode_line_endings",
+      "tests.test_strutils::test_iter_splitlines_preserves_numbers_after_spaces",
+      "tests.test_strutils::test_iter_splitlines_unicode_line_endings[\\u2028]",
+      "tests.test_strutils::test_iter_splitlines_unicode_line_endings[\\u2029]"
+    ],
+    "pass_to_pass_count": 23,
+    "failing_after_fix": [],
+    "tests_before": 27,
+    "tests_after": 27,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "more-itertools-1270": {
+    "repo": "more-itertools",
+    "pr": 1270,
+    "fix_commit": "cd47ab22e88241688ddc45f0c9e925ea3f50329d",
+    "base_commit": "aaa9b5581f5f62b3d9dfb95bde609b7b0b486d5b",
+    "source_files": [
+      "more_itertools/more.py"
+    ],
+    "test_files": [
+      "tests/test_more.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_more.ConstrainedBatchesTests::test_nonpositive_max_count"
+    ],
+    "pass_to_pass_count": 603,
+    "failing_after_fix": [],
+    "tests_before": 604,
+    "tests_after": 604,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "more-itertools-1279": {
+    "repo": "more-itertools",
+    "pr": 1279,
+    "fix_commit": "b2f3aff7633057d234ec9186c18a53f4df306d08",
+    "base_commit": "4ebeea3e569388911a0bec740092f3cf996d79f3",
+    "source_files": [
+      "more_itertools/more.py"
+    ],
+    "test_files": [
+      "tests/test_more.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_more.OneTests::test_falsy_custom_exception",
+      "tests.test_more.OneTests::test_too_long_does_not_evaluate_repr",
+      "tests.test_more.OnlyTests::test_falsy_custom_exception",
+      "tests.test_more.OnlyTests::test_too_long_does_not_evaluate_repr"
+    ],
+    "pass_to_pass_count": 605,
+    "failing_after_fix": [],
+    "tests_before": 609,
+    "tests_after": 609,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "packaging-1330": {
+    "repo": "packaging",
+    "pr": 1330,
+    "fix_commit": "abf000549c2ec5b31357046498d6e4f0f9d7d743",
+    "base_commit": "58c6cd700bdfd33cb3ebfbb9ad5d8cfde4e82f08",
+    "source_files": [
+      "src/packaging/metadata.py"
+    ],
+    "test_files": [
+      "tests/test_metadata.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_metadata.TestMetadata::test_from_email_description_content_type_lowercase_charset",
+      "tests.test_metadata.TestMetadata::test_valid_description_content_type[text/plain; charset=Utf-8]",
+      "tests.test_metadata.TestMetadata::test_valid_description_content_type[text/plain; charset=utf-8]"
+    ],
+    "pass_to_pass_count": 316,
+    "failing_after_fix": [],
+    "tests_before": 319,
+    "tests_after": 319,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "tomlkit-549": {
+    "repo": "tomlkit",
+    "pr": 549,
+    "fix_commit": "67d3e86502706df2a9ed67114ab67e25bcdcbbb7",
+    "base_commit": "e23a25438c6cc9b8cc28b6dcf76dc52f9c7a33e3",
+    "source_files": [
+      "tomlkit/container.py"
+    ],
+    "test_files": [
+      "tests/test_toml_document.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_toml_document::test_replace_dotted_key_with_aot_keeps_following_sibling"
+    ],
+    "pass_to_pass_count": 69,
+    "failing_after_fix": [],
+    "tests_before": 70,
+    "tests_after": 70,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "tomlkit-551": {
+    "repo": "tomlkit",
+    "pr": 551,
+    "fix_commit": "8cd44f58b499da3c80a29bc877a512665a15e0bb",
+    "base_commit": "67d3e86502706df2a9ed67114ab67e25bcdcbbb7",
+    "source_files": [
+      "tomlkit/items.py"
+    ],
+    "test_files": [
+      "tests/test_api.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_api::test_create_multiline_string_with_leading_newline_round_trips[kwargs0-\\n]",
+      "tests.test_api::test_create_multiline_string_with_leading_newline_round_trips[kwargs1-\\nMy\\nString\\n]",
+      "tests.test_api::test_create_multiline_string_with_leading_newline_round_trips[kwargs2-\\r\\nMy\\nString]",
+      "tests.test_api::test_create_multiline_string_with_leading_newline_round_trips[kwargs3-\\nMy\\nString]",
+      "tests.test_api::test_create_multiline_string_with_leading_newline_round_trips[kwargs4-\\r\\nMy\\nString]",
+      "tests.test_api::test_create_string[kwargs13-\\nMy\\nString\\n-\"\"\"\\n\\nMy\\nString\\n\"\"\"]"
+    ],
+    "pass_to_pass_count": 151,
+    "failing_after_fix": [],
+    "tests_before": 157,
+    "tests_after": 157,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "pyparsing-639": {
+    "repo": "pyparsing",
+    "pr": 639,
+    "fix_commit": "73a8b553fb5fc50b3cb2e4b5b2b8652f8d997a29",
+    "base_commit": "49dbf490b79a39ada993bd2b531d91262e5f2c76",
+    "source_files": [
+      "pyparsing/common.py"
+    ],
+    "test_files": [
+      "tests/test_unit.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_unit.Test02_WithoutPackrat::testCommonExpressions",
+      "tests.test_unit.Test04_WithPackrat::testCommonExpressions",
+      "tests.test_unit.Test06_WithBoundedPackrat::testCommonExpressions",
+      "tests.test_unit.Test08_WithUnboundedPackrat::testCommonExpressions",
+      "tests.test_unit.Test09_WithLeftRecursionParsing::testCommonExpressions",
+      "tests.test_unit.Test10_WithLeftRecursionParsingBoundedMemo::testCommonExpressions"
+    ],
+    "pass_to_pass_count": 1826,
+    "failing_after_fix": [],
+    "tests_before": 1838,
+    "tests_after": 1838,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "humanize-329": {
+    "repo": "humanize",
+    "pr": 329,
+    "fix_commit": "823ad6096e1e5ba82ea876ce761fc2efebd76157",
+    "base_commit": "7574e0cc377d80db0d2756fc2c5e0b8799a6f8b4",
+    "source_files": [
+      "src/humanize/filesize.py"
+    ],
+    "test_files": [
+      "tests/test_filesize.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_filesize::test_naturalsize[test_args70-1.0 MB]",
+      "tests.test_filesize::test_naturalsize[test_args71-1.0 GB]",
+      "tests.test_filesize::test_naturalsize[test_args72-1.0 TB]",
+      "tests.test_filesize::test_naturalsize[test_args73-1.0 MiB]",
+      "tests.test_filesize::test_naturalsize[test_args74-1.0 GiB]",
+      "tests.test_filesize::test_naturalsize[test_args75-1.0M]"
+    ],
+    "pass_to_pass_count": 70,
+    "failing_after_fix": [],
+    "tests_before": 76,
+    "tests_after": 76,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "sqlparse-865": {
+    "repo": "sqlparse",
+    "pr": 865,
+    "fix_commit": "f66d12c245412f28c58f045b646eb53c0e691b8b",
+    "base_commit": "df8e28495a87954a9d52de70c33ef7225c53b28f",
+    "source_files": [
+      "sqlparse/sql.py"
+    ],
+    "test_files": [
+      "tests/test_parse.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_parse::test_get_real_name_multi_part_dotted"
+    ],
+    "pass_to_pass_count": 87,
+    "failing_after_fix": [],
+    "tests_before": 88,
+    "tests_after": 88,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "marshmallow-3016": {
+    "repo": "marshmallow",
+    "pr": 3016,
+    "fix_commit": "902f99c4151d1f0c4c3b8e8dfbafc7b6a76aeaa6",
+    "base_commit": "3207be31474530f7c0685dfbd7b4faca5b35fbf5",
+    "source_files": [
+      "src/marshmallow/validate.py"
+    ],
+    "test_files": [
+      "tests/test_validate.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_validate::test_url_absolute_valid[http://example.org#fragment]",
+      "tests.test_validate::test_url_absolute_valid[http://user@example.com#fragment]",
+      "tests.test_validate::test_url_relative_only_valid[#frag]",
+      "tests.test_validate::test_url_relative_valid[#frag]"
+    ],
+    "pass_to_pass_count": 217,
+    "failing_after_fix": [],
+    "tests_before": 221,
+    "tests_after": 221,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "markdown-it-py-416": {
+    "repo": "markdown-it-py",
+    "pr": 416,
+    "fix_commit": "1b7ef6563902ab22deb8d4f3a9ce519bc382d190",
+    "base_commit": "c92ed7b02d090a900abfc1f683b919a9e37806f9",
+    "source_files": [
+      "markdown_it/rules_block/heading.py",
+      "markdown_it/rules_block/html_block.py"
+    ],
+    "test_files": [
+      "tests/test_fuzzer.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_fuzzer::test_gh_415_table_in_blockquote_at_eof_heading",
+      "tests.test_fuzzer::test_gh_415_table_in_blockquote_at_eof_html_block"
+    ],
+    "pass_to_pass_count": 3,
+    "failing_after_fix": [],
+    "tests_before": 5,
+    "tests_after": 5,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "click-3805": {
+    "repo": "click",
+    "pr": 3805,
+    "fix_commit": "4295457ddc7b5ca9a733d59ca40d9651b02b9b1d",
+    "base_commit": "3cbcf9b11546f4cf10b36d3e2e531733ba6fe001",
+    "source_files": [
+      "src/click/_utils.py"
+    ],
+    "test_files": [
+      "tests/test_utils/test_sentinel.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_utils.test_sentinel::test_parameter_duplication[pickle]",
+      "tests.test_utils.test_sentinel::test_sentinel_duplication_preserves_identity[pickle-Sentinel.FLAG_NEEDS_VALUE]",
+      "tests.test_utils.test_sentinel::test_sentinel_duplication_preserves_identity[pickle-Sentinel.UNSET]"
+    ],
+    "pass_to_pass_count": 7,
+    "failing_after_fix": [],
+    "tests_before": 10,
+    "tests_after": 10,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  },
+  "cachetools-408": {
+    "repo": "cachetools",
+    "pr": 408,
+    "fix_commit": "39b31bc9b63abe98497409945e9d382d8918c8fb",
+    "base_commit": "16e88894ef7d79b25a68f5a3b5411ed881342725",
+    "source_files": [
+      "src/cachetools/__init__.py"
+    ],
+    "test_files": [
+      "tests/__init__.py"
+    ],
+    "fail_to_pass": [
+      "tests.test_cache.CacheTest::test_getsizeof_replace_grow",
+      "tests.test_fifo.FIFOCacheTest::test_getsizeof_replace_grow",
+      "tests.test_lfu.LFUCacheTest::test_getsizeof_replace_grow",
+      "tests.test_lru.LRUCacheTest::test_getsizeof_replace_grow",
+      "tests.test_rr.RRCacheTest::test_getsizeof_replace_grow",
+      "tests.test_tlru.TLRUCacheTest::test_getsizeof_replace_grow",
+      "tests.test_ttl.TTLCacheTest::test_getsizeof_replace_grow"
+    ],
+    "pass_to_pass_count": 305,
+    "failing_after_fix": [],
+    "tests_before": 312,
+    "tests_after": 312,
+    "rc_before": 1,
+    "rc_after": 0,
+    "tail_before": "",
+    "tail_after": "",
+    "verified": true
+  }
+}

@@ -1,0 +1,325 @@
+{
+  "schema_version": 1,
+  "tasks": [
+    {
+      "task_id": "boltons-474",
+      "repo": "boltons",
+      "repo_url": "https://github.com/mahmoud/boltons",
+      "upstream_pr": "https://github.com/mahmoud/boltons/pull/474",
+      "base_commit": "e00c10a809525027b8167fbb7ac233cfc25a01f5",
+      "fix_commit": "a180020c760b532e8889f161d97d05647adfee8c",
+      "statement": "`boltons.setutils.IndexedSet.update()` is documented to accept one or more iterables, but calling it with several fails: `IndexedSet([1]).update([2], [3])` raises `TypeError`, and passing tuples or iterators adds the argument objects themselves as members. Expected: `s = IndexedSet([1]); s.update([2, 1, 3], [], [3, 4, 2])` returns None and leaves `list(s) == [1, 2, 3, 4]` for list, tuple, and one-shot iterator arguments; tuple-valued elements stay elements (`IndexedSet().update([(1, 2)], [(3, 4), (1, 2)])` gives `[(1, 2), (3, 4)]`).",
+      "evaluator_test_files": [
+        "tests/test_setutils.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_setutils::test_indexed_set_update_multiple_iterables[iter]",
+        "tests.test_setutils::test_indexed_set_update_multiple_iterables[list]",
+        "tests.test_setutils::test_indexed_set_update_multiple_iterables[tuple]",
+        "tests.test_setutils::test_indexed_set_update_multiple_iterables_with_tuple_items"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 12,
+      "gold_source_files": [
+        "boltons/setutils.py"
+      ]
+    },
+    {
+      "task_id": "boltons-475",
+      "repo": "boltons",
+      "repo_url": "https://github.com/mahmoud/boltons",
+      "upstream_pr": "https://github.com/mahmoud/boltons/pull/475",
+      "base_commit": "1cdc0e9d36f3eb32608f3b34885717697643e9b8",
+      "fix_commit": "45a251181fba4c5a4ecc05e838da1c394e1ed0e4",
+      "statement": "`boltons.strutils.iter_splitlines()` corrupts ordinary text containing a space followed by 28 or 29: `list(iter_splitlines('February 28, 2026'))` returns `['February', ', 2026']`. `indent()` inherits the corruption. It should split on the Unicode line separator U+2028 and paragraph separator U+2029 (e.g. `'\\u2028first\\u2028second\\u2028'` -> `['', 'first', 'second', '']`), leave text like 'February 28, or February 29 in a leap year' as one line, and `indent('February 28\\u2028February 29\\u2029March 1\\r\\nMarch 2', '  ')` should return `'  February 28\\n  February 29\\n  March 1\\n  March 2'`.",
+      "evaluator_test_files": [
+        "tests/test_strutils.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_strutils::test_indent_unicode_line_endings",
+        "tests.test_strutils::test_iter_splitlines_preserves_numbers_after_spaces",
+        "tests.test_strutils::test_iter_splitlines_unicode_line_endings[\\u2028]",
+        "tests.test_strutils::test_iter_splitlines_unicode_line_endings[\\u2029]"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 23,
+      "gold_source_files": [
+        "boltons/strutils.py"
+      ]
+    },
+    {
+      "task_id": "more-itertools-1270",
+      "repo": "more-itertools",
+      "repo_url": "https://github.com/more-itertools/more-itertools",
+      "upstream_pr": "https://github.com/more-itertools/more-itertools/pull/1270",
+      "base_commit": "aaa9b5581f5f62b3d9dfb95bde609b7b0b486d5b",
+      "fix_commit": "cd47ab22e88241688ddc45f0c9e925ea3f50329d",
+      "statement": "`more_itertools.constrained_batches(['a', 'b', 'c'], 10, max_count=0)` yields all three items in one batch, and negative `max_count` values are silently ignored. A supplied `max_count` of zero or less should raise `ValueError` with a message containing 'maximum count must be greater than zero', raised before any input is consumed (also for empty input). `max_count=None` still means no limit, and `max_count=1` yields one-item batches.",
+      "evaluator_test_files": [
+        "tests/test_more.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_more.ConstrainedBatchesTests::test_nonpositive_max_count"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 603,
+      "gold_source_files": [
+        "more_itertools/more.py"
+      ]
+    },
+    {
+      "task_id": "more-itertools-1279",
+      "repo": "more-itertools",
+      "repo_url": "https://github.com/more-itertools/more-itertools",
+      "upstream_pr": "https://github.com/more-itertools/more-itertools/pull/1279",
+      "base_commit": "4ebeea3e569388911a0bec740092f3cf996d79f3",
+      "fix_commit": "b2f3aff7633057d234ec9186c18a53f4df306d08",
+      "statement": "`more_itertools.one()` and `only()` ignore a custom `too_long` / `too_short` exception instance whose truth value is False (an exception class defining `__bool__` returning False) and raise the default `ValueError` instead. The supplied exception should always be raised. Also, when a custom `too_long` exception is supplied, the default error message (which calls `repr()` on the first items) must not be built, so items whose `__repr__` raises do not interfere.",
+      "evaluator_test_files": [
+        "tests/test_more.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_more.OneTests::test_falsy_custom_exception",
+        "tests.test_more.OneTests::test_too_long_does_not_evaluate_repr",
+        "tests.test_more.OnlyTests::test_falsy_custom_exception",
+        "tests.test_more.OnlyTests::test_too_long_does_not_evaluate_repr"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 605,
+      "gold_source_files": [
+        "more_itertools/more.py"
+      ]
+    },
+    {
+      "task_id": "packaging-1330",
+      "repo": "packaging",
+      "repo_url": "https://github.com/pypa/packaging",
+      "upstream_pr": "https://github.com/pypa/packaging/pull/1330",
+      "base_commit": "58c6cd700bdfd33cb3ebfbb9ad5d8cfde4e82f08",
+      "fix_commit": "abf000549c2ec5b31357046498d6e4f0f9d7d743",
+      "statement": "`packaging.metadata` treats the `charset` parameter of `Description-Content-Type` as case-sensitive. `Metadata.from_email()` with `Description-Content-Type: text/plain; charset=utf-8` (Metadata-Version 2.6) does not produce `meta.description_content_type == 'text/plain; charset=utf-8'`, and validation rejects `text/plain; charset=utf-8` and `text/plain; charset=Utf-8` even though they name UTF-8. Charset values that resolve to UTF-8 should be accepted case-insensitively; other charsets such as ascii remain invalid.",
+      "evaluator_test_files": [
+        "tests/test_metadata.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_metadata.TestMetadata::test_from_email_description_content_type_lowercase_charset",
+        "tests.test_metadata.TestMetadata::test_valid_description_content_type[text/plain; charset=Utf-8]",
+        "tests.test_metadata.TestMetadata::test_valid_description_content_type[text/plain; charset=utf-8]"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 316,
+      "gold_source_files": [
+        "src/packaging/metadata.py"
+      ]
+    },
+    {
+      "task_id": "tomlkit-549",
+      "repo": "tomlkit",
+      "repo_url": "https://github.com/python-poetry/tomlkit",
+      "upstream_pr": "https://github.com/python-poetry/tomlkit/pull/549",
+      "base_commit": "e23a25438c6cc9b8cc28b6dcf76dc52f9c7a33e3",
+      "fix_commit": "67d3e86502706df2a9ed67114ab67e25bcdcbbb7",
+      "statement": "Assigning an array of tables over a dotted key swallows the following sibling on round-trip:\n```python\nimport tomlkit\ndoc = tomlkit.parse('a.b = 1\\nc.d = 2\\n')\naot = tomlkit.aot()\nt = tomlkit.table(); t['x'] = 9\naot.append(t)\ndoc['a'] = aot\nprint(tomlkit.dumps(doc))\n```\nprints `[[a]]\\nx = 9\\nc.d = 2\\n`, so `c.d` is captured by `[[a]]` and the top-level `c` is lost when reparsed. Expected output: `'c.d = 2\\n\\n[[a]]\\nx = 9\\n'`, which reparses to `{'c': {'d': 2}, 'a': [{'x': 9}]}`.",
+      "evaluator_test_files": [
+        "tests/test_toml_document.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_toml_document::test_replace_dotted_key_with_aot_keeps_following_sibling"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 69,
+      "gold_source_files": [
+        "tomlkit/container.py"
+      ]
+    },
+    {
+      "task_id": "tomlkit-551",
+      "repo": "tomlkit",
+      "repo_url": "https://github.com/python-poetry/tomlkit",
+      "upstream_pr": "https://github.com/python-poetry/tomlkit/pull/551",
+      "base_commit": "67d3e86502706df2a9ed67114ab67e25bcdcbbb7",
+      "fix_commit": "8cd44f58b499da3c80a29bc877a512665a15e0bb",
+      "statement": "`tomlkit.string(value, multiline=True)` loses a leading newline on round-trip. For `s = tomlkit.string('\\nfoo', multiline=True)`, `str(s)` is `'\\nfoo'`, but parsing `f'k = {s.as_string()}\\n'` gives `'foo'`. A multiline string (basic or literal) whose value starts with `\\n` or `\\r\\n` must reparse to exactly the original value; values that do not start with a newline must render as before.",
+      "evaluator_test_files": [
+        "tests/test_api.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_api::test_create_multiline_string_with_leading_newline_round_trips[kwargs0-\\n]",
+        "tests.test_api::test_create_multiline_string_with_leading_newline_round_trips[kwargs1-\\nMy\\nString\\n]",
+        "tests.test_api::test_create_multiline_string_with_leading_newline_round_trips[kwargs2-\\r\\nMy\\nString]",
+        "tests.test_api::test_create_multiline_string_with_leading_newline_round_trips[kwargs3-\\nMy\\nString]",
+        "tests.test_api::test_create_multiline_string_with_leading_newline_round_trips[kwargs4-\\r\\nMy\\nString]"
+      ],
+      "excluded_fail_to_pass": {
+        "tests.test_api::test_create_string[kwargs13-\\nMy\\nString\\n-\"\"\"\\n\\nMy\\nString\\n\"\"\"]": "requires one specific rendering; stating it would reveal the fix and other renderings that round-trip correctly are equally valid"
+      },
+      "pass_to_pass_count": 151,
+      "gold_source_files": [
+        "tomlkit/items.py"
+      ]
+    },
+    {
+      "task_id": "pyparsing-639",
+      "repo": "pyparsing",
+      "repo_url": "https://github.com/pyparsing/pyparsing",
+      "upstream_pr": "https://github.com/pyparsing/pyparsing/pull/639",
+      "base_commit": "49dbf490b79a39ada993bd2b531d91262e5f2c76",
+      "fix_commit": "73a8b553fb5fc50b3cb2e4b5b2b8652f8d997a29",
+      "statement": "`pyparsing_common.as_datetime` produces the wrong microseconds for fractional seconds: `ppc.iso8601_datetime().add_parse_action(ppc.as_datetime).parse_string('1997-07-16T19:20:30.45')[0]` is `datetime(1997, 7, 16, 19, 20, 30, 449)` but should be `datetime(1997, 7, 16, 19, 20, 30, 450000)`, matching `convert_to_datetime` and `datetime.fromisoformat`.",
+      "evaluator_test_files": [
+        "tests/test_unit.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_unit.Test02_WithoutPackrat::testCommonExpressions",
+        "tests.test_unit.Test04_WithPackrat::testCommonExpressions",
+        "tests.test_unit.Test06_WithBoundedPackrat::testCommonExpressions",
+        "tests.test_unit.Test08_WithUnboundedPackrat::testCommonExpressions",
+        "tests.test_unit.Test09_WithLeftRecursionParsing::testCommonExpressions",
+        "tests.test_unit.Test10_WithLeftRecursionParsingBoundedMemo::testCommonExpressions"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 1826,
+      "gold_source_files": [
+        "pyparsing/common.py"
+      ]
+    },
+    {
+      "task_id": "cachetools-408",
+      "repo": "cachetools",
+      "repo_url": "https://github.com/tkem/cachetools",
+      "upstream_pr": "https://github.com/tkem/cachetools/pull/408",
+      "base_commit": "16e88894ef7d79b25a68f5a3b5411ed881342725",
+      "fix_commit": "39b31bc9b63abe98497409945e9d382d8918c8fb",
+      "statement": "Growing an existing entry in a size-bounded cache evicts an unrelated entry even when the result fits: with `c = cachetools.LRUCache(maxsize=10, getsizeof=lambda v: v)`, doing `c[3] = 3; c[4] = 4; c[4] = 7` leaves only key 4, although 3 + 7 == 10 fits. Expected: both keys remain and `currsize == 10`. Replacing with the same size or a smaller size must also keep both entries with the correct `currsize`. This applies to every cache class in the package.",
+      "evaluator_test_files": [
+        "tests/__init__.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_cache.CacheTest::test_getsizeof_replace_grow",
+        "tests.test_fifo.FIFOCacheTest::test_getsizeof_replace_grow",
+        "tests.test_lfu.LFUCacheTest::test_getsizeof_replace_grow",
+        "tests.test_lru.LRUCacheTest::test_getsizeof_replace_grow",
+        "tests.test_rr.RRCacheTest::test_getsizeof_replace_grow",
+        "tests.test_tlru.TLRUCacheTest::test_getsizeof_replace_grow",
+        "tests.test_ttl.TTLCacheTest::test_getsizeof_replace_grow"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 305,
+      "gold_source_files": [
+        "src/cachetools/__init__.py"
+      ]
+    },
+    {
+      "task_id": "humanize-329",
+      "repo": "humanize",
+      "repo_url": "https://github.com/python-humanize/humanize",
+      "upstream_pr": "https://github.com/python-humanize/humanize/pull/329",
+      "base_commit": "7574e0cc377d80db0d2756fc2c5e0b8799a6f8b4",
+      "fix_commit": "823ad6096e1e5ba82ea876ce761fc2efebd76157",
+      "statement": "`humanize.naturalsize()` shows a mantissa equal to the base instead of moving to the next unit when rounding crosses a unit boundary: `naturalsize(999999)` returns `'1000.0 kB'` (expected `'1.0 MB'`), `naturalsize(999999999)` -> expected `'1.0 GB'`, `naturalsize(999999999999)` -> `'1.0 TB'`, `naturalsize(1024**2 - 1, binary=True)` -> `'1.0 MiB'`, `naturalsize(1024**3 - 1, binary=True)` -> `'1.0 GiB'`, and `naturalsize(1024**2 - 1, gnu=True)` -> `'1.0M'`. Values at the largest suffix are unaffected.",
+      "evaluator_test_files": [
+        "tests/test_filesize.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_filesize::test_naturalsize[test_args70-1.0 MB]",
+        "tests.test_filesize::test_naturalsize[test_args71-1.0 GB]",
+        "tests.test_filesize::test_naturalsize[test_args72-1.0 TB]",
+        "tests.test_filesize::test_naturalsize[test_args73-1.0 MiB]",
+        "tests.test_filesize::test_naturalsize[test_args74-1.0 GiB]",
+        "tests.test_filesize::test_naturalsize[test_args75-1.0M]"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 70,
+      "gold_source_files": [
+        "src/humanize/filesize.py"
+      ]
+    },
+    {
+      "task_id": "sqlparse-865",
+      "repo": "sqlparse",
+      "repo_url": "https://github.com/andialbrecht/sqlparse",
+      "upstream_pr": "https://github.com/andialbrecht/sqlparse/pull/865",
+      "base_commit": "df8e28495a87954a9d52de70c33ef7225c53b28f",
+      "fix_commit": "f66d12c245412f28c58f045b646eb53c0e691b8b",
+      "statement": "`get_real_name()` returns the wrong component for names with more than two dotted parts: `sqlparse.parse('db.schema.tbl.col')[0].tokens[0].get_real_name()` returns `'schema'` but should return `'col'` (and `get_name()` should also return `'col'`), while `get_parent_name()` remains `'db'`. For `x.y.z AS w` the real name should be `'z'` with alias `'w'`; `mydb.sch.func(1)` should give `'func'`. Two-part names such as `a.b` -> `'b'` already work.",
+      "evaluator_test_files": [
+        "tests/test_parse.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_parse::test_get_real_name_multi_part_dotted"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 87,
+      "gold_source_files": [
+        "sqlparse/sql.py"
+      ]
+    },
+    {
+      "task_id": "marshmallow-3016",
+      "repo": "marshmallow",
+      "repo_url": "https://github.com/marshmallow-code/marshmallow",
+      "upstream_pr": "https://github.com/marshmallow-code/marshmallow/pull/3016",
+      "base_commit": "3207be31474530f7c0685dfbd7b4faca5b35fbf5",
+      "fix_commit": "902f99c4151d1f0c4c3b8e8dfbafc7b6a76aeaa6",
+      "statement": "`marshmallow.validate.URL()` rejects an absolute URL with a fragment right after the host: `validate.URL()('http://example.org#fragment')` raises `ValidationError: Not a valid URL.`, while `http://example.org/#fragment` passes. `http://example.org#fragment` and `http://user@example.com#fragment` should be valid, and a bare same-document reference `#frag` should be valid when relative URLs are allowed (`relative=True`, and `relative=True, absolute=False`).",
+      "evaluator_test_files": [
+        "tests/test_validate.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_validate::test_url_absolute_valid[http://example.org#fragment]",
+        "tests.test_validate::test_url_absolute_valid[http://user@example.com#fragment]",
+        "tests.test_validate::test_url_relative_only_valid[#frag]",
+        "tests.test_validate::test_url_relative_valid[#frag]"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 217,
+      "gold_source_files": [
+        "src/marshmallow/validate.py"
+      ]
+    },
+    {
+      "task_id": "markdown-it-py-416",
+      "repo": "markdown-it-py",
+      "repo_url": "https://github.com/executablebooks/markdown-it-py",
+      "upstream_pr": "https://github.com/executablebooks/markdown-it-py/pull/416",
+      "base_commit": "c92ed7b02d090a900abfc1f683b919a9e37806f9",
+      "fix_commit": "1b7ef6563902ab22deb8d4f3a9ce519bc382d190",
+      "statement": "Rendering markdown that ends on a blockquote marker while a table is open inside the quote crashes with `IndexError: string index out of range`:\n```python\nfrom markdown_it import MarkdownIt\nMarkdownIt().enable('table').render('> | a | b |\\n> |---|---|\\n>')\nMarkdownIt('commonmark', {'html': False}).enable('table').render('> | a | b |\\n> |---|---|\\n>')\n```\nBoth calls should render without raising.",
+      "evaluator_test_files": [
+        "tests/test_fuzzer.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_fuzzer::test_gh_415_table_in_blockquote_at_eof_heading",
+        "tests.test_fuzzer::test_gh_415_table_in_blockquote_at_eof_html_block"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 3,
+      "gold_source_files": [
+        "markdown_it/rules_block/heading.py",
+        "markdown_it/rules_block/html_block.py"
+      ]
+    },
+    {
+      "task_id": "click-3805",
+      "repo": "click",
+      "repo_url": "https://github.com/pallets/click",
+      "upstream_pr": "https://github.com/pallets/click/pull/3805",
+      "base_commit": "3cbcf9b11546f4cf10b36d3e2e531733ba6fe001",
+      "fix_commit": "4295457ddc7b5ca9a733d59ca40d9651b02b9b1d",
+      "statement": "`click._utils.Sentinel` members (such as `click._utils.UNSET`) do not survive `copy.copy`, `copy.deepcopy`, or `pickle` round-trips: the result is not the same singleton member (or the operation fails). Every duplication of a member should return the identical member object. As a consequence, `copy.copy`/`copy.deepcopy`/pickling of `click.Option(['--name'])`, whose `default` is `UNSET`, should give an option whose `default is UNSET` and `name == 'name'`.",
+      "evaluator_test_files": [
+        "tests/test_utils/test_sentinel.py"
+      ],
+      "fail_to_pass": [
+        "tests.test_utils.test_sentinel::test_parameter_duplication[pickle]",
+        "tests.test_utils.test_sentinel::test_sentinel_duplication_preserves_identity[pickle-Sentinel.FLAG_NEEDS_VALUE]",
+        "tests.test_utils.test_sentinel::test_sentinel_duplication_preserves_identity[pickle-Sentinel.UNSET]"
+      ],
+      "excluded_fail_to_pass": {},
+      "pass_to_pass_count": 7,
+      "gold_source_files": [
+        "src/click/_utils.py"
+      ]
+    }
+  ]
+}
