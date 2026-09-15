@@ -853,6 +853,19 @@ was authorized or performed.
   noop 14 rejected; breaker (unimportable source) 14 rejected; gamer (conftest hooks forcing
   passed reports) 14 rejected. Before hardening, breaker gave needs_review on marshmallow and
   click (conftest import failure) and one tomlkit bundle build failed on a git submodule.
+- P6 pilot 1 observation: qwen/qwen3.5-9b call 2 of `tomlkit-549` returned no content and no
+  tool calls (finish=stop); its tool call was markup inside `reasoning`. Runner choices that
+  could contribute were identified: temperature 0, no provider pinning (one run was routed to
+  five providers), and replaying `reasoning_details` across providers.
+- P6 diagnostic (user-approved 20 calls, $0.003694 reported;
+  `experiments/p6_pilot/diagnose_empty_reply.py`, `runs/diag-qwen-empty-reply/`): that exact
+  request replayed 5x per condition, interleaved, no fallbacks or retries. SiliconFlow:
+  temperature 0 -> 5/5 markup in reasoning, unparsed; temperature 0.6 -> 5/5 same. Venice:
+  temperature 0 -> 4/4 parsed tool calls plus 1 upstream HTTP 429; temperature 0.6 -> 5/5
+  parsed. Raw replies were audited against the labels. In pilot 1, SiliconFlow parsed tool calls
+  on 8 other qwen requests, so the failure is request-dependent there. Not separated: whether
+  replayed reasoning contributes. Planned runner change for later runs: pin one provider per
+  model (excluding one that fails this replay) and record provider routing in the protocol.
 
 | Stage | Status | Completion evidence | Next action |
 |---|---|---|---|
