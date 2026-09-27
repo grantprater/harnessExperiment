@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "id": "E3-calibration-007",
+  "title": "Mutation-task bank with a capable model through the Reticle interface",
+  "status": "proposed",
+  "markdown": "experiments/session_harness/E3-calibration-007.md",
+  "hypothesis": "A capable model succeeds on some mutation tasks and fails on others under the incumbent harness, so a subset of the 76 tasks lands in the 30-70% acceptance zone where harness comparisons have power.",
+  "run_prefix": "c007",
+  "runner": {"script": "experiments/p6_pilot/run_pilot.py", "runner_version": 8, "task_file_flag": "--task-file"},
+  "environment": {"claude_cli_version": "2.1.283 (Claude Code)"},
+  "prerequisites": [
+    {"text": "S6a wiring: materialize_workspace applies mutation_patch and removes hidden_paths, and run_pilot.py loads tasks from experiments/mutation_tasks/tasks.mutations.json (set runner.task_file_flag to the flag S6a adds, and runner.runner_version if it bumps)", "done": false},
+    {"text": "owner approval of card 007 (then set status to approved)", "done": false}
+  ],
+  "arms": [
+    {
+      "name": "incumbent",
+      "client": "claude-cli",
+      "model": "sonnet",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {"stop_on_repeats": false, "resume_after_provider_stop": 0, "resume_wait_seconds": null},
+      "extra_args": [],
+      "expected_protocol_hash": null,
+      "note": "Runner v8, claude-cli adapter v2. Same bundle as positive-control Arm R except the repeat guard (see stop_rules.repeat_rule), so its protocol hash differs from 6f1061c028c8. Pin expected_protocol_hash from --plan before the first run."
+    }
+  ],
+  "controls": [
+    {"name": "gold", "client": "gold", "task_set": "calibration", "like_arm": "incumbent", "expect": "accepted"},
+    {"name": "noop", "client": "noop", "task_set": "calibration", "like_arm": "incumbent", "expect": "rejected"}
+  ],
+  "tasks": {
+    "file": "experiments/mutation_tasks/tasks.mutations.json",
+    "file_sha256": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa",
+    "sets": {
+      "calibration": {
+        "rule": {
+          "kind": "stratified-distinct",
+          "count": 20,
+          "seed": 20260927,
+          "distinct_by": "fail_to_pass",
+          "stratify_by": "mutation_kind",
+          "exclude_if_true": ["statement_names_mutated_function"]
+        },
+        "note": "One task per distinct fail_to_pass set, 3-4 per mutation kind, seeded; the resolved list is printed by --plan and recorded in the report."
+      }
+    }
+  },
+  "blocks": [
+    {"name": "calibration", "task_set": "calibration", "arms": ["incumbent"], "rollouts": 2, "arm_order": {"rule": "fixed"}}
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 20,
+      "model_attempts": 24,
+      "active_seconds": 1200,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {"default": 120, "max": 600},
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {
+      "max_runs": 40,
+      "max_model_attempts": 1200,
+      "monetary_cap_usd": null,
+      "note": "40 runs x 24 attempts = 960 planned, plus room for 10 retried runs. CLI on the subscription: no monetary cap, billing recorded as unknown."
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [60, 300],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "The markdown asks for the repeat flag to be recorded while the run continues. run_pilot.py records the flag only with --stop-on-repeats, which also stops the run, so this card runs without the guard and repeat_flags are derived from the journal afterwards (S6b).",
+    "manual": [
+      "Evaluator leakage, evidence loss, or authority escape stops the campaign (run_card.py detects evidence loss and protocol drift; leakage and escape need trajectory review).",
+      "Do not tune statements on these tasks after seeing results; they become the held-in set."
+    ]
+  },
+  "measurements": {
+    "per_run": ["accepted", "stop_reason", "responses_used", "provider_attempts", "tool_calls", "active_seconds", "wall_seconds", "tokens", "first_edit_response", "rejected_calls", "repeat_flags", "edit_in_gold_files", "verification_before_finish"],
+    "campaign": ["acceptance_rate_ci", "outcome_distribution", "per_task_outcomes", "evolution_set", "acceptance_by:mutation_kind", "acceptance_by_size:fail_to_pass"]
+  },
+  "decision_rule": "Pass for the card: 40 runs complete with evidence and at least 5 contrastive tasks (1/2). Otherwise report the distribution and propose the difficulty change under a new card. The evolution set is the 1/2 tasks plus 0/2 tasks whose trajectories show a fixable mechanism; tasks at 2/2 leave the set.",
+  "report": {
+    "path": "experiments/session_harness/E3-calibration-007-report.md",
+    "sets_path": "experiments/session_harness/E3-calibration-007.sets.json"
+  },
+  "notes": [
+    "Choices the markdown leaves open, made here: 24 attempts per run and max_tokens 4096 (as positive-control Arm R; the CLI client does not use max_tokens), gold/noop controls on the 20 selected tasks, 60 s and 300 s retry backoff, a 3,600 s wall limit per invocation, and selection seed 20260927.",
+    "The markdown's fallback 'trusted-local only if the image is missing' is not expressible: a different backend is a different protocol, so a missing image stops the preflight and needs an amended card."
+  ]
+}

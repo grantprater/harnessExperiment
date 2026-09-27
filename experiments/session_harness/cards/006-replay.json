@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "id": "E3-positive-control-006-arm-r",
+  "title": "Positive control 006, Arm R run 2, restated as a card (replay check only)",
+  "status": "completed",
+  "markdown": "experiments/session_harness/E3-positive-control-006.md",
+  "hypothesis": "H-R: Claude Sonnet 5, acting only through the Reticle tools under runner v8 / pressure-recent-v3 / reticle-tools-v3 in the pinned OCI image, leaves a final workspace that the hidden upstream tests accept, within 20 responses and 20 minutes.",
+  "run_prefix": "c006r",
+  "runner": {"script": "experiments/p6_pilot/run_pilot.py", "runner_version": 8, "task_file_flag": null},
+  "environment": {"claude_cli_version": "2.1.283 (Claude Code)"},
+  "prerequisites": [
+    {"text": "gold/noop controls pc-v8-control-gold-sqlparse and pc-v8-control-noop-sqlparse passed", "done": true},
+    {"text": "smoke pc-smoke-claude-cli-v2 with the arm's exact flags passed", "done": true}
+  ],
+  "arms": [
+    {
+      "name": "reticle",
+      "client": "claude-cli",
+      "model": "sonnet",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {"stop_on_repeats": true, "resume_after_provider_stop": 0, "resume_wait_seconds": null},
+      "extra_args": [],
+      "expected_protocol_hash": "6f1061c028c8",
+      "note": "Recorded as experiments/p6_pilot/runs/pc-reticle-sonnet-2 (config.json protocol_hash 6f1061c028c8)."
+    }
+  ],
+  "tasks": {
+    "file": "experiments/p6_pilot/tasks.json",
+    "file_sha256": "8bdc1e56c20c2a1a8ea00bc8c21d9ce73782e774b8670971904db94727599ebc",
+    "sets": {"sqlparse": {"ids": ["sqlparse-865"]}}
+  },
+  "blocks": [
+    {"name": "arm-r", "task_set": "sqlparse", "arms": ["reticle"], "rollouts": 1, "arm_order": {"rule": "fixed"}}
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 20,
+      "model_attempts": 24,
+      "active_seconds": 1200,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {"default": 120, "max": 600},
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {"max_runs": 1, "max_model_attempts": 24, "monetary_cap_usd": null,
+                 "note": "Local CLI on the subscription; billing unknown."}
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 0,
+    "retry_backoff_seconds": [],
+    "consecutive_failures_to_stop": 1,
+    "repeat_rule": "--stop-on-repeats: three identical observation calls without a workspace change end the run as diagnostic_termination.",
+    "manual": ["Card 006 allowed one rerun after the run-1 adapter failure, under a committed amendment; a card cannot express that rule."]
+  },
+  "measurements": {
+    "per_run": ["accepted", "stop_reason", "responses_used", "provider_attempts", "tool_calls", "active_seconds", "wall_seconds", "criterion_outcomes", "first_edit_response", "verification_before_finish"],
+    "campaign": []
+  },
+  "decision_rule": "H-R passes if the hidden upstream tests accept the final workspace within 20 responses and 20 minutes; a single run is a development diagnostic, not a comparison.",
+  "report": {"path": "experiments/session_harness/E3-positive-control-006-report.md", "sets_path": null},
+  "notes": [
+    "Exists to show that a card replays to the recorded protocol hash: run_card.py --plan --replay experiments/p6_pilot/runs/pc-reticle-sonnet-2.",
+    "Status completed, so --execute refuses; the report path is the hand-written report, which the skeleton writer never overwrites (it writes *.skeleton.md beside an edited report)."
+  ]
+}
