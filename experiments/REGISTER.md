@@ -15,10 +15,11 @@ stop with no library edit ([report](session_harness/E3-sqlparse-gemma-cloudflare
 ([report](session_harness/E3-sqlparse-qwen-parasail-3.md)). Observed usability issues are kept with E3, and the revised
 interface ran under [E3-repair-control-004](session_harness/E3-repair-control-004.md): the U1 fixture passed, and run 4 reached its budget without a
 library edit ([report](session_harness/E3-sqlparse-qwen-parasail-4.md)). Toolset v3, implementing the plan's coding-tool interface
-contract, is next under [E3-repair-control-005](session_harness/E3-repair-control-005.md) (U2 gate, then run 5). No accepted live repair yet.
+contract, is next under [E3-repair-control-005](session_harness/E3-repair-control-005.md) (U2 gate, then run 5). No accepted live repair from the weak models; the capable-model positive control (row below) was accepted in both arms.
 
 | Candidate | Failure addressed | Smallest comparison | Status / evidence |
 |---|---|---|---|
+| Positive control (capable model) | Unknown whether E3 failures come from the model, the task, the interface, or the pipeline | Claude Sonnet 5 on `sqlparse-865`: Reticle interface (`--client claude-cli`) versus Claude Code's own loop, 20 responses and 20 minutes each | Done 2026-09-27: both accepted (Reticle 9 responses, 90.5 s, after one adapter fix; Claude Code 11 turns, 45.4 s), same code change; [card](session_harness/E3-positive-control-006.md), [report](session_harness/E3-positive-control-006-report.md) |
 | Semantic history retrieval | Relevant experience missed because wording differs | Literal versus semantic search over identical frozen history | Next (S4); [existing literal-retrieval fixture](session_harness/E2-changed-file.md) is supporting evidence only |
 | Learned procedures | Useful techniques repeatedly rediscovered | Retrieval alone versus retrieval plus a frozen learned-procedure library on unseen variations | Planned (S5) |
 | Memory applicability checks | Stale or irrelevant experience misapplied | Same memories with versus without explicit preconditions/source-version checks | Idea |

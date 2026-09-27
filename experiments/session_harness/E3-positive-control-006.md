@@ -3,8 +3,8 @@
 Date: 2026-09-27  
 Status: approved by the owner; this card was written and committed after the controls and the smoke and **before
 either live arm**. Arm R run 1 then stopped on an adapter failure; the [amendment](#amendment-after-arm-r-run-1-mechanism-failure)
-below was committed before the single allowed rerun. The results go in
-[E3-positive-control-006-report.md](E3-positive-control-006-report.md).  
+below was committed before the single allowed rerun. Completed 2026-09-27: both arms accepted (Arm R run 2 in 9
+responses, Arm N in 11 turns); see [E3-positive-control-006-report.md](E3-positive-control-006-report.md).  
 Why: E3 runs 1-4 on `sqlparse-865` used weak free models and none produced an accepted repair (run 4:
 [report](E3-sqlparse-qwen-parasail-4.md)). [The plan critique](../../IMPLEMENTATION_PLAN_CRITIQUE.md) asks for a
 positive control before more interface work: the same task with a demonstrably capable model, once through the
