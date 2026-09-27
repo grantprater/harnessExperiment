@@ -5,7 +5,10 @@ to results.jsonl. Reports are generated only from those files.
 
 Clients:
   openrouter  live model calls; requires --max-total-calls (counts every HTTP attempt)
-  gold        writes the upstream fix's source files, then finishes (pipeline check, no API)
+  claude-cli  live model calls through the local Claude Code CLI (claude -p, subscription login, no API key),
+              one stateless process per attempt with every built-in tool disabled (see claude_cli.py);
+              requires --models (a CLI model alias such as sonnet) and --max-total-calls (counts every attempt)
+  gold       writes the upstream fix's source files, then finishes (pipeline check, no API)
   noop        finishes immediately (pipeline check, no API)
   breaker     makes the fixed source files unimportable, then finishes (pipeline check, no API)
   gamer       adds conftest hooks that report every test as passed (pipeline check, no API)
@@ -64,6 +67,8 @@ from reticle.runtime.controller import AgentController, AgentLimits, ModelClient
 from reticle.tools import TOOL_SCHEMAS, ToolSuite  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from claude_cli import ClaudeCliClient, cli_contract, cli_version  # noqa: E402
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
 TASK_PYTHON = ROOT / ".runtime" / "bugs-venv" / "Scripts" / "python.exe"
 BASE_URL = "https://openrouter.ai/api/v1"
@@ -76,7 +81,11 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    time) and resume the same durable session, up to a declared number of resumes
 # 6: pressure-recent-v2 arm (remaining resources in every request); toolset version in the protocol
 # 7: pressure-recent-v3 arm; toolset v3 names (glob_files, search_text) in repeat detection
-RUNNER_VERSION = 7
+# 8: claude-cli client (local Claude Code CLI, stateless, no built-in tools); its invocation contract
+#    is recorded as the model's routing, so it is part of the protocol hash
+RUNNER_VERSION = 8
+CLI_TIMEOUT_SECONDS = 300  # per attempt, as the OpenRouter client's HTTP timeout
+CLI_MAX_TURNS = 1  # the reply is the model's first message; the CLI stops before a second model turn
 DEFAULT_OCI_IMAGE = "localhost/reticle-p6-task:py313-v1"
 ARMS = {
     "bounded-transcript-v2": BaselineContextPolicy,
@@ -543,7 +552,8 @@ def evaluator_details(runtime: LocalRuntime, report_artifact_id: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--client", required=True, choices=["openrouter", "gold", "noop", "breaker", "gamer", "tester"])
+    parser.add_argument("--client", required=True,
+                        choices=["openrouter", "claude-cli", "gold", "noop", "breaker", "gamer", "tester"])
     parser.add_argument("--backend", default="trusted-local", choices=["trusted-local", "oci"])
     parser.add_argument("--oci-image", default=DEFAULT_OCI_IMAGE)
     parser.add_argument("--arm", default="bounded-transcript-v2", choices=sorted(ARMS))
@@ -581,20 +591,28 @@ def main() -> None:
         if unknown:
             raise SystemExit(f"Unknown tasks: {sorted(unknown)}")
         tasks = [t for t in tasks if t["task_id"] in args.tasks]
-    if args.client == "openrouter":
+    live = args.client in ("openrouter", "claude-cli")
+    if live:
         if not args.models:
-            raise SystemExit("--models is required for the openrouter client")
+            raise SystemExit(f"--models is required for the {args.client} client")
         models = args.models
     else:
         models = [f"{args.client}-client"]
     pins = {}
     for item in args.provider:
         model, _, provider_slug = item.partition("=")
+        if args.client == "claude-cli":
+            raise SystemExit("--provider applies to the openrouter client only")
         if model not in models or not provider_slug:
             raise SystemExit(f"--provider {item!r} must be MODEL=SLUG for a model in --models")
         pins[model] = provider_slug.lower()
-    routing = {model: ({"order": [pins[model]], "allow_fallbacks": False, "require_parameters": True}
-                       if model in pins else dict(UNPINNED_ROUTING)) for model in models}
+    if args.client == "claude-cli":
+        version = cli_version()
+        routing = {model: cli_contract(model, max_turns=CLI_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version)
+                   for model in models}
+    else:
+        routing = {model: ({"order": [pins[model]], "allow_fallbacks": False, "require_parameters": True}
+                           if model in pins else dict(UNPINNED_ROUTING)) for model in models}
     arm = args.arm
     backend, execution = resolve_execution(args.backend, args.oci_image)
     guards = {"stop_on_repeats": args.stop_on_repeats,
@@ -645,6 +663,14 @@ def main() -> None:
             api_key = load_openrouter_key()
             if not api_key:
                 raise SystemExit("OPENROUTER_API_KEY not found in experiments/.env, .env, or the environment.")
+    elif args.client == "claude-cli":
+        print(f"{len(runs)} runs ({len(tasks)} tasks x {len(models)} models), arm {arm}, protocol {arm_hash}")
+        print(f"claude-cli {routing[models[0]]['cli_version']}: at most {args.max_calls_per_run} responses per run; "
+              f"every CLI attempt counts toward --max-total-calls={args.max_total_calls}; billing unknown "
+              f"(local subscription login, no API key)")
+        print(f"per-run guards: {json.dumps(guards)}; backend {execution['backend']}")
+        if not args.dry_run and args.max_total_calls is None:
+            raise SystemExit("--max-total-calls is required for live runs")
     elif args.dry_run:
         print(f"{len(runs)} runs with the {args.client} client, arm {arm}; no API calls")
 
@@ -717,6 +743,9 @@ def main() -> None:
         )
         if args.client == "openrouter":
             inner = OpenRouterClient(api_key, model, calls_path, run_id, budget, args.max_tokens, routing[model])
+        elif args.client == "claude-cli":
+            inner = ClaudeCliClient(model, calls_path, run_id, budget, max_attempts=MAX_ATTEMPTS,
+                                    timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS)
         else:
             inner = scripted_client(args.client, task, repo)
         client = GuardedClient(inner, tools, args.stop_on_repeats)
