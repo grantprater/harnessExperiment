@@ -35,7 +35,7 @@ Task supply: where the tasks that measure the candidates above come from.
 
 | Candidate | Need addressed | Mechanism | Status / evidence |
 |---|---|---|---|
-| Mutation-generated repair tasks | Hundreds of sealed repair tasks with hidden tests; public repairs may be contaminated | One semantic mutation of a healthy upstream checkout per task, kept when the suite fails partly; statement from failing-test names and the first failure message | prototype (8+ validated tasks, unrun with any model); [report](mutation_tasks/REPORT.md) |
+| Mutation-generated repair tasks | Hundreds of sealed repair tasks with hidden tests; public repairs may be contaminated | One semantic mutation of a healthy upstream checkout per task, kept when the suite fails partly; statement from failing-test names and the first failure message | prototype (76 validated tasks from 100 candidates, unrun with any model; runner wiring pending); [report](mutation_tasks/REPORT.md) |
 
 Next workload after E3: [D1 scientific-discovery simulator](session_harness/D1-discovery-simulator.md).
 Design complete; implementation and live runs unrun. Calibrate limited-probe prediction of a
