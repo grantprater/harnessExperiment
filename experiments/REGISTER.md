@@ -31,6 +31,12 @@ contract, is next under [E3-repair-control-005](session_harness/E3-repair-contro
 | Observation retention | Useful recent observations reduced prematurely | Legacy views versus pressure-based retention on the same repaired runtime | Deferred; [mechanical evidence](session_harness/E1-pressure-recent-v1.md), no utility claim |
 | Symbolic reasoning tool | Explicit constraints reasoned about incorrectly | Same tasks with versus without a solver/proof-checking tool | Deferred; separate from memory treatments |
 
+Task supply: where the tasks that measure the candidates above come from.
+
+| Candidate | Need addressed | Mechanism | Status / evidence |
+|---|---|---|---|
+| Mutation-generated repair tasks | Hundreds of sealed repair tasks with hidden tests; public repairs may be contaminated | One semantic mutation of a healthy upstream checkout per task, kept when the suite fails partly; statement from failing-test names and the first failure message | prototype (8+ validated tasks, unrun with any model); [report](mutation_tasks/REPORT.md) |
+
 Next workload after E3: [D1 scientific-discovery simulator](session_harness/D1-discovery-simulator.md).
 Design complete; implementation and live runs unrun. Calibrate limited-probe prediction of a
 hidden Boolean system without memory first, then consider S4/S5 transfer treatments. This is
