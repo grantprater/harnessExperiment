@@ -1,7 +1,7 @@
 # E3 calibration 007: mutation-task bank with a capable model through the Reticle interface
 
 Date: 2026-09-27  
-Status: proposed (awaits owner approval; no model runs yet)  
+Status: ready to run (wiring proven, smoke passed); awaiting approval  
 Stage: S6a. Prerequisite: `materialize_workspace` applies `mutation_patch` and removes `hidden_paths`; `run_pilot.py` accepts `--tasks experiments/mutation_tasks/tasks.mutations.json`.
 
 ## Hypothesis
@@ -105,14 +105,37 @@ Result: 20 tasks, with 20 distinct failing sets and 20 distinct statements.
 - `sqlparse-mut-001` was also a gold/noop control task; no model was involved. The one-response smoke used
   `sqlparse-mut-006`, which is not in the set.
 
-No-API controls, run with the wired runner at `352c1ae` (OCI image `8b74015e5079`, `pressure-recent-v3`, this
-card's budgets). The workspaces had no `tests/` and contained the mutated line. The evaluator installed the healthy
-`tests/` from `fix_commit`.
+### Controls and smoke (no batch run)
+
+The no-API controls ran with the wired runner at `34723a3` (materializer `mutation-workspace-v2`). They used OCI
+image `8b74015e5079`, `pressure-recent-v3`, and this card's flags. The workspaces had no `tests/` and contained the
+mutated line. The evaluator installed the healthy `tests/` from `fix_commit`.
 
 | Control | `sqlparse-mut-001` (1 failing test) | `sqlparse-mut-006` (11 failing tests) |
 |---|---|---|
-| gold (`s6a-control-gold-mut`) | accepted: fail-to-pass 1/1 pass, pass-to-pass 490/490 pass, 493 tests | accepted: 11/11 pass, 480/480 pass, 493 tests |
-| noop (`s6a-control-noop-mut`) | rejected: fail-to-pass 1/1 fail, pass-to-pass 490/490 pass | rejected: 11/11 fail, 480/480 pass |
+| gold (`s6a-control-gold-mut-v2`) | accepted: fail-to-pass 1/1 pass, pass-to-pass 490/490 pass, 493 tests | accepted: 11/11 pass, 480/480 pass, 493 tests |
+| noop (`s6a-control-noop-mut-v2`) | rejected: fail-to-pass 1/1 fail, pass-to-pass 490/490 pass | rejected: 11/11 fail, 480/480 pass |
+
+Smoke `s6a-smoke-claude-cli-mut`, a smoke and not a run:
+
+- One claude-cli attempt on `sqlparse-mut-006`, which is not in the set, with `--max-total-calls 1` and the lock held.
+- The init event listed only the `StructuredOutput` tool. There were no MCP servers, `apiKeySource` was `none`, and
+  the model was `claude-sonnet-5`.
+- The model's first message called `search_text` for `class ReindentFilter`. The harness ran it in the mutated
+  workspace (59 files, no `tests/`) and got 1 match, `sqlparse/filters/reindent.py:13`.
+- The next request hit the attempt cap.
+
+The smoke and the first controls (`s6a-control-*-mut`, at `352c1ae`) used materializer v1. In v1 the mutated file and
+its directory kept the time of `git apply`, so `ls -lt` in the workspace named the mutated file. v2 closes this: inside
+the container, all 70 entries share one mtime and one ctime, and `find -newer` finds nothing. The smoke's one call did
+not look at timestamps, and the smoke was not repeated.
+
+Two runtime behaviours remain. Neither leaks the hidden tests or the gold patch:
+
+- A host-side tool error (for example `read_file` on a missing path) quotes the absolute host path. That path names
+  the run and the task id.
+- A symlink made by a `run` command in the container is unreadable on the Windows host (WinError 1920). Every later
+  tool call then raises out of `revision()`, which would end the campaign as an evidence loss.
 
 Command for rollout k (k = 1, 2), run one at a time from the repo root while holding
 `.runtime/locks/live-run.lock`:
@@ -133,3 +156,5 @@ The runner does not do these; they need an operator or a change before the batch
   which this card does not want. Derive the flags from the transcripts instead.
 - **Campaign fast stop.** The runner does not stop the campaign after 3 consecutive adapter failures.
 - **Live-run lock.** The runner does not take the lock.
+- **Symlink crash.** A model that creates a symlink stops the campaign (above). Resume re-runs the interrupted task
+  and keeps the partial session.
