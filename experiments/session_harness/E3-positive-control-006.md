@@ -2,7 +2,9 @@
 
 Date: 2026-09-27  
 Status: approved by the owner; this card was written and committed after the controls and the smoke and **before
-either live arm**. The results go in [E3-positive-control-006-report.md](E3-positive-control-006-report.md).  
+either live arm**. Arm R run 1 then stopped on an adapter failure; the [amendment](#amendment-after-arm-r-run-1-mechanism-failure)
+below was committed before the single allowed rerun. The results go in
+[E3-positive-control-006-report.md](E3-positive-control-006-report.md).  
 Why: E3 runs 1-4 on `sqlparse-865` used weak free models and none produced an accepted repair (run 4:
 [report](E3-sqlparse-qwen-parasail-4.md)). [The plan critique](../../IMPLEMENTATION_PLAN_CRITIQUE.md) asks for a
 positive control before more interface work: the same task with a demonstrably capable model, once through the
@@ -141,3 +143,38 @@ nothing about the arms, except that one response can take about three minutes.
 Spend: none billed to an API account. Both arms use the local Claude Code subscription; the CLI's
 `total_cost_usd` is a list-price estimate (the smoke's one response: $0.218) and is recorded as metadata only. At the
 smoke, the subscription's five-hour window was 28% used and the seven-day window 64%.
+
+## Amendment after Arm R run 1 (mechanism failure)
+
+Committed before the rerun; nothing above is changed except the status line.
+
+**What happened.** `pc-reticle-sonnet-1` (protocol `7d91aad4cc99`, adapter v1) made no model response. All three
+attempts at the opening request ended in the CLI's `error_max_turns` (7.0 s, 8.7 s, and the third), the request
+stopped with `failed after 3 attempts`, and the run ended as `model_error` after 38.6 active seconds: 3 attempts, 0
+responses, 0 tool actions; the untouched workspace was scored rejected (f2p fail, p2p pass, 88 tests). This is an
+adapter failure, not a model or task outcome.
+
+**Cause.** The model called the harness tools (`search_text`, `glob_files`, `run`) as native functions. The CLI has
+none of them, rejected each call ("No such tool available"), and the three CLI-internal turns ran out before the
+model used `StructuredOutput`. Replaying that exact request eight times, with the original prompt and two reworded
+ones (explicit "these are not callable functions"; tools as a text catalog), gave the same first move every time; in
+the three replays that recovered through `StructuredOutput`, the model had already seen the rejections (one reply
+said it was "investigating available tools since search_text returned an error"). A prompt fix alone would leave the
+CLI's rejections in the model's view.
+
+**Fix (adapter v2, commit `148107e`).** The reply is the model's first message, and the CLI stops after it
+(`--max-turns 1`), so the model never sees the CLI's rejection. The tool calls are taken from a `StructuredOutput`
+call when the message has one, otherwise from the direct calls in that message (recorded per attempt as
+`reply_channel`, with the CLI-internal events in `cli_turns`). `--json-schema` is still passed. Tools are listed as a
+text catalog. The contract now records the adapter version and `--max-turns 1`, so the protocol is `6f1061c028c8`.
+What the model sees from Reticle (messages, tools, resource lines) and every budget are unchanged.
+
+| Check (after the fix) | Result |
+|---|---|
+| Offline suite | 258 passed, 4 OCI skipped (3 new adapter tests: direct calls are the reply and the rejection never reaches the next request; `StructuredOutput` wins over direct calls in the same message; only the first message counts) |
+| Replays of run 1's opening request through `ClaudeCliClient` v2 | 2 of 2 returned three `search_text` calls (`direct_tool_use`), 3.1 s and 4.3 s |
+| Tool probe v2 (`pc-smoke-claude-cli-v2-toolprobe`) | init tools `["StructuredOutput"]`, no MCP servers, `apiKeySource: none`; answer "NONE", no CLAUDE.md/memory/skills/MCP (it noted that the CLI's environment note mentions Bash, which it cannot call) |
+| Smoke v2 (`pc-smoke-claude-cli-v2`): the arm's exact flags with `--max-total-calls 1`, so the one response sees "20 remaining" | one response in 3.4 s, three `search_text` calls dispatched in OCI, all succeeded; the second request stopped at the campaign cap with no phantom attempt (1 attempt consumed, nothing pending) |
+
+**Rerun.** Arm R is rerun once as `pc-reticle-sonnet-2` with the command above (run name changed); Arm N is
+unaffected. If the rerun also stops on a mechanism failure, it is reported as such and not run again.
