@@ -871,6 +871,221 @@ class PressureRecentContextPolicyV3(PressureRecentContextPolicyV2):
         return messages, selected
 
 
+class PressureRecentContextPolicyV4(PressureRecentContextPolicyV3):
+    """pressure-recent-v3 laid out for provider prefix caching (E1 cache layout 008).
+
+    Two differences from v3 and nothing else:
+
+    1. The resource status (v3 wording) is the final message of the request instead of following
+       the task. Everything before it can then stay byte-identical from one request to the next.
+    2. Older units are omitted in pages. When the request would exceed the budget, the oldest units
+       are omitted until it is at most half the budget, and that boundary stays where it is until the
+       budget is exceeded again. v3 re-fits the boundary on every request, so under pressure the first
+       transcript message after the opening changes almost every turn.
+
+    The page boundary needs no stored state: it is a function of the transcript, the opening, the
+    status size and the budget. The page rule is replayed over the requests the transcript implies
+    (one before each assistant message, and this one), with every unit counted whole, so a rebuilt,
+    compared or resumed session pages exactly as the live one did. Selection otherwise follows v3:
+    the latest exchange and every message after it are required and reduced only if they cannot fit
+    whole; retained history runs contiguously back from them (units the page plan kept are still
+    fitted to the actual request, as v3 fits them); the omission marker is included when it fits;
+    and pins fit after the transcript. Every size check counts the status, as in v3.
+    """
+
+    policy_version = "pressure-recent-v4"
+    # The same text as pressure-recent-v1's marker; it is constant, so it never breaks the prefix.
+    OMISSION_MARKER = (
+        "Context pressure omitted earlier transcript exchanges. Exact prior tool "
+        "results remain persisted; use search_history without an output ID, then "
+        "read_output/search_output or read_artifact using the returned reference."
+    )
+
+    @staticmethod
+    def _required_start(units: List[List[Dict[str, Any]]]) -> Optional[int]:
+        """The first required unit, as v1-v3 choose it: the latest tool exchange, else the latest reply."""
+        start = max(
+            (index for index, unit in enumerate(units) if BaselineContextPolicy._tool_ids(unit[0])),
+            default=None,
+        )
+        if start is None and units:
+            start = max(
+                (index for index, unit in enumerate(units) if unit[0].get("role") == "assistant"),
+                default=len(units) - 1,
+            )
+        return start
+
+    def _page_start(
+        self,
+        units: List[List[Dict[str, Any]]],
+        sized: List[Dict[str, Any]],
+        marker: Dict[str, Any],
+        tools: List[Dict[str, Any]],
+        max_context_bytes: int,
+    ) -> int:
+        """The first unit of the current page: units before it are omitted by page."""
+        base = self._request_size(sized, tools)  # contract, task, status: never empty
+        marker_bytes = len(_encoded(self._public([marker])[0])) + 1
+        cumulative = [0]
+        for index, unit in enumerate(units):
+            rendered = self._public(self._render_unit(unit, index)[0])
+            cumulative.append(cumulative[-1] + sum(len(_encoded(message)) + 1 for message in rendered))
+
+        def size(start: int, end: int) -> int:
+            return base + (marker_bytes if start else 0) + cumulative[end] - cumulative[start]
+
+        # One request before each assistant message (the transcript as the model saw it), then this one.
+        ends = sorted({index for index, unit in enumerate(units) if index and unit[0].get("role") == "assistant"}
+                      | {len(units)})
+        start = 0
+        for end in ends:
+            required_start = self._required_start(units[:end])
+            if required_start is None or size(start, end) <= max_context_bytes:
+                continue
+            while start < required_start and size(start, end) > max_context_bytes // 2:
+                start += 1
+        return start
+
+    def build(
+        self,
+        runtime: LocalRuntime,
+        task: TaskEnvelope,
+        transcript: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        max_context_bytes: int,
+        diagnostics: Optional[List[str]] = None,
+        resource_status: Optional[Dict[str, Any]] = None,
+    ) -> ContextBuildResult:
+        if max_context_bytes <= 0:
+            raise ValueError("Context budget must be positive")
+        notes = list(diagnostics or [])
+        messages, selected = PressureRecentContextPolicy._opening(self, task)
+        status_text = render_resource_status(resource_status or {}, labeled_limits=True)
+        status_message = (
+            [{"role": "system", "content": status_text, "_context_id": "resource-status"}] if status_text else []
+        )
+        # A request's size does not depend on message order, so fits use the opening plus the status.
+        sized = [*messages, *status_message]
+        marker = {"role": "system", "content": self.OMISSION_MARKER, "_context_id": "history-omission"}
+        omitted: List[Dict[str, Any]] = []
+        pin_overflow: List[Dict[str, Any]] = []
+        units = self._paired_units(transcript)
+        required_start = self._required_start(units)
+        required = (
+            self._required_tail(sized, units, required_start, tools, max_context_bytes)
+            if required_start is not None
+            else []
+        )
+        required_messages = [message for _, rendered, _ in required for message in rendered]
+
+        page_start = min(self._page_start(units, sized, marker, tools, max_context_bytes), required_start or 0)
+        omitted.extend(
+            {"kind": "transcript_unit", "unit_index": index, "reason": "context_pressure_page"}
+            for index in range(page_start)
+        )
+        chosen: List[tuple[int, List[Dict[str, Any]], List[Dict[str, Any]]]] = []
+        chosen_messages: List[Dict[str, Any]] = []
+        for unit_index in reversed(range(page_start, required_start or 0)):
+            rendered, unit_selected = self._render_unit(units[unit_index], unit_index)
+            if self._request_size(
+                [*sized, *rendered, *chosen_messages, *required_messages], tools
+            ) > max_context_bytes:
+                omitted.extend(
+                    {"kind": "transcript_unit", "unit_index": index, "reason": "context_pressure"}
+                    for index in range(page_start, unit_index + 1)
+                )
+                break
+            chosen.insert(0, (unit_index, rendered, unit_selected))
+            chosen_messages = [*rendered, *chosen_messages]
+
+        omission_message: List[Dict[str, Any]] = []
+        if omitted:
+            def with_marker() -> List[Dict[str, Any]]:
+                return [
+                    *sized,
+                    marker,
+                    *[message for _, rendered, _ in chosen for message in rendered],
+                    *required_messages,
+                ]
+
+            while chosen and self._request_size(with_marker(), tools) > max_context_bytes:
+                removed_index, _, _ = chosen.pop(0)
+                omitted.append({
+                    "kind": "transcript_unit",
+                    "unit_index": removed_index,
+                    "reason": "context_pressure_for_omission_marker",
+                })
+            if self._request_size(with_marker(), tools) <= max_context_bytes:
+                omission_message = [marker]
+                selected.append({"kind": "history_omission", "rendering": "full"})
+
+        transcript_messages = [
+            *[message for _, rendered, _ in chosen for message in rendered],
+            *required_messages,
+        ]
+        transcript_selected = [item for _, _, items in [*chosen, *required] for item in items]
+
+        pin_messages: List[Dict[str, Any]] = []
+        pin_selected: List[Dict[str, Any]] = []
+        for ref, pin in sorted(
+            runtime.scratch.pins().items(),
+            key=lambda item: (-int(item[1]["priority"]), item[0]),
+        ):
+            read = runtime.scratch.read(pin["artifact_id"])
+            message = {
+                "role": "system",
+                "content": (
+                    f"Pinned scratch {ref} ({read.artifact.artifact_id}):\n"
+                    f"{read.content.decode('utf-8', errors='replace')}"
+                ),
+                "_context_id": f"pin:{ref}",
+            }
+            candidate = [*sized, *pin_messages, message, *omission_message, *transcript_messages]
+            if self._request_size(candidate, tools) <= max_context_bytes:
+                pin_messages.append(message)
+                pin_selected.append({
+                    "kind": "pin",
+                    "ref": ref,
+                    "artifact_id": read.artifact.artifact_id,
+                    "reference_version": pin["reference_version"],
+                    "range": [0, len(read.content)],
+                    "rendering": "full",
+                })
+            else:
+                pin_overflow.append({
+                    "ref": ref,
+                    "artifact_id": read.artifact.artifact_id,
+                    "requested_bytes": len(read.content),
+                    "delivered_bytes": 0,
+                    "reason": "pin_exceeds_remaining_context_budget",
+                })
+
+        final_messages = [*messages, *pin_messages, *omission_message, *transcript_messages, *status_message]
+        selected.extend(pin_selected)
+        selected.extend(transcript_selected)
+        if status_message:
+            selected.append({"kind": "resource_status", "rendering": "full"})
+        if omitted:
+            notes.append(
+                f"{len(omitted)} earlier transcript unit(s) omitted under context pressure; "
+                "tool results remain available by their output handles."
+            )
+        return self._record(
+            runtime,
+            task,
+            final_messages,
+            tools,
+            max_context_bytes,
+            selected,
+            pin_overflow,
+            notes,
+            omitted_items=sorted(
+                {item["unit_index"]: item for item in omitted}.values(),
+                key=lambda item: item["unit_index"],
+            ),
+        )
+
+
 class ContextBuilder:
     """Run a selected policy with a visible bounded-baseline fallback."""
 

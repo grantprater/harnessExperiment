@@ -22,9 +22,14 @@ layout), no entry expires (the calls are seconds apart), and tokens are bytes / 
                       session is present, against the context manifests and the journal's call chain.
   pressure-recent-v2  rebuilt from the session journal with the package's policy class
   pressure-recent-v3  as above, with v3's status wording
+  pressure-recent-v4  as above: v3's wording with the status as the last message, and omission in pages
   append-only         rebuilt from the journal: the opening, then every transcript unit rendered in full
                       and never reduced, omitted or reordered, then the resource status as the LAST message
---status-last moves a rebuilt pressure-recent request's status to the end, keeping its omissions and budget fit.
+--status-last moves a rebuilt v2 or v3 request's status to the end, keeping its omissions and budget fit.
+
+Besides the per-turn table, the report counts prefix breaks (turns whose cacheable prefix ends before the
+previous request's final message, so more than a trailing status is rewritten) and, for rebuilt policies,
+the turns on which the set of omitted transcript units changed.
 
 A rebuild copies sessions/<run_id>/session to a temporary directory, because building a context writes
 request artifacts. Each turn's resource status is taken from the recorded request of the same call
@@ -55,6 +60,7 @@ from reticle.context import (  # noqa: E402
     PressureRecentContextPolicy,
     PressureRecentContextPolicyV2,
     PressureRecentContextPolicyV3,
+    PressureRecentContextPolicyV4,
     TranscriptStore,
     render_resource_status,
 )
@@ -65,7 +71,7 @@ from reticle.runtime.contracts import TaskEnvelope  # noqa: E402
 BYTES_PER_TOKEN = 4
 READ_PRICE = 0.10   # cache read, relative to uncached input
 WRITE_PRICE = 1.25  # 5-minute cache write, relative to uncached input
-POLICIES = ("recorded", "pressure-recent-v2", "pressure-recent-v3", "append-only")
+POLICIES = ("recorded", "pressure-recent-v2", "pressure-recent-v3", "pressure-recent-v4", "append-only")
 
 
 class AppendOnlyReplayPolicy(PressureRecentContextPolicy):
@@ -367,7 +373,8 @@ def rebuilt_requests(run_dir: Path, run_id: str, calls: List[Dict[str, Any]], po
             policy = AppendOnlyReplayPolicy(labeled_limits=labeled)
         else:
             policy = {"pressure-recent-v2": PressureRecentContextPolicyV2,
-                      "pressure-recent-v3": PressureRecentContextPolicyV3}[policy_name]()
+                      "pressure-recent-v3": PressureRecentContextPolicyV3,
+                      "pressure-recent-v4": PressureRecentContextPolicyV4}[policy_name]()
         store = TranscriptStore(runtime)
         requests: List[Dict[str, Any]] = []
         hash_ok = bytes_ok = same_messages = 0
@@ -379,7 +386,7 @@ def rebuilt_requests(run_dir: Path, run_id: str, calls: List[Dict[str, Any]], po
             status = None
             if text is not None:
                 status = parse_resource_status(text)[0]
-                if policy_name == "pressure-recent-v3":
+                if policy_name in ("pressure-recent-v3", "pressure-recent-v4"):
                     earlier = [c for c in calls if c["call_index"] < call["call_index"]]
                     status["cost_unknown_billing_attempts"] = sum(
                         1 for c in earlier if ((c.get("response") or {}).get("usage") or {}).get("cost") is None)
@@ -392,7 +399,7 @@ def rebuilt_requests(run_dir: Path, run_id: str, calls: List[Dict[str, Any]], po
             same_messages += _encoded(built.messages) == _encoded(recorded["messages"])
             messages = move_status_last(built.messages) if status_last else built.messages
             requests.append({"messages": messages, "tools": built.tools, "over_budget": built.over_budget,
-                             "omitted_units": len(built.manifest.omitted_items)})
+                             "omitted_units": [item["unit_index"] for item in built.manifest.omitted_items]})
     expected = policy_name == "pressure-recent-v2" and budget == recorded_budget  # rebuilt before any move
     notes = [
         f"rebuilt {len(requests)} requests with {policy.policy_version} at budget {budget} "
@@ -403,7 +410,7 @@ def rebuilt_requests(run_dir: Path, run_id: str, calls: List[Dict[str, Any]], po
         + ("" if expected else " (differences are expected: this is not the run's policy and budget)")
         + (" (checked before the status move)" if status_last else ""),
     ]
-    omitted = [r["omitted_units"] for r in requests]
+    omitted = [len(r["omitted_units"]) for r in requests]
     if any(omitted):
         notes.append(f"transcript units omitted per turn: {omitted}")
     return requests, notes
@@ -429,6 +436,19 @@ def table(turns: List[Turn], show_provider: bool) -> str:
     return "\n".join(lines)
 
 
+def prefix_breaks(turns: List[Turn]) -> List[int]:
+    """Turns whose cacheable prefix ends before the previous request's final message."""
+    return [turn.turn for previous, turn in zip(turns, turns[1:]) if turn.leading_messages < previous.messages - 1]
+
+
+def omission_changes(requests: List[Dict[str, Any]]) -> Optional[List[int]]:
+    """Turns on which the set of omitted transcript units changed (a rebuilt policy's pages); None if unknown."""
+    if any("omitted_units" not in request for request in requests):
+        return None
+    return [number for number, (previous, request) in enumerate(zip(requests, requests[1:]), 2)
+            if previous["omitted_units"] != request["omitted_units"]]
+
+
 def totals(turns: List[Turn]) -> Dict[str, float]:
     request = sum(t.request_bytes for t in turns)
     cacheable = sum(t.cacheable_bytes for t in turns)
@@ -452,8 +472,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     recorded_budget = int(config["max_context_bytes"])
     if args.policy == "recorded" and args.budget is not None:
         parser.error("--budget applies to rebuilt policies; recorded requests were built at the run's budget")
-    if args.status_last and not args.policy.startswith("pressure-recent"):
-        parser.error("--status-last applies to the rebuilt pressure-recent policies")
+    if args.status_last and args.policy not in ("pressure-recent-v2", "pressure-recent-v3"):
+        parser.error("--status-last applies to the rebuilt pressure-recent-v2 and v3 policies "
+                     "(pressure-recent-v4 already puts the status last)")
     run_id, calls, notes = recorded_calls(args.run_dir, args.run_id)
     if args.policy == "recorded":
         notes += check_recorded_against_session(args.run_dir, run_id, calls)
@@ -480,9 +501,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     for turn in turns[1:]:
         print(f"- turn {turn.turn}: {turn.break_at}; {turn.break_detail}")
     print()
+    breaks, changes = prefix_breaks(turns), omission_changes(requests)
     print(f"TOTAL {summary['turns']} turns: {summary['request_bytes']:,} bytes; cost no cache {summary['cost_no_cache']:,.0f}; "
           f"cost cached {summary['cost_cached']:,.0f} ({summary['cached_over_uncached']:.3f} x no cache); "
           f"cacheable fraction {100 * summary['cached_fraction']:.1f}%")
+    print(f"PREFIX BREAKS {len(breaks)} of {max(0, len(turns) - 1)} turns {breaks}; "
+          + ("omission unknown (recorded requests)" if changes is None else
+             f"omitted units changed on {len(changes)} turns {changes}; "
+             f"requests over budget {sum(bool(r.get('over_budget')) for r in requests)}"))
     return 0
 
 

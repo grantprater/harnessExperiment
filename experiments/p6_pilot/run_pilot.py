@@ -55,7 +55,7 @@ sys.path.insert(0, str(ROOT))
 
 from reticle.context import (  # noqa: E402
     BaselineContextPolicy, PressureRecentContextPolicy, PressureRecentContextPolicyV2, PressureRecentContextPolicyV3,
-    TranscriptStore,
+    PressureRecentContextPolicyV4, TranscriptStore,
 )
 from reticle.tools.primitives import TOOLSET_VERSION  # noqa: E402
 from reticle.execution import IsolatedOCIBackend  # noqa: E402
@@ -92,6 +92,9 @@ ARMS = {
     "pressure-recent-v1": PressureRecentContextPolicy,
     "pressure-recent-v2": PressureRecentContextPolicyV2,
     "pressure-recent-v3": PressureRecentContextPolicyV3,
+    # E1 cache layout 008: status last, page-wise omission. No runner version change: no existing arm
+    # changes, and the arm name is already part of the protocol hash.
+    "pressure-recent-v4": PressureRecentContextPolicyV4,
     "reticle-board-v2": ReticleBoardPolicy,
 }
 OBSERVATION_TOOLS = {
