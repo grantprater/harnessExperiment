@@ -5,7 +5,7 @@ Status: S1/S2 mechanics delivered; one E2 live fixture accepted. E3 (one session
 accounting and no-API controls passed. Run 1 stopped on provider HTTP 429; an endpoint probe returned
 48/48 valid; run 2 (gemma @ Cloudflare) ended in a repeat stop, and run 3 (Qwen3-Coder-Next @ Parasail)
 reached its 20-response budget; neither edited the library. After an interface revision, run 4 (Qwen, pressure-recent-v2,
-toolset v2) again reached its budget without a library edit (section 7). Semantic retrieval and learned-procedure transfer remain unrun.
+toolset v2) again reached its budget without a library edit (section 7). Semantic retrieval and learned-procedure transfer remain unrun. 2026-09-27: positive control passed (Sonnet via CLI accepted through the Reticle interface and through Claude Code, card 006); S6 added; cards 007-009 proposed.
 Supersedes: [the September 14 plan](archive/docs/IMPLEMENTATION_PLAN_2026-09-14.md), including its
 P0-P9 sequence and continuation instructions. That document preserves the implementation
 ledger, commit identifiers, wheel checks, and historical experiment decisions.
@@ -428,6 +428,106 @@ with predeclared task order and update rules; do not pool it with frozen-library
 Exit: measured transfer benefit, regression, or uncertainty. Broad capability or learning
 claims require held-out gains, not counts of memories saved or procedures generated.
 
+### S6 - Bounded harness self-improvement loop (Self-Harness and ModularRSI, adapted)
+
+Added 2026-09-27 after the positive control ([card 006](experiments/session_harness/E3-positive-control-006.md),
+[report](experiments/session_harness/E3-positive-control-006-report.md)): Claude Sonnet 5 repaired `sqlparse-865`
+through the Reticle interface (9 of 20 responses, 0 rejected calls) and through Claude Code's own loop (11 turns),
+both accepted by the same evaluator. The interface does not stop a capable model; E3 runs 1-4 failed on the models.
+The task is too easy for a capable model to separate harnesses, so S6 starts by building a task distribution
+where the incumbent harness succeeds sometimes and fails sometimes. Nothing in this stage runs a paid provider;
+the capable model is Claude via the local CLI (`--client claude-cli`, adapter v2), and cheap arms use free
+OpenRouter models under the owner's daily request cap.
+
+Sources adapted: [Self-Harness](https://arxiv.org/abs/2606.09498) (weakness mining by failure signature,
+K minimal proposals, held-in/held-out acceptance) and [ModularRSI](https://arxiv.org/abs/2609.14857) (five
+module scopes evolved one at a time, benchmark-disjoint evolution tasks, contrastive rollouts, validation
+gates with rollback, integration stage). Not adopted from either: LLM-written harness code as the editable
+surface (Reticle edits declared configuration first), and unbounded rounds.
+
+**Governing test for this stage:** a candidate edit is promoted only when a supervisor outside the candidate
+records paired evidence on sealed tasks, and the incumbent is preserved for rollback. The plan's governing test
+(section 7) still applies.
+
+#### What is editable and what is frozen
+
+| Module (ModularRSI scope) | Reticle surface that may change | Frozen (trusted base) |
+|---|---|---|
+| Agent loop | Opening instructions; continuation and stagnation rules exposed as policy parameters | Controller lifecycle, journal, budgets, attempt accounting |
+| Tool use | Tool descriptions, argument hints, rejection messages (toolset version bump) | Tool implementations, path confinement, no-shell contract |
+| Observation management | `render_output_view` parameters (view size, tail-heavy rule), paging note text | Artifact store, exact output retrieval |
+| Context management | Context policy version and parameters (budget, status position, page-wise omission) | Manifest recording, request validation, `context_budget_exhausted` stop |
+| Task completion detection | `finish` instructions and pre-finish verification rule | Evaluator, acceptance logic, hidden inputs, promotion |
+
+A **harness bundle** is the set of those surfaces at fixed versions; its hash enters the protocol hash. A
+candidate is a descendant bundle in its own worktree. Promotion rewrites a pointer, never the incumbent.
+
+#### The loop, one round
+
+1. **Evidence.** Run the incumbent bundle on the evolution set with K=2 rollouts per task. Classify tasks as
+   positive (2/2), contrastive (1/2), negative (0/2) as ModularRSI does. Contrastive tasks are the richest
+   evidence: the same task, one accepted and one rejected trajectory.
+2. **Weakness mining.** Compute a failure signature per rejected trajectory from the journal: verifier cause
+   (fail-to-pass failed, pass-to-pass regression, no edit, budget, timeout), causal status (rejected calls,
+   repeat stop, edit outside gold files, no verification before finish), and mechanism (phase labels from
+   S6b). Cluster on exact signature; rank clusters by distinct-task support, then actionability. Each cluster
+   becomes an evidence bundle: size, representative tasks, symptoms, contrastive pair if any, prior attempts.
+3. **Proposal.** The proposer (Claude via CLI, separate invocation, no evaluator access) returns K=3 mutually
+   distinct, minimal edits, each naming one cluster, one module, the expected effect and the regression risk.
+   With probability 0.2 the target cluster is drawn at random from all clusters rather than the top-ranked one;
+   with probability 0.1 the parent is a non-incumbent archive bundle. A no-change arm runs every round to
+   measure evaluation noise.
+4. **Validation gates, in order.** (a) Program check: bundle validates, E1 fixtures pass, no-API gold/noop
+   controls pass. (b) Diff review: a second invocation, shown the edit and the evolution-set task list but not
+   the held-out list, answers whether the edit encodes a task-specific solution; a yes rejects. (c) Paired
+   execution: held-in D_in (the tasks that produced the evidence) and held-out D_oh (never shown to the
+   proposer), 2 rollouts each, incumbent and candidate on identical tasks with arm order randomised.
+5. **Acceptance.** Promote only if delta_in >= 0 and delta_oh >= 0 and max(delta_in, delta_oh) > 0 with the
+   no-change arm's spread subtracted. Compatible accepted candidates from one round are merged; rejected ones
+   are logged with their evidence. Every promoted bundle joins the archive with its lineage.
+6. **Integration.** After each module has had one round, one integration round repairs cross-module
+   conflicts only (retire redundancy, merge overlaps, in-place repair); no new capability.
+
+Noise budget, stated up front: with 20 tasks at p ~ 0.5 and 2 rollouts, a per-arm acceptance rate has a
+standard error near 8 points, so a single round can only see effects of roughly 15 points or more. Smaller
+true effects will look like noise and be rejected. Mitigations, in order: pair on identical tasks, grow the
+evolution set (the generator is parameterised for other repositories), and pool evidence across rounds before
+claiming a general gain (section 5.6). A rejected small effect is a negative result, not a verdict.
+
+#### Slices and gates
+
+| Slice | Deliverable | Gate to pass | Depends on |
+|---|---|---|---|
+| S6a Task supply wiring and calibration | `materialize_workspace` applies `mutation_patch` and removes `hidden_paths`; `--tasks` selects the mutation file; [card 007](experiments/session_harness/E3-calibration-007.md) runs 20 distinct-failing-set tasks with Sonnet via CLI | Acceptance per task recorded; evolution set = tasks in the 30-70% zone (or a stratified sample if none); tasks at 2/2 leave the set | positive control (done) |
+| S6b Trajectory labels and weakness mining | Phase-label schema (explore, reproduce, diagnose, edit, verify, stuck, repeat); 20-30 trajectories labelled by hand or by Claude with spot checks; `weakness_mining.py` producing signatures and clusters from the journal; classifier agreement measured per criterion if a cheap classifier (for example Jev) is adopted | Signatures reproduce from the journal alone; labelled set kept as the classifier's held-out set | S6a trajectories |
+| S6c Harness bundle and one manual round | Bundle declaration with version hash in the protocol; [card 009](experiments/session_harness/E4-diagnostic-commitment-009.md): the first proposal is written by hand from run-4 and card-007 evidence | One paired round completes end to end with the acceptance rule applied; result may be reject | S6a, S6b signatures |
+| S6d Executable run cards | A card is machine-readable (arms, tasks, budgets, rollouts, stop rules) and a runner executes it unattended, locally or on the cloud VM with the CLI, writing the report skeleton | The same card replays to identical protocol hashes; one card runs unattended end to end | S6a |
+| S6e Automated rounds | Proposer, diff review, paired evaluation, supervisor promotion, archive; 2-3 rounds on one module (agent loop first), then integration | Each round produces a logged decision; at least one promoted or a documented null; no gate skipped | S6c shows a manual round works; S6d |
+
+Parallel and independent of the loop: [card 008](experiments/session_harness/E1-cache-layout-008.md)
+(cache-stable request layout, `pressure-recent-v4`: status last, page-wise omission) and the forecasting
+workload ([FutureEval bot](https://www.metaculus.com/futureeval/); separate repository), which supplies sealed
+weekly tasks with an external evaluator but is not part of S6's task set.
+
+#### Parallel tracks and ownership
+
+| Track | Worktree | Runs model calls | First output |
+|---|---|---|---|
+| S6a wiring + card 007 | `wt/s6a-calibration` | Yes: 20 tasks x 20 responses, Sonnet via CLI, serialised | acceptance table, evolution set |
+| S6b labels + mining | `wt/s6b-mining` | Labelling only (Claude via CLI or classifier) | label schema, `weakness_mining.py`, cluster table for runs 1-4 and 006 |
+| Card 008 cache layout | `wt/cache-layout-v4` | E1 fixtures (none); 3-pair check (Sonnet via CLI) | v4 policy, replay numbers, pair results |
+| S6d card runner | `wt/s6d-cards` | None until a card is executed | card schema, runner, replay-hash check |
+| Forecasting bot | `~/metac-bot` | Free OpenRouter models | testing-area runs; live only on owner go-ahead |
+
+One live model run at a time on this machine; agents queue on a lock file under `.runtime/locks/`. Editing
+worktrees run in parallel. S6c and S6e wait for S6a's acceptance table.
+
+#### Out of scope for S6
+
+LLM-written harness code as the editable surface; a general consolidation daemon; symbolic reasoning; paid
+provider runs; claims of general improvement from a single round; running the loop on tasks outside the
+calibrated zone.
+
 ### Deferred track - Installed vertical slice
 
 Depends on S1/S2 for production readiness. Development behavioral work need not wait for CLI polish.
@@ -696,18 +796,12 @@ records and decisions exist.
 | S4 | Not started | Semantic index and paraphrase fixture; paired retrieval screen, then cross-task utility |
 | D1 | Designed; not implemented | After E3 review: offline simulator controls, then no-memory discovery calibration; [design](experiments/session_harness/D1-discovery-simulator.md) |
 | S5 | Not started | Versioned learned procedures; frozen-library transfer versus retrieval-only |
+| S6 | Proposed 2026-09-27 | Bounded self-improvement loop (section 4, S6): S6a wiring + [card 007](experiments/session_harness/E3-calibration-007.md) calibration; S6b labels/mining; S6c [card 009](experiments/session_harness/E4-diagnostic-commitment-009.md) manual round; S6d executable cards; S6e automated rounds. Independent: [card 008](experiments/session_harness/E1-cache-layout-008.md) cache-stable layout. No model runs yet |
 | Installed workflow | Deferred | Wheel/CLI delivery checks; not an experiment prerequisite |
 | Retention comparison | Deferred | Matched legacy versus pressure-policy study if still useful |
 | Policy search / symbolic reasoning | Deferred | Separate hypotheses after memory/procedure pilots |
 
-**Current execution:** one session owns E3. Runs 1-4 on `sqlparse-865` made no library edit: run 1
-(gemma @ DeepInfra) stopped on HTTP 429; run 2 (gemma @ Cloudflare) ended in a repeat stop; runs 3-4
-(Qwen3-Coder-Next @ Parasail) reached the 20-response budget, run 4 on toolset v2 with `pressure-recent-v2`.
-Reports are under `experiments/session_harness/E3-*.md`. Toolset v3, implementing the coding-tool interface
-contract above, has passed offline and no-API gates. `E3-repair-control-005` (U2 fixture gate, then run 5)
-awaits approval. Do not launch a duplicate calibration.
-Freeze the usable configuration before comparing memory treatments. S4 offline index and
-fixture work can overlap this calibration; no new CLI or general consolidation engine is needed.
+**Current execution (2026-09-27):** the positive control is done (card 006: both arms accepted; the interface does not stop a capable model; `sqlparse-865` is too easy to separate harnesses). Next live action is card 007 (S6a) once the mutation-task wiring lands; cards 008 and 009 follow their stated gates. Four tracks run in parallel worktrees (S6 "Parallel tracks"); live model runs are serialised under `.runtime/locks/live-run.lock`. Card 005 (Qwen run 5) is superseded by the positive control and is not scheduled.
 
 **Implementation choices before any E3 model run in OCI** (from
 `experiments/session_harness/S2b-oci-boundaries-controls.md`):

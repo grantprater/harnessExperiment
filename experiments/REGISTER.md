@@ -24,20 +24,22 @@ contract, is next under [E3-repair-control-005](session_harness/E3-repair-contro
 | Learned procedures | Useful techniques repeatedly rediscovered | Retrieval alone versus retrieval plus a frozen learned-procedure library on unseen variations | Planned (S5) |
 | Memory applicability checks | Stale or irrelevant experience misapplied | Same memories with versus without explicit preconditions/source-version checks | Idea |
 | Stagnation response | Same failed action repeated without new evidence | Ordinary continuation versus a triggered different diagnostic probe | Idea |
-| Diagnostic commitment | Editing begins before the failure is understood | Ordinary first edit versus prior cause prediction and discriminating test | Idea |
+| Diagnostic commitment | Editing begins before the failure is understood | Ordinary first edit versus prior cause prediction and discriminating test | Next (S6c): [card 009](session_harness/E4-diagnostic-commitment-009.md), blocked on card 007 |
 | Verification allocation | Repairs finish without adequate checking | Current allocation versus a verification reserve within the same total budget | Idea |
 | Constraint tracking | User constraints lost under context pressure | Fixed context policy with versus without a source-linked constraint record | Idea |
 | Adaptive observation detail | Inspection spends context on irrelevant material | Fixed output detail versus agent-selected detail under matched budgets | Idea |
 | Independent critique | Agent misses defects in its proposed repair | An extra ordinary continuation versus critique using the same extra compute allowance | Idea |
 | Observation retention | Useful recent observations reduced prematurely | Legacy views versus pressure-based retention on the same repaired runtime | Deferred; [mechanical evidence](session_harness/E1-pressure-recent-v1.md), no utility claim |
 | Symbolic reasoning tool | Explicit constraints reasoned about incorrectly | Same tasks with versus without a solver/proof-checking tool | Deferred; separate from memory treatments |
-| Cache-stable request layout | Per-turn resource status at the head of the request breaks the provider prefix cache every turn, so cached pricing costs more than no caching | Recorded pressure-recent-v2 requests versus the same transcript with the status moved last (byte replay of run 4) | Mechanism check done (replay, no model calls); [report](session_harness/cache-cost-replay-run4.md) |
+| Cache-stable request layout | Per-turn resource status at the head of the request breaks the provider prefix cache every turn, so cached pricing costs more than no caching | Recorded pressure-recent-v2 requests versus the same transcript with the status moved last (byte replay of run 4) | Proposed: [card 008](session_harness/E1-cache-layout-008.md) (v4 policy, E1 + replay + 3-pair check); mechanism check done, [report](session_harness/cache-cost-replay-run4.md) |
+| Harness self-improvement loop (S6) | No mechanism turns recorded failures into tested harness edits | One manual round (card 009) before any automated round; per-module, held-in/held-out, supervisor promotion | Proposed 2026-09-27; see IMPLEMENTATION_PLAN.md S6 |
+| Trajectory labelling and weakness mining (S6b) | Trajectory review is manual and does not scale to the mutation bank | Rule-based failure signatures from the journal versus signatures plus phase labels (Claude or a cheap classifier), agreement against 20-30 hand-labelled trajectories | Proposed; starts on card-007 trajectories |
 
 Task supply: where the tasks that measure the candidates above come from.
 
 | Candidate | Need addressed | Mechanism | Status / evidence |
 |---|---|---|---|
-| Mutation-generated repair tasks | Hundreds of sealed repair tasks with hidden tests; public repairs may be contaminated | One semantic mutation of a healthy upstream checkout per task, kept when the suite fails partly; statement from failing-test names and the first failure message | prototype (76 validated tasks from 100 candidates, unrun with any model; runner wiring pending); [report](mutation_tasks/REPORT.md) |
+| Mutation-generated repair tasks | Hundreds of sealed repair tasks with hidden tests; public repairs may be contaminated | One semantic mutation of a healthy upstream checkout per task, kept when the suite fails partly; statement from failing-test names and the first failure message | Prototype (76 tasks); calibration proposed as [card 007](session_harness/E3-calibration-007.md) (S6a, runner wiring pending); [report](mutation_tasks/REPORT.md) |
 
 Next workload after E3: [D1 scientific-discovery simulator](session_harness/D1-discovery-simulator.md).
 Design complete; implementation and live runs unrun. Calibrate limited-probe prediction of a
