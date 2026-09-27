@@ -4,7 +4,7 @@
   "selector": "experiments/session_harness/select_calibration_tasks.py",
   "bank": {
     "path": "experiments/mutation_tasks/tasks.mutations.json",
-    "sha256": "13ff38776ec29f0f0fd57000a2ba83dcc22817d844678c853c8aece11703e0af"
+    "sha256_lf": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa"
   },
   "seed": 7,
   "count": 20,

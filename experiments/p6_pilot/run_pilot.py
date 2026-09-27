@@ -164,11 +164,13 @@ def load_tasks(selection=None):
 
 
 def task_file_record(path: Path) -> dict:
+    """The task file's path and the sha256 of its content with LF line endings (as committed; the same on
+    every checkout, whatever core.autocrlf wrote to the working copy)."""
     try:
         shown = path.relative_to(ROOT).as_posix()
     except ValueError:
         shown = str(path)
-    return {"path": shown, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+    return {"path": shown, "sha256_lf": hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()}
 
 
 def task_contract(task: dict):

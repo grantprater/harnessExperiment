@@ -6,7 +6,7 @@ Rule (E3-calibration-007.md, "Tasks"):
   3. shuffle the remaining tasks with the seed (from task-id order), then walk the shuffled list and take a
      task when its kind is under quota and no taken task has the same fail_to_pass set.
 
-The same seed and bank give the same selection; the output records both, with the bank's sha256.
+The same seed and bank give the same selection; the output records both, with the bank's sha256 (LF content).
 
 Usage (from the repo root):
   python experiments/session_harness/select_calibration_tasks.py --seed 7
@@ -79,7 +79,8 @@ def main() -> None:
         "rule": ("exclude statement_names_mutated_function; 3 per mutation kind plus 1 for seeded kinds; seeded "
                  "shuffle from task-id order; take a task if its kind is under quota and its fail_to_pass set is new"),
         "selector": "experiments/session_harness/select_calibration_tasks.py",
-        "bank": {"path": bank, "sha256": hashlib.sha256(raw).hexdigest()},
+        # LF content (as committed), so the digest does not depend on the checkout's core.autocrlf.
+        "bank": {"path": bank, "sha256_lf": hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()},
         **selection,
     }
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")

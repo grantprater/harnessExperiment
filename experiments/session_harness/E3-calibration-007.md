@@ -57,8 +57,8 @@ handed to S6b for labelling, and the seed. Register row "Mutation-generated repa
 
 Recorded 2026-09-27, before any calibration run. Selector:
 [`select_calibration_tasks.py`](select_calibration_tasks.py) `--seed 7` (the card's number; the only seed
-run). Output: [`E3-calibration-007-tasks.json`](E3-calibration-007-tasks.json). Bank: `tasks.mutations.json`, sha256
-`13ff38776ec29f0f...`.
+run). Output: [`E3-calibration-007-tasks.json`](E3-calibration-007-tasks.json). Bank: `tasks.mutations.json`, sha256 of its
+LF content `fa185723735d56e7...`.
 
 The rule as applied:
 
