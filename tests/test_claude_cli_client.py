@@ -56,8 +56,38 @@ def result_event(structured=None, is_error=False, text="", subtype="success"):
     return event
 
 
+def assistant_event(*blocks, message_id="msg_1"):
+    return {"type": "assistant", "message": {"id": message_id, "role": "assistant", "content": list(blocks)}}
+
+
+def structured_use(structured):
+    return {"type": "tool_use", "id": "toolu_s", "name": "StructuredOutput", "input": structured}
+
+
 def ok(*calls, content=None):
-    return {"events": [init_event(), result_event({"content": content, "tool_calls": list(calls)})]}
+    """The CLI's structured-output path: the first message is one StructuredOutput call."""
+    structured = {"content": content, "tool_calls": list(calls)}
+    return {"events": [init_event(), assistant_event({"type": "thinking", "thinking": ""}),
+                       assistant_event(structured_use(structured)),
+                       {"type": "user", "message": {"content": [
+                           {"type": "tool_result", "tool_use_id": "toolu_s", "content": "Structured output provided"}]}},
+                       result_event(structured)]}
+
+
+def direct(*uses, text=None):
+    """The model calls harness tools directly; the CLI rejects them and stops at --max-turns 1."""
+    blocks = ([{"type": "text", "text": text}] if text else []) + [
+        {"type": "tool_use", "id": f"toolu_{i}", "name": name, "input": arguments}
+        for i, (name, arguments) in enumerate(uses, 1)]
+    events = [init_event(), assistant_event({"type": "thinking", "thinking": ""})]
+    for block in blocks:
+        events.append(assistant_event(block))
+        if block["type"] == "tool_use":
+            events.append({"type": "user", "message": {"content": [{
+                "type": "tool_result", "tool_use_id": block["id"], "is_error": True,
+                "content": f"<tool_use_error>Error: No such tool available: {block['name']}</tool_use_error>"}]}})
+    events.append(result_event(is_error=True, subtype="error_max_turns"))
+    return {"events": events, "exit": 1}
 
 
 def tool(name, **arguments):
@@ -134,13 +164,14 @@ class ClaudeCliClientTests(ClaudeCliTestCase):
         self.assertEqual(argv[argv.index("--tools") + 1], "")
         self.assertEqual(argv[argv.index("--setting-sources") + 1], "")
         self.assertEqual(argv[argv.index("--model") + 1], "sonnet")
+        self.assertEqual(argv[argv.index("--max-turns") + 1], "1")
         self.assertEqual(argv[argv.index("--output-format") + 1], "stream-json")
         for flag in ("-p", "--safe-mode", "--strict-mcp-config", "--no-session-persistence", "--disable-slash-commands"):
             self.assertIn(flag, argv)
         self.assertNotIn("--bare", argv)  # --bare refuses the subscription login
         self.assertEqual(json.loads(argv[argv.index("--json-schema") + 1]), claude_cli.REPLY_SCHEMA)
         system = Path(argv[argv.index("--system-prompt-file") + 1]).read_text(encoding="utf-8")
-        self.assertIn('"name": "read_file"', system)
+        self.assertIn("### read_file\nRead a text file", system)
         self.assertEqual(Path(first["cwd"]).resolve(), (self.root / "cli-cwd").resolve())
         self.assertEqual(first["present"], [], "session links and API credentials must not reach the child")
         # Stateless: the second request carries the first exchange, rendered with its results.
@@ -190,8 +221,9 @@ class ClaudeCliClientTests(ClaudeCliTestCase):
             with self.subTest(init=init):
                 for path in self.state.glob("call-*.json"):
                     path.unlink()
-                self.replies({"events": [init, result_event({"content": None, "tool_calls": [
-                    tool("finish", summary="done")]})]})
+                reply = ok(tool("finish", summary="done"))
+                reply["events"][0] = init
+                self.replies(reply)
                 client = claude_cli.ClaudeCliClient("sonnet", self.calls_path, "run-x", run_pilot.CallBudget(100, 0),
                                                     backoff_seconds=0, workdir=self.root / "cli-cwd")
                 with self.assertRaises(run_pilot.ModelClientError):
@@ -200,11 +232,53 @@ class ClaudeCliClientTests(ClaudeCliTestCase):
                 self.assertEqual(run_pilot.read_jsonl(self.calls_path)[-1]["failure"], "tool_isolation_violation")
 
     def test_malformed_structured_output_is_retried_then_stops(self):
-        self.replies({"events": [init_event(), result_event({"content": None, "tool_calls": [{"name": "run"}]})]})
+        malformed = ok()
+        malformed["events"][2]["message"]["content"][0]["input"] = {"content": None, "tool_calls": [{"name": "run"}]}
+        self.replies(malformed)
         result = self.run_agent({"model_responses": 5, "model_attempts": 5})
         self.assertEqual(result.stop_reason, "model_error")
-        self.assertEqual(self.outcomes(), ["invalid_structured_output"] * 3)
+        self.assertEqual(self.outcomes(), ["invalid_reply"] * 3)
         self.assertTrue(run_pilot.is_provider_stop(result.to_dict()))
+
+    def test_direct_calls_in_the_first_message_are_the_reply(self):
+        self.replies(direct(("search_text", {"query": "def get_real_name"}), ("glob_files", {"glob": "*.py"}),
+                            text="Looking for the function."),
+                     ok(tool("finish", summary="done")))
+        result = self.run_agent({"model_responses": 5, "model_attempts": 5})
+        self.assertEqual(result.stop_reason, "finish_requested")
+        self.assertEqual((result.model_calls, result.provider_attempts, result.tool_calls), (2, 2, 3))
+        self.assertEqual(self.outcomes(), ["response", "response"])
+        first, second = run_pilot.read_jsonl(self.calls_path)
+        self.assertEqual((first["reply_channel"], second["reply_channel"]), ("direct_tool_use", "structured_output"))
+        message = first["response"]["choices"][0]["message"]
+        self.assertEqual(message["content"], "Looking for the function.")
+        self.assertEqual([(c["id"], c["function"]["name"]) for c in message["tool_calls"]],
+                         [("cli_1_1", "search_text"), ("cli_1_2", "glob_files")])
+        self.assertEqual(json.loads(message["tool_calls"][0]["function"]["arguments"]), {"query": "def get_real_name"})
+        # The CLI's own rejection stays in the log and never reaches the next request.
+        self.assertTrue(any("No such tool" in (t.get("tool_result") or "") for t in first["cli_turns"]))
+        next_prompt = self.stub_calls()[1]["prompt"]
+        self.assertNotIn("No such tool", next_prompt)
+        self.assertIn("tool result for call cli_1_1 (search_text)", next_prompt)
+
+    def test_structured_output_wins_over_direct_calls_in_the_same_message(self):
+        structured = {"content": None, "tool_calls": [tool("finish", summary="done")]}
+        self.replies({"events": [init_event(), assistant_event(
+            {"type": "tool_use", "id": "toolu_d", "name": "run", "input": {"command": "pytest"}},
+            structured_use(structured)), result_event(structured)]})
+        result = self.run_agent({"model_responses": 5, "model_attempts": 5})
+        self.assertEqual((result.stop_reason, result.tool_calls), ("finish_requested", 1))
+        self.assertEqual(run_pilot.read_jsonl(self.calls_path)[0]["ignored_direct_calls"], ["run"])
+
+    def test_only_the_first_message_counts(self):
+        reply = direct(("read_file", {"path": "a.txt"}))
+        reply["events"].insert(-1, assistant_event(
+            {"type": "tool_use", "id": "toolu_late", "name": "write_file", "input": {"path": "a.txt", "content": "x"}},
+            message_id="msg_2"))
+        self.replies(reply, ok(tool("finish", summary="done")))
+        result = self.run_agent({"model_responses": 5, "model_attempts": 5})
+        self.assertEqual(result.tool_calls, 2)
+        self.assertEqual((self.workspace / "a.txt").read_text(encoding="utf-8"), "alpha\n")
 
     def test_campaign_cap_stops_without_a_phantom_attempt(self):
         self.replies(FAILED)

@@ -2,13 +2,15 @@
 
 Each model request is one headless `claude -p` process that sees only what the Reticle context
 policy selected. The OpenAI-style messages are rendered into one prompt (stdin), the tool schemas
-go in the system prompt, and the reply is forced into {"content", "tool_calls"} with --json-schema.
+go in the system prompt as a catalog, and --json-schema offers the reply format {"content", "tool_calls"}.
+The reply is the model's first message (--max-turns 1): its StructuredOutput call, or, if it calls the
+harness tools directly instead, those calls; the model never sees the CLI's rejection of such calls.
 The CLI's built-in tools, MCP servers, skills, setting sources, CLAUDE.md/memory, and saved sessions
 are all disabled, so the model can act only through the Reticle tools; nothing carries over between
 invocations.
 
 Every invocation is checked against the CLI's own init event before its reply is used: the only
-tool it may expose is StructuredOutput (the channel --json-schema uses to return the reply), no
+tool it may expose is StructuredOutput (the channel --json-schema uses for the reply), no
 MCP server may be connected, and apiKeySource must be "none" (the local subscription login; no API
 key is read or passed, and ANTHROPIC_* variables are removed from the child environment). Billing
 per attempt is therefore unknown; the CLI's total_cost_usd is a list-price estimate and is kept
@@ -47,7 +49,15 @@ except ImportError:  # run as a script from the repository root
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     from reticle.runtime.controller import ModelClientError, ModelResponse
 
-RENDER_VERSION = "claude-cli-render-v1"
+# v1: tools listed as OpenAI function schemas under "Tools"; the model called them as native functions,
+#     the CLI rejected each call, and the reply ran out of CLI turns (E3-positive-control-006, Arm R run 1)
+#     (all 8 replays of that request with the same or a reworded prompt also called the harness tools
+#     directly first; in the 3 that recovered, the model had seen the CLI's "No such tool" rejections)
+# v2: the reply is the model's FIRST message, and the CLI stops after it (--max-turns 1), so the model
+#     never sees the CLI's own rejection of a harness tool name. Its tool calls are taken from a
+#     StructuredOutput call (the --json-schema channel) or, when it calls the harness tools directly,
+#     from those direct calls. Tools are listed as a text catalog (name, description, argument schema).
+ADAPTER_VERSION = "claude-cli-adapter-v2"
 REPLY_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
@@ -81,24 +91,26 @@ SESSION_VARIABLES = ("CLAUDECODE", "CLAUDE_PID", "CLAUDE_EFFORT")
 SESSION_PREFIXES = ("CLAUDE_CODE_", "ANTHROPIC_")
 
 SYSTEM_PROMPT = """\
-You are the model inside the Reticle agent harness. You cannot run commands or read files yourself: \
-you act only by returning tool calls. The harness executes them in order and shows their results in \
-its next request.
+You are the model inside the Reticle agent harness. You cannot run commands or read files yourself; the \
+harness does that for you. Each request ends after your first message: the harness takes the tool calls \
+in that message (preferably one StructuredOutput call whose tool_calls list names harness tools, or direct \
+calls to the harness tools listed at the end), runs them in order, and shows their results in its next \
+request. Nothing is executed while you write the message, so do not wait for results within it.
 
 Every request is self-contained. It holds the conversation as the harness chose to present it; earlier \
 parts may be omitted under context pressure, as the harness messages explain. Messages appear oldest \
 first, each introduced by a header line starting with "#####". "system" messages come from the harness \
 (runtime contract, remaining resources); "user" gives the task; "assistant" entries are your own earlier \
-replies with the tool calls you made; "tool result" entries are the outputs of those calls, matched by \
-call id.
+replies with the tool calls you requested; "tool result" entries are the outputs of those calls, matched \
+by call id.
 
-Reply with the JSON object required by the output schema:
+StructuredOutput fields:
 - "content": a short note for the transcript, or null;
-- "tool_calls": the calls to make now, in order. Each has "id" (any string; the harness assigns its own \
-call ids), "name" (one of the tools below), and "arguments" (an object matching that tool's parameters). \
-Call finish when the task is complete.
+- "tool_calls": the harness tool requests to run now, in order. Each has "id" (any string; the harness \
+assigns its own call ids), "name" (one of the harness tools below), and "arguments" (an object matching \
+that tool's parameters). Request finish when the task is complete.
 
-Tools (OpenAI function-calling schemas):
+Harness tools. Each entry gives the name, the description, and the JSON Schema of its arguments.
 """
 
 
@@ -143,7 +155,13 @@ def _text(content) -> str:
 
 
 def render_system_prompt(tools: List[Dict[str, Any]]) -> str:
-    return SYSTEM_PROMPT + json.dumps(tools, ensure_ascii=False, indent=1)
+    """The adapter protocol, then each harness tool as a catalog entry (not a function definition)."""
+    entries = []
+    for tool in tools:
+        function = tool.get("function") or tool
+        entries.append(f"\n### {function.get('name')}\n{function.get('description', '')}\n"
+                       f"arguments: {json.dumps(function.get('parameters', {}), ensure_ascii=False)}")
+    return SYSTEM_PROMPT + "".join(entries) + "\n"
 
 
 def render_conversation(messages: List[Dict[str, Any]]) -> str:
@@ -172,10 +190,10 @@ def render_conversation(messages: List[Dict[str, Any]]) -> str:
     return "\n\n".join(blocks)
 
 
-def parse_stream(stdout: str) -> Tuple[Optional[dict], Optional[dict], Optional[dict], int]:
-    """(init event, result event, last rate-limit info, unparseable line count) from stream-json output."""
+def parse_stream(stdout: str) -> Tuple[Optional[dict], Optional[dict], Optional[dict], int, List[dict], List[dict]]:
+    """(init, result, last rate-limit info, unparseable lines, CLI-internal turns, first assistant message blocks)."""
     init = result = rate_limit = None
-    bad = 0
+    bad, turns, first_blocks, first_id = 0, [], [], None
     for line in stdout.splitlines():
         if not line.strip():
             continue
@@ -192,7 +210,25 @@ def parse_stream(stdout: str) -> Tuple[Optional[dict], Optional[dict], Optional[
             result = event
         elif event.get("type") == "rate_limit_event":
             rate_limit = event.get("rate_limit_info")
-    return init, result, rate_limit, bad
+        elif event.get("type") in ("assistant", "user"):
+            message = event.get("message") or {}
+            if event.get("type") == "assistant":
+                # One model message can arrive as several events sharing its id (thinking, text, each tool_use).
+                first_id = message.get("id") if first_id is None else first_id
+                if message.get("id") == first_id:
+                    first_blocks.extend(b for b in message.get("content") or [] if isinstance(b, dict))
+            # Compact record of what happened inside the CLI (tool use, rejections), for diagnosis.
+            for block in message.get("content") or []:
+                if not isinstance(block, dict):
+                    continue
+                if block.get("type") == "tool_use":
+                    turns.append({"tool_use": block.get("name"),
+                                  "input": json.dumps(block.get("input"), ensure_ascii=False)[:300]})
+                elif block.get("type") == "tool_result":
+                    turns.append({"tool_result": str(block.get("content"))[:300], "is_error": bool(block.get("is_error"))})
+                elif block.get("type") == "text" and block.get("text"):
+                    turns.append({"text": block["text"][:300]})
+    return init, result, rate_limit, bad, turns, first_blocks
 
 
 def isolation_problem(init: dict) -> Optional[str]:
@@ -227,6 +263,23 @@ def reply_message(structured: Any, call_index: int) -> Tuple[Dict[str, Any], Lis
     return message, model_ids
 
 
+def first_message_reply(blocks: List[dict], call_index: int) -> Tuple[Dict[str, Any], List[Any], str, List[str]]:
+    """(message, model call ids, reply channel, ignored direct calls) from the model's first message.
+
+    A StructuredOutput call is the reply when present; direct calls in the same message are then ignored.
+    Otherwise the message's direct tool calls (and its text as content) are the reply. Raises ValueError.
+    """
+    uses = [b for b in blocks if b.get("type") == "tool_use"]
+    structured = [b for b in uses if b.get("name") in REPLY_CHANNEL_TOOLS]
+    if structured:
+        message, ids = reply_message(structured[0].get("input"), call_index)
+        return message, ids, "structured_output", [str(b.get("name")) for b in uses if b not in structured]
+    text = "\n".join(b.get("text", "") for b in blocks if b.get("type") == "text" and b.get("text"))
+    message, ids = reply_message({"content": text or None, "tool_calls": [
+        {"id": b.get("id"), "name": b.get("name"), "arguments": b.get("input")} for b in uses]}, call_index)
+    return message, ids, "direct_tool_use" if uses else "text", []
+
+
 def cli_contract(model: str, *, max_turns: int, timeout: int, version: str) -> Dict[str, Any]:
     """The invocation contract recorded in the run protocol (the analogue of provider routing)."""
     return {
@@ -234,7 +287,8 @@ def cli_contract(model: str, *, max_turns: int, timeout: int, version: str) -> D
         "arguments": ["-p", "--model", model, "--output-format", "stream-json", "--verbose",
                       "--max-turns", str(max_turns), *ISOLATION_ARGUMENTS, "--json-schema", "<reply schema>",
                       "--system-prompt-file", "<system prompt>"],
-        "reply_schema": REPLY_SCHEMA, "render_version": RENDER_VERSION,
+        "reply_schema": REPLY_SCHEMA, "adapter_version": ADAPTER_VERSION,
+        "reply": "the model's first message: a StructuredOutput call, else its direct tool calls",
         "system_prompt_sha256": hashlib.sha256(SYSTEM_PROMPT.encode("utf-8")).hexdigest(),
         "timeout_seconds": timeout, "billing": "unknown (local Claude Code subscription login)",
         "removed_environment": {"names": list(SESSION_VARIABLES), "prefixes": list(SESSION_PREFIXES)},
@@ -251,7 +305,7 @@ class ClaudeCliClient:
     reports_provider_attempts = True
 
     def __init__(self, model: str, calls_path: Path, run_id: str, budget, *, max_attempts: int = 3,
-                 timeout: int = 300, backoff_seconds: float = 5.0, max_turns: int = 3,
+                 timeout: int = 300, backoff_seconds: float = 5.0, max_turns: int = 1,
                  executable: str = "claude", workdir: Optional[Path] = None):
         self.model, self.calls_path, self.run_id, self.budget = model, Path(calls_path), run_id, budget
         self.max_attempts, self.timeout, self.backoff_seconds = max_attempts, timeout, backoff_seconds
@@ -277,7 +331,7 @@ class ClaudeCliClient:
         system_sha = hashlib.sha256(system_prompt.encode("utf-8")).hexdigest()
         prompt_bytes = prompt.encode("utf-8")
         request_sha256 = hashlib.sha256(json.dumps(
-            {"model": self.model, "system": system_prompt, "prompt": prompt, "render": RENDER_VERSION},
+            {"model": self.model, "system": system_prompt, "prompt": prompt, "adapter": ADAPTER_VERSION},
             ensure_ascii=False).encode("utf-8")).hexdigest()
         workdir = self._workdir()
         system_file = workdir / f"system-{system_sha[:16]}.txt"
@@ -296,12 +350,13 @@ class ClaudeCliClient:
             entry = {"time": utc_now(), "run_id": self.run_id, "model": self.model, "call_index": self.call_index,
                      "attempt": attempt, "provider_attempt_id": attempt_id, "request_sha256": request_sha256,
                      "request": {"messages": messages, "tools": tools, "arguments": arguments,
-                                 "render_version": RENDER_VERSION, "system_prompt_sha256": system_sha,
+                                 "adapter_version": ADAPTER_VERSION, "system_prompt_sha256": system_sha,
                                  "prompt_sha256": hashlib.sha256(prompt_bytes).hexdigest(),
                                  "prompt_bytes": len(prompt_bytes), "removed_environment": removed},
                      "billing": "unknown"}
             started = time.time()
             failure, retry, message, result, init, model_ids = None, False, None, None, None, []
+            channel, ignored = None, []
             try:
                 executable = resolve_executable(self.executable)
                 if executable is None:
@@ -310,8 +365,9 @@ class ClaudeCliClient:
                                            cwd=str(workdir), env=environment, timeout=self.timeout)
                 stdout = completed.stdout.decode("utf-8", errors="replace")
                 stderr = completed.stderr.decode("utf-8", errors="replace")
-                init, result, rate_limit, bad_lines = parse_stream(stdout)
-                entry.update(exit_code=completed.returncode, rate_limit=rate_limit, unparsed_lines=bad_lines)
+                init, result, rate_limit, bad_lines, turns, first_blocks = parse_stream(stdout)
+                entry.update(exit_code=completed.returncode, rate_limit=rate_limit, unparsed_lines=bad_lines,
+                             cli_turns=turns)
                 if stderr.strip():
                     entry["stderr_tail"] = stderr[-2_000:]
                 if init is not None:
@@ -323,24 +379,25 @@ class ClaudeCliClient:
                 problem = isolation_problem(init) if init is not None else None
                 if problem:  # checked first: a reply from a non-isolated CLI is never used
                     last_error, retry, failure = problem, False, "tool_isolation_violation"
-                elif init is None or result is None:
+                elif init is None or (result is None and not first_blocks):
                     last_error = (f"no {'init' if init is None else 'result'} event (exit {completed.returncode}): "
                                   f"{(stderr or stdout)[-300:]}")
                     retry, failure = True, "invalid_stream"
-                elif result.get("is_error"):
-                    detail = str(result.get("result") or result.get("subtype"))
+                elif not first_blocks:  # the model produced no message: an API, auth, or CLI failure
+                    detail = str(result.get("result") or result.get("errors") or result.get("subtype"))
                     last_error = f"CLI error ({result.get('subtype')}, {result.get('terminal_reason')}): {detail[:300]}"
                     auth = "log in" in detail.lower() or "login" in detail.lower()
                     retry, failure = not auth, ("cli_auth_error" if auth else "cli_error")
-                else:
+                else:  # the reply is the first message, whatever the CLI did after it
                     try:
-                        message, model_ids = reply_message(result.get("structured_output"), self.call_index)
+                        message, model_ids, channel, ignored = first_message_reply(first_blocks, self.call_index)
                     except ValueError as exc:
-                        last_error, retry, failure = str(exc), True, "invalid_structured_output"
+                        last_error, retry, failure = str(exc), True, "invalid_reply"
                     else:
-                        entry["response"] = {"id": result.get("session_id"), "model": init.get("model"),
+                        entry.update(reply_channel=channel, ignored_direct_calls=ignored)
+                        entry["response"] = {"id": (result or {}).get("session_id"), "model": init.get("model"),
                                              "provider": "claude-cli", "choices": [{
-                                                 "message": message, "finish_reason": result.get("stop_reason")}]}
+                                                 "message": message, "finish_reason": (result or {}).get("stop_reason")}]}
             except subprocess.TimeoutExpired:
                 last_error, retry, failure = f"CLI timed out after {self.timeout} s", True, "timeout"
                 entry["error"] = last_error
@@ -361,6 +418,7 @@ class ClaudeCliClient:
                 if attempt < self.max_attempts:
                     time.sleep(min(60, self.backoff_seconds * 2 ** (attempt - 1)))
                 continue
+            result = result or {}
             usage = result.get("usage") or {}
             reported_usage = {
                 # No "cost": the attempt's bill is unknown, so the ledger records unknown billing.
@@ -373,6 +431,7 @@ class ClaudeCliClient:
                 "finish_reason": result.get("stop_reason"), "attempts": attempt, "request_sha256": request_sha256,
                 "num_turns": result.get("num_turns"), "cli_version": init.get("claude_code_version"),
                 "billing": "unknown", "cli_list_price_estimate_usd": result.get("total_cost_usd"),
+                "reply_channel": channel, "ignored_direct_calls": ignored, "cli_subtype": result.get("subtype"),
                 "cli_usage": usage, "model_call_ids": model_ids,
             })
         raise ModelClientError(f"failed after {self.max_attempts} attempts: {last_error}")

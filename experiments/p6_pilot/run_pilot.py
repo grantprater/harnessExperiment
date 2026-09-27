@@ -85,7 +85,7 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    is recorded as the model's routing, so it is part of the protocol hash
 RUNNER_VERSION = 8
 CLI_TIMEOUT_SECONDS = 300  # per attempt, as the OpenRouter client's HTTP timeout
-CLI_MAX_TURNS = 3  # CLI-internal turns per attempt: the structured reply takes two
+CLI_MAX_TURNS = 1  # the reply is the model's first message; the CLI stops before a second model turn
 DEFAULT_OCI_IMAGE = "localhost/reticle-p6-task:py313-v1"
 ARMS = {
     "bounded-transcript-v2": BaselineContextPolicy,
