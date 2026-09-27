@@ -31,6 +31,7 @@ contract, is next under [E3-repair-control-005](session_harness/E3-repair-contro
 | Independent critique | Agent misses defects in its proposed repair | An extra ordinary continuation versus critique using the same extra compute allowance | Idea |
 | Observation retention | Useful recent observations reduced prematurely | Legacy views versus pressure-based retention on the same repaired runtime | Deferred; [mechanical evidence](session_harness/E1-pressure-recent-v1.md), no utility claim |
 | Symbolic reasoning tool | Explicit constraints reasoned about incorrectly | Same tasks with versus without a solver/proof-checking tool | Deferred; separate from memory treatments |
+| Cache-stable request layout | Per-turn resource status at the head of the request breaks the provider prefix cache every turn, so cached pricing costs more than no caching | Recorded pressure-recent-v2 requests versus the same transcript with the status moved last (byte replay of run 4) | Mechanism check done (replay, no model calls); [report](session_harness/cache-cost-replay-run4.md) |
 
 Next workload after E3: [D1 scientific-discovery simulator](session_harness/D1-discovery-simulator.md).
 Design complete; implementation and live runs unrun. Calibrate limited-probe prediction of a
