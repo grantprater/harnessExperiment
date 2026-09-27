@@ -33,6 +33,12 @@ contract, is next under [E3-repair-control-005](session_harness/E3-repair-contro
 | Symbolic reasoning tool | Explicit constraints reasoned about incorrectly | Same tasks with versus without a solver/proof-checking tool | Deferred; separate from memory treatments |
 | Cache-stable request layout | Per-turn resource status at the head of the request breaks the provider prefix cache every turn, so cached pricing costs more than no caching | Recorded pressure-recent-v2 requests versus the same transcript with the status moved last (byte replay of run 4) | Mechanism check done (replay, no model calls); [report](session_harness/cache-cost-replay-run4.md) |
 
+Task supply: where the tasks that measure the candidates above come from.
+
+| Candidate | Need addressed | Mechanism | Status / evidence |
+|---|---|---|---|
+| Mutation-generated repair tasks | Hundreds of sealed repair tasks with hidden tests; public repairs may be contaminated | One semantic mutation of a healthy upstream checkout per task, kept when the suite fails partly; statement from failing-test names and the first failure message | prototype (76 validated tasks from 100 candidates, unrun with any model; runner wiring pending); [report](mutation_tasks/REPORT.md) |
+
 Next workload after E3: [D1 scientific-discovery simulator](session_harness/D1-discovery-simulator.md).
 Design complete; implementation and live runs unrun. Calibrate limited-probe prediction of a
 hidden Boolean system without memory first, then consider S4/S5 transfer treatments. This is
