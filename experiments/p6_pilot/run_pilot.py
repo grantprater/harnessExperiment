@@ -116,6 +116,11 @@ GUARD_STOPS = ("diagnostic_termination", "attempt_cap_reached")
 RETRYABLE_HTTP = {408, 429, 500, 502, 503, 504}
 MAX_ATTEMPTS = 3  # the first attempt plus at most two retries (plan section 5.3)
 MANAGED_ROOT_FILES = ("conftest.py", "pytest.ini", "setup.cfg", "tox.ini", "pyproject.toml")
+# How a task that alters the export (mutation_patch, hidden_paths) is materialized; part of its task contract.
+# v1 (352c1ae-fd9a108): patched and hidden paths in place; the mutated file and its directory kept the time of
+#     git apply, so `ls -lt` or `find -newer` in the workspace named the mutated file.
+# v2: built in a staging directory, copied into the workspace, every file and directory stamped with the commit time.
+MATERIALIZER_VERSION = "mutation-workspace-v2"
 UNPINNED_ROUTING = {"require_parameters": True}
 
 INSTRUCTIONS = (
@@ -180,6 +185,7 @@ def task_contract(task: dict):
     patch = task.get("mutation_patch")
     return {
         "task_id": task["task_id"],
+        "materializer": MATERIALIZER_VERSION,
         "mutation_kind": task.get("mutation_kind"),
         "mutation_file": task.get("mutation_file"),
         "hidden_tests": bool(task.get("hidden_tests")),
@@ -319,20 +325,45 @@ def remove_hidden_paths(workspace: Path, hidden_paths, hidden_tests: bool) -> No
             raise ValueError(f"hidden path {name!r} is not in the exported tree")
 
 
+def stamp_tree(root: Path, timestamp: float) -> None:
+    """Give the root and every file and directory under it one access and modification time."""
+    for path in [root, *root.rglob("*")]:
+        if not path.is_symlink():
+            os.utime(path, (timestamp, timestamp))
+
+
 def materialize_workspace(task: dict, repo: Path, workspace: Path) -> None:
     """Export the pre-fix tree without git history, so later commits are not visible.
 
     For a mutation task the export is the healthy tree: its mutation_patch is applied and its hidden_paths
     are removed, so the model gets the bug without the tests that detect it. build_evaluator installs those
-    test roots from fix_commit for acceptance.
+    test roots from fix_commit for acceptance. That tree is built in a sibling staging directory and copied
+    into the workspace, and every file and directory gets the commit time (as git archive gives the rest), so
+    no timestamp marks the edited file or the removed paths.
     """
-    workspace.mkdir(parents=True)
-    with tarfile.open(fileobj=io.BytesIO(git(repo, "archive", "--format=tar", task["base_commit"]))) as archive:
-        archive.extractall(workspace, filter="data")
-    if task.get("mutation_patch"):
-        apply_mutation(workspace, task["mutation_patch"])
-    remove_hidden_paths(workspace, task.get("hidden_paths") or [], bool(task.get("hidden_tests")))
-    provision_version_stub(workspace)
+    exported = io.BytesIO(git(repo, "archive", "--format=tar", task["base_commit"]))
+    if task_contract(task) is None:
+        workspace.mkdir(parents=True)
+        with tarfile.open(fileobj=exported) as archive:
+            archive.extractall(workspace, filter="data")
+        provision_version_stub(workspace)
+        return
+    if workspace.exists():
+        raise FileExistsError(f"workspace already exists: {workspace}")
+    staging = workspace.with_name(workspace.name + ".staging")
+    staging.mkdir(parents=True)
+    try:
+        with tarfile.open(fileobj=exported) as archive:
+            archive.extractall(staging, filter="data")
+            commit_time = max(member.mtime for member in archive.getmembers())
+        if task.get("mutation_patch"):
+            apply_mutation(staging, task["mutation_patch"])
+        remove_hidden_paths(staging, task.get("hidden_paths") or [], bool(task.get("hidden_tests")))
+        provision_version_stub(staging)
+        shutil.copytree(staging, workspace, symlinks=True)
+        stamp_tree(workspace, commit_time)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
 
 
 def build_evaluator(task: dict, repo: Path, bundle: Path, pytest_timeout: int, python: str) -> str:

@@ -30,8 +30,12 @@ MUTATION_PATCH = (
 )
 
 
+COMMIT_TIME = 1577836800  # 2020-01-01T00:00:00Z: far from "now", so a fresh timestamp cannot pass for it
+
+
 def git(cwd, *args):
-    return subprocess.run([*GIT, *args], cwd=cwd, capture_output=True, check=True).stdout.decode().strip()
+    environment = dict(os.environ, GIT_AUTHOR_DATE=f"{COMMIT_TIME} +0000", GIT_COMMITTER_DATE=f"{COMMIT_TIME} +0000")
+    return subprocess.run([*GIT, *args], cwd=cwd, env=environment, capture_output=True, check=True).stdout.decode().strip()
 
 
 class MutationWiringTestCase(unittest.TestCase):
@@ -83,6 +87,15 @@ class MaterializeTests(MutationWiringTestCase):
         self.assertFalse((workspace / "tests").exists())
         self.assertTrue((workspace / "pyproject.toml").is_file())
         self.assertFalse((workspace / ".git").exists())
+
+    def test_no_timestamp_marks_the_mutated_file_or_the_removed_tests(self):
+        workspace = self.workspace()
+        run_pilot.materialize_workspace(self.task, self.repo, workspace)
+        paths = [workspace, *workspace.rglob("*")]
+        self.assertEqual({path.stat().st_mtime for path in paths}, {COMMIT_TIME})
+        # Files only: listing a directory (this test's rglob) updates its access time, for every directory alike.
+        self.assertEqual({path.stat().st_atime for path in paths if path.is_file()}, {COMMIT_TIME})
+        self.assertEqual(sorted(p.name for p in workspace.parent.iterdir()), ["workspace"])  # staging removed
 
     def test_a_task_without_mutation_fields_is_exported_unchanged(self):
         workspace = self.workspace()
@@ -152,10 +165,11 @@ class TaskFileAndProtocolTests(MutationWiringTestCase):
         plain = run_pilot.protocol_hash("pressure-recent-v3", {}, execution, guards)
         self.assertEqual(run_pilot.protocol_hash("pressure-recent-v3", {}, execution, guards, []), plain)
         hashes = {plain, run_pilot.protocol_hash("pressure-recent-v3", {}, execution, guards, [contract])}
-        for field, value in (("mutation_kind", "drop_not"), ("mutation_file", "pkg/other.py"), ("hidden_tests", False)):
+        for field, value in (("mutation_kind", "drop_not"), ("mutation_file", "pkg/other.py"), ("hidden_tests", False),
+                             ("materializer", "mutation-workspace-v1")):
             hashes.add(run_pilot.protocol_hash("pressure-recent-v3", {}, execution, guards,
                                                [dict(contract, **{field: value})]))
-        self.assertEqual(len(hashes), 5)
+        self.assertEqual(len(hashes), 6)
 
     def test_runner_records_the_task_file_and_contracts_in_config(self):
         path = self.write_task_file()
