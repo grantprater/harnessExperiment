@@ -1,80 +1,53 @@
 # Reticle: The Cognitive Harness Framework
 
-> Current direction (2026-09-15): [durable sessions, replaceable harnesses, and fast experiments](IMPLEMENTATION_PLAN.md).
-> The capabilities, benchmark claims, CLI examples, and test counts below describe the historical
-> prototype; they do not validate the new runtime. See the current plan for implemented assets,
-> observed limitations, and delivery gates. Detailed documentation replacement ships with S3.
+Reticle is a durable session runtime for coding agents: the session records what happened,
+context is a replaceable, per-invocation view over that history, the harness policy decides
+how to continue, and actual execution happens in a separate, swappable backend (trusted-local
+or a pinned, network-isolated OCI image). Harness policies (context management, tool
+interfaces, continuation logic) are compared against each other through short, discriminating
+experiments rather than folded permanently into the runtime. See
+[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) section 1 for the full objective and
+operating rule.
 
-A lightweight, multimodal cognitive agent harness based on systems theory, biological sensory transduction, epistemic working memory ledgers, and formal invariant verification.
+## Documents
 
-Tested and benchmarked on low-capability models (**`gemini-3.6-flash-low`** with `--effort low`) across 5 domains.
+- [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) - the current plan and work ledger.
+- [IMPLEMENTATION_PLAN_CRITIQUE.md](IMPLEMENTATION_PLAN_CRITIQUE.md) - the current critique.
+- [experiments/REGISTER.md](experiments/REGISTER.md) - the experiment register.
+- [experiments/session_harness/](experiments/session_harness/) - run cards, reports, and
+  delivery records.
 
----
+Earlier, superseded planning documents (the pre-September-15 prototype README,
+`ARCHITECTURE.md`, `ACTIVE_EPISTEMIC_BOARD.md`, and the 2026-09-14 plan) are kept for history
+in [archive/docs/](archive/docs/). The harness's self-refactoring loop, retired for
+optimizing a complexity metric rather than task outcomes, is described in
+[archive/RETIRED.md](archive/RETIRED.md).
 
-## 1. Cross-Domain Capabilities & Benchmark Results
+## Current empirical status
 
-| Domain / Modality | Monolithic LLM Baseline | Reticle Cognitive Harness | Advantage / Benchmark Report |
-| :--- | :---: | :---: | :---: |
-| **1. Multi-Doc Spec Grounding** | 40,999 context tokens | **919 context tokens** | **-97.8% tokens, 100% citation pass** ([Report](file:///C:/Users/grant/harnessExperiment/experiments/GENERAL_COMPARISON_REPORT.md)) |
-| **2. 4K GUI Spatial Perception** | 3,200 vision tokens (grid drift) | **638 vision tokens (two-scale saccade)** | **-80.1% vision tokens, 0px retina drift** ([Report](file:///C:/Users/grant/harnessExperiment/experiments/SPATIAL_COMPARISON_REPORT.md)) |
-| **3. 3D Program Use (Blender 5.0)** | 60% invariant pass, 8.84s | **100% invariant pass (5/5), 2.08s** | **4.25x faster, evaluated scene graph AST** ([Report](file:///C:/Users/grant/harnessExperiment/experiments/BLENDER_COMPARISON_REPORT.md)) |
-| **4. Temporal Video Reasoning** | Hallucinated `[0.0s - 6.0s]` | **Exact `[1.9s - 4.0s]`** | **-93.3% vision tokens, 100% LTL valid** ([Report](file:///C:/Users/grant/harnessExperiment/experiments/TEMPORAL_COMPARISON_REPORT.md)) |
-| **5. Real Gameplay Video & Audio** | Speculative narrative | **Exact timestamps (4 shots @ 40s, drift @ 33s)** | **Cross-modal acoustic & optical grounding** ([Report](file:///C:/Users/grant/harnessExperiment/experiments/RETICLE_VIDEO_REPORT.md)) |
+Four live E3 repair-control runs on `sqlparse-865` with weak free models produced no accepted
+repair (each stopped on rate limits, response budgets, or a failed fail-to-pass test); toolset
+v3 passed its offline gates (244 tests, 4 OCI skipped). A positive control with a capable
+model is the next step.
 
----
+## Running the tests
 
-## 2. Core Architectural Pillars
+Test interpreter: `C:\Users\grant\harnessExperiment\.runtime\test-venv\Scripts\python.exe`.
+Run from the repo root:
 
-1. **Deterministic Sensory Transduction**:
-   - High-throughput pre-scans (OpenCV video profiler @ 397 fps, FFmpeg audio envelope @ 16kHz) isolate events in milliseconds with **zero LLM tokens**.
-2. **Epistemic Working Memory Ledgers**:
-   - `EvidenceLedger`: Distills multi-document facts into discrete atoms and evaporates raw source texts.
-   - `WorldLineLedger`: Records 4D entity space-time intervals $(t_{\text{start}}, t_{\text{end}}, \text{entity}, \text{state}, \vec{x})$.
-3. **Formal Invariant Verifiers (Deterministic Oracles)**:
-   - Python AST Compiler (`ast.parse`)
-   - Bounding Box Containment & Euclidean Distance
-   - Blender Evaluated Graph & Headless Render Checks
-   - Linear Temporal Logic (LTL: Chronological Monotonicity, Velocity Bounds / No-Teleportation, Physical Energy Grounding)
-4. **Dynamic Perceptual Tooling ("Code-as-Sensor")**:
-   - Enables agents to formulate and execute ad-hoc OpenCV, SciPy, and NumPy perceptual probes against image, video, and audio buffers.
-   - Packaged as an Antigravity Custom Skill: [`.agent/skills/perceptual-tooling/SKILL.md`](file:///C:/Users/grant/harnessExperiment/.agent/skills/perceptual-tooling/SKILL.md).
-
----
-
-## 3. Installation & CLI Usage
-
-Install the package in editable mode:
-```powershell
-pip install -e .
+```
+python -m unittest discover -s tests -q
 ```
 
-### CLI Commands:
-```powershell
-# Display version
-reticle version
+## Running the pilot runner
 
-# Check local Blender 5.0 installation
-reticle blender-info
+From the repo root (see the docstring at the top of
+[experiments/p6_pilot/run_pilot.py](experiments/p6_pilot/run_pilot.py) for client, backend,
+and arm options):
 
-# Deterministically scan video dynamics (optical flow, blackouts, cuts)
-reticle scan-video "path/to/video.mp4" --stride 5
-
-# Deterministically scan audio dynamics (RMS envelope, transient peaks, frequency bands)
-reticle scan-audio "path/to/video.mp4"
-
-# Generate spatial grid topology for 1080p, 4K, etc.
-reticle spatial-grid 1920 1080
-
-# Verify Python syntax and extract symbols via AST compiler
-reticle verify-ast path/to/script.py
 ```
-
----
-
-## 4. Running Tests
-
-Run the full test suite (51 unit tests):
-```powershell
-python -m unittest discover -s tests -p "test_*.py"
-python -m unittest discover -s . -p "test_*.py"
+python experiments/p6_pilot/run_pilot.py --client gold --run-name gold-check
+python experiments/p6_pilot/run_pilot.py --client openrouter --models qwen/qwen3.5-9b \
+    --provider qwen/qwen3.5-9b=venice --tasks humanize-329 --run-name pilot-a \
+    --max-total-calls 30 --dry-run
 ```

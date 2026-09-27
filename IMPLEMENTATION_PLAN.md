@@ -6,7 +6,7 @@ accounting and no-API controls passed. Run 1 stopped on provider HTTP 429; an en
 48/48 valid; run 2 (gemma @ Cloudflare) ended in a repeat stop, and run 3 (Qwen3-Coder-Next @ Parasail)
 reached its 20-response budget; neither edited the library. After an interface revision, run 4 (Qwen, pressure-recent-v2,
 toolset v2) again reached its budget without a library edit (section 7). Semantic retrieval and learned-procedure transfer remain unrun.
-Supersedes: [the September 14 plan](IMPLEMENTATION_PLAN_2026-09-14.md), including its
+Supersedes: [the September 14 plan](archive/docs/IMPLEMENTATION_PLAN_2026-09-14.md), including its
 P0-P9 sequence and continuation instructions. That document preserves the implementation
 ledger, commit identifiers, wheel checks, and historical experiment decisions.
 
