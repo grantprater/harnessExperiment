@@ -237,6 +237,20 @@ def interrupt(process: subprocess.Popen, grace: float = 180.0) -> None:
         pass
 
 
+def release_dead_lock(lock_path: Path, pid: int) -> Optional[str]:
+    """Remove the live-run lock only if the interrupted campaign (pid) held it and did not release it (killed before
+    its `finally`); any other holder's lock is left alone. Returns what was done, or None."""
+    lock_path = Path(lock_path)
+    try:
+        holder = json.loads(lock_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if holder.get("pid") != pid or alive(pid):
+        return None
+    lock_path.unlink(missing_ok=True)
+    return f"removed {lock_path} held by the interrupted campaign (pid {pid})"
+
+
 def child_environment() -> dict:
     environment = dict(os.environ)
     environment.update({name: "1" for name in THREAD_VARIABLES})
@@ -296,6 +310,9 @@ def supervise(plan: run_card.Plan, branch: Optional[str], *, python: str = sys.e
             out(guard)
             interrupt(process)
             exit_code = process.returncode
+            released = release_dead_lock(lock_path or run_card.default_lock_path(), process.pid)
+            if released:
+                log_supervisor(plan, "lock_released", detail=released)
             break
     value = status(plan)
     detail = guard or f"run_card exited {exit_code}"

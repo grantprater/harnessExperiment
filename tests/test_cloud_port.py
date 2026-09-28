@@ -424,6 +424,37 @@ class CampaignWrapperTests(unittest.TestCase):
         campaign.log_supervisor(plan, "start", pid=1, supervisor_pid=2 ** 22 + 12345)  # no such process
         self.assertEqual(campaign.wait(plan, timeout=0, out=lines.append), "GONE")
 
+    @unittest.skipIf(os.name == "nt", "the supervisor interrupts a POSIX process group (the cloud VM)")
+    def test_the_spend_guard_interrupts_the_campaign_and_the_lock_is_released(self):
+        fixture = Fixture(self)
+        card = fixture.card()
+        card["budgets"]["campaign"]["list_price_cap_usd"] = 100  # run_card's own check never fires here
+        behaviour = json.loads(fixture.behaviour_path.read_text(encoding="utf-8"))
+        fixture.behaviour_path.write_text(json.dumps(dict(behaviour, cost_per_attempt=1.0, sleep_seconds=1.5)),
+                                          encoding="utf-8")
+        plan = fixture.plan(card)
+        lines = []
+        code = campaign.supervise(plan, None, poll_seconds=0.5, spend_cap=1.5, lock_path=fixture.lock,
+                                  out=lines.append)
+        self.assertTrue(any(line.startswith("spend guard: nested model cost $2.00") for line in lines), lines)
+        self.assertNotEqual(code, 0)
+        self.assertFalse(fixture.lock.exists())
+        self.assertLess(campaign.status(plan)["runs_finished"], 8)
+        events = [e["event"] for e in run_card.read_jsonl(campaign.supervisor_path(plan))]
+        self.assertEqual((events[0], events[-1]), ("start", "end"))
+        self.assertIn("spend_guard", events)
+
+    def test_a_dead_campaigns_lock_is_released_and_a_live_holders_is_not(self):
+        scratch = tempfile.TemporaryDirectory()
+        self.addCleanup(scratch.cleanup)
+        lock = Path(scratch.name) / "live-run.lock"
+        lock.write_text(json.dumps({"pid": os.getpid()}), encoding="utf-8")
+        self.assertIsNone(campaign.release_dead_lock(lock, os.getpid()))  # alive
+        self.assertIsNone(campaign.release_dead_lock(lock, 2 ** 22 + 12345))  # another holder
+        lock.write_text(json.dumps({"pid": 2 ** 22 + 12345}), encoding="utf-8")
+        self.assertIn("removed", campaign.release_dead_lock(lock, 2 ** 22 + 12345))
+        self.assertFalse(lock.exists())
+
     def test_the_spend_guard_decision(self):
         self.assertFalse(campaign.over_spend(39.99, 40))
         self.assertFalse(campaign.over_spend(40.0, 40))

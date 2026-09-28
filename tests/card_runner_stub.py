@@ -12,7 +12,8 @@ Behaviour comes from the JSON file named by CARD_STUB_BEHAVIOUR:
 where BEHAVIOUR is accept (default for live clients and gold), reject (default for noop), model_error,
 crash (exit 1, no record), silent (exit 0, no record), wrong_hash, over_budget, or model_pin (a model_error
 whose error is a model_pin_violation), or a list of those used in turn by reruns of the same run name.
-With "cost_per_attempt": X, each attempt record carries cli_result.total_cost_usd X.
+With "cost_per_attempt": X, each attempt record carries cli_result.total_cost_usd X; with "sleep_seconds": S,
+each non-dry-run invocation first sleeps S seconds.
 Each non-dry-run invocation appends its run name to PATH.
 CARD_STUB_CLI_VERSION overrides the reported CLI version.
 """
@@ -164,6 +165,9 @@ def main():
             handle.write(args.run_name + "\n")
     if mode == "crash":
         return 1
+    if behaviour.get("sleep_seconds"):
+        import time
+        time.sleep(behaviour["sleep_seconds"])
 
     budgets = {"model_responses": args.max_calls_per_run, "context_bytes": args.max_context_bytes}
     optional = {"model_attempts": args.max_attempts_per_run, "tool_actions": args.max_tool_actions_per_run,

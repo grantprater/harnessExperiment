@@ -63,6 +63,11 @@ Usage (from the repo root):
       sqlparse-mut-001 --backend oci --scripted gold --run-name c018-control-gold
   python experiments/session_harness/native_control.py --tasks sqlparse-865 --backend oci --run-name pc-native-2
 
+PORTABILITY: the task interpreter resolves on POSIX (interpreters.task_python) and PowerShell is offered only on
+Windows, but the transcript audit's path patterns are Windows' (drive letters, Git Bash /c/ paths, %TEMP%): on a
+POSIX host it misses absolute paths outside the workspace and flags every path under /tmp as an escape. The native
+arm is not ported to POSIX; no cloud card uses it.
+
 Exit codes: 0 scored (whatever the outcome); 2 existing run name or bad selection; 3 refused by a leak check.
 """
 
