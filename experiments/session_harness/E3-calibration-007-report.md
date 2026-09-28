@@ -50,7 +50,7 @@ its full `fail_to_pass` set and all `pass_to_pass` tests.
 | Per task | 15 at 2/2, 2 at 1/2 (contrastive), 3 at 0/2 (negative) |
 | Wall time | 2 h 33 min; per run mean 229 s, median 194 s, min 58 s, max 731 s |
 | Duration by outcome | accepted mean 189 s; rejected mean 390 s |
-| Rejections by stop | 5 after `finish` (confident wrong fix), 3 at the response budget |
+| Rejections by stop | 4 after `finish`, 4 at the response budget (corrected 2026-09-28 by [weakness mining](weakness-mining-c007.md); this report first said 5 and 3) |
 | Monetary cost | none billed (CLI on the owner's subscription); billing recorded as unknown |
 
 By mutation kind (accepted of runs): swap_branches 6/6, negate_condition 7/8, compare_flip 5/6, drop_not 6/8,
@@ -60,6 +60,9 @@ By `fail_to_pass` size: **1 test: 3/8**; 2-3 tests: 14/14; 4-10: 4/4; 11-25: 4/6
 are the hard ones. Three of the four single-test tasks in the set (001, 032, 057) account for 5 of the 8
 rejections, and their statements carry the least information (one humanized test name and, for 001, a
 truncated string diff that reads the same on both sides).
+
+
+> **Correction (2026-09-28, after weakness mining of all 40 journals; see [weakness-mining-c007.md](weakness-mining-c007.md)).** The rejected runs split 4 finish / 4 budget, not 5 / 3. Every run that finished had run a check after its last edit, so "finished without verification" is wrong; the check covered inputs the model chose, and in 3 of 4 the reported failure was never reproduced. "Pytest found no tests" occurred in 19 of the 32 accepted runs as well and does not separate the failures. 061 failed on a pass-to-pass regression in both runs (r2 a near miss: 13 of 15 target tests fixed at the budget). The two-mechanism reading survives in a sharper form: (A) finishing on a self-chosen check that never reproduced the reported failure, 4 runs on 3 tasks; (B) no commitment within the budget, 3 runs on 2 tasks. The treatment implied by A is a reproduce-first completion rule, not a "did a check run" rule.
 
 ## What the rejected runs did
 
