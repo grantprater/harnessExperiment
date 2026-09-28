@@ -181,6 +181,6 @@ Leak check 3 on this machine as it is now: `native_control.py --scripted gold` w
 before materializing anything (exit 3): "`...\Temp\reticle-native-control` holds other runs' directories
 (pc-native-sonnet-1)". That is the v1 leftover named above; the campaign cannot start until it is removed.
 
-Offline tests: 382 before, 406 after (24 new: native arm 12, driver 8 including one stub-CLI run end to end through the
+Offline tests: 382 before, 408 after (26 new: native arm 14, driver 8 including one stub-CLI run end to end through the
 real `native_control.py` path, comparison 4); the same 4 `test_run_card` failures before and after (cards 013-015 status
 and `note_stop`, unrelated).
