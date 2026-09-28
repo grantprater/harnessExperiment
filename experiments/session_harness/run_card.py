@@ -43,6 +43,7 @@ import re
 import shlex
 import subprocess
 import sys
+import tempfile
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -147,7 +148,7 @@ def schema_errors(value, schema: dict, root: dict, path: str = "$") -> List[str]
         if any(not errors for errors in attempts):
             return []
         closest = min(attempts, key=len)
-        return closest if len(closest) == 1 and isinstance(value, dict) else [f"{path}: not an allowed form ({closest[0]})"]
+        return [f"{path}: matches no allowed form; nearest: {'; '.join(closest)}"]
     errors: List[str] = []
     if "const" in schema and value != schema["const"]:
         return [f"{path}: must be {json.dumps(schema['const'])}"]
@@ -538,6 +539,34 @@ class RunnerAdapter:
     def protocol_hash(self, policy: str, routing: dict, execution: dict, guards: dict) -> str:
         return self.module.protocol_hash(policy, routing, execution, guards)
 
+    def other_line_ending_hash(self, policy: str, routing: dict, execution: dict,
+                               guards: dict) -> Optional[Tuple[str, str]]:
+        """The runner hashes evaluate_task.py's bytes as checked out, so a checkout with the other line
+        endings (git autocrlf on Windows versus Linux) records a different hash for the same protocol.
+        Returns (other line ending, the hash it would give), or None if the runner hashes no such file."""
+        module = self.module
+        try:
+            source = inspect.getsource(module.protocol_hash)
+        except (OSError, TypeError):
+            return None
+        here = getattr(module, "HERE", None)
+        evaluator = Path(here) / "evaluate_task.py" if here is not None else None
+        if evaluator is None or "evaluate_task.py" not in source or not evaluator.exists():
+            return None
+        raw = evaluator.read_bytes()
+        crlf, lf = bytes([13, 10]), bytes([10])
+        if crlf in raw:
+            other, label = raw.replace(crlf, lf), "LF"
+        else:
+            other, label = raw.replace(lf, crlf), "CRLF"
+        with tempfile.TemporaryDirectory() as scratch:
+            (Path(scratch) / "evaluate_task.py").write_bytes(other)
+            saved, module.HERE = module.HERE, Path(scratch)
+            try:
+                return label, module.protocol_hash(policy, routing, execution, guards)
+            finally:
+                module.HERE = saved
+
 
 def guards_record(arm: dict) -> dict:
     guards = arm["guards"]
@@ -609,6 +638,7 @@ class Plan:
     arm_hashes: Dict[str, Optional[str]]
     arm_notes: Dict[str, str]
     runner: Optional[RunnerAdapter]
+    line_ending_hashes: Dict[str, Tuple[str, str]] = field(default_factory=dict)
 
     @property
     def runs(self) -> List[Invocation]:
@@ -771,9 +801,14 @@ def build_plan(card: dict, card_path: Path) -> Plan:
         return result
 
     arms = {arm["name"]: arm for arm in card["arms"]}
+    line_ending_hashes: Dict[str, Tuple[str, str]] = {}
     for arm in card["arms"]:
-        adapter, protocol, _ = protocol_for(arm, arm["client"], f"arm {arm['name']}")
+        adapter, protocol, parts = protocol_for(arm, arm["client"], f"arm {arm['name']}")
         arm_hashes[arm["name"]] = protocol
+        if parts is not None:
+            variant = adapter.other_line_ending_hash(arm["policy"], parts["routing"], parts["execution"], parts["guards"])
+            if variant:
+                line_ending_hashes[arm["name"]] = variant
         declared = arm.get("expected_protocol_hash")
         if declared and protocol and declared != protocol:
             blockers.append(f"arm {arm['name']}: computed protocol {protocol} differs from the card's {declared}")
@@ -849,7 +884,8 @@ def build_plan(card: dict, card_path: Path) -> Plan:
         blockers.append(f"the plan allocates {planned_attempts} model attempts; the campaign cap is "
                         f"{campaign['max_model_attempts']}")
     card_sha = normalised_sha256(card_path) if card_path.exists() else ""
-    return Plan(card, card_path, card_sha, universe, sets, invocations, blockers, arm_hashes, arm_notes, main_runner)
+    return Plan(card, card_path, card_sha, universe, sets, invocations, blockers, arm_hashes, arm_notes, main_runner,
+                line_ending_hashes)
 
 
 def load_card(path: Path) -> dict:
@@ -906,6 +942,11 @@ def print_plan(plan: Plan, limit: Optional[int] = None, out: Callable[[str], Non
     for inv in plan.controls:
         out(f"  control {inv.name}: {inv.client} like {inv.arm['name']}, expect {inv.expect} | protocol "
             f"{inv.expected_hash or 'n/a'}")
+    if plan.line_ending_hashes:
+        label = next(iter(plan.line_ending_hashes.values()))[0]
+        out(f"  note: the runner hashes evaluate_task.py's bytes as checked out; with {label} line endings (another "
+            f"checkout or OS) the same arms would record " + ", ".join(
+                f"{name} {variant[1]}" for name, variant in plan.line_ending_hashes.items()))
     for block in card["blocks"]:
         count = len(plan.sets.get(block["task_set"]) or [])
         order = block["arm_order"]
@@ -1252,18 +1293,24 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
                 return finish(EXIT_INTEGRITY, outcome.detail)
             campaign.log("skip", run=done, detail=outcome.detail)
             continue
-        retries = 0
+        # Retries count across resumes (from the log), so --resume never grants an invocation fresh retries.
+        retries = sum(1 for event in read_jsonl(campaign.log_path) if event["event"] == "invocation_end"
+                      and event.get("base") == inv.run_name and event.get("outcome") == "failure")
+        if retries > rules["max_retries_per_invocation"]:
+            campaign.log("skip_exhausted", base=inv.run_name, failed_attempts=retries)
+            continue
         while True:
             reason = over_cap(inv)
             if reason:
                 return finish(EXIT_CHECKPOINT, reason)
             name = campaign.next_attempt_name(inv)
-            campaign.log("invocation_start", index=inv.index, run=name, retry=retries,
+            campaign.log("invocation_start", index=inv.index, base=inv.run_name, run=name, retry=retries,
                          command=[display_path(inv.script), *with_run_name(inv.args, name)])
             started = time.time()
             exit_code = run_process(python, inv, name, campaign.directory / "logs" / f"{name}.log", wall)
             outcome = classify(plan, campaign, inv, name, exit_code)
-            campaign.log("invocation_end", index=inv.index, run=name, exit_code=exit_code, outcome=outcome.kind,
+            campaign.log("invocation_end", index=inv.index, base=inv.run_name, run=name, exit_code=exit_code,
+                         outcome=outcome.kind,
                          detail=outcome.detail, elapsed_s=round(time.time() - started, 1))
             out(f"[{inv.index}/{len(plan.invocations)}] {name}: {outcome.kind} ({outcome.detail})")
             if outcome.kind == "integrity":
@@ -1305,6 +1352,11 @@ def wilson(accepted: int, total: int, z: float = 1.96) -> Optional[Tuple[float, 
 def collect(plan: Plan) -> List[dict]:
     """One entry per invocation: its attempts, final records, and status."""
     campaign, entries = Campaign(plan), []
+    failures: Dict[str, int] = {}
+    for event in read_jsonl(campaign.log_path):
+        if event["event"] == "invocation_end" and event.get("outcome") == "failure":
+            failures[event.get("base")] = failures.get(event.get("base"), 0) + 1
+    allowed = plan.card["stop_rules"]["max_retries_per_invocation"]
     for inv in plan.invocations:
         attempts = campaign.attempt_names(inv) if inv.script else []
         done = completed_attempt(campaign, inv) if inv.script else None
@@ -1312,6 +1364,8 @@ def collect(plan: Plan) -> List[dict]:
         records = campaign.records(inv, done or last) if (done or last) else []
         if done:
             status = "completed"
+        elif failures.get(inv.run_name, 0) > allowed:
+            status = "retries exhausted"
         elif not attempts:
             status = "pending"
         elif records:
