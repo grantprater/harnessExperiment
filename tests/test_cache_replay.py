@@ -16,10 +16,17 @@ from cache_replay import (  # noqa: E402
     analyse,
     cacheable_prefix,
     common_prefix,
+    omission_changes,
     parse_resource_status,
+    prefix_breaks,
     render_order,
 )
-from reticle.context import PressureRecentContextPolicyV2, TranscriptStore, render_resource_status  # noqa: E402
+from reticle.context import (  # noqa: E402
+    PressureRecentContextPolicyV2,
+    PressureRecentContextPolicyV4,
+    TranscriptStore,
+    render_resource_status,
+)
 from reticle.context.baseline import _encoded  # noqa: E402
 from reticle.runtime import LocalRuntime  # noqa: E402
 from reticle.runtime.contracts import TaskEnvelope  # noqa: E402
@@ -106,6 +113,15 @@ class PrefixArithmeticTests(unittest.TestCase):
         self.assertEqual(sum(t.uncached_cost for t in turns), sum(t.uncached_cost for t in first))
         self.assertLess(sum(t.cached_cost for t in turns), sum(t.cached_cost for t in first))
 
+    def test_prefix_breaks_count_turns_that_rewrite_more_than_the_trailing_status(self):
+        first = analyse([{"messages": status_first(turn), "tools": TOOLS} for turn in (1, 2, 3)])
+        last = analyse([{"messages": status_last(turn), "tools": TOOLS} for turn in (1, 2, 3)])
+        self.assertEqual(prefix_breaks(first), [3])  # turn 2 rewrites only turn 1's final message, its status
+        self.assertEqual(prefix_breaks(last), [])
+        requests = [{"omitted_units": units} for units in ([], [], [0, 1], [0, 1], [0, 1, 2])]
+        self.assertEqual(omission_changes(requests), [3, 5])
+        self.assertIsNone(omission_changes([{"messages": []}]))
+
     def test_a_changed_tool_schema_breaks_before_every_message(self):
         changed = [{**TOOLS[0], "function": {**TOOLS[0]["function"], "description": "new"}}]
         turns = analyse([{"messages": status_last(2), "tools": TOOLS}, {"messages": status_last(3), "tools": changed}])
@@ -153,6 +169,19 @@ class PackagePolicyReplayTests(unittest.TestCase):
         # Same bytes each turn: only the status moved.
         self.assertEqual([t.request_bytes for t in v2_turns], [t.request_bytes for t in append_turns])
         self.assertLess(sum(t.cached_cost for t in append_turns), sum(t.cached_cost for t in v2_turns))
+
+    def test_v4_puts_the_status_last_and_matches_v2_moved_to_the_end_without_pressure(self):
+        v2 = self.replay(PressureRecentContextPolicyV2())
+        self.temp_dir.cleanup()
+        self.setUp()
+        v4 = self.replay(PressureRecentContextPolicyV4())
+        turns = analyse(v4)
+        self.assertEqual([t.leading_messages for t in turns[1:]], [2, 4])
+        self.assertEqual(prefix_breaks(turns), [])
+        self.assertEqual(cache_replay.label(v4[2]["messages"][-1]), "status")
+        # Without pressure v4 differs from v2 only in the status position and v3's status wording.
+        for old, new in zip(v2, v4):
+            self.assertEqual(cache_replay.move_status_last(old["messages"])[:-1], new["messages"][:-1])
 
     def test_status_lines_parse_back_to_the_same_text(self):
         state = {"model_responses": {"remaining": 2, "limit": 3}, "cost_usd": {"remaining": 0.0934, "limit": 0.1},

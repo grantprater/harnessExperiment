@@ -8,6 +8,7 @@ from reticle.context.baseline import (
     PressureRecentContextPolicy,
     PressureRecentContextPolicyV2,
     PressureRecentContextPolicyV3,
+    PressureRecentContextPolicyV4,
     TranscriptStore,
     render_resource_status,
 )
@@ -22,6 +23,7 @@ __all__ = [
     "PressureRecentContextPolicy",
     "PressureRecentContextPolicyV2",
     "PressureRecentContextPolicyV3",
+    "PressureRecentContextPolicyV4",
     "PolicyComparison",
     "TranscriptStore",
     "compare_context_at_checkpoint",
