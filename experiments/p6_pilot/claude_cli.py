@@ -11,10 +11,18 @@ invocations.
 
 Every invocation is checked against the CLI's own init event before its reply is used: the only
 tool it may expose is StructuredOutput (the channel --json-schema uses for the reply), no
-MCP server may be connected, and apiKeySource must be "none" (the local subscription login; no API
-key is read or passed, and ANTHROPIC_* variables are removed from the child environment). Billing
-per attempt is therefore unknown; the CLI's total_cost_usd is a list-price estimate and is kept
-only as metadata, never as a reported cost.
+MCP server may be connected, and apiKeySource must not name an API key or auth token from the
+environment (auth_problem; ANTHROPIC_* variables are removed from the child environment, so no key
+the harness holds is passed). The local subscription login reports "none"; any other login the CLI
+has (a cloud session's, for example) is accepted and its apiKeySource recorded with every attempt.
+Billing per attempt is therefore unknown; the CLI's total_cost_usd is a list-price estimate and is
+kept only as metadata, never as a reported cost.
+
+MODEL PIN: a full model id (claude-..., not an alias such as sonnet) is passed to --model unchanged
+and pinned: the init event, every assistant message and the result's modelUsage must report exactly
+that id, or the attempt fails as model_pin_violation (not retried) before its reply is used, so no
+tool call of a substituted model is ever dispatched. An alias is not checked; every attempt records
+the models the CLI reported (reported_model), pinned or not.
 
 `--bare` is not used: it accepts only ANTHROPIC_API_KEY or an apiKeyHelper (OAuth is never read),
 so it cannot run on a subscription login. `--safe-mode --setting-sources "" --strict-mcp-config
@@ -25,8 +33,9 @@ working directory is an empty temporary folder.
 `--output-format stream-json --verbose` is used instead of `json`: its final `result` event is the
 same object `json` prints, and it also carries the init event that lists the tools actually exposed.
 
-Tool probe (asks the nested CLI, with the adapter's exact flags and no Reticle tools, what it can call):
-  python experiments/p6_pilot/claude_cli.py --probe-tools OUT_DIR
+Tool probe (asks the nested CLI, with the adapter's exact flags and no Reticle tools, what it can call; one
+response, one attempt, every adapter check applied, including the model pin for a full id):
+  python experiments/p6_pilot/claude_cli.py --probe-tools OUT_DIR [MODEL]
 """
 
 from __future__ import annotations
@@ -89,6 +98,14 @@ ISOLATION_ARGUMENTS = [
 # would bill an API account instead of the local login.
 SESSION_VARIABLES = ("CLAUDECODE", "CLAUDE_PID", "CLAUDE_EFFORT")
 SESSION_PREFIXES = ("CLAUDE_CODE_", "ANTHROPIC_")
+# Comma-separated names of session variables (CLAUDE_CODE_* and the like) to keep in the child environment, for a
+# machine whose CLI login lives in one (a cloud session may). Never an ANTHROPIC_* name: those are always removed.
+# Empty by default; the names kept are recorded with every attempt.
+PASS_ENV_VARIABLE = "RETICLE_CLI_PASS_ENV"
+CREDENTIAL_PREFIX = "ANTHROPIC_"
+# apiKeySource values that mean an API key or auth token taken from the environment or an API key helper. Any
+# other value (the local login's "none", a managed or remote login) is accepted and recorded.
+API_KEY_SOURCES = frozenset({"ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "apiKeyHelper"})
 
 SYSTEM_PROMPT = """\
 You are the model inside the Reticle agent harness. You cannot run commands or read files yourself; the \
@@ -123,11 +140,22 @@ def append_jsonl(path: Path, value) -> None:
         handle.write(json.dumps(value, ensure_ascii=False) + "\n")
 
 
+def kept_session_variables(environ=None) -> List[str]:
+    """The names $RETICLE_CLI_PASS_ENV asks to keep, without any ANTHROPIC_* name."""
+    environ = os.environ if environ is None else environ
+    names = {name.strip() for name in environ.get(PASS_ENV_VARIABLE, "").split(",") if name.strip()}
+    return sorted(name for name in names if not name.upper().startswith(CREDENTIAL_PREFIX))
+
+
 def child_environment(extra: Optional[Dict[str, str]] = None) -> Tuple[Dict[str, str], List[str]]:
-    """This process's environment without session links or API credentials; returns (env, removed names)."""
+    """This process's environment without session links or API credentials; returns (env, removed names).
+    ANTHROPIC_* is always removed; a session variable named in $RETICLE_CLI_PASS_ENV is kept."""
     environment, removed = {}, []
+    kept = set(kept_session_variables())
     for name, value in os.environ.items():
-        if name.upper() in SESSION_VARIABLES or name.upper().startswith(SESSION_PREFIXES):
+        credential = name.upper().startswith(CREDENTIAL_PREFIX)
+        session = name.upper() in SESSION_VARIABLES or name.upper().startswith(SESSION_PREFIXES)
+        if credential or (session and name not in kept):
             removed.append(name)
         else:
             environment[name] = value
@@ -192,8 +220,13 @@ def render_conversation(messages: List[Dict[str, Any]]) -> str:
 
 def parse_stream(stdout: str) -> Tuple[Optional[dict], Optional[dict], Optional[dict], int, List[dict], List[dict]]:
     """(init, result, last rate-limit info, unparseable lines, CLI-internal turns, first assistant message blocks)."""
+    return parse_stream_models(stdout)[:6]
+
+
+def parse_stream_models(stdout: str):
+    """parse_stream's six values, then the models the assistant messages report (in order, without repeats)."""
     init = result = rate_limit = None
-    bad, turns, first_blocks, first_id = 0, [], [], None
+    bad, turns, first_blocks, first_id, models = 0, [], [], None, []
     for line in stdout.splitlines():
         if not line.strip():
             continue
@@ -213,6 +246,8 @@ def parse_stream(stdout: str) -> Tuple[Optional[dict], Optional[dict], Optional[
         elif event.get("type") in ("assistant", "user"):
             message = event.get("message") or {}
             if event.get("type") == "assistant":
+                if message.get("model") and message["model"] not in models:
+                    models.append(message["model"])
                 # One model message can arrive as several events sharing its id (thinking, text, each tool_use).
                 first_id = message.get("id") if first_id is None else first_id
                 if message.get("id") == first_id:
@@ -228,7 +263,15 @@ def parse_stream(stdout: str) -> Tuple[Optional[dict], Optional[dict], Optional[
                     turns.append({"tool_result": str(block.get("content"))[:300], "is_error": bool(block.get("is_error"))})
                 elif block.get("type") == "text" and block.get("text"):
                     turns.append({"text": block["text"][:300]})
-    return init, result, rate_limit, bad, turns, first_blocks
+    return init, result, rate_limit, bad, turns, first_blocks, models
+
+
+def auth_problem(init: dict) -> Optional[str]:
+    """Why the init event's apiKeySource is an API key or auth token from the environment, or None."""
+    source = init.get("apiKeySource")
+    if source in API_KEY_SOURCES or str(source or "").upper().startswith(CREDENTIAL_PREFIX):
+        return f"apiKeySource {source!r}: the CLI would bill an API account through a key from the environment"
+    return None
 
 
 def isolation_problem(init: dict) -> Optional[str]:
@@ -237,8 +280,31 @@ def isolation_problem(init: dict) -> Optional[str]:
         return f"nested CLI exposes tools {sorted(tools - REPLY_CHANNEL_TOOLS)}"
     if init.get("mcp_servers"):
         return f"nested CLI connected MCP servers {init.get('mcp_servers')}"
-    if init.get("apiKeySource") != "none":
-        return f"nested CLI apiKeySource is {init.get('apiKeySource')!r}, not the local login ('none')"
+    problem = auth_problem(init)
+    return f"nested CLI {problem}" if problem else None
+
+
+def pins_model(model: str) -> bool:
+    """A full model id (claude-...) is pinned and checked; an alias (sonnet, opus, ...) is not."""
+    return str(model).startswith("claude-")
+
+
+def reported_models(init: Optional[dict], result: Optional[dict], message_models=()) -> Dict[str, Any]:
+    """The models the CLI reported: in its init event, in its assistant messages, and in the result's modelUsage."""
+    return {"init": (init or {}).get("model"), "messages": list(message_models),
+            "result": sorted(((result or {}).get("modelUsage") or {}).keys())}
+
+
+def model_problem(requested: str, reported: Dict[str, Any]) -> Optional[str]:
+    """Why the reported models break the pin on requested (a full id), or None; aliases are never a problem."""
+    if not pins_model(requested):
+        return None
+    if reported.get("init") is None:
+        return f"model_pin_violation: requested {requested!r}, the CLI's init event reports no model"
+    seen = [reported["init"], *reported.get("messages", []), *reported.get("result", [])]
+    wrong = sorted({model for model in seen if model != requested})
+    if wrong:
+        return f"model_pin_violation: requested {requested!r}, the CLI reported {wrong}"
     return None
 
 
@@ -282,7 +348,7 @@ def first_message_reply(blocks: List[dict], call_index: int) -> Tuple[Dict[str, 
 
 def cli_contract(model: str, *, max_turns: int, timeout: int, version: str) -> Dict[str, Any]:
     """The invocation contract recorded in the run protocol (the analogue of provider routing)."""
-    return {
+    contract = {
         "client": "claude-cli", "cli_version": version, "model": model,
         "arguments": ["-p", "--model", model, "--output-format", "stream-json", "--verbose",
                       "--max-turns", str(max_turns), *ISOLATION_ARGUMENTS, "--json-schema", "<reply schema>",
@@ -293,6 +359,12 @@ def cli_contract(model: str, *, max_turns: int, timeout: int, version: str) -> D
         "timeout_seconds": timeout, "billing": "unknown (local Claude Code subscription login)",
         "removed_environment": {"names": list(SESSION_VARIABLES), "prefixes": list(SESSION_PREFIXES)},
     }
+    if pins_model(model):  # only a full id; an alias's contract (every recorded card) is exactly as before
+        contract["model_pin"] = {
+            "requested": model, "failure": "model_pin_violation, not retried; the reply is never used",
+            "rule": "the init event, every assistant message and the result's modelUsage report exactly this id",
+        }
+    return contract
 
 
 class ClaudeCliClient:
@@ -339,6 +411,7 @@ class ClaudeCliClient:
             system_file.write_text(system_prompt, encoding="utf-8")
         arguments = self.arguments(system_file)
         environment, removed = child_environment()
+        kept = [name for name in kept_session_variables() if name in environment]
         last_error = "no attempt made"
         for attempt in range(1, self.max_attempts + 1):
             # Same order as OpenRouterClient: campaign cap, task reservation, campaign unit.
@@ -352,11 +425,12 @@ class ClaudeCliClient:
                      "request": {"messages": messages, "tools": tools, "arguments": arguments,
                                  "adapter_version": ADAPTER_VERSION, "system_prompt_sha256": system_sha,
                                  "prompt_sha256": hashlib.sha256(prompt_bytes).hexdigest(),
-                                 "prompt_bytes": len(prompt_bytes), "removed_environment": removed},
+                                 "prompt_bytes": len(prompt_bytes), "removed_environment": removed,
+                                 "kept_environment": kept},
                      "billing": "unknown"}
             started = time.time()
             failure, retry, message, result, init, model_ids = None, False, None, None, None, []
-            channel, ignored = None, []
+            channel, ignored, reported = None, [], None
             try:
                 executable = resolve_executable(self.executable)
                 if executable is None:
@@ -365,9 +439,10 @@ class ClaudeCliClient:
                                            cwd=str(workdir), env=environment, timeout=self.timeout)
                 stdout = completed.stdout.decode("utf-8", errors="replace")
                 stderr = completed.stderr.decode("utf-8", errors="replace")
-                init, result, rate_limit, bad_lines, turns, first_blocks = parse_stream(stdout)
+                init, result, rate_limit, bad_lines, turns, first_blocks, message_models = parse_stream_models(stdout)
+                reported = reported_models(init, result, message_models)
                 entry.update(exit_code=completed.returncode, rate_limit=rate_limit, unparsed_lines=bad_lines,
-                             cli_turns=turns)
+                             cli_turns=turns, reported_model=reported)
                 if stderr.strip():
                     entry["stderr_tail"] = stderr[-2_000:]
                 if init is not None:
@@ -377,8 +452,11 @@ class ClaudeCliClient:
                 if result is not None:
                     entry["cli_result"] = result
                 problem = isolation_problem(init) if init is not None else None
+                pin = model_problem(self.model, reported) if init is not None else None
                 if problem:  # checked first: a reply from a non-isolated CLI is never used
                     last_error, retry, failure = problem, False, "tool_isolation_violation"
+                elif pin:  # nor a reply from a model other than the pinned one
+                    last_error, retry, failure = pin, False, "model_pin_violation"
                 elif init is None or (result is None and not first_blocks):
                     last_error = (f"no {'init' if init is None else 'result'} event (exit {completed.returncode}): "
                                   f"{(stderr or stdout)[-300:]}")
@@ -428,6 +506,7 @@ class ClaudeCliClient:
             }
             return ModelResponse(message, reported_usage, {
                 "provider": "claude-cli", "model": init.get("model"), "generation_id": result.get("session_id"),
+                "reported_model": reported, "api_key_source": init.get("apiKeySource"),
                 "finish_reason": result.get("stop_reason"), "attempts": attempt, "request_sha256": request_sha256,
                 "num_turns": result.get("num_turns"), "cli_version": init.get("claude_code_version"),
                 "billing": "unknown", "cli_list_price_estimate_usd": result.get("total_cost_usd"),
@@ -466,10 +545,14 @@ def probe_tools(out_dir: Path, model: str = "sonnet") -> dict:
     return {"answer": response.message.get("content"), "tool_calls": response.message.get("tool_calls", []),
             "init_tools": row["cli_init"]["tools"], "mcp_servers": row["cli_init"]["mcp_servers"],
             "apiKeySource": row["cli_init"]["apiKeySource"], "model": row["cli_init"]["model"],
-            "cli_version": row["cli_init"]["claude_code_version"], "num_turns": response.metadata["num_turns"]}
+            "requested_model": model, "reported_model": row.get("reported_model"),
+            "kept_environment": row["request"].get("kept_environment"),
+            "cli_version": row["cli_init"]["claude_code_version"], "num_turns": response.metadata["num_turns"],
+            "cli_list_price_estimate_usd": response.metadata.get("cli_list_price_estimate_usd"),
+            "latency_s": row.get("latency_s")}
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3 or sys.argv[1] != "--probe-tools":
+    if len(sys.argv) not in (3, 4) or sys.argv[1] != "--probe-tools":
         raise SystemExit(__doc__)
-    print(json.dumps(probe_tools(Path(sys.argv[2])), indent=2, ensure_ascii=False))
+    print(json.dumps(probe_tools(Path(sys.argv[2]), *sys.argv[3:]), indent=2, ensure_ascii=False))

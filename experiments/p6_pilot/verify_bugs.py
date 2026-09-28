@@ -16,7 +16,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"  # clones of the repos in build_tasks.REPO_URLS
 WORK = ROOT / ".runtime" / "bug-mining" / "work"
-PY = str(ROOT / ".runtime" / "bugs-venv" / "Scripts" / "python.exe")  # pytest, tzdata, freezegun, mdurl, ...
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from interpreters import task_python  # noqa: E402
+
+PY = str(task_python(ROOT))  # pytest, tzdata, freezegun, mdurl, ...
 
 CANDIDATES = [
     ("boltons", "a180020c76", 474), ("boltons", "45a251181f", 475),

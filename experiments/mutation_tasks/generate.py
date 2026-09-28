@@ -49,6 +49,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "experiments" / "p6_pilot"))
 from evaluate_task import load_outcomes  # noqa: E402  (the fixed evaluator's JUnit parsing)
+from interpreters import venv_interpreter  # noqa: E402
 
 GENERATOR_VERSION = 1
 SOURCE_TASK = "sqlparse-865"
@@ -521,7 +522,7 @@ def main() -> None:
         encoding="utf-8"))["tasks"] if t["task_id"] == SOURCE_TASK)
     runtime = runtime_dir()
     repo = ensure_repo(source, runtime / "bug-mining" / "repos")
-    python = args.python or str(runtime / "bugs-venv" / "Scripts" / "python.exe")
+    python = args.python or str(venv_interpreter(runtime / "bugs-venv"))
     timeout_plugin = subprocess.run([python, "-c", "import pytest_timeout"], capture_output=True).returncode == 0
     work = Path(args.work_dir) if args.work_dir else Path(tempfile.mkdtemp(prefix="mutation-tasks-"))
     work.mkdir(parents=True, exist_ok=True)

@@ -103,8 +103,13 @@ HERE = Path(__file__).resolve().parent
 DEFAULT_TASK_FILE = HERE / "tasks.json"
 sys.path.insert(0, str(HERE))
 from claude_cli import ClaudeCliClient, cli_contract, cli_version  # noqa: E402
+from interpreters import task_python  # noqa: E402
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
-TASK_PYTHON = ROOT / ".runtime" / "bugs-venv" / "Scripts" / "python.exe"
+
+# $RETICLE_TASK_PYTHON, else .runtime/bugs-venv's interpreter (Scripts/python.exe on Windows, bin/python on
+# POSIX). Under trusted-local the path is in the execution contract, so it is part of the protocol hash.
+TASK_PYTHON = task_python(ROOT)
+
 BASE_URL = "https://openrouter.ai/api/v1"
 # 2: complete tool outputs with bounded views and read_output/search_output
 # 3: selectable execution backend (pinned OCI image), cache files excluded from revisions
