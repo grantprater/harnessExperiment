@@ -3,7 +3,6 @@ source edit is rejected once unless a run since the edit shows a test or check e
 
 import hashlib
 import json
-import subprocess
 from pathlib import Path
 import sys
 import tempfile
@@ -20,32 +19,15 @@ from reticle.tools.primitives import TOOL_SCHEMAS, TOOLSET_VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "experiments" / "p6_pilot"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import run_pilot  # noqa: E402
+from task_python import PYTEST_PYTHON  # noqa: E402
 
 CORE = "def sign(x):\n    if x <= 0:\n        return -1\n    return 1\n"
 TEST_FILE = "from pkg.core import sign\n\n\ndef test_zero():\n    assert sign(0) == 1\n"
 UNITTEST_FILE = ("import unittest\nfrom pkg.core import sign\n\n\nclass T(unittest.TestCase):\n"
                  "    def test_zero(self):\n        self.assertEqual(sign(0), 1)\n")
-
-
-def pytest_interpreter():
-    """An interpreter with pytest: this one, else the task interpreter (.runtime/bugs-venv of this checkout or of
-    the main checkout that owns this worktree), else None."""
-    try:
-        import pytest  # noqa: F401
-        return sys.executable
-    except ImportError:
-        pass
-    roots = [ROOT]
-    common = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--git-common-dir"], capture_output=True, text=True)
-    if common.returncode == 0 and common.stdout.strip():
-        roots.append((ROOT / common.stdout.strip()).resolve().parent)
-    candidates = [root / ".runtime" / "bugs-venv" / "Scripts" / "python.exe" for root in roots]
-    return next((str(path) for path in candidates if path.exists()), None)
-
-
-PYTEST_PYTHON = pytest_interpreter()
 
 
 class GuardedSuite(FinishGuardTools, ToolSuite):

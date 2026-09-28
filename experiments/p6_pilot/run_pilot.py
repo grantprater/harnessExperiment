@@ -41,6 +41,9 @@ protocol hash (name, version, fixed texts, parameters), and reported under "trea
   --nudge midpoint           agent loop: once per run, when --nudge-fraction (default 0.5) of the response
                              budget is spent and no pre-existing source file has been edited, one fixed harness
                              message after the latest tool results (reticle/runtime/nudges.py)
+  --oracle hidden-tests[:K]  tool use (changes the task): a check() tool returning only the counts of the task's
+                             hidden fail_to_pass tests failing and passing, at most K calls per run (default 3),
+                             run on a snapshot outside the workspace (reticle/tools/check_oracle.py)
 
 Usage (from the repo root):
   python experiments/p6_pilot/run_pilot.py --client gold --run-name gold-check
@@ -89,6 +92,9 @@ from reticle.runtime.nudges import (  # noqa: E402
 )
 from reticle.runtime.source_edits import SOURCE_RULE_VERSION, SourceEditTracker  # noqa: E402
 from reticle.tools import TOOL_SCHEMAS, ToolSuite  # noqa: E402
+from reticle.tools.check_oracle import (  # noqa: E402
+    DEFAULT_MAX_CALLS, ORACLE_VERSION, CheckOracleTools, HiddenTestOracle, check_schema,
+)
 from reticle.tools.finish_guard import (  # noqa: E402
     FINISH_GUARD_MESSAGE, FINISH_GUARD_VERSION, WHY_NO_CHECK, WHY_NO_RUN, FinishGuard, FinishGuardTools,
 )
@@ -113,7 +119,7 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    is recorded as the model's routing, so it is part of the protocol hash
 #    Later in v8, without a bump: --tasks FILE.json and mutation-task materialisation. Tasks without mutation
 #    fields are exported and hashed exactly as before; a mutation task's contract enters the protocol hash.
-#    Later in v8, without a bump: the S6 treatments (--completion, --nudge). Off, nothing changes (card 007's recorded
+#    Later in v8, without a bump: the S6 treatments (--completion, --nudge, --oracle). Off, nothing changes (card 007's recorded
 #    hashes still replay); on, each one's record enters the protocol hash under "treatments". A bump would
 #    change every incumbent hash and block the cards pinned to v8 without any change in what an incumbent runs.
 RUNNER_VERSION = 8
@@ -156,7 +162,7 @@ INSTRUCTIONS = (
 )
 
 
-TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction")
+TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction", "--oracle")
 
 
 def add_treatment_arguments(parser) -> None:
@@ -168,6 +174,8 @@ def add_treatment_arguments(parser) -> None:
                             "without a source edit")
     group.add_argument("--nudge-fraction", type=float, default=None, metavar="F",
                        help="share of the response budget after which --nudge midpoint is due (default 0.5)")
+    group.add_argument("--oracle", default=None, metavar="hidden-tests[:K]",
+                       help=f"a check() tool: hidden fail_to_pass counts only, K calls per run (default {DEFAULT_MAX_CALLS})")
 
 
 def treatments_record(args) -> dict:
@@ -189,6 +197,15 @@ def treatments_record(args) -> dict:
             "fraction": fraction, "template": MIDPOINT_NUDGE_TEMPLATE, "text": midpoint_nudge_text(fraction),
             "role": "system", "placement": "after the latest tool results, once per run",
         }
+    if args.oracle is not None:
+        match = re.fullmatch(r"hidden-tests(?::(\d+))?", args.oracle)
+        calls = int(match.group(1) or DEFAULT_MAX_CALLS) if match else 0
+        if calls < 1:
+            raise SystemExit(f"--oracle must be hidden-tests or hidden-tests:K with K >= 1, not {args.oracle!r}")
+        record["oracle"] = {
+            "name": "hidden-tests", "version": ORACLE_VERSION, "max_calls": calls,
+            "returns": ["failing", "passing", "calls_left"], "scope": "fail_to_pass",
+        }
     return record
 
 
@@ -202,7 +219,9 @@ def treatments_from_args(argv) -> dict:
 
 
 def model_tool_schemas(treatments: dict) -> list:
-    """The tool schemas the model is offered: the toolset's, unchanged by every treatment so far."""
+    """The tool schemas the model is offered: the toolset's, plus check() when the oracle is on."""
+    if "oracle" in treatments:
+        return [*TOOL_SCHEMAS, check_schema(treatments["oracle"]["max_calls"])]
     return TOOL_SCHEMAS
 
 
@@ -561,13 +580,21 @@ def is_provider_stop(agent: dict) -> bool:
     return agent.get("stop_reason") == "model_error" and (agent.get("error") or "").startswith("failed after")
 
 
-def build_tools(runtime, treatments: dict, base_class, **suite_arguments):
+def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, oracle_timeout_seconds=None,
+                **suite_arguments):
     """The run's tool suite with each tool-level treatment that is on composed in as a mixin, and the per-run
-    state object of every treatment (each has record()). With no treatment it is base_class itself."""
+    state object of every treatment (each has record()). With no treatment it is base_class itself. The oracle
+    runs the evaluator bundle at evaluator_root through the suite's backend."""
     mixins, extra, state = [], {}, {}
     if "completion" in treatments:
         state["completion"] = extra["finish_guard"] = FinishGuard(runtime, SourceEditTracker(runtime.workspace))
         mixins.append(FinishGuardTools)
+    if "oracle" in treatments:
+        timeout = {} if oracle_timeout_seconds is None else {"timeout_seconds": oracle_timeout_seconds}
+        state["oracle"] = extra["oracle"] = HiddenTestOracle(
+            runtime, suite_arguments.get("backend"), evaluator_root, max_calls=treatments["oracle"]["max_calls"],
+            **timeout)
+        mixins.append(CheckOracleTools)
     tool_class = type(f"Treated{base_class.__name__}", (*mixins, base_class), {}) if mixins else base_class
     return tool_class(runtime, **suite_arguments, **extra), state
 
@@ -972,6 +999,7 @@ def main() -> None:
             python_path = "/workspace/src" if src.is_dir() else "/workspace"  # guest path of the same tree
         tools, treatment_state = build_tools(
             runtime, treatments, RepeatGuardTools if args.stop_on_repeats else ToolSuite,
+            evaluator_root=bundle, oracle_timeout_seconds=args.pytest_timeout + 120,  # as final acceptance
             interpreter=execution["guest_python"], backend=backend, environment={
                 "PYTHONPATH": python_path, "PYTHONIOENCODING": "utf-8"})
         interventions = build_interventions(runtime, treatments, treatment_state)
