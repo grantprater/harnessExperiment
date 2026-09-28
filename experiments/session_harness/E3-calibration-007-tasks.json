@@ -1,0 +1,210 @@
+{
+  "card": "E3-calibration-007",
+  "rule": "exclude statement_names_mutated_function; 3 per mutation kind plus 1 for seeded kinds; seeded shuffle from task-id order; take a task if its kind is under quota and its fail_to_pass set is new",
+  "selector": "experiments/session_harness/select_calibration_tasks.py",
+  "bank": {
+    "path": "experiments/mutation_tasks/tasks.mutations.json",
+    "sha256_lf": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa"
+  },
+  "seed": 7,
+  "count": 20,
+  "quotas": {
+    "compare_flip": 3,
+    "drop_not": 4,
+    "negate_condition": 4,
+    "off_by_one": 3,
+    "remove_guard": 3,
+    "swap_branches": 3
+  },
+  "excluded_statement_names_mutated_function": [
+    "sqlparse-mut-049",
+    "sqlparse-mut-063",
+    "sqlparse-mut-072"
+  ],
+  "eligible_tasks": 73,
+  "eligible_distinct_fail_to_pass_sets": 62,
+  "task_ids": [
+    "sqlparse-mut-001",
+    "sqlparse-mut-002",
+    "sqlparse-mut-022",
+    "sqlparse-mut-023",
+    "sqlparse-mut-024",
+    "sqlparse-mut-025",
+    "sqlparse-mut-032",
+    "sqlparse-mut-033",
+    "sqlparse-mut-034",
+    "sqlparse-mut-040",
+    "sqlparse-mut-042",
+    "sqlparse-mut-043",
+    "sqlparse-mut-044",
+    "sqlparse-mut-046",
+    "sqlparse-mut-057",
+    "sqlparse-mut-060",
+    "sqlparse-mut-061",
+    "sqlparse-mut-073",
+    "sqlparse-mut-075",
+    "sqlparse-mut-076"
+  ],
+  "tasks": [
+    {
+      "task_id": "sqlparse-mut-001",
+      "mutation_kind": "compare_flip",
+      "mutation_file": "sqlparse/filters/others.py",
+      "mutation_line": 128,
+      "fail_to_pass": 1,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-002",
+      "mutation_kind": "drop_not",
+      "mutation_file": "sqlparse/sql.py",
+      "mutation_line": 268,
+      "fail_to_pass": 9,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-022",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "sqlparse/filters/reindent.py",
+      "mutation_line": 62,
+      "fail_to_pass": 41,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-023",
+      "mutation_kind": "drop_not",
+      "mutation_file": "sqlparse/sql.py",
+      "mutation_line": 277,
+      "fail_to_pass": 34,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-024",
+      "mutation_kind": "off_by_one",
+      "mutation_file": "sqlparse/sql.py",
+      "mutation_line": 509,
+      "fail_to_pass": 2,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-025",
+      "mutation_kind": "remove_guard",
+      "mutation_file": "sqlparse/tokens.py",
+      "mutation_line": 23,
+      "fail_to_pass": 1,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-032",
+      "mutation_kind": "remove_guard",
+      "mutation_file": "sqlparse/filters/reindent.py",
+      "mutation_line": 107,
+      "fail_to_pass": 1,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-033",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "sqlparse/engine/grouping.py",
+      "mutation_line": 189,
+      "fail_to_pass": 43,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-034",
+      "mutation_kind": "compare_flip",
+      "mutation_file": "sqlparse/sql.py",
+      "mutation_line": 433,
+      "fail_to_pass": 2,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-040",
+      "mutation_kind": "compare_flip",
+      "mutation_file": "sqlparse/filters/output.py",
+      "mutation_line": 37,
+      "fail_to_pass": 2,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-042",
+      "mutation_kind": "off_by_one",
+      "mutation_file": "sqlparse/filters/reindent.py",
+      "mutation_line": 196,
+      "fail_to_pass": 3,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-043",
+      "mutation_kind": "remove_guard",
+      "mutation_file": "sqlparse/utils.py",
+      "mutation_line": 89,
+      "fail_to_pass": 11,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-044",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "sqlparse/formatter.py",
+      "mutation_line": 198,
+      "fail_to_pass": 3,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-046",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "sqlparse/formatter.py",
+      "mutation_line": 201,
+      "fail_to_pass": 4,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-057",
+      "mutation_kind": "off_by_one",
+      "mutation_file": "sqlparse/sql.py",
+      "mutation_line": 646,
+      "fail_to_pass": 1,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-060",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "sqlparse/engine/statement_splitter.py",
+      "mutation_line": 54,
+      "fail_to_pass": 2,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-061",
+      "mutation_kind": "drop_not",
+      "mutation_file": "sqlparse/filters/reindent.py",
+      "mutation_line": 139,
+      "fail_to_pass": 15,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-073",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "sqlparse/filters/aligned_indent.py",
+      "mutation_line": 75,
+      "fail_to_pass": 2,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-075",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "sqlparse/engine/statement_splitter.py",
+      "mutation_line": 75,
+      "fail_to_pass": 22,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "sqlparse-mut-076",
+      "mutation_kind": "drop_not",
+      "mutation_file": "sqlparse/filters/reindent.py",
+      "mutation_line": 80,
+      "fail_to_pass": 26,
+      "statement_message_dropped": false
+    }
+  ]
+}

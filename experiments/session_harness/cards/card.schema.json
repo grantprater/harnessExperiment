@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "reticle/run-card/v1",
+  "title": "Reticle executable run card, schema version 1",
+  "description": "Structure only. run_card.py checks this with a stdlib validator, then applies the semantic checks listed in SCHEMA.md (names resolve, one task source per set, budgets consistent with clients).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "status", "markdown", "hypothesis", "run_prefix", "runner", "environment",
+               "arms", "tasks", "blocks", "budgets", "stop_rules", "measurements", "decision_rule", "report"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+    "title": {"type": "string"},
+    "status": {"enum": ["proposed", "approved", "running", "completed", "invalidated", "inconclusive"]},
+    "markdown": {"type": "string", "minLength": 1},
+    "hypothesis": {"type": "string", "minLength": 1},
+    "run_prefix": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "run_name_template": {"type": "string", "minLength": 1},
+    "runner": {"$ref": "#/$defs/runner"},
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claude_cli_version"],
+      "properties": {
+        "claude_cli_version": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}, {"$ref": "#/$defs/unresolved"}]}
+      }
+    },
+    "prerequisites": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "done"],
+        "properties": {"text": {"type": "string", "minLength": 1}, "done": {"type": "boolean"}}
+      }
+    },
+    "arms": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/arm"}},
+    "controls": {"type": "array", "items": {"$ref": "#/$defs/control"}},
+    "tasks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "sets"],
+      "properties": {
+        "file": {"type": "string", "minLength": 1},
+        "file_sha256": {"anyOf": [{"type": "string", "pattern": "^[0-9a-f]{64}$"}, {"type": "null"}]},
+        "sets": {"type": "object", "minProperties": 1, "additionalProperties": {"$ref": "#/$defs/task_set"}}
+      }
+    },
+    "blocks": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/block"}},
+    "schedule": {"enum": ["rollout-major", "task-major"]},
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["per_run", "campaign"],
+      "properties": {
+        "per_run": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["responses", "context_bytes", "max_tokens", "pytest_timeout_seconds", "command_timeout_seconds"],
+          "properties": {
+            "responses": {"type": "integer", "minimum": 1},
+            "model_attempts": {"anyOf": [{"type": "integer", "minimum": 1}, {"type": "null"}]},
+            "active_seconds": {"anyOf": [{"type": "number", "exclusiveMinimum": 0}, {"type": "null"}]},
+            "tool_actions": {"anyOf": [{"type": "integer", "minimum": 1}, {"type": "null"}]},
+            "cost_usd": {"anyOf": [{"type": "number", "exclusiveMinimum": 0}, {"type": "null"}]},
+            "attempt_cost_reservation_usd": {"anyOf": [{"type": "number", "exclusiveMinimum": 0}, {"type": "null"}]},
+            "context_bytes": {"type": "integer", "minimum": 1},
+            "max_tokens": {"type": "integer", "minimum": 1},
+            "pytest_timeout_seconds": {"type": "integer", "minimum": 1},
+            "command_timeout_seconds": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["default", "max"],
+              "properties": {"default": {"type": "number", "exclusiveMinimum": 0}, "max": {"type": "number", "exclusiveMinimum": 0}}
+            },
+            "invocation_wall_seconds": {"anyOf": [{"type": "number", "exclusiveMinimum": 0}, {"type": "null"}]}
+          }
+        },
+        "campaign": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_runs", "max_model_attempts"],
+          "properties": {
+            "max_runs": {"type": "integer", "minimum": 1},
+            "max_model_attempts": {"anyOf": [{"type": "integer", "minimum": 1}, {"type": "null"}]},
+            "monetary_cap_usd": {"anyOf": [{"type": "number", "minimum": 0}, {"type": "null"}]},
+            "note": {"type": "string"}
+          }
+        }
+      }
+    },
+    "stop_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_retries_per_invocation", "retry_backoff_seconds", "consecutive_failures_to_stop"],
+      "properties": {
+        "max_retries_per_invocation": {"type": "integer", "minimum": 0, "maximum": 2},
+        "retry_backoff_seconds": {"type": "array", "items": {"type": "number", "minimum": 0}},
+        "consecutive_failures_to_stop": {"type": "integer", "minimum": 1, "maximum": 3},
+        "repeat_rule": {"type": "string"},
+        "manual": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "measurements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["per_run", "campaign"],
+      "properties": {
+        "per_run": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "campaign": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "decision_rule": {"type": "string", "minLength": 1},
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sets_path": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]}
+      }
+    },
+    "notes": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "unresolved": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unresolved"],
+      "properties": {"unresolved": {"type": "string", "minLength": 1}}
+    },
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["script", "runner_version"],
+      "properties": {
+        "script": {"type": "string", "minLength": 1},
+        "runner_version": {"type": "integer", "minimum": 1}
+      }
+    },
+    "backend": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {"kind": {"const": "trusted-local"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "image", "image_id", "engine"],
+          "properties": {
+            "kind": {"const": "oci"},
+            "image": {"type": "string", "minLength": 1},
+            "image_id": {"anyOf": [{"type": "string", "pattern": "^(sha256:)?[0-9a-f]{64}$"}, {"$ref": "#/$defs/unresolved"}]},
+            "engine": {"enum": ["podman", "docker"]}
+          }
+        }
+      ]
+    },
+    "guards": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stop_on_repeats", "resume_after_provider_stop", "resume_wait_seconds"],
+      "properties": {
+        "stop_on_repeats": {"type": "boolean"},
+        "resume_after_provider_stop": {"type": "integer", "minimum": 0},
+        "resume_wait_seconds": {"anyOf": [{"type": "number", "minimum": 0}, {"type": "null"}]}
+      }
+    },
+    "arm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "client", "policy", "toolset", "backend", "guards"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "client": {"enum": ["openrouter", "claude-cli", "gold", "noop", "breaker", "gamer", "tester"]},
+        "model": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]},
+        "provider": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]},
+        "policy": {"type": "string", "minLength": 1},
+        "toolset": {"type": "string", "minLength": 1},
+        "backend": {"$ref": "#/$defs/backend"},
+        "guards": {"$ref": "#/$defs/guards"},
+        "extra_args": {"type": "array", "items": {"type": "string"}},
+        "runner": {"anyOf": [{"$ref": "#/$defs/runner"}, {"$ref": "#/$defs/unresolved"}]},
+        "bundle": {"type": "object"},
+        "expected_protocol_hash": {"anyOf": [{"type": "string", "pattern": "^[0-9a-f]{12}$"}, {"type": "null"}]},
+        "note": {"type": "string"}
+      }
+    },
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "client", "task_set", "like_arm", "expect"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "client": {"enum": ["gold", "noop", "breaker", "gamer", "tester"]},
+        "task_set": {"type": "string", "minLength": 1},
+        "like_arm": {"type": "string", "minLength": 1},
+        "expect": {"enum": ["accepted", "rejected"]},
+        "run_name": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"}
+      }
+    },
+    "task_set": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "rule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "count", "seed", "distinct_by", "stratify_by"],
+          "properties": {
+            "kind": {"const": "stratified-distinct"},
+            "count": {"type": "integer", "minimum": 1},
+            "seed": {"type": "integer"},
+            "distinct_by": {"type": "string", "minLength": 1},
+            "stratify_by": {"type": "string", "minLength": 1},
+            "exclude_if_true": {"type": "array", "items": {"type": "string", "minLength": 1}}
+          }
+        },
+        "ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "key"],
+          "properties": {
+            "path": {"type": "string", "minLength": 1},
+            "key": {"type": "string", "minLength": 1},
+            "sha256": {"anyOf": [{"type": "string", "pattern": "^[0-9a-f]{64}$"}, {"type": "null"}]}
+          }
+        },
+        "from_sets": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "unresolved": {"type": "string", "minLength": 1},
+        "take": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["count", "seed"],
+          "properties": {"count": {"type": "integer", "minimum": 1}, "seed": {"type": "integer"}}
+        },
+        "note": {"type": "string"}
+      }
+    },
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "task_set", "arms", "rollouts", "arm_order"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "task_set": {"type": "string", "minLength": 1},
+        "arms": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "rollouts": {"type": "integer", "minimum": 1},
+        "arm_order": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rule"],
+          "properties": {
+            "rule": {"enum": ["fixed", "seeded"]},
+            "seed": {"anyOf": [{"type": "integer"}, {"type": "null"}]}
+          }
+        }
+      }
+    }
+  }
+}

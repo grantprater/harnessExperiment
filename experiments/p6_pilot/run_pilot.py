@@ -24,11 +24,21 @@ Arms (same tools, instructions, evaluator, and limits; only the context policy d
                          as bounded views that name the read_output call for the rest
   reticle-board-v2       original task + last two exchanges + journal-derived board
 
+Tasks (--tasks [FILE.json] [TASK_ID ...]):
+  An argument ending in .json names the task file (default experiments/p6_pilot/tasks.json); the other
+  arguments select task ids from it (default: all). A mutation task (experiments/mutation_tasks/) gets its
+  mutation_patch applied with git apply and its hidden_paths (the test root) removed from the workspace;
+  the evaluator still installs the healthy test roots from fix_commit. Each such task's contract (mutation
+  kind and file, hidden-tests flag, patch and statement digests) is recorded in config.json and enters the
+  protocol hash; tasks without one leave both unchanged.
+
 Usage (from the repo root):
   python experiments/p6_pilot/run_pilot.py --client gold --run-name gold-check
   python experiments/p6_pilot/run_pilot.py --client openrouter --models qwen/qwen3.5-9b \\
       --provider qwen/qwen3.5-9b=venice --tasks humanize-329 --run-name pilot-a \\
       --max-total-calls 30 --dry-run
+  python experiments/p6_pilot/run_pilot.py --client gold --backend oci \\
+      --tasks experiments/mutation_tasks/tasks.mutations.json sqlparse-mut-001 --run-name mut-gold
 """
 
 from __future__ import annotations
@@ -67,6 +77,7 @@ from reticle.runtime.controller import AgentController, AgentLimits, ModelClient
 from reticle.tools import TOOL_SCHEMAS, ToolSuite  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
+DEFAULT_TASK_FILE = HERE / "tasks.json"
 sys.path.insert(0, str(HERE))
 from claude_cli import ClaudeCliClient, cli_contract, cli_version  # noqa: E402
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
@@ -83,6 +94,8 @@ BASE_URL = "https://openrouter.ai/api/v1"
 # 7: pressure-recent-v3 arm; toolset v3 names (glob_files, search_text) in repeat detection
 # 8: claude-cli client (local Claude Code CLI, stateless, no built-in tools); its invocation contract
 #    is recorded as the model's routing, so it is part of the protocol hash
+#    Later in v8, without a bump: --tasks FILE.json and mutation-task materialisation. Tasks without mutation
+#    fields are exported and hashed exactly as before; a mutation task's contract enters the protocol hash.
 RUNNER_VERSION = 8
 CLI_TIMEOUT_SECONDS = 300  # per attempt, as the OpenRouter client's HTTP timeout
 CLI_MAX_TURNS = 1  # the reply is the model's first message; the CLI stops before a second model turn
@@ -106,6 +119,11 @@ GUARD_STOPS = ("diagnostic_termination", "attempt_cap_reached")
 RETRYABLE_HTTP = {408, 429, 500, 502, 503, 504}
 MAX_ATTEMPTS = 3  # the first attempt plus at most two retries (plan section 5.3)
 MANAGED_ROOT_FILES = ("conftest.py", "pytest.ini", "setup.cfg", "tox.ini", "pyproject.toml")
+# How a task that alters the export (mutation_patch, hidden_paths) is materialized; part of its task contract.
+# v1 (352c1ae-fd9a108): patched and hidden paths in place; the mutated file and its directory kept the time of
+#     git apply, so `ls -lt` or `find -newer` in the workspace named the mutated file.
+# v2: built in a staging directory, copied into the workspace, every file and directory stamped with the commit time.
+MATERIALIZER_VERSION = "mutation-workspace-v2"
 UNPINNED_ROUTING = {"require_parameters": True}
 
 INSTRUCTIONS = (
@@ -118,15 +136,66 @@ INSTRUCTIONS = (
 )
 
 
-def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict) -> str:
-    return hashlib.sha256(
-        json.dumps({
-            "runner_version": RUNNER_VERSION, "arm": arm, "instructions": INSTRUCTIONS, "tools": TOOL_SCHEMAS,
-            "evaluator": hashlib.sha256((HERE / "evaluate_task.py").read_bytes()).hexdigest(),
-            "managed_root_files": MANAGED_ROOT_FILES, "provider_routing": routing, "execution": execution,
-            "guards": guards, "toolset_version": TOOLSET_VERSION,
-        }, sort_keys=True).encode("utf-8")
-    ).hexdigest()[:12]
+def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict, task_contracts=()) -> str:
+    inputs = {
+        "runner_version": RUNNER_VERSION, "arm": arm, "instructions": INSTRUCTIONS, "tools": TOOL_SCHEMAS,
+        "evaluator": hashlib.sha256((HERE / "evaluate_task.py").read_bytes()).hexdigest(),
+        "managed_root_files": MANAGED_ROOT_FILES, "provider_routing": routing, "execution": execution,
+        "guards": guards, "toolset_version": TOOLSET_VERSION,
+    }
+    if task_contracts:  # only tasks that alter the exported tree (mutation tasks); upstream P6 hashes are unchanged
+        inputs["task_contracts"] = sorted(task_contracts, key=lambda contract: contract["task_id"])
+    return hashlib.sha256(json.dumps(inputs, sort_keys=True).encode("utf-8")).hexdigest()[:12]
+
+
+def load_tasks(selection=None):
+    """(task file, tasks) for --tasks [FILE.json] [TASK_ID ...]; file order is kept."""
+    selection = list(selection or [])
+    files = [item for item in selection if item.lower().endswith(".json")]
+    if len(files) > 1:
+        raise SystemExit(f"--tasks names more than one task file: {files}")
+    path = DEFAULT_TASK_FILE
+    if files:
+        path = Path(files[0])
+        if not path.is_absolute() and not path.exists():
+            path = ROOT / path
+        if not path.is_file():
+            raise SystemExit(f"Task file not found: {files[0]}")
+    tasks = json.loads(path.read_text(encoding="utf-8"))["tasks"]
+    wanted = [item for item in selection if item not in files]
+    if wanted:
+        unknown = set(wanted) - {t["task_id"] for t in tasks}
+        if unknown:
+            raise SystemExit(f"Unknown tasks in {path.name}: {sorted(unknown)}")
+        tasks = [t for t in tasks if t["task_id"] in wanted]
+    return path.resolve(), tasks
+
+
+def task_file_record(path: Path) -> dict:
+    """The task file's path and the sha256 of its content with LF line endings (as committed; the same on
+    every checkout, whatever core.autocrlf wrote to the working copy)."""
+    try:
+        shown = path.relative_to(ROOT).as_posix()
+    except ValueError:
+        shown = str(path)
+    return {"path": shown, "sha256_lf": hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()}
+
+
+def task_contract(task: dict):
+    """What a task changes in the exported tree the model is given; None for an upstream P6 task."""
+    if not (task.get("mutation_patch") or task.get("hidden_paths") or task.get("hidden_tests")):
+        return None
+    patch = task.get("mutation_patch")
+    return {
+        "task_id": task["task_id"],
+        "materializer": MATERIALIZER_VERSION,
+        "mutation_kind": task.get("mutation_kind"),
+        "mutation_file": task.get("mutation_file"),
+        "hidden_tests": bool(task.get("hidden_tests")),
+        "hidden_paths": list(task.get("hidden_paths") or []),
+        "mutation_patch_sha256": hashlib.sha256(patch.encode("utf-8")).hexdigest() if patch else None,
+        "statement_sha256": hashlib.sha256(task["statement"].encode("utf-8")).hexdigest(),
+    }
 
 
 def resolve_execution(backend_name: str, image: str):
@@ -224,12 +293,80 @@ def provision_version_stub(tree: Path) -> None:
             (package / "_version.py").write_text('__version__ = version = "0+local"\n', encoding="utf-8")
 
 
+def apply_mutation(workspace: Path, patch: str) -> None:
+    """git apply a task's mutation_patch to the exported tree, then check that the patch is present.
+
+    The workspace is not a repository but sits inside one (runs/ is in this checkout). The ceiling stops git
+    from discovering that repository, whose .gitattributes would otherwise rewrite the patched file's line
+    endings; autocrlf off keeps LF files LF on Windows.
+    """
+    environment = {name: value for name, value in os.environ.items()
+                   if name not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
+    environment["GIT_CEILING_DIRECTORIES"] = str(workspace.resolve().parent)
+    command = ["git", "-c", "core.autocrlf=false", "apply", "--whitespace=nowarn"]
+    for check, failure in (([], "does not apply"), (["--reverse", "--check"], "is not present after git apply")):
+        completed = subprocess.run([*command, *check, "-"], input=patch.encode("utf-8"), cwd=workspace,
+                                   env=environment, capture_output=True)
+        if completed.returncode:
+            raise RuntimeError(f"mutation_patch {failure}: {completed.stderr.decode('utf-8', 'replace')[-500:]}")
+
+
+def remove_hidden_paths(workspace: Path, hidden_paths, hidden_tests: bool) -> None:
+    """Delete the paths the model must not see (a mutation task's test root); each must exist in the export."""
+    if hidden_tests and not hidden_paths:
+        raise ValueError("hidden_tests is set but hidden_paths is empty")
+    root = workspace.resolve()
+    for name in hidden_paths:
+        target = (root / name).resolve()
+        if Path(name).is_absolute() or target == root or root not in target.parents:
+            raise ValueError(f"hidden path {name!r} is not inside the workspace")
+        if target.is_dir():
+            shutil.rmtree(target)
+        elif target.exists():
+            target.unlink()
+        else:
+            raise ValueError(f"hidden path {name!r} is not in the exported tree")
+
+
+def stamp_tree(root: Path, timestamp: float) -> None:
+    """Give the root and every file and directory under it one access and modification time."""
+    for path in [root, *root.rglob("*")]:
+        if not path.is_symlink():
+            os.utime(path, (timestamp, timestamp))
+
+
 def materialize_workspace(task: dict, repo: Path, workspace: Path) -> None:
-    """Export the pre-fix tree without git history, so later commits are not visible."""
-    workspace.mkdir(parents=True)
-    with tarfile.open(fileobj=io.BytesIO(git(repo, "archive", "--format=tar", task["base_commit"]))) as archive:
-        archive.extractall(workspace, filter="data")
-    provision_version_stub(workspace)
+    """Export the pre-fix tree without git history, so later commits are not visible.
+
+    For a mutation task the export is the healthy tree: its mutation_patch is applied and its hidden_paths
+    are removed, so the model gets the bug without the tests that detect it. build_evaluator installs those
+    test roots from fix_commit for acceptance. That tree is built in a sibling staging directory and copied
+    into the workspace, and every file and directory gets the commit time (as git archive gives the rest), so
+    no timestamp marks the edited file or the removed paths.
+    """
+    exported = io.BytesIO(git(repo, "archive", "--format=tar", task["base_commit"]))
+    if task_contract(task) is None:
+        workspace.mkdir(parents=True)
+        with tarfile.open(fileobj=exported) as archive:
+            archive.extractall(workspace, filter="data")
+        provision_version_stub(workspace)
+        return
+    if workspace.exists():
+        raise FileExistsError(f"workspace already exists: {workspace}")
+    staging = workspace.with_name(workspace.name + ".staging")
+    staging.mkdir(parents=True)
+    try:
+        with tarfile.open(fileobj=exported) as archive:
+            archive.extractall(staging, filter="data")
+            commit_time = max(member.mtime for member in archive.getmembers())
+        if task.get("mutation_patch"):
+            apply_mutation(staging, task["mutation_patch"])
+        remove_hidden_paths(staging, task.get("hidden_paths") or [], bool(task.get("hidden_tests")))
+        provision_version_stub(staging)
+        shutil.copytree(staging, workspace, symlinks=True)
+        stamp_tree(workspace, commit_time)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
 
 
 def build_evaluator(task: dict, repo: Path, bundle: Path, pytest_timeout: int, python: str) -> str:
@@ -564,7 +701,9 @@ def main() -> None:
     parser.add_argument("--models", nargs="*", default=[])
     parser.add_argument("--provider", action="append", default=[], metavar="MODEL=SLUG",
                         help="pin a model to one OpenRouter provider, no fallbacks (repeatable)")
-    parser.add_argument("--tasks", nargs="*", default=None)
+    parser.add_argument("--tasks", nargs="*", default=None, metavar="FILE.json|TASK_ID",
+                        help="an argument ending in .json names the task file (default experiments/p6_pilot/"
+                             "tasks.json); the others select task ids from it (default: all)")
     parser.add_argument("--max-calls-per-run", type=int, default=25)
     parser.add_argument("--max-context-bytes", type=int, default=80_000)
     parser.add_argument("--max-tokens", type=int, default=8_192)
@@ -588,12 +727,8 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    tasks = json.loads((HERE / "tasks.json").read_text(encoding="utf-8"))["tasks"]
-    if args.tasks:
-        unknown = set(args.tasks) - {t["task_id"] for t in tasks}
-        if unknown:
-            raise SystemExit(f"Unknown tasks: {sorted(unknown)}")
-        tasks = [t for t in tasks if t["task_id"] in args.tasks]
+    task_file, tasks = load_tasks(args.tasks)
+    contracts = [c for c in (task_contract(t) for t in tasks) if c is not None]
     live = args.client in ("openrouter", "claude-cli")
     if live:
         if not args.models:
@@ -621,13 +756,14 @@ def main() -> None:
     guards = {"stop_on_repeats": args.stop_on_repeats,
               "resume_after_provider_stop": args.resume_after_provider_stop,
               "resume_wait_seconds": args.resume_wait_seconds if args.resume_after_provider_stop else None}
-    arm_hash = protocol_hash(arm, routing, execution, guards)
+    arm_hash = protocol_hash(arm, routing, execution, guards, contracts)
     runs = [(task, model) for model in models for task in tasks]
 
     run_dir = HERE / "runs" / args.run_name
     config = {
         "runner_version": RUNNER_VERSION, "protocol_hash": arm_hash, "arm": arm, "client": args.client,
         "models": models, "provider_routing": routing, "tasks": [t["task_id"] for t in tasks],
+        "task_file": task_file_record(task_file), "task_contracts": contracts,
         "max_calls_per_run": args.max_calls_per_run, "max_context_bytes": args.max_context_bytes,
         "max_tokens": args.max_tokens, "pytest_timeout_seconds": args.pytest_timeout, "temperature": 0,
         "max_attempts_per_call": MAX_ATTEMPTS, "max_total_calls": args.max_total_calls,

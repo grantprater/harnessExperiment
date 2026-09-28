@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "id": "E1-cache-layout-008-gate3",
+  "title": "pressure-recent-v4 behaviour check (gate 3 of card 008)",
+  "status": "proposed",
+  "markdown": "experiments/session_harness/E1-cache-layout-008.md",
+  "hypothesis": "Moving the resource status last and omitting history in pages keeps the request prefix byte-stable without changing how the model behaves: acceptance does not regress versus v3 on the same tasks.",
+  "run_prefix": "c008",
+  "runner": {"script": "experiments/p6_pilot/run_pilot.py", "runner_version": 8},
+  "environment": {"claude_cli_version": "2.1.283 (Claude Code)"},
+  "prerequisites": [
+    {"text": "Gate 1: E1 fixtures pass for pressure-recent-v4 (no model calls)", "done": false},
+    {"text": "Gate 2: cache_replay.py on run 4 and the card-007 trajectories: cacheable fraction above 85% at 80,000 bytes; page breaks equal pages at 40,000 and 20,000", "done": false},
+    {"text": "run_pilot.py offers --arm pressure-recent-v4 (card 008 track; update runner.runner_version if it bumps)", "done": false},
+    {"text": "S6a wiring for the mutation task file: run_pilot.py --tasks FILE.json IDS with materializer mutation-workspace-v2 (merged at eb3c160)", "done": true},
+    {"text": "owner approval (then set status to approved)", "done": false}
+  ],
+  "arms": [
+    {
+      "name": "v3",
+      "client": "claude-cli",
+      "model": "sonnet",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {"stop_on_repeats": false, "resume_after_provider_stop": 0, "resume_wait_seconds": null},
+      "extra_args": [],
+      "expected_protocol_hash": null,
+      "note": "The incumbent as card 007 runs it."
+    },
+    {
+      "name": "v4",
+      "client": "claude-cli",
+      "model": "sonnet",
+      "policy": "pressure-recent-v4",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {"stop_on_repeats": false, "resume_after_provider_stop": 0, "resume_wait_seconds": null},
+      "extra_args": [],
+      "expected_protocol_hash": null,
+      "note": "Only the context policy differs from v3."
+    }
+  ],
+  "tasks": {
+    "file": "experiments/mutation_tasks/tasks.mutations.json",
+    "file_sha256": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa",
+    "sets": {
+      "gate3": {
+        "ref": {"path": "experiments/session_harness/E3-calibration-007.sets.json", "key": "evolution_set", "sha256": null},
+        "take": {"count": 3, "seed": 8008},
+        "note": "3 tasks from the card-007 evolution set, drawn by seed; pin ref.sha256 once the evolution set is written."
+      }
+    }
+  },
+  "blocks": [
+    {"name": "gate3", "task_set": "gate3", "arms": ["v3", "v4"], "rollouts": 1, "arm_order": {"rule": "seeded", "seed": 8008}}
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 20,
+      "model_attempts": 24,
+      "active_seconds": 1200,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {"default": 120, "max": 600},
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {
+      "max_runs": 6,
+      "max_model_attempts": 192,
+      "monetary_cap_usd": null,
+      "note": "6 runs x 24 attempts = 144 planned, plus room for 2 retried runs. No monetary cost (CLI on the subscription)."
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [60, 300],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "No repeat stop in either arm (identical rule across arms, as card 007).",
+    "manual": ["A mechanism screen, not a utility claim: 3 pairs cannot show a small effect."]
+  },
+  "measurements": {
+    "per_run": ["accepted", "stop_reason", "responses_used", "provider_attempts", "wall_seconds", "tokens", "references_remaining_budget", "first_edit_response"],
+    "campaign": ["paired_table", "delta:v4:v3", "acceptance_rate_ci"]
+  },
+  "decision_rule": "Adopt v4 as the incumbent context policy for S6 if gates 1 and 2 pass and gate 3 shows no acceptance regression (candidate wins or ties on 3 of 3 pairs). Otherwise keep v3 and record the result. Either way, report the replay numbers on the calibration trajectories.",
+  "report": {"path": "experiments/session_harness/E1-cache-layout-008-report.md", "sets_path": null},
+  "notes": [
+    "Gate 3 only. Gates 1 and 2 make no model calls and are prerequisites here, not runner invocations.",
+    "Per-run budgets match card 007 so v3 here is the same protocol as card 007's incumbent."
+  ]
+}
