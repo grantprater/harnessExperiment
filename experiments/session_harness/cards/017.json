@@ -4,7 +4,7 @@
   "title": "Mutation-task bank with Nemotron 3 Ultra (free) through the Reticle interface",
   "status": "inconclusive",
   "markdown": "experiments/session_harness/E3-calibration-017-ultra.md",
-  "hypothesis": "Nemotron 3 Ultra 550B (free) lands between Super (5% on 12 runs) and Sonnet (80%) on the same 20 tasks; one rollout screens where, within today's free-request allowance.",
+  "hypothesis": "Nemotron 3 Ultra 550B (free) lands between Super (5% on 12 runs) and Sonnet (80%) on the same 20 tasks; one rollout screens where, within today's free-request allowance. STOPPED: Stopped by the owner on 2026-09-28 after 2 runs (both model_call_limit rejected, no edits). Reasoning tokens per response averaged 31 and 82: the free endpoint serves the model with reasoning effectively off, and the runner cannot request an effort level. Rerun once a hashed reasoning-effort request option exists.",
   "run_prefix": "c017",
   "run_name_template": "{prefix}-{task}-r{rollout}",
   "runner": {
@@ -175,6 +175,5 @@
     "The controls are the recorded v2 controls (2 tasks), named so that a resume finds them complete instead of rerunning controls on the 20 tasks.",
     "Choices the markdown leaves open, made here: 24 attempts per run and max_tokens 4096 (as positive-control Arm R and the S6a smoke), 60 s and 300 s retry backoff, a 3,600 s wall limit per invocation.",
     "The markdown's fallback 'trusted-local only if the image is missing' is not expressible: a different backend is a different protocol, so a missing image stops the preflight and needs an amended card."
-  ],
-  "note_stop": "Stopped by the owner on 2026-09-28 after 2 runs (both model_call_limit rejected, no edits). Reasoning tokens per response averaged 31 and 82: the free endpoint serves the model with reasoning effectively off, and the runner cannot request an effort level. Rerun once a hashed reasoning-effort request option exists."
+  ]
 }
