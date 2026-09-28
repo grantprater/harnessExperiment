@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "id": "E4-finish-guard-013",
+  "title": "Finish guard: demand a reproduced failure that the fix turns into a pass, once",
+  "status": "proposed",
+  "markdown": "experiments/session_harness/E4-finish-guard-013.md",
+  "hypothesis": "On card 007's evolution set, every rejected run that finished had checked its fix only on inputs it chose, and 3 of 4 never reproduced the reported failure. Rejecting the first finish after a source edit, once, unless a command that failed before the first edit passes after the latest edit (the next finish is accepted regardless) makes the model reproduce and recheck the failure, turning some wrong fixes into accepted ones, at a cost of about one response per run on the solved-twice tasks and no accepted run.",
+  "run_prefix": "c013",
+  "run_name_template": "{prefix}-{task}-r{rollout}-{arm}",
+  "runner": {
+    "script": "experiments/p6_pilot/run_pilot.py",
+    "runner_version": 8
+  },
+  "environment": {
+    "claude_cli_version": "2.1.283 (Claude Code)"
+  },
+  "prerequisites": [
+    {
+      "text": "finish guard implemented and unit-tested on wt/treatments (tests/test_finish_guard.py)",
+      "done": true
+    },
+    {
+      "text": "owner approval recorded in the markdown card (then set status to running)",
+      "done": false
+    }
+  ],
+  "arms": [
+    {
+      "name": "incumbent",
+      "client": "claude-cli",
+      "model": "sonnet",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [],
+      "expected_protocol_hash": null,
+      "note": "Card 007's incumbent arm unchanged (runner v8, claude-cli adapter v2, repeat guard off); its planned hash per task equals card 007's for the same task."
+    },
+    {
+      "name": "finish-guard",
+      "client": "claude-cli",
+      "model": "sonnet",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [
+        "--completion",
+        "finish-guard"
+      ],
+      "expected_protocol_hash": null,
+      "note": "Card 007's incumbent arm plus --completion finish-guard. The flag is a runner treatment (not a toolset or policy version); run_card.py hashes it from extra_args with the runner's own treatments_from_args, so the planned hash is the one the runner records.",
+      "bundle": {
+        "module": "task completion detection",
+        "surface": "pre-finish verification rule",
+        "treatment": "finish-guard-v2",
+        "flag": "--completion finish-guard",
+        "code": "reticle/tools/finish_guard.py",
+        "source_rule": "pre-existing-python-source-v1",
+        "rule": "fail-then-pass (same command or script path)"
+      }
+    }
+  ],
+  "controls": [
+    {
+      "name": "gold",
+      "client": "gold",
+      "task_set": "controls",
+      "like_arm": "finish-guard",
+      "expect": "accepted"
+    },
+    {
+      "name": "noop",
+      "client": "noop",
+      "task_set": "controls",
+      "like_arm": "finish-guard",
+      "expect": "rejected"
+    }
+  ],
+  "tasks": {
+    "file": "experiments/mutation_tasks/tasks.mutations.json",
+    "file_sha256": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa",
+    "sets": {
+      "evolution": {
+        "ids": [
+          "sqlparse-mut-001",
+          "sqlparse-mut-022",
+          "sqlparse-mut-032",
+          "sqlparse-mut-057",
+          "sqlparse-mut-061"
+        ],
+        "note": "Card 007's evolution set: the two contrastive tasks (001, 022) and the three negative tasks with a fixable mechanism (032, 057, 061)."
+      },
+      "efficiency": {
+        "ids": [
+          "sqlparse-mut-025",
+          "sqlparse-mut-034",
+          "sqlparse-mut-040"
+        ],
+        "note": "Solved twice in card 007, for the efficiency measure (responses and active seconds per run). As listed by the owner; by card 007 wall time the three fastest are 034, 025 and 044 (040 is fifth)."
+      },
+      "controls": {
+        "ids": [
+          "sqlparse-mut-001"
+        ],
+        "note": "Scripted gold/noop controls under the treatment arm, before any model run."
+      }
+    }
+  },
+  "blocks": [
+    {
+      "name": "evolution",
+      "task_set": "evolution",
+      "arms": [
+        "incumbent",
+        "finish-guard"
+      ],
+      "rollouts": 2,
+      "arm_order": {
+        "rule": "seeded",
+        "seed": 13
+      }
+    },
+    {
+      "name": "efficiency",
+      "task_set": "efficiency",
+      "arms": [
+        "incumbent",
+        "finish-guard"
+      ],
+      "rollouts": 2,
+      "arm_order": {
+        "rule": "seeded",
+        "seed": 13
+      }
+    }
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 20,
+      "model_attempts": 24,
+      "active_seconds": 1200,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {
+        "default": 120,
+        "max": 600
+      },
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {
+      "max_runs": 32,
+      "max_model_attempts": 900,
+      "monetary_cap_usd": null,
+      "note": "32 runs x 24 attempts = 768 planned, plus room for 5 retried runs. CLI on the subscription: no monetary cap, billing recorded as unknown."
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [
+      60,
+      300
+    ],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "The markdown asks for the repeat flag to be recorded while the run continues. run_pilot.py records the flag only with --stop-on-repeats, which also stops the run, so this card runs without the guard and repeat_flags are derived from the transcripts afterwards (S6b).",
+    "manual": [
+      "Evaluator leakage, evidence loss, or authority escape stops the campaign (run_card.py detects evidence loss and protocol drift; leakage and escape need trajectory review).",
+      "A symlink created by a run command is unreadable on the Windows host and ends the campaign as evidence loss; resume reruns the interrupted task.",
+      "Do not change the treatment's text or parameters during the card; a change is a new version and a new card.",
+      "Stop if a treatment run records more than one finish_guard rejection (the guard fires at most once by construction)."
+    ]
+  },
+  "measurements": {
+    "per_run": [
+      "accepted",
+      "stop_reason",
+      "responses_used",
+      "provider_attempts",
+      "tool_calls",
+      "active_seconds",
+      "wall_seconds",
+      "tokens",
+      "first_edit_response",
+      "rejected_calls",
+      "edit_in_gold_files",
+      "verification_before_finish"
+    ],
+    "campaign": [
+      "acceptance_rate_ci",
+      "per_task_outcomes",
+      "outcome_distribution",
+      "paired_table",
+      "delta:incumbent:finish-guard"
+    ]
+  },
+  "decision_rule": "Mechanism check, not a promotion (8 held-in tasks x 2 rollouts cannot resolve effects below about 15 points). Report per arm and set: accepted runs, guard firings, what followed each rejection (reproduced and reran, new edit, forced finish), forced finishes the evaluator rejected, responses and active seconds per run. Earn a held-out card only if the treatment loses no accepted run on the efficiency set, its median responses per run there rise by at most 2, and its evolution-set accepted count is at least the incumbent's; otherwise reject and log.",
+  "report": {
+    "path": "experiments/session_harness/E4-finish-guard-013-report.md"
+  },
+  "notes": [
+    "Runs are named c013-<task>-r<n>-<arm>; one runner invocation per task, rollout and arm, with --max-total-calls 24.",
+    "Arm order is seeded per unit (block, task, rollout), so a task's two rollouts can run the arms in different orders; every unit runs both arms.",
+    "The incumbent arm is card 007's, so its planned hash per task equals card 007's for that task (for example b0fda8c921ad for sqlparse-mut-001 on this CRLF checkout).",
+    "The treatment enters the protocol hash only through the runner's 'treatments' record; RUNNER_VERSION stays 8.",
+    "finish-guard-v1 ('a check ran since the edit') was replaced by v2 before any run: weakness mining showed all four finished-and-rejected card 007 runs had run an exit-0 check after their last edit. An offline replay of v2 over card 007's journals fires on those 4 and on 30 of 32 accepted runs."
+  ]
+}

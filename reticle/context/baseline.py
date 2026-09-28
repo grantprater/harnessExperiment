@@ -103,6 +103,14 @@ def render_output_view(text: str, handle: str, budget: int, tail_heavy: bool) ->
     }
 
 
+def _mark_harness_message(item: Dict[str, Any], message: Dict[str, Any]) -> None:
+    """A harness message injected by an agent-loop treatment (reticle.runtime.nudges) is named in the manifest.
+    Messages without the private marker (every message of an untreated run) leave the item unchanged."""
+    marker = message.get("_reticle_harness_message")
+    if isinstance(marker, dict):
+        item["harness_message"] = dict(marker)
+
+
 @dataclass(frozen=True)
 class ContextManifest:
     policy_version: str
@@ -442,6 +450,7 @@ class BaselineContextPolicy:
                     "artifact_id": transcript_artifact_id,
                     "rendering": "full",
                 }
+                _mark_harness_message(item, value)
                 if view:
                     item.update(view)
                 unit_selected.append(item)
@@ -505,6 +514,7 @@ class PressureRecentContextPolicy(BaselineContextPolicy):
             "artifact_id": transcript_artifact_id,
             "rendering": "full",
         }
+        _mark_harness_message(item, value)
         content = value.get("content")
         if value.get("role") != "tool" or not isinstance(content, str):
             return value, item

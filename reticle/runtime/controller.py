@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 import json
 from time import monotonic
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional, Protocol, Sequence
 from uuid import uuid4
 
 from reticle.context.baseline import BaselineContextPolicy, ContextBuilder, ContextPolicy, TranscriptStore
@@ -94,6 +94,7 @@ class AgentController:
         client: ModelClient,
         limits: AgentLimits,
         policy: Optional[ContextPolicy] = None,
+        interventions: Sequence[Any] = (),
     ):
         self.runtime = runtime
         self.task = task
@@ -101,6 +102,8 @@ class AgentController:
         self.client = client
         self.limits = limits
         self.policy = policy or BaselineContextPolicy()
+        # Agent-loop treatments (reticle.runtime.nudges); none by default, and then the loop is unchanged.
+        self.interventions = tuple(interventions)
 
     @staticmethod
     def _normalize(message: Dict[str, Any], call_index: int) -> Dict[str, Any]:
@@ -160,6 +163,23 @@ class AgentController:
         if "cost_usd" in snapshot.limits:
             status["cost_unknown_billing_attempts"] = budget.unknown_billing_count()
         return status
+
+    def _intervene(self, transcript: TranscriptStore, budget: TaskBudgetLedger, model_calls: int) -> None:
+        """Append each intervention's harness message, if any, after the latest results; journal it."""
+        if not self.interventions:
+            return
+        responses = self._resource_status(budget, model_calls)["model_responses"]
+        used, limit = responses["limit"] - responses["remaining"], responses["limit"]
+        for intervention in self.interventions:
+            text = intervention.message_after_response(self.runtime, used, limit)
+            if not text:
+                continue
+            marker = {"name": intervention.name, "version": intervention.version}
+            artifact_id = transcript.append({"role": "system", "content": text, "_reticle_harness_message": marker})
+            self.runtime.journal.append("harness_message", {
+                "task_id": self.task.task_id, **marker, "content": text, "after_response": used,
+                "response_limit": limit, "transcript_artifact_id": artifact_id,
+            })
 
     def _record_budget_stop(self, exc: TaskBudgetExhausted, **extra: Any) -> None:
         self.runtime.journal.append("task_budget_exhausted", {
@@ -485,6 +505,7 @@ class AgentController:
             calls = message.get("tool_calls") or []
             if not calls:
                 transcript.append({"role": "user", "content": NO_TOOL_CALL_PROMPT})
+                self._intervene(transcript, budget, model_calls)
                 continue
 
             finished = False
@@ -531,6 +552,7 @@ class AgentController:
                 if stop_reason != "task_budget_exhausted":
                     stop_reason = "finish_requested"
                 break
+            self._intervene(transcript, budget, model_calls)
 
         self._charge_active_time(budget, "controller_invocation")
         task_snapshot = budget.snapshot()

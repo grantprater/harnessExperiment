@@ -561,13 +561,25 @@ class RunnerAdapter:
             return {model: dict(module.UNPINNED_ROUTING)}
         return {f"{client}-client": dict(module.UNPINNED_ROUTING)}
 
-    def protocol_hash(self, policy: str, routing: dict, execution: dict, guards: dict, contracts=()) -> str:
+    def treatments(self, extra_args: List[str]) -> Tuple[dict, List[str]]:
+        """(the treatments an arm's extra_args turn on, as the runner records and hashes them; the extra_args
+        flags that are not treatment flags). Runners without treatments see every flag as other."""
+        flags = [a.split("=", 1)[0] for a in extra_args if a.startswith("--")]
+        known = set(getattr(self.module, "TREATMENT_FLAGS", ()))
+        function = getattr(self.module, "treatments_from_args", None)
+        treatments = function(extra_args) if function is not None and extra_args else {}
+        return treatments, [flag for flag in flags if flag not in known]
+
+    def protocol_hash(self, policy: str, routing: dict, execution: dict, guards: dict, contracts=(),
+                      treatments=None) -> str:
+        if treatments:  # only runners that define treatments accept them
+            return self.module.protocol_hash(policy, routing, execution, guards, contracts, treatments)
         if contracts:  # only runners that define task contracts produce any
             return self.module.protocol_hash(policy, routing, execution, guards, contracts)
         return self.module.protocol_hash(policy, routing, execution, guards)
 
     def other_line_ending_hash(self, policy: str, routing: dict, execution: dict,
-                               guards: dict, contracts=()) -> Optional[Tuple[str, str]]:
+                               guards: dict, contracts=(), treatments=None) -> Optional[Tuple[str, str]]:
         """The runner hashes evaluate_task.py's bytes as checked out, so a checkout with the other line
         endings (git autocrlf on Windows versus Linux) records a different hash for the same protocol.
         Returns (other line ending, the hash it would give), or None if the runner hashes no such file."""
@@ -590,7 +602,7 @@ class RunnerAdapter:
             (Path(scratch) / "evaluate_task.py").write_bytes(other)
             saved, module.HERE = module.HERE, Path(scratch)
             try:
-                return label, self.protocol_hash(policy, routing, execution, guards, contracts)
+                return label, self.protocol_hash(policy, routing, execution, guards, contracts, treatments)
             finally:
                 module.HERE = saved
 
@@ -814,21 +826,34 @@ def build_plan(card: dict, card_path: Path) -> Plan:
                 pending.append("hash needs the Claude CLI version pinned")
             if arm["backend"]["kind"] == "oci" and is_unresolved(arm["backend"]["image_id"]):
                 pending.append("hash needs the OCI image ID pinned")
+            try:
+                treatments, _ = adapter.treatments(list(arm.get("extra_args", [])))
+            except SystemExit as exc:  # the runner refuses a treatment value; --execute would fail the same way
+                problems.append(f"extra_args: {exc}")
             blockers.extend(f"{owner}: {problem}" for problem in problems)
             if problems or pending:
                 arm_notes[owner] = "; ".join(problems + pending)
             else:
                 parts = {"routing": adapter.routing(client, arm.get("model"), arm.get("provider"), cli_version),
-                         "execution": adapter.execution(arm["backend"]), "guards": guards_record(arm)}
+                         "execution": adapter.execution(arm["backend"]), "guards": guards_record(arm),
+                         "treatments": treatments}
                 result = (adapter, parts)
         arm_parts[key] = result
         return result
 
     arms = {arm["name"]: arm for arm in card["arms"]}
     for arm in card["arms"]:
-        adapter, _ = protocol_for(arm, arm["client"], f"arm {arm['name']}")
+        adapter, parts = protocol_for(arm, arm["client"], f"arm {arm['name']}")
         if arm.get("extra_args"):
-            arm_notes[f"arm {arm['name']}"] = "extra_args may change the hash; verified only at --execute"
+            # Treatment flags the runner declares (TREATMENT_FLAGS) are hashed here as the runner hashes them;
+            # any other flag is seen only by the --execute preflight.
+            treatments = parts["treatments"] if parts is not None else {}
+            other = adapter.treatments(list(arm["extra_args"]))[1] if parts is not None else ["?"]
+            notes = [f"treatments in the planned hash: " + ", ".join(
+                f"{value['name']} {value['version']}" for _, value in sorted(treatments.items()))] if treatments else []
+            if other:
+                notes.append("extra_args may change the hash; verified only at --execute")
+            arm_notes[f"arm {arm['name']}"] = "; ".join(notes)
         if adapter is not None and universe is not None and not adapter.selects_task_file() and \
                 resolve_path(card["tasks"]["file"]) != adapter.default_task_file:
             blockers.append(f"runner {display_path(adapter.script)} reads only {display_path(adapter.default_task_file)}; "
@@ -858,11 +883,11 @@ def build_plan(card: dict, card_path: Path) -> Plan:
             ordered = universe.in_file_order(task_ids)  # the runner keeps file order
             contracts = adapter.task_contracts([universe.tasks[t] for t in ordered])
             protocol = adapter.protocol_hash(arm["policy"], parts["routing"], parts["execution"], parts["guards"],
-                                             contracts)
+                                             contracts, parts["treatments"])
             invocation.expected_hash = protocol
             if kind == "run" and arm["name"] not in line_ending_hashes:
                 variant = adapter.other_line_ending_hash(arm["policy"], parts["routing"], parts["execution"],
-                                                         parts["guards"], contracts)
+                                                         parts["guards"], contracts, parts["treatments"])
                 if variant:
                     line_ending_hashes[arm["name"]] = variant
             live = client in LIVE_CLIENTS
@@ -881,6 +906,8 @@ def build_plan(card: dict, card_path: Path) -> Plan:
             record = adapter.task_file_record(task_file_path)
             if record is not None:  # runners that record the task file also record the task contracts
                 invocation.expected_config.update({"task_file": record, "task_contracts": contracts})
+            if parts["treatments"]:  # the runner records treatments only when one is on
+                invocation.expected_config["treatments"] = parts["treatments"]
         invocations.append(invocation)
 
     for control in card.get("controls", []):
