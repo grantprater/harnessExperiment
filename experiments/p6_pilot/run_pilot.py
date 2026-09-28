@@ -32,6 +32,13 @@ Tasks (--tasks [FILE.json] [TASK_ID ...]):
   kind and file, hidden-tests flag, patch and statement digests) is recorded in config.json and enters the
   protocol hash; tasks without one leave both unchanged.
 
+Treatments (S6 harness surfaces; all off by default, and a run with none of them is hashed, configured, and
+executed exactly as before). Each one that is on is described under "treatments" in config.json and in the
+protocol hash (name, version, fixed texts, parameters), and reported under "treatments" in results.jsonl:
+  --completion finish-guard  task completion detection: the first finish after an edit to a pre-existing
+                             source file is rejected once unless a run since the edit shows a test or check
+                             executing (reticle/tools/finish_guard.py)
+
 Usage (from the repo root):
   python experiments/p6_pilot/run_pilot.py --client gold --run-name gold-check
   python experiments/p6_pilot/run_pilot.py --client openrouter --models qwen/qwen3.5-9b \\
@@ -74,7 +81,11 @@ from reticle.evaluation import AcceptancePlan, AcceptanceRunner, CriterionContra
 from reticle.runtime import LocalRuntime  # noqa: E402
 from reticle.runtime.contracts import TaskEnvelope  # noqa: E402
 from reticle.runtime.controller import AgentController, AgentLimits, ModelClientError, ModelResponse  # noqa: E402
+from reticle.runtime.source_edits import SOURCE_RULE_VERSION, SourceEditTracker  # noqa: E402
 from reticle.tools import TOOL_SCHEMAS, ToolSuite  # noqa: E402
+from reticle.tools.finish_guard import (  # noqa: E402
+    FINISH_GUARD_MESSAGE, FINISH_GUARD_VERSION, WHY_NO_CHECK, WHY_NO_RUN, FinishGuard, FinishGuardTools,
+)
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_TASK_FILE = HERE / "tasks.json"
@@ -96,6 +107,9 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    is recorded as the model's routing, so it is part of the protocol hash
 #    Later in v8, without a bump: --tasks FILE.json and mutation-task materialisation. Tasks without mutation
 #    fields are exported and hashed exactly as before; a mutation task's contract enters the protocol hash.
+#    Later in v8, without a bump: the S6 treatments (--completion). Off, nothing changes (card 007's recorded
+#    hashes still replay); on, each one's record enters the protocol hash under "treatments". A bump would
+#    change every incumbent hash and block the cards pinned to v8 without any change in what an incumbent runs.
 RUNNER_VERSION = 8
 CLI_TIMEOUT_SECONDS = 300  # per attempt, as the OpenRouter client's HTTP timeout
 CLI_MAX_TURNS = 1  # the reply is the model's first message; the CLI stops before a second model turn
@@ -136,7 +150,41 @@ INSTRUCTIONS = (
 )
 
 
-def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict, task_contracts=()) -> str:
+TREATMENT_FLAGS = ("--completion",)
+
+
+def add_treatment_arguments(parser) -> None:
+    group = parser.add_argument_group("treatments (off by default; each one that is on enters the protocol hash)")
+    group.add_argument("--completion", choices=["finish-guard"], default=None,
+                       help="finish-guard: reject the first unverified finish after a source edit, once")
+
+
+def treatments_record(args) -> dict:
+    """The description of every treatment that is on, as hashed and recorded; {} when all are off."""
+    record = {}
+    if args.completion == "finish-guard":
+        record["completion"] = {
+            "name": "finish-guard", "version": FINISH_GUARD_VERSION, "source_rule": SOURCE_RULE_VERSION,
+            "rejection": FINISH_GUARD_MESSAGE, "reasons": [WHY_NO_RUN, WHY_NO_CHECK],
+        }
+    return record
+
+
+def treatments_from_args(argv) -> dict:
+    """The treatments a list of runner arguments turns on (other arguments are ignored); for run_card.py,
+    which plans a card arm's hash from its extra_args."""
+    parser = argparse.ArgumentParser(add_help=False)
+    add_treatment_arguments(parser)
+    known, _ = parser.parse_known_args(list(argv))
+    return treatments_record(known)
+
+
+def model_tool_schemas(treatments: dict) -> list:
+    """The tool schemas the model is offered: the toolset's, unchanged by every treatment so far."""
+    return TOOL_SCHEMAS
+
+
+def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict, task_contracts=(), treatments=None) -> str:
     inputs = {
         "runner_version": RUNNER_VERSION, "arm": arm, "instructions": INSTRUCTIONS, "tools": TOOL_SCHEMAS,
         "evaluator": hashlib.sha256((HERE / "evaluate_task.py").read_bytes()).hexdigest(),
@@ -145,6 +193,9 @@ def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict, task_c
     }
     if task_contracts:  # only tasks that alter the exported tree (mutation tasks); upstream P6 hashes are unchanged
         inputs["task_contracts"] = sorted(task_contracts, key=lambda contract: contract["task_id"])
+    if treatments:  # only runs with a treatment on; an incumbent's inputs are exactly as before
+        inputs["treatments"] = treatments
+        inputs["tools"] = model_tool_schemas(treatments)
     return hashlib.sha256(json.dumps(inputs, sort_keys=True).encode("utf-8")).hexdigest()[:12]
 
 
@@ -488,6 +539,17 @@ def is_provider_stop(agent: dict) -> bool:
     return agent.get("stop_reason") == "model_error" and (agent.get("error") or "").startswith("failed after")
 
 
+def build_tools(runtime, treatments: dict, base_class, **suite_arguments):
+    """The run's tool suite with each tool-level treatment that is on composed in as a mixin, and the per-run
+    state object of every treatment (each has record()). With no treatment it is base_class itself."""
+    mixins, extra, state = [], {}, {}
+    if "completion" in treatments:
+        state["completion"] = extra["finish_guard"] = FinishGuard(runtime, SourceEditTracker(runtime.workspace))
+        mixins.append(FinishGuardTools)
+    tool_class = type(f"Treated{base_class.__name__}", (*mixins, base_class), {}) if mixins else base_class
+    return tool_class(runtime, **suite_arguments, **extra), state
+
+
 def run_invocations(runtime, envelope, tools, client, limits, policy_factory, max_resumes=0,
                     wait_seconds=0.0, sleep=time.sleep) -> list:
     """Run the controller, resuming the same durable session after provider stops.
@@ -725,7 +787,9 @@ def main() -> None:
     parser.add_argument("--stop-on-repeats", action="store_true",
                         help="stop a run after three identical observation calls without a workspace change")
     parser.add_argument("--dry-run", action="store_true")
+    add_treatment_arguments(parser)
     args = parser.parse_args()
+    treatments = treatments_record(args)
 
     task_file, tasks = load_tasks(args.tasks)
     contracts = [c for c in (task_contract(t) for t in tasks) if c is not None]
@@ -756,7 +820,7 @@ def main() -> None:
     guards = {"stop_on_repeats": args.stop_on_repeats,
               "resume_after_provider_stop": args.resume_after_provider_stop,
               "resume_wait_seconds": args.resume_wait_seconds if args.resume_after_provider_stop else None}
-    arm_hash = protocol_hash(arm, routing, execution, guards, contracts)
+    arm_hash = protocol_hash(arm, routing, execution, guards, contracts, treatments)
     runs = [(task, model) for model in models for task in tasks]
 
     run_dir = HERE / "runs" / args.run_name
@@ -767,9 +831,11 @@ def main() -> None:
         "max_calls_per_run": args.max_calls_per_run, "max_context_bytes": args.max_context_bytes,
         "max_tokens": args.max_tokens, "pytest_timeout_seconds": args.pytest_timeout, "temperature": 0,
         "max_attempts_per_call": MAX_ATTEMPTS, "max_total_calls": args.max_total_calls,
-        "instructions": INSTRUCTIONS, "tools": TOOL_SCHEMAS, "toolset_version": TOOLSET_VERSION,
+        "instructions": INSTRUCTIONS, "tools": model_tool_schemas(treatments), "toolset_version": TOOLSET_VERSION,
         "execution": execution, "guards": guards,
     }
+    if treatments:  # absent when every treatment is off, so an incumbent's config.json is unchanged
+        config["treatments"] = treatments
 
     worst_case_per_call = {}
     if args.client == "openrouter":
@@ -831,6 +897,9 @@ def main() -> None:
         run_budgets[model] = budgets
     config["budgets_per_run"] = run_budgets
     print(f"task budgets per run: {json.dumps(run_budgets)}")
+    if treatments:
+        print("treatments (in the protocol hash): " + "; ".join(
+            f"{surface} {value['name']} {value['version']}" for surface, value in sorted(treatments.items())))
     if args.dry_run:
         return
 
@@ -869,9 +938,10 @@ def main() -> None:
             python_path = str(src if src.is_dir() else workspace)
         else:
             python_path = "/workspace/src" if src.is_dir() else "/workspace"  # guest path of the same tree
-        tool_class = RepeatGuardTools if args.stop_on_repeats else ToolSuite
-        tools = tool_class(runtime, interpreter=execution["guest_python"], backend=backend, environment={
-            "PYTHONPATH": python_path, "PYTHONIOENCODING": "utf-8"})
+        tools, treatment_state = build_tools(
+            runtime, treatments, RepeatGuardTools if args.stop_on_repeats else ToolSuite,
+            interpreter=execution["guest_python"], backend=backend, environment={
+                "PYTHONPATH": python_path, "PYTHONIOENCODING": "utf-8"})
         envelope = TaskEnvelope(
             task_id=task["task_id"],
             description=INSTRUCTIONS.format(repo=task["repo"], repo_url=task["repo_url"], statement=task["statement"]),
@@ -915,6 +985,8 @@ def main() -> None:
         costs = [(i.get("usage_reported") or {}).get("cost") for i in invocations
                  if (i.get("calls_missing_usage") or {}).get("cost", 0) < (i.get("model_calls") or 0)]
         record["reported_cost_usd"] = round(sum(costs), 8) if costs else None
+        if treatments:  # absent for an incumbent run, whose record is unchanged
+            record["treatments"] = {surface: state.record() for surface, state in treatment_state.items()}
         record["http_attempts"] = len(read_jsonl(calls_path)) - attempts_before
         record["tool_results"] = [
             {"call_id": m.get("tool_call_id"), "head": m["content"][:300], "tail": m["content"][-300:]}

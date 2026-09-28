@@ -66,7 +66,7 @@ cap). Exit codes: 0 done, 2 invalid/blocked/refused, 3 checkpoint stop, 4 integr
 | `toolset` | none | asserted equal to the runner's `TOOLSET_VERSION`; not selectable |
 | `backend` | `--backend`, `--oci-image` | `{kind: trusted-local}` or `{kind: oci, image, image_id, engine}`; `image_id` and `engine` are hash inputs the card pins |
 | `guards` | `--stop-on-repeats`, `--resume-after-provider-stop`, `--resume-wait-seconds` | the runner's `guards` record |
-| `extra_args` | appended verbatim | may not repeat a flag the card sets from structured fields; plan hashes do not see them, the preflight does |
+| `extra_args` | appended verbatim | may not repeat a flag the card sets from structured fields. Treatment flags the runner declares in `TREATMENT_FLAGS` (the S6 treatments; see the runner's docstring) are parsed with the runner's own `treatments_from_args` and enter the planned hash and expected config as the runner records them; plan hashes do not see any other flag, the preflight does |
 | `runner` | the script this arm runs | overrides the card's runner, for a candidate bundle that lives in its own worktree |
 | `bundle` | none | descriptive record of a candidate's changed surface |
 | `expected_protocol_hash` | none | if set, planning fails when the computed hash differs |
@@ -143,11 +143,12 @@ invocation's hash from the runner's own `task_contract`; rollouts of one task sh
 Before the first run, `--execute` runs the runner with `--dry-run` once per live arm and requires the printed hash
 to equal the planned one (scripted clients print no hash; their recorded `config.json` is checked after the run).
 After every invocation the recorded `config.json` (18 fields: protocol hash, arm, client, models, routing, tasks,
-task file and task contracts, budgets, execution, guards, and limits) and every result's `protocol_hash` must match
-the plan, or the campaign stops as `corrupted_protocol`.
+task file and task contracts, budgets, execution, guards, and limits; plus `treatments` when an arm turns one on)
+and every result's `protocol_hash` must match the plan, or the campaign stops as `corrupted_protocol`.
 
 The protocol hash itself covers the runner version, context policy, instructions, tool schemas, evaluator bytes,
-managed root files, routing, execution, guards, toolset version and task contracts. It does **not** cover budgets,
+managed root files, routing, execution, guards, toolset version, task contracts and, only when one is on, the
+S6 treatments (name, version, fixed texts, parameters, and the tool schemas they add). It does **not** cover budgets,
 task ids of tasks without a contract, or `max_tokens`, so the replay check compares the full recorded config, not
 only the hash.
 
