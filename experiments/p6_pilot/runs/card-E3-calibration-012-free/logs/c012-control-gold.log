@@ -1,0 +1,4 @@
+# 2026-09-28T04:38:17+00:00 'C:\Users\grant\harnessExperiment\.runtime\test-venv\Scripts\python.exe' 'C:\Users\grant\harnessExperiment\experiments\p6_pilot\run_pilot.py' --client gold --arm pressure-recent-v3 --backend oci --oci-image localhost/reticle-p6-task:py313-v1 --tasks experiments/mutation_tasks/tasks.mutations.json sqlparse-mut-001 sqlparse-mut-006 --run-name c012-control-gold --max-calls-per-run 20 --max-context-bytes 80000 --max-tokens 4096 --pytest-timeout 600 --max-attempts-per-run 30 --elapsed-cap-seconds 1200
+task budgets per run: {"gold-client": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 30, "active_seconds": 1200.0}}
+sqlparse-mut-001__gold-client: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}
+sqlparse-mut-006__gold-client: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}

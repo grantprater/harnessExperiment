@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "E3-calibration-012-free",
   "title": "Mutation-task bank with a free OpenRouter model through the Reticle interface",
-  "status": "approved",
+  "status": "inconclusive",
   "markdown": "experiments/session_harness/E3-calibration-012-free.md",
   "hypothesis": "A free model on the same 20 tasks lands in the 30-70% acceptance zone (Sonnet: 80%), giving the harness comparisons a gradient in the regime where both Self-Harness and ModularRSI report the largest effects.",
   "run_prefix": "c012",
@@ -175,5 +175,6 @@
     "The controls are the recorded v2 controls (2 tasks), named so that a resume finds them complete instead of rerunning controls on the 20 tasks.",
     "Choices the markdown leaves open, made here: 24 attempts per run and max_tokens 4096 (as positive-control Arm R and the S6a smoke), 60 s and 300 s retry backoff, a 3,600 s wall limit per invocation.",
     "The markdown's fallback 'trusted-local only if the image is missing' is not expressible: a different backend is a different protocol, so a missing image stops the preflight and needs an amended card."
-  ]
+  ],
+  "note_stop": "Stopped by the owner on 2026-09-28 after 12 completed runs (1 accepted: mut-040-r1; 11 model_call_limit rejected, none edited before the budget) to conserve the free daily request allowance for the Ultra calibration (card 017). Resume with --resume if ever continued."
 }

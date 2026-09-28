@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "id": "E3-calibration-017-ultra",
+  "title": "Mutation-task bank with Nemotron 3 Ultra (free) through the Reticle interface",
+  "status": "approved",
+  "markdown": "experiments/session_harness/E3-calibration-017-ultra.md",
+  "hypothesis": "Nemotron 3 Ultra 550B (free) lands between Super (5% on 12 runs) and Sonnet (80%) on the same 20 tasks; one rollout screens where, within today's free-request allowance.",
+  "run_prefix": "c017",
+  "run_name_template": "{prefix}-{task}-r{rollout}",
+  "runner": {
+    "script": "experiments/p6_pilot/run_pilot.py",
+    "runner_version": 8
+  },
+  "environment": {
+    "claude_cli_version": "2.1.283 (Claude Code)"
+  },
+  "prerequisites": [
+    {
+      "text": "S6a wiring: run_pilot.py --tasks FILE.json IDS applies mutation_patch and removes hidden_paths (materializer mutation-workspace-v2, merged at eb3c160)",
+      "done": true
+    },
+    {
+      "text": "gold/noop controls on materializer v2 passed (s6a-control-gold-mut-v2, s6a-control-noop-mut-v2 at 34723a3)",
+      "done": true
+    },
+    {
+      "text": "owner approval: sequence approved in session 2026-09-28 ('I agree with that sequence'); permission rule added by the owner",
+      "done": true
+    }
+  ],
+  "arms": [
+    {
+      "name": "ultra-incumbent",
+      "client": "openrouter",
+      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "provider": null,
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [],
+      "expected_protocol_hash": null,
+      "note": "As card 012's arm with the Ultra model. One rollout only (request allowance); second rollout under a new card if the rate is in the zone."
+    }
+  ],
+  "controls": [
+    {
+      "name": "gold",
+      "client": "gold",
+      "task_set": "controls",
+      "like_arm": "ultra-incumbent",
+      "expect": "accepted",
+      "run_name": "c017-control-gold"
+    },
+    {
+      "name": "noop",
+      "client": "noop",
+      "task_set": "controls",
+      "like_arm": "ultra-incumbent",
+      "expect": "rejected",
+      "run_name": "c017-control-noop"
+    }
+  ],
+  "tasks": {
+    "file": "experiments/mutation_tasks/tasks.mutations.json",
+    "file_sha256": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa",
+    "sets": {
+      "calibration": {
+        "ref": {
+          "path": "experiments/session_harness/E3-calibration-007-tasks.json",
+          "key": "task_ids",
+          "sha256": "1f1ccca4de8571c218c2c54ed06cc6fe8d5bcc5ce8c82ce775e48b387342c708"
+        },
+        "note": "The markdown card's selection: select_calibration_tasks.py --seed 7, recorded before any calibration run."
+      },
+      "controls": {
+        "ids": [
+          "sqlparse-mut-001",
+          "sqlparse-mut-006"
+        ],
+        "note": "The tasks the recorded v2 controls ran on (mut-006 is not in the calibration set)."
+      }
+    }
+  },
+  "blocks": [
+    {
+      "name": "calibration",
+      "task_set": "calibration",
+      "arms": [
+        "ultra-incumbent"
+      ],
+      "rollouts": 1,
+      "arm_order": {
+        "rule": "fixed"
+      }
+    }
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 20,
+      "model_attempts": 30,
+      "active_seconds": 1200,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {
+        "default": 120,
+        "max": 600
+      },
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {
+      "max_runs": 22,
+      "max_model_attempts": 700,
+      "monetary_cap_usd": 0.0,
+      "note": "20 runs x 30 attempts = 600 plus reruns; fits the remaining free allowance (~740 at creation)"
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [
+      60,
+      300
+    ],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "The markdown asks for the repeat flag to be recorded while the run continues. run_pilot.py records the flag only with --stop-on-repeats, which also stops the run, so this card runs without the guard and repeat_flags are derived from the transcripts afterwards (S6b).",
+    "manual": [
+      "Evaluator leakage, evidence loss, or authority escape stops the campaign (run_card.py detects evidence loss and protocol drift; leakage and escape need trajectory review).",
+      "A symlink created by a run command is unreadable on the Windows host and ends the campaign as evidence loss (markdown card, 'Two runtime behaviours remain'); resume reruns the interrupted task.",
+      "Do not tune statements on these tasks after seeing results; they become the held-in set."
+    ]
+  },
+  "measurements": {
+    "per_run": [
+      "accepted",
+      "stop_reason",
+      "responses_used",
+      "provider_attempts",
+      "tool_calls",
+      "active_seconds",
+      "wall_seconds",
+      "tokens",
+      "first_edit_response",
+      "rejected_calls",
+      "repeat_flags",
+      "edit_in_gold_files",
+      "verification_before_finish"
+    ],
+    "campaign": [
+      "acceptance_rate_ci",
+      "outcome_distribution",
+      "per_task_outcomes",
+      "evolution_set",
+      "acceptance_by:mutation_kind",
+      "acceptance_by_size:fail_to_pass"
+    ]
+  },
+  "decision_rule": "Pass for the card: 40 runs complete with evidence and at least 5 contrastive tasks (1/2). Otherwise report the distribution and propose the difficulty change under a new card. The evolution set is the 1/2 tasks plus 0/2 tasks whose trajectories show a fixable mechanism; tasks at 2/2 leave the set.",
+  "report": {
+    "path": "experiments/session_harness/E3-calibration-007-report.md",
+    "sets_path": "experiments/session_harness/E3-calibration-007.sets.json"
+  },
+  "notes": [
+    "One runner invocation per task and rollout, named c007-<task>-r<n>, with --max-total-calls 24, so --resume recognises those run directories. The markdown card's printed command instead runs one 20-task invocation per rollout (--run-name e3-cal007-sonnet-rk, --max-total-calls 480); that form records a single protocol hash over all 20 task contracts and is not what this card plans.",
+    "The controls are the recorded v2 controls (2 tasks), named so that a resume finds them complete instead of rerunning controls on the 20 tasks.",
+    "Choices the markdown leaves open, made here: 24 attempts per run and max_tokens 4096 (as positive-control Arm R and the S6a smoke), 60 s and 300 s retry backoff, a 3,600 s wall limit per invocation.",
+    "The markdown's fallback 'trusted-local only if the image is missing' is not expressible: a different backend is a different protocol, so a missing image stops the preflight and needs an amended card."
+  ]
+}

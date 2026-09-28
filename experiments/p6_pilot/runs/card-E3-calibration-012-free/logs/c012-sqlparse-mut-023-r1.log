@@ -1,0 +1,8 @@
+# 2026-09-28T04:43:07+00:00 'C:\Users\grant\harnessExperiment\.runtime\test-venv\Scripts\python.exe' 'C:\Users\grant\harnessExperiment\experiments\p6_pilot\run_pilot.py' --client openrouter --models nvidia/nemotron-3-super-120b-a12b:free --arm pressure-recent-v3 --backend oci --oci-image localhost/reticle-p6-task:py313-v1 --tasks experiments/mutation_tasks/tasks.mutations.json sqlparse-mut-023 --run-name c012-sqlparse-mut-023-r1 --max-calls-per-run 20 --max-context-bytes 80000 --max-tokens 4096 --pytest-timeout 600 --max-attempts-per-run 30 --max-total-calls 30 --elapsed-cap-seconds 1200
+1 runs (1 tasks x 1 models), arm pressure-recent-v3, protocol 96fdc06fdf73
+model calls: at most 20 per run -> at most 20 calls (HTTP retries count toward --max-total-calls=30)
+per-run guards: {"stop_on_repeats": false, "resume_after_provider_stop": 0, "resume_wait_seconds": null}; backend isolated-oci
+  nvidia/nemotron-3-super-120b-a12b:free [unpinned routing]: $0.000/M in, $0.000/M out; worst case <= $0.0000/call, <= $0.00 for its runs
+    with --max-total-calls=30 HTTP attempts: worst case <= $0.0000 for this invocation
+task budgets per run: {"nvidia/nemotron-3-super-120b-a12b:free": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 30, "active_seconds": 1200.0}}
+sqlparse-mut-023__nvidia_nemotron-3-super-120b-a12b_free: model_call_limit -> rejected {'fail-to-pass': 'fail', 'pass-to-pass': 'pass'}
