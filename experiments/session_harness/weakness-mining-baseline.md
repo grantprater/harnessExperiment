@@ -144,6 +144,9 @@ mechanisms are `explored_until_budget`, `late_repro_then_rejected_command_loop`,
 ## Not done
 
 - No run from card 007: the S6a trajectories do not exist yet. This baseline is 7 runs on one task.
-- No cheap classifier (for example Jev) was trained or measured. The labelled set is reserved as its held-out set.
+- No cheap classifier was trained, and none was measured in this baseline. The labelled set is reserved as the
+  held-out set for one.
 - No human labels. The adjudication is by the orchestrating agent.
 - Runs 1 and 2 and the native arm were not labelled by Claude. They have rule phases only, in the table above.
+
+Follow-up: Jev (`typesafe/jev-1.13`, untrained, three decomposed questions) was measured on this set in [labels/jev-agreement.md](labels/jev-agreement.md): Jev = gold 49/49, 0 `diagnose`; gold has no `diagnose`, so its diagnose recall is unmeasured.
