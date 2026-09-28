@@ -765,7 +765,10 @@ def remove_tree(path: Path, attempts: int = 3) -> Optional[str]:
         if not path.exists():
             return None
         try:
-            shutil.rmtree(path, onexc=clear_readonly)
+            if sys.version_info >= (3, 12):
+                shutil.rmtree(path, onexc=clear_readonly)
+            else:  # Python 3.11 (a cloud VM's python3): onexc is 3.12+; onerror passes the same three arguments
+                shutil.rmtree(path, onerror=clear_readonly)
         except OSError as exc:
             error = repr(exc)
             time.sleep(1 + attempt)
