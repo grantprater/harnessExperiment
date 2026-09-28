@@ -141,7 +141,7 @@ Command as run (amendment 2026-09-28, before the first run): one invocation per 
 sequential under `.runtime/locks/live-run.lock`, via the committed driver:
 
 ```powershell
-.\.runtime	est-venv\Scripts\python.exe experiments\session_harnessun_card007.py --execute
+.\.runtime\test-venv\Scripts\python.exe experiments/session_harness/run_card007.py --execute
 ```
 
 Each invocation passes `--client claude-cli --models sonnet --backend oci --arm pressure-recent-v3 --max-calls-per-run 20
