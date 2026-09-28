@@ -1,0 +1,2 @@
+{"acceptance": "accepted", "control": "c018-control-gold", "exit": 0, "kind": "gold", "seconds": 12.7, "ts_utc": "2026-09-28T05:46:06.113148+00:00"}
+{"acceptance": "rejected", "control": "c018-control-noop", "exit": 0, "kind": "noop", "seconds": 13.5, "ts_utc": "2026-09-28T05:46:19.641261+00:00"}

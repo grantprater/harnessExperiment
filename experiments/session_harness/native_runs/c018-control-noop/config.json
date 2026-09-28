@@ -1,0 +1,100 @@
+{
+  "native_version": 2,
+  "run_name": "c018-control-noop",
+  "task_id": "sqlparse-mut-001",
+  "task_file": {
+    "path": "experiments/mutation_tasks/tasks.mutations.json",
+    "sha256_lf": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa"
+  },
+  "task_contract": {
+    "task_id": "sqlparse-mut-001",
+    "materializer": "mutation-workspace-v2",
+    "mutation_kind": "compare_flip",
+    "mutation_file": "sqlparse/filters/others.py",
+    "hidden_tests": true,
+    "hidden_paths": [
+      "tests"
+    ],
+    "mutation_patch_sha256": "dc9408a6c03f59a8dd8db1fd35fbb3a6c17a2d299c5a2b559786cc503031d913",
+    "statement_sha256": "8c82588cd4653d1b5cf90b37461801b6064632e5ed26cfdd2c7b288eda46f109"
+  },
+  "materializer": "run_pilot.ensure_commits + run_pilot.materialize_workspace (mutation-workspace-v2 for a mutation task)",
+  "model": "sonnet",
+  "cli_version": null,
+  "arguments": null,
+  "scripted": {
+    "kind": "noop",
+    "replaces": "the CLI step only; every other step is the native arm's"
+  },
+  "prompt": "You are working in a source checkout of sqlparse (https://github.com/andialbrecht/sqlparse) at an upstream commit. The following problem was reported:\n\nsqlparse has a regression: 1 previously passing check of its behaviour now fails. Affected behaviour: 'format reindent: stmts'. The first failing check reports: `AssertionError: assert 'select foo; ...n\\nselect bar' == 'select foo; ...n\\nselect bar'`. Fix the library so this behaviour is correct again; behaviour that works today must keep working.\n\nChange the library so the reported behavior is correct. Hidden upstream tests will be run on your final workspace; tests you add or edit are not used for acceptance, but you may write and run tests to check your work (for example `pytest tests/test_example.py -q` with Bash). Stop when you are done.",
+  "prompt_sha256": "ee3e905181cb7821105080a2766876537c2a2124aeb128d2c87817b9adaadf25",
+  "prompt_source": "run_pilot.INSTRUCTIONS with prompt_substitutions applied, formatted with the task's repo, repo_url and statement; sent on stdin as the whole user message",
+  "prompt_substitutions": [
+    [
+      "with the run tool)",
+      "with Bash)"
+    ],
+    [
+      "Call finish when you are done.",
+      "Stop when you are done."
+    ]
+  ],
+  "native_instructions_sha256": "8e3c6786d5e9d8c44a6b3062d89441fb82944efd9b93c076a121ba6c8f02a70c",
+  "reticle_opening_request_sha256": "c8379db5af5801558633462b80669d88334596c8e38ef68469fb18524ebb1014",
+  "reticle_instructions_sha256": "d6194fb95e1800361f2a94cd45ccc9e0096d17ef732b2965bd6537aa17ef2e41",
+  "allowed_tools": "Bash,PowerShell,Read,Edit,Write,Glob,Grep",
+  "init_check": "tools == allowed_tools, no MCP server, apiKeySource none, bypassPermissions; else killed",
+  "budgets": {
+    "max_turns": 20,
+    "wall_seconds": 1200.0,
+    "enforcement": "--max-turns in the CLI; hard kill of the CLI process tree at the wall cap"
+  },
+  "scratch_base": "C:\\Users\\grant\\AppData\\Local\\Temp\\claude\\C--Users-grant\\72ade5de-925d-4957-b453-faba43942eec\\scratchpad\\native\\scratch\\reticle-native-control",
+  "workspace": "C:\\Users\\grant\\AppData\\Local\\Temp\\claude\\C--Users-grant\\72ade5de-925d-4957-b453-faba43942eec\\scratchpad\\native\\scratch\\reticle-native-control\\c018-control-noop\\workspace",
+  "execution": {
+    "backend": "isolated-oci",
+    "image": "localhost/reticle-p6-task:py313-v1",
+    "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+    "guest_python": "python",
+    "container_user_arguments": [
+      "--userns",
+      "keep-id"
+    ],
+    "authority": "isolated OCI: task workspace mount only, no network, unprivileged user"
+  },
+  "pytest_timeout_seconds": 600,
+  "task_interpreter": "C:\\Users\\grant\\harnessExperiment\\.runtime\\bugs-venv\\Scripts\\python.exe",
+  "environment_added": {
+    "PATH": "C:\\Users\\grant\\harnessExperiment\\.runtime\\bugs-venv\\Scripts (prepended)",
+    "PYTHONPATH": "workspace (its src/ if any)",
+    "PYTHONIOENCODING": "utf-8",
+    "OMP/MKL/OPENBLAS_NUM_THREADS": "1"
+  },
+  "authority": {
+    "cli": "host process with bypassPermissions (not isolated); cwd = the workspace",
+    "network": "available to the CLI and every command it runs; cannot be disabled here",
+    "host_files": "readable and writable outside the workspace; this repository (task files, run records), the task clones and caches are not hidden from it",
+    "leak_checks": [
+      "scratch base outside every checkout of this repository and the task clones, and containing none of them",
+      "scratch base on a local fixed drive (not UNC, network, removable, or OneDrive)",
+      "scratch base holds nothing but this run's directory (no earlier workspace, pristine copy, or evaluator bundle)",
+      "workspace without the task's hidden_paths, .git, or evaluator files",
+      "task interpreter, outside the workspace and without PYTHONPATH, cannot import the task's package"
+    ]
+  },
+  "evaluator": "run_pilot.build_evaluator + acceptance_plan + AcceptanceRunner on the final workspace, the bundle built only after the agent step",
+  "created_at": "2026-09-28T05:46:07.991085+00:00",
+  "source_revision": {
+    "commit": "5bf58600dbbc7852c8c52c07b2be16af061ec9f5",
+    "tracked_changes": true
+  },
+  "initial_workspace_revision": "sha256:65c8a02f25d10159d6bd65e2dbf59e9c6bc1eadc8ac4eb01825cb2df4cfd2429",
+  "leak_checks_passed": [
+    "scratch base outside every checkout of this repository and the task clones, and containing none of them",
+    "scratch base on a local fixed drive (not UNC, network, removable, or OneDrive)",
+    "scratch base holds nothing but this run's directory (no earlier workspace, pristine copy, or evaluator bundle)",
+    "workspace without the task's hidden_paths, .git, or evaluator files",
+    "task interpreter, outside the workspace and without PYTHONPATH, cannot import the task's package"
+  ],
+  "base_file_count": 59
+}
