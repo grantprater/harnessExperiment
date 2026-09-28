@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "id": "E3-diagnostic-011",
+  "title": "Budget or diagnosis? The three 0/2 tasks of card 007 at 40 responses",
+  "status": "approved",
+  "markdown": "experiments/session_harness/E3-diagnostic-011.md",
+  "hypothesis": "If the three tasks that failed both rollouts of card 007 (sqlparse-mut-032, -057, -061) resolve at 40 responses, budget was the constraint and pacing treatments are the right family; if they still fail, the model cannot locate the fault and pacing will not help.",
+  "run_prefix": "c011",
+  "run_name_template": "{prefix}-{task}-r{rollout}",
+  "runner": {
+    "script": "experiments/p6_pilot/run_pilot.py",
+    "runner_version": 8
+  },
+  "environment": {
+    "claude_cli_version": "2.1.283 (Claude Code)"
+  },
+  "prerequisites": [
+    {
+      "text": "S6a wiring: run_pilot.py --tasks FILE.json IDS applies mutation_patch and removes hidden_paths (materializer mutation-workspace-v2, merged at eb3c160)",
+      "done": true
+    },
+    {
+      "text": "gold/noop controls on materializer v2 passed (s6a-control-gold-mut-v2, s6a-control-noop-mut-v2 at 34723a3)",
+      "done": true
+    },
+    {
+      "text": "owner approval: sequence approved in session 2026-09-28 ('I agree with that sequence'); permission rule added by the owner",
+      "done": true
+    }
+  ],
+  "arms": [
+    {
+      "name": "incumbent",
+      "client": "claude-cli",
+      "model": "sonnet",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [],
+      "expected_protocol_hash": null,
+      "note": "As card 007's incumbent arm, with the response budget doubled to 40 (and active seconds to 2400). Nothing else changes."
+    }
+  ],
+  "controls": [
+    {
+      "name": "gold",
+      "client": "gold",
+      "task_set": "controls",
+      "like_arm": "incumbent",
+      "expect": "accepted",
+      "run_name": "s6a-control-gold-mut-v2"
+    },
+    {
+      "name": "noop",
+      "client": "noop",
+      "task_set": "controls",
+      "like_arm": "incumbent",
+      "expect": "rejected",
+      "run_name": "s6a-control-noop-mut-v2"
+    }
+  ],
+  "tasks": {
+    "file": "experiments/mutation_tasks/tasks.mutations.json",
+    "file_sha256": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa",
+    "sets": {
+      "negative": {
+        "ids": [
+          "sqlparse-mut-032",
+          "sqlparse-mut-057",
+          "sqlparse-mut-061"
+        ],
+        "note": "card 007's 0/2 tasks"
+      },
+      "controls": {
+        "ids": [
+          "sqlparse-mut-001",
+          "sqlparse-mut-006"
+        ],
+        "note": "The tasks the recorded v2 controls ran on (mut-006 is not in the calibration set)."
+      }
+    }
+  },
+  "blocks": [
+    {
+      "name": "diagnostic",
+      "task_set": "negative",
+      "arms": [
+        "incumbent"
+      ],
+      "rollouts": 2,
+      "arm_order": {
+        "rule": "fixed"
+      }
+    }
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 40,
+      "model_attempts": 48,
+      "active_seconds": 2400,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {
+        "default": 120,
+        "max": 600
+      },
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {
+      "max_runs": 6,
+      "max_model_attempts": 320,
+      "monetary_cap_usd": null,
+      "note": "6 runs x 48 attempts = 288, plus room for 1 rerun"
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [
+      60,
+      300
+    ],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "The markdown asks for the repeat flag to be recorded while the run continues. run_pilot.py records the flag only with --stop-on-repeats, which also stops the run, so this card runs without the guard and repeat_flags are derived from the transcripts afterwards (S6b).",
+    "manual": [
+      "Evaluator leakage, evidence loss, or authority escape stops the campaign (run_card.py detects evidence loss and protocol drift; leakage and escape need trajectory review).",
+      "A symlink created by a run command is unreadable on the Windows host and ends the campaign as evidence loss (markdown card, 'Two runtime behaviours remain'); resume reruns the interrupted task.",
+      "Do not tune statements on these tasks after seeing results; they become the held-in set."
+    ]
+  },
+  "measurements": {
+    "per_run": [
+      "accepted",
+      "stop_reason",
+      "responses_used",
+      "provider_attempts",
+      "tool_calls",
+      "active_seconds",
+      "wall_seconds",
+      "tokens",
+      "first_edit_response",
+      "rejected_calls",
+      "repeat_flags",
+      "edit_in_gold_files",
+      "verification_before_finish"
+    ],
+    "campaign": [
+      "acceptance_rate_ci",
+      "outcome_distribution",
+      "per_task_outcomes",
+      "evolution_set",
+      "acceptance_by:mutation_kind",
+      "acceptance_by_size:fail_to_pass"
+    ]
+  },
+  "decision_rule": "Pass for the card: 40 runs complete with evidence and at least 5 contrastive tasks (1/2). Otherwise report the distribution and propose the difficulty change under a new card. The evolution set is the 1/2 tasks plus 0/2 tasks whose trajectories show a fixable mechanism; tasks at 2/2 leave the set.",
+  "report": {
+    "path": "experiments/session_harness/E3-calibration-007-report.md",
+    "sets_path": "experiments/session_harness/E3-calibration-007.sets.json"
+  },
+  "notes": [
+    "One runner invocation per task and rollout, named c007-<task>-r<n>, with --max-total-calls 24, so --resume recognises those run directories. The markdown card's printed command instead runs one 20-task invocation per rollout (--run-name e3-cal007-sonnet-rk, --max-total-calls 480); that form records a single protocol hash over all 20 task contracts and is not what this card plans.",
+    "The controls are the recorded v2 controls (2 tasks), named so that a resume finds them complete instead of rerunning controls on the 20 tasks.",
+    "Choices the markdown leaves open, made here: 24 attempts per run and max_tokens 4096 (as positive-control Arm R and the S6a smoke), 60 s and 300 s retry backoff, a 3,600 s wall limit per invocation.",
+    "The markdown's fallback 'trusted-local only if the image is missing' is not expressible: a different backend is a different protocol, so a missing image stops the preflight and needs an amended card."
+  ]
+}
