@@ -1,9 +1,13 @@
 """Label every assistant response of recorded runs by rules, Claude, or Jev, and measure their agreement.
 
-Rules: `weakness_mining.label_trajectory`. Claude (`--labeller claude`, the default): the local CLI in headless mode
-(subscription login, no API key, no tools, no settings), one call per response, with the fixed system prompt
-`labels/claude_phase_prompt.md` and a user message holding the task statement, a one-line summary of each earlier
-response, and the response's text, calls, and results. Claude calls are serialised and run under the shared
+Rules: `weakness_mining.label_trajectory`; `label --labeller rules` writes them to a file (one record per response
+with the rule phase and the two rule facts Jev's yes/no questions are scored against, and one run record per run with
+the run labels and the failure signature), rewriting the file since the rules are deterministic.
+
+Claude (`--labeller claude`, the default): the local CLI in headless mode (subscription login, no API key, no
+tools, no settings), one call per response, with the fixed system prompt `labels/claude_phase_prompt.md` and a user
+message holding the task statement, a one-line summary of each earlier response, and the response's text, calls, and
+results. Claude calls are serialised and run under the shared
 live-run lock (`.runtime/locks/live-run.lock` in the main checkout), so they never overlap a live harness run.
 
 Jev (`--labeller jev`, see `jev_labeller.py`): OpenRouter's decisions endpoint, one serialised call per response
@@ -12,17 +16,22 @@ verified_after_edit). It reads the key from `OPENROUTER_API_KEY` in the environm
 file, `labels/labels_jev.jsonl` by default, keyed by (run, response), so the held-out `labels.jsonl` is never
 rewritten; each record also carries the rule-derived facts the two yes/no questions are scored against.
 
-`label` appends one record per response to the labels file and skips responses already labelled, so an
-interrupted pass resumes. `agreement` prints per-phase agreement between the rules and Claude and, where gold labels
+`label` (Claude or Jev) appends one record per response to the labels file and skips responses already labelled, so
+an interrupted pass resumes. `agreement` prints per-phase agreement between the rules and Claude and, where gold labels
 exist, each method's agreement with them, then every disagreement. `agreement --labeller jev` prints Jev against
 gold, the rules, and Claude, its confidence calibration, the yes/no questions against the rule facts, cost and time,
-and, given `--repeat`, the determinism of a second identical pass.
+and, given `--repeat`, the determinism of a second identical pass. `develop` compares Jev with the rules on a
+development set that has no gold phases (card 007 and later): per-phase agreement and the confusion matrix, the yes/no
+questions against the rule facts, every response whose Jev diagnose probability reaches a threshold (0.3 by default,
+fixed before the card-007 pass), and, given an adjudicated diagnose file, Jev's diagnose precision and recall.
 
 Usage:
   python experiments/session_harness/label_phases.py label RUN_DIR [RUN_DIR ...] [--labels FILE] [--model sonnet]
   python experiments/session_harness/label_phases.py label RUN_DIR [RUN_DIR ...] --labeller jev [--labels FILE]
   python experiments/session_harness/label_phases.py agreement [--labels FILE]
   python experiments/session_harness/label_phases.py agreement --labeller jev [--jev FILE] [--repeat FILE]
+  python experiments/session_harness/label_phases.py label RUN_DIR [RUN_DIR ...] --labeller rules --labels FILE
+  python experiments/session_harness/label_phases.py develop --rules FILE --jev FILE [--devset FILE] [--threshold 0.3]
 """
 
 from __future__ import annotations
@@ -200,6 +209,28 @@ def rule_facts(trajectory: wm.Trajectory) -> Dict[int, Dict[str, object]]:
     return {response.index: {"rule_phase": phase, "rule_edited_existing_source": response.index in edited,
                              "rule_verified_after_edit": response.index in rules.verify_responses}
             for response, phase in zip(trajectory.responses, rules.phases)}
+
+
+def label_rules(run_dirs: List[Path], labels_path: Path, task_files=wm.DEFAULT_TASK_FILES) -> None:
+    """Write the rule labels of every response and the run labels of every run (the file is rewritten)."""
+    gold = wm.load_gold_files(task_files)
+    lines = []
+    for run_dir in run_dirs:
+        trajectory = wm.load_run(run_dir)
+        for number, facts in rule_facts(trajectory).items():
+            lines.append({"kind": "response", "run": trajectory.run, "task_id": trajectory.task_id,
+                          "response": number, **facts})
+        record = wm.analyse(trajectory, gold.get(trajectory.task_id))
+        lines.append({"kind": "run", "run": trajectory.run, "task_id": trajectory.task_id,
+                      "acceptance": record["acceptance"], "stop_class": record["stop_class"],
+                      "rule": {key: record[key] for key in (
+                          "first_edit_response", "verified_before_finish", "edit_in_gold_files", "edited_files",
+                          "mechanism", "verifier_cause", "causal_status", "signature", "stuck_responses",
+                          "refetch_calls", "rejected_calls")}})
+    labels_path.parent.mkdir(parents=True, exist_ok=True)
+    labels_path.write_text("".join(json.dumps(line, ensure_ascii=False) + "\n" for line in lines),
+                           encoding="utf-8", newline="\n")
+    print(f"{sum(line['kind'] == 'response' for line in lines)} responses and {len(run_dirs)} runs -> {labels_path}")
 
 
 def jev_record(trajectory: wm.Trajectory, response: wm.Response, facts: Dict[str, object], request: str,
@@ -460,6 +491,122 @@ def jev_agreement_tables(records: List[dict], jev_rows: List[dict], repeat_rows:
     return "\n".join(lines)
 
 
+DIAGNOSE_THRESHOLD = 0.3  # fixed before the card-007 Jev pass: flag a response for a human look at this probability
+
+
+def _ratio(numerator: int, denominator: int) -> str:
+    return f"{numerator}/{denominator} = {numerator / denominator:.2f}" if denominator else f"{numerator}/0"
+
+
+def jev_development_tables(rule_rows: List[dict], jev_rows: List[dict], devset: Optional[List[dict]] = None,
+                           diagnose_threshold: float = DIAGNOSE_THRESHOLD, threshold: float = 0.5) -> str:
+    """Jev against the rules on a development set without gold phases; see the module docstring."""
+    rules = {(r["run"], r["response"]): r for r in rule_rows if r.get("kind") == "response"}
+    rows = [{**rules[(j["run"], j["response"])], **{k: v for k, v in j.items() if not k.startswith("rule_")}}
+            for j in jev_rows if j.get("kind") == "response" and (j["run"], j["response"]) in rules]
+    if not rows:
+        return "no Jev-labelled responses that are also in the rules file"
+    n = len(rows)
+    rule, jev_phases = [r["rule_phase"] for r in rows], [r["jev_phase"] for r in rows]
+    same = sum(a == b for a, b in zip(rule, jev_phases))
+    present = [p for p in wm.PHASES if p in rule or p in jev_phases]
+    lines = [f"Responses: {n} in {len({r['run'] for r in rows})} runs. Jev = rules {same}/{n} "
+             f"({100 * same / n:.1f}%), Cohen's kappa {kappa(rule, jev_phases):.2f}.", "",
+             "| Phase | Rule | Jev | Both | Jev = rule, of rule | Specific agreement |",
+             "|---|---:|---:|---:|---:|---:|"]
+    for phase in present:
+        both = sum(a == phase == b for a, b in zip(rule, jev_phases))
+        lines.append(f"| {phase} | {rule.count(phase)} | {jev_phases.count(phase)} | {both} | "
+                     f"{both}/{rule.count(phase)} | {_specific(jev_phases, rule, phase)} |")
+    lines += ["", "Confusion (rows: rule phase; columns: Jev phase):", "",
+              "| Rule \\ Jev | " + " | ".join(present) + " |", "|---|" + "---:|" * len(present)]
+    for phase in present:
+        lines.append(f"| {phase} | " + " | ".join(
+            str(sum(a == phase and b == other for a, b in zip(rule, jev_phases))) for other in present) + " |")
+
+    lines += ["", f"Yes/no questions against the rule facts (yes = Jev's value >= {threshold}):", "",
+              "| Question | Rule yes | Jev yes when rule yes | Lowest Jev value when rule yes | Rule no | "
+              "Jev yes when rule no | Highest Jev value when rule no |", "|---|---:|---:|---:|---:|---:|---:|"]
+    for name in YES_NO:
+        yes = [r[f"jev_{name}"] for r in rows if r[f"rule_{name}"]]
+        no = [r[f"jev_{name}"] for r in rows if not r[f"rule_{name}"]]
+        lines.append(f"| {name} | {len(yes)} | {sum(v >= threshold for v in yes)} | "
+                     f"{f'{min(yes):.3f}' if yes else '-'} | {len(no)} | {sum(v >= threshold for v in no)} | "
+                     f"{f'{max(no):.3f}' if no else '-'} |")
+
+    probability = {(r["run"], r["response"]): r["jev_probabilities"].get("diagnose", 0.0) for r in rows}
+    flagged = [r for r in rows if probability[(r["run"], r["response"])] >= diagnose_threshold
+               or r["jev_phase"] == "diagnose"]
+    adjudicated = {(d["run"], d["response"]): d for d in devset or [] if d.get("kind") == "response"}
+    note = {key: (record.get("diagnose_strength") or "") + (": " if record.get("diagnose_strength") else "")
+            + (record.get("note") or "") for key, record in adjudicated.items()}
+    values = sorted(probability.values())
+    lines += ["", f"`diagnose`: Jev chose it {jev_phases.count('diagnose')} times; its diagnose probability has "
+              f"mean {sum(values) / n:.3f}, median {values[n // 2]:.3f}, max {values[-1]:.3f}; "
+              f"{len(flagged)} responses have probability >= {diagnose_threshold} or Jev's choice diagnose:", "",
+              "| Run | # | Rule | Jev | Jev's diagnose probability | Adjudicated | Note |",
+              "|---|---:|---|---|---:|---|---|"]
+    for r in sorted(flagged, key=lambda r: -probability[(r["run"], r["response"])]):
+        verdict = adjudicated.get((r["run"], r["response"])) or {}
+        lines.append(f"| {r['run']} | {r['response']} | {r['rule_phase']} | {r['jev_phase']} | "
+                     f"{probability[(r['run'], r['response'])]:.3f} | {verdict.get('adjudicated_phase', '-')} | "
+                     f"{note.get((r['run'], r['response']), '')} |")
+    if adjudicated:
+        lines += ["", *diagnose_scores(rows, adjudicated, diagnose_threshold)]
+    lines += ["", f"Cost: {sum(r.get('jev_cost') or 0.0 for r in rows):.6f} USD for {n} responses "
+              f"({sum(r['jev']['attempts'] for r in rows)} attempts, "
+              f"{sum(r['jev']['input_tokens'] or 0 for r in rows)} input tokens); models "
+              f"{', '.join(sorted({str(r.get('jev_model')) for r in rows}))}."]
+    return "\n".join(lines)
+
+
+def diagnose_scores(rows: List[dict], adjudicated: Dict[tuple, dict], diagnose_threshold: float) -> List[str]:
+    """Jev's diagnose precision and recall against an adjudicated development set.
+
+    Each adjudicated record has `adjudicated_phase` and, for diagnose, `diagnose_strength` (`clear` or `borderline`);
+    strict truth counts clear cases only, lenient truth both. Records whose `complete` is true come from runs whose
+    every response was adjudicated for diagnose, so recall is measured over those runs; a response outside the file
+    counts as not diagnose. Precision is over every flagged response, which must all be adjudicated.
+    """
+    def truth(key, strict):
+        record = adjudicated.get(key) or {}
+        return record.get("adjudicated_phase") == "diagnose" and (
+            not strict or record.get("diagnose_strength") == "clear")
+
+    says_rules = [("Jev's choice is diagnose", lambda r: r["jev_phase"] == "diagnose"),
+                  (f"diagnose probability >= {diagnose_threshold}",
+                   lambda r: r["jev_probabilities"].get("diagnose", 0.0) >= diagnose_threshold)]
+    complete_runs = sorted({key[0] for key, record in adjudicated.items() if record.get("complete")})
+    in_complete = [r for r in rows if r["run"] in complete_runs]
+    lines = [f"Adjudicated: {len(adjudicated)} responses; {len(complete_runs)} runs adjudicated completely "
+             f"({len(in_complete)} responses). True diagnose: "
+             f"{sum(truth(key, True) for key in adjudicated)} clear, "
+             f"{sum(truth(key, False) for key in adjudicated)} clear or borderline.", "",
+             "| Truth | Jev says diagnose when | Flagged | True among flagged | Precision | Recall (complete runs) |",
+             "|---|---|---:|---:|---:|---:|"]
+    for strict in (True, False):
+        true_complete = [r for r in in_complete if truth((r["run"], r["response"]), strict)]
+        for name, says in says_rules:
+            flagged = [r for r in rows if says(r)]
+            missing = [r for r in flagged if (r["run"], r["response"]) not in adjudicated]
+            hits = sum(truth((r["run"], r["response"]), strict) for r in flagged)
+            found = sum(says(r) for r in true_complete)
+            lines.append(f"| {'clear only' if strict else 'clear or borderline'} | {name} | {len(flagged)}"
+                         f"{f' ({len(missing)} not adjudicated)' if missing else ''} | {hits} | "
+                         f"{_ratio(hits, len(flagged) - len(missing))} | {_ratio(found, len(true_complete))} |")
+    lines += ["", "| Run | # | Strength | Rule | Jev | Jev's diagnose probability | Hypothesis stated in |",
+              "|---|---:|---|---|---|---:|---|"]
+    by_key = {(r["run"], r["response"]): r for r in rows}
+    for key, record in sorted(adjudicated.items()):
+        if record.get("adjudicated_phase") != "diagnose" or key not in by_key:
+            continue
+        row = by_key[key]
+        lines.append(f"| {key[0]} | {key[1]} | {record.get('diagnose_strength')} | {row['rule_phase']} | "
+                     f"{row['jev_phase']} | {row['jev_probabilities'].get('diagnose', 0.0):.3f} | "
+                     f"#{record.get('hypothesis_response')} |")
+    return lines
+
+
 def kappa(first: List[str], second: List[str]) -> float:
     total = len(first)
     observed = sum(a == b for a, b in zip(first, second)) / total
@@ -473,16 +620,30 @@ def main(argv: Optional[List[str]] = None) -> None:
     sub = parser.add_subparsers(dest="command", required=True)
     label_parser = sub.add_parser("label")
     label_parser.add_argument("runs", nargs="+", type=Path)
-    label_parser.add_argument("--labeller", choices=("claude", "jev"), default="claude")
-    label_parser.add_argument("--labels", type=Path, help=f"default {LABELS.name}, or {LABELS_JEV.name} for Jev")
+    label_parser.add_argument("--labeller", choices=("claude", "jev", "rules"), default="claude")
+    label_parser.add_argument("--labels", type=Path, help=f"default {LABELS.name}, or {LABELS_JEV.name} for Jev; "
+                              "required for rules")
     label_parser.add_argument("--model", default="sonnet", help="Claude CLI model (Claude labeller only)")
     agreement_parser = sub.add_parser("agreement")
     agreement_parser.add_argument("--labeller", choices=("claude", "jev"), default="claude")
     agreement_parser.add_argument("--labels", type=Path, default=LABELS)
     agreement_parser.add_argument("--jev", type=Path, default=LABELS_JEV)
     agreement_parser.add_argument("--repeat", type=Path, help="a second Jev pass over the same responses")
+    develop_parser = sub.add_parser("develop")
+    develop_parser.add_argument("--rules", type=Path, required=True, help="a rules file from label --labeller rules")
+    develop_parser.add_argument("--jev", type=Path, required=True)
+    develop_parser.add_argument("--devset", type=Path,
+                                help="adjudicated responses (adjudicated_phase, diagnose_strength, complete)")
+    develop_parser.add_argument("--threshold", type=float, default=DIAGNOSE_THRESHOLD, help="diagnose probability")
     args = parser.parse_args(argv)
-    if args.command == "label" and args.labeller == "jev":
+    if args.command == "develop":
+        print(jev_development_tables(read_labels(args.rules), read_labels(args.jev),
+                                     read_labels(args.devset) if args.devset else None, args.threshold))
+    elif args.command == "label" and args.labeller == "rules":
+        if args.labels is None:
+            parser.error("--labels is required with --labeller rules")
+        label_rules(args.runs, args.labels)
+    elif args.command == "label" and args.labeller == "jev":
         label_jev(args.runs, args.labels or LABELS_JEV)
     elif args.command == "label":
         label(args.runs, args.labels or LABELS, args.model)

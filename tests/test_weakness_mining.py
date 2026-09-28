@@ -31,7 +31,17 @@ class SyntheticRun:
         self.transcript = TranscriptStore(self.runtime)
         self.task_id = task_id
         self.calls = 0
+        self.responses = 0
         self.runtime.journal.append("task_contract", {"task": {"task_id": task_id, "description": "Fix demo."}})
+
+    def request(self, omitted=()):
+        """A context manifest for the next request, omitting the transcript units of the given responses."""
+        units = [number - 1 for number in range(1, self.responses + 1) if number not in omitted]
+        self.runtime.journal.append("context_manifest", {"manifest": {
+            "message_order": ["contract", "original-task"] + [f"transcript:{unit}:0" for unit in units],
+            "omitted_items": [{"kind": "transcript_unit", "reason": "context_pressure", "unit_index": number - 1}
+                              for number in sorted(omitted)]}})
+        return self
 
     def respond(self, *calls, text=""):
         """calls: (tool, arguments, status, content, revision_before)"""
@@ -42,6 +52,7 @@ class SyntheticRun:
             tool_calls.append({"id": call_id, "type": "function",
                                "function": {"name": tool, "arguments": json.dumps(arguments)}})
             results.append((call_id, tool, status, content, revision))
+        self.responses += 1
         self.transcript.append({"role": "assistant", "content": text, "tool_calls": tool_calls})
         for call_id, tool, status, content, revision in results:
             self.runtime.journal.append("action_outcome", {"result": {
@@ -55,11 +66,22 @@ class SyntheticRun:
         self.runtime.journal.append("provider_attempt_finished", {"outcome": outcome})
         return self
 
-    def end(self, stop_reason, acceptance, fail_to_pass="fail", pass_to_pass="pass", error=None):
+    def end(self, stop_reason, acceptance, fail_to_pass="fail", pass_to_pass="pass", error=None, failing=None):
+        """failing: {criterion: (expected, failing)} for an evaluator report and tool output in the artifact store."""
         self.runtime.journal.append("agent_run_result", {"result": {
             "task_id": self.task_id, "stop_reason": stop_reason, "error": error}})
-        self.runtime.journal.append("acceptance_decision", {"decision": {
-            "status": acceptance, "criterion_outcomes": {"fail-to-pass": fail_to_pass, "pass-to-pass": pass_to_pass}}})
+        decision = {"status": acceptance, "criterion_outcomes": {"fail-to-pass": fail_to_pass,
+                                                                 "pass-to-pass": pass_to_pass}}
+        if failing is not None:
+            output = {"criteria": {name: {"coverage_ids": [f"t{i}" for i in range(expected)],
+                                          "failing": [f"t{i}" for i in range(bad)], "missing": []}
+                                   for name, (expected, bad) in failing.items()}}
+            tool = self.runtime.artifacts.put(b"evaluator log\n" + json.dumps(output).encode("utf-8"),
+                                              "application/json", "evt_eval", labels=["evaluator-output"])
+            report = self.runtime.artifacts.put(json.dumps({"tool_output_artifact_id": tool.artifact_id}).encode(),
+                                                "application/json", "evt_report", labels=["acceptance-report"])
+            decision["report_artifact_id"] = report.artifact_id
+        self.runtime.journal.append("acceptance_decision", {"decision": decision})
         return self.run_dir
 
 
@@ -110,6 +132,52 @@ class WeaknessMiningTests(unittest.TestCase):
         self.assertEqual(record["causal_status"], "rejected_calls+repeated_call")
         self.assertEqual(record["mechanism"], "edit_unverified")
         self.assertEqual(record["first_edit_response"], 6)
+
+    def test_a_call_whose_earlier_result_the_context_omitted_is_a_refetch_not_a_repeat(self):
+        run = SyntheticRun(self.root, "refetch")
+        run.request().respond(read("pkg/core.py"))
+        run.request().respond(read("pkg/other.py"))
+        run.request(omitted={1}).respond(read("pkg/core.py"))  # response 1's result was omitted: a refetch
+        run.request(omitted={1}).respond(read("pkg/core.py"))  # response 3's identical result is in context: stuck
+        # other.py's only earlier result (2) omitted: refetch; core.py's result from 4 still in context: a repeat
+        run.request(omitted={1, 2, 3}).respond(read("pkg/other.py"), read("pkg/core.py"))
+        rejected = ("run", {"command": "cd /testbed && python r.py"}, "rejected", "ERROR: shell operators", BASE)
+        run.request(omitted={1, 2, 3}).respond(rejected)
+        run.request(omitted={1, 2, 3, 6}).respond(rejected)  # the rejection itself was omitted: a refetch too
+        record = self.analyse(run.end("model_call_limit", "rejected"))
+        self.assertEqual(record["phases"], ["explore", "explore", "explore", "stuck", "explore", "reproduce",
+                                            "reproduce"])
+        self.assertEqual(record["stuck_responses"], [4])
+        self.assertEqual(record["refetch_calls"], 3)
+        self.assertEqual(record["causal_status"], "rejected_calls+repeated_call+refetch_after_omission")
+        self.assertEqual([r.omitted for r in wm.load_run(self.root / "refetch").responses][2:4],
+                         [frozenset({1}), frozenset({1})])
+        self.assertEqual(wm._manifest_omissions({}), (1, frozenset()))  # the first request: response 1
+
+    def test_without_manifests_every_earlier_result_counts_as_in_context(self):
+        run = SyntheticRun(self.root, "no-manifest")
+        run.respond(read("pkg/core.py"))
+        run.respond(read("pkg/core.py"))
+        record = self.analyse(run.end("model_call_limit", "rejected"))
+        self.assertEqual((record["phases"], record["refetch_calls"]), (["explore", "stuck"], 0))
+
+    def test_test_discovery_and_pip_are_look_only_commands(self):
+        run = SyntheticRun(self.root, "discovery")
+        run.respond(("run", {"command": "python -m pytest --collect-only -q"}, "error", "no tests collected", BASE))
+        run.respond(("run", {"command": "pip download sqlparse --no-deps -d /tmp/x"}, "timeout", "Retrying", BASE))
+        run.respond(("replace_text", {"path": "pkg/core.py", "old_text": "a", "new_text": "b"}, "success",
+                     "Replaced 1 occurrence(s)", BASE))
+        run.respond(("run", {"command": "cd /workspace && pytest --co -q"}, "error", "no tests collected", EDITED))
+        run.respond(("finish", {"summary": "fixed"}, "success", "Finish recorded.", EDITED))
+        record = self.analyse(run.end("finish_requested", "rejected"))
+        self.assertEqual(record["phases"], ["explore", "explore", "edit", "explore", "finish"])
+        self.assertFalse(record["verified_before_finish"])
+        self.assertEqual(record["signature"],
+                         "fail_to_pass_failed | no_verification_before_finish | edit_unverified")
+        for command, look_only in (("python -m pytest -q", False), ("python -m pytest --cov=pkg", False),
+                                   ("/usr/bin/python3.12 -m pytest tests --collect-only", True),
+                                   ("python3 -m pip install -e .", True), ("pipx run x", False)):
+            self.assertEqual(bool(wm.LOOK_ONLY_RUN.search(command)), look_only, command)
 
     def test_edit_outside_gold_and_finish_without_verification(self):
         run = SyntheticRun(self.root, "wrong-file")
@@ -177,6 +245,22 @@ class WeaknessMiningTests(unittest.TestCase):
             "acceptance": {"status": "rejected"}}) + "\n", encoding="utf-8")
         self.assertEqual(self.analyse(run_dir)["results_check"], "agrees")
 
+    def test_evaluator_test_counts_come_from_the_report_artifacts(self):
+        run = SyntheticRun(self.root, "partial")
+        run.respond(("replace_text", {"path": "pkg/core.py", "old_text": "a", "new_text": "b"}, "success",
+                     "Replaced 1 occurrence(s)", BASE))
+        record = self.analyse(run.end("model_call_limit", "rejected", pass_to_pass="fail",
+                                      failing={"fail-to-pass": (15, 2), "pass-to-pass": (476, 1)}))
+        self.assertEqual(record["test_counts"], {"fail-to-pass": {"expected": 15, "failing": 2, "missing": 0},
+                                                 "pass-to-pass": {"expected": 476, "failing": 1, "missing": 0}})
+        self.assertEqual(wm.failing_tests(record["test_counts"]), "2/15, 1/476")
+        self.assertEqual(record["verifier_cause"], "pass_to_pass_regression")  # the signature is unchanged
+        bare = SyntheticRun(self.root, "no-report")
+        bare.respond(read("pkg/core.py"))
+        record = self.analyse(bare.end("model_call_limit", "rejected"))
+        self.assertIsNone(record["test_counts"])
+        self.assertEqual(wm.failing_tests(record["test_counts"]), "n/a")
+
     def test_unknown_gold_files_are_flagged_not_guessed(self):
         run = SyntheticRun(self.root, "no-gold")
         run.respond(("replace_text", {"path": "pkg/core.py", "old_text": "a", "new_text": "b"}, "success",
@@ -200,6 +284,43 @@ class WeaknessMiningTests(unittest.TestCase):
         self.assertEqual([c["members"] for c in clusters], [["a", "b"], ["d"], ["c"]])
         self.assertEqual((clusters[0]["runs"], clusters[0]["tasks"]), (2, 2))
         self.assertFalse(clusters[-1]["minable"])
+
+    def test_evidence_bundles_pair_runs_and_point_at_a_module(self):
+        def record(run, task, signature, stop, phases=("explore",), flags="none"):
+            cause, _, mechanism = signature.split(" | ")
+            return {"run": run, "task_id": task, "signature": signature, "verifier_cause": cause,
+                    "causal_status": flags, "mechanism": mechanism, "stop_class": stop, "responses": len(phases),
+                    "tool_calls": 1, "first_edit_response": None, "verified_before_finish": False,
+                    "edit_in_gold_files": False, "edited_files": [], "rejected_calls": 0, "stuck_responses": [],
+                    "refetch_calls": 0, "criterion_outcomes": {}, "phases": list(phases)}
+
+        wrong = "fail_to_pass_failed | none | edit_verified"
+        records = [
+            record("a1", "t1", wrong, "finish", ("explore", "edit", "verify", "finish")),
+            record("a2", "t1", "accepted | none | edit_verified", "finish"),
+            record("b1", "t2", wrong, "finish"), record("b2", "t2", wrong, "finish"),
+            record("c1", "t3", "budget | refetch_after_omission | explore_only", "budget",
+                   flags="refetch_after_omission"),
+        ]
+        for item in records:
+            item["signature"] = " | ".join((item["verifier_cause"], item["causal_status"], item["mechanism"]))
+        bundles = wm.evidence_bundles(records, wm.cluster(records))
+        self.assertEqual([b["signature"] for b in bundles], [wrong, "budget | refetch_after_omission | explore_only"])
+        first = bundles[0]
+        self.assertEqual((first["size"], first["distinct_tasks"], first["representative_runs"]), (3, 2, ["a1", "b1"]))
+        self.assertEqual(first["contrastive_pairs"], [{
+            "task_id": "t1", "rejected": "a1", "accepted": "a2",
+            "accepted_signature": "accepted | none | edit_verified", "accepted_first_edit_response": None,
+            "accepted_phases": "explore"}])
+        self.assertEqual([(n["task_id"], n["runs"]) for n in first["negative_pairs"]], [("t2", ["b1", "b2"])])
+        self.assertEqual([m["module"] for m in first["module"]["primary"]], ["task completion detection"])
+        self.assertEqual(first["symptoms"]["members"][0]["phases"], "explore edit verify finish")
+        self.assertNotRegex(json.dumps(bundles), r'"gold(_source)?_files":')
+        self.assertEqual(first["prior_attempts"], [])
+        second = bundles[1]["module"]
+        self.assertEqual([m["module"] for m in second["primary"]], ["agent loop"])
+        self.assertEqual([m["module"] for m in second["secondary"]], ["context management"])
+        self.assertTrue(set(wm.MODULES) >= {m for _, (m, _) in wm.FLAG_MODULES.items()})
 
     def test_native_stream_is_read_with_the_same_rules(self):
         run_dir = self.root / "native"
@@ -242,6 +363,60 @@ class LabelAgreementTests(unittest.TestCase):
         self.assertIn("| explore | 2 | 1 | 1 | 0.67 |", text)
         self.assertIn("| r | 2 | explore | diagnose | explore |", text)
         self.assertAlmostEqual(label_phases.kappa(["a", "a", "b"], ["a", "a", "b"]), 1.0)
+
+    def test_rules_labeller_writes_every_response_and_run(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            run = SyntheticRun(root, "good")
+            run.respond(read("pkg/core.py"))
+            run.respond(("replace_text", {"path": "pkg/core.py", "old_text": "a", "new_text": "b"}, "success",
+                         "Replaced 1 occurrence(s)", BASE),
+                        ("run", {"command": "python -m pytest tests -q"}, "success", "3 passed", EDITED))
+            run.respond(("finish", {"summary": "fixed"}, "success", "Finish recorded.", EDITED))
+            run_dir = run.end("finish_requested", "accepted", fail_to_pass="pass")
+            tasks = root / "tasks.json"
+            tasks.write_text(json.dumps({"tasks": [{"task_id": "demo-1", "gold_source_files": ["pkg/core.py"]}]}),
+                             encoding="utf-8")
+            out = root / "rules.jsonl"
+            label_phases.label_rules([run_dir], out, task_files=[tasks])
+            rows = label_phases.read_labels(out)
+        self.assertEqual([(r["kind"], r.get("response")) for r in rows],
+                         [("response", 1), ("response", 2), ("response", 3), ("run", None)])
+        self.assertEqual([r["rule_phase"] for r in rows[:3]], ["explore", "edit", "finish"])
+        self.assertEqual([r["rule_edited_existing_source"] for r in rows[:3]], [False, True, False])
+        self.assertEqual(rows[3]["rule"]["signature"], "accepted | none | edit_verified")
+        self.assertEqual((rows[3]["rule"]["first_edit_response"], rows[3]["rule"]["edit_in_gold_files"]), (2, True))
+
+    def test_development_tables_score_diagnose_against_an_adjudication(self):
+        def rule(number, phase):
+            return {"kind": "response", "run": "r", "response": number, "rule_phase": phase,
+                    "rule_edited_existing_source": False, "rule_verified_after_edit": False}
+
+        def jev(number, phase, diagnose):
+            probabilities = {"explore": 1 - diagnose, "diagnose": diagnose}
+            return {"kind": "response", "run": "r", "response": number, "rule_phase": "stale", "jev_phase": phase,
+                    "jev_probabilities": probabilities, "jev_confidence": max(probabilities.values()),
+                    "jev_edited_existing_source": 0.1, "jev_verified_after_edit": 0.1, "jev_cost": 0.0001,
+                    "jev_model": "m", "jev": {"attempts": 1, "input_tokens": 10}}
+
+        def verdict(number, phase, strength=None):
+            return {"kind": "response", "run": "r", "response": number, "adjudicated_phase": phase,
+                    "diagnose_strength": strength, "complete": True, "hypothesis_response": number}
+
+        rules = [rule(1, "explore"), rule(2, "explore"), rule(3, "explore"), rule(4, "reproduce")]
+        jevs = [jev(1, "diagnose", 0.6), jev(2, "explore", 0.35), jev(3, "explore", 0.1), jev(4, "diagnose", 0.5)]
+        devset = [{"kind": "header"}, verdict(1, "diagnose", "clear"), verdict(2, "explore"),
+                  verdict(3, "diagnose", "borderline"), verdict(4, "reproduce")]
+        text = label_phases.jev_development_tables(rules, jevs, devset)
+        self.assertIn("Jev = rules 2/4 (50.0%)", text)  # the rules file's phase is used, not Jev's stale copy
+        self.assertIn("| explore | 3 | 2 | 2 | 2/3 | 0.80 |", text)
+        self.assertIn("| r | 2 | explore | explore | 0.350 | explore |", text)
+        self.assertIn("True diagnose: 1 clear, 2 clear or borderline.", text)
+        self.assertIn("| clear only | Jev's choice is diagnose | 2 | 1 | 1/2 = 0.50 | 1/1 = 1.00 |", text)
+        self.assertIn("| clear only | diagnose probability >= 0.3 | 3 | 1 | 1/3 = 0.33 | 1/1 = 1.00 |", text)
+        self.assertIn("| clear or borderline | diagnose probability >= 0.3 | 3 | 1 | 1/3 = 0.33 | 1/2 = 0.50 |", text)
+        self.assertIn("| r | 3 | borderline | explore | explore | 0.100 | #3 |", text)
+        self.assertIn("Cost: 0.000400 USD for 4 responses", text)
 
     def test_reply_parsing_rejects_unknown_phases(self):
         self.assertEqual(label_phases.parse_reply('{"phase": "Stuck", "mechanism": "loops"}'),
