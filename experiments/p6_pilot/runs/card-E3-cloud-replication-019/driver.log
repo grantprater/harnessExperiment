@@ -1,0 +1,12 @@
+# 2026-09-28T22:36:58.946360+00:00 /home/user/harnessExperiment/.runtime/test-venv/bin/python /home/user/harnessExperiment/experiments/session_harness/run_card.py /home/user/harnessExperiment/experiments/session_harness/cards/019.json --execute --resume --python /home/user/harnessExperiment/.runtime/test-venv/bin/python
+preflight incumbent: protocol 03633ef73ff0 matches
+[3/42] c019-sqlparse-mut-001-r1: ok (model_call_limit -> rejected)
+[4/42] c019-sqlparse-mut-002-r1: ok (finish_requested -> accepted)
+[5/42] c019-sqlparse-mut-022-r1: ok (finish_requested -> accepted)
+[6/42] c019-sqlparse-mut-023-r1: ok (finish_requested -> accepted)
+[7/42] c019-sqlparse-mut-024-r1: ok (finish_requested -> accepted)
+[8/42] c019-sqlparse-mut-025-r1: ok (finish_requested -> accepted)
+[9/42] c019-sqlparse-mut-032-r1: ok (model_call_limit -> rejected)
+[10/42] c019-sqlparse-mut-033-r1: ok (finish_requested -> accepted)
+[11/42] c019-sqlparse-mut-034-r1: ok (finish_requested -> accepted)
+[12/42] c019-sqlparse-mut-040-r1: ok (finish_requested -> accepted)
