@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "id": "E4-cloud-check-oracle-020",
+  "title": "Bounded check oracle (card 015's arms) paired with the incumbent on the cloud VM backend",
+  "status": "proposed",
+  "markdown": "experiments/session_harness/E4-cloud-check-oracle-020.md",
+  "hypothesis": "Giving the model three counts-only checks of the hidden fail_to_pass tests raises acceptance on card 007's evolution set, whose failures include wrong fixes finished without verification; how much it raises it separates a verification limit from a diagnosis limit. This arm changes the task, so its result is not a harness improvement on the same task. Run on card 019's cloud backend, with both arms in the same card, so the comparison is paired within one environment.",
+  "run_prefix": "c020",
+  "run_name_template": "{prefix}-{task}-r{rollout}-{arm}",
+  "runner": {
+    "script": "experiments/p6_pilot/run_pilot.py",
+    "runner_version": 8
+  },
+  "environment": {
+    "claude_cli_version": "2.1.284 (Claude Code)"
+  },
+  "prerequisites": [
+    {
+      "text": "owner approval recorded in the markdown card (then set status to running), given after card 019's report states whether the cloud environment is equivalent to the host for treatment work",
+      "done": false
+    }
+  ],
+  "arms": [
+    {
+      "name": "incumbent",
+      "client": "claude-cli",
+      "model": "claude-sonnet-5",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "trusted-local",
+        "isolation": "vm-sandbox"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [],
+      "expected_protocol_hash": null,
+      "note": "Card 019's incumbent arm (card 007's protocol on the cloud backend, model pinned); its planned hash per task equals card 019's for the same task on the same VM path."
+    },
+    {
+      "name": "check-oracle",
+      "client": "claude-cli",
+      "model": "claude-sonnet-5",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "trusted-local",
+        "isolation": "vm-sandbox"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [
+        "--oracle",
+        "hidden-tests:3"
+      ],
+      "expected_protocol_hash": null,
+      "note": "Card 019's incumbent arm plus --oracle hidden-tests:3 (card 015's treatment arm on the cloud backend). The check tool runs the evaluator through the trusted-local backend on a scratch copy outside the workspace, as final acceptance does on this backend.",
+      "bundle": {
+        "module": "tool use",
+        "surface": "added tool (task-changing arm)",
+        "treatment": "hidden-test-oracle-v1",
+        "flag": "--oracle hidden-tests:3",
+        "max_calls": 3,
+        "code": "reticle/tools/check_oracle.py"
+      }
+    }
+  ],
+  "controls": [
+    {
+      "name": "gold",
+      "client": "gold",
+      "task_set": "controls",
+      "like_arm": "check-oracle",
+      "expect": "accepted"
+    },
+    {
+      "name": "noop",
+      "client": "noop",
+      "task_set": "controls",
+      "like_arm": "check-oracle",
+      "expect": "rejected"
+    }
+  ],
+  "tasks": {
+    "file": "experiments/mutation_tasks/tasks.mutations.json",
+    "file_sha256": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa",
+    "sets": {
+      "evolution": {
+        "ids": [
+          "sqlparse-mut-001",
+          "sqlparse-mut-022",
+          "sqlparse-mut-032",
+          "sqlparse-mut-057",
+          "sqlparse-mut-061"
+        ],
+        "note": "Card 007's evolution set: the two contrastive tasks (001, 022) and the three negative tasks with a fixable mechanism (032, 057, 061)."
+      },
+      "efficiency": {
+        "ids": [
+          "sqlparse-mut-025",
+          "sqlparse-mut-034",
+          "sqlparse-mut-040"
+        ],
+        "note": "Solved twice in card 007, for the efficiency measure (responses and active seconds per run). As listed by the owner; by card 007 wall time the three fastest are 034, 025 and 044 (040 is fifth)."
+      },
+      "controls": {
+        "ids": [
+          "sqlparse-mut-001"
+        ],
+        "note": "Scripted gold/noop controls under the treatment arm, before any model run."
+      }
+    }
+  },
+  "blocks": [
+    {
+      "name": "evolution",
+      "task_set": "evolution",
+      "arms": [
+        "incumbent",
+        "check-oracle"
+      ],
+      "rollouts": 2,
+      "arm_order": {
+        "rule": "seeded",
+        "seed": 15
+      }
+    },
+    {
+      "name": "efficiency",
+      "task_set": "efficiency",
+      "arms": [
+        "incumbent",
+        "check-oracle"
+      ],
+      "rollouts": 2,
+      "arm_order": {
+        "rule": "seeded",
+        "seed": 15
+      }
+    }
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 20,
+      "model_attempts": 24,
+      "active_seconds": 1200,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {
+        "default": 120,
+        "max": 600
+      },
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {
+      "max_runs": 32,
+      "max_model_attempts": 900,
+      "monetary_cap_usd": null,
+      "note": "Card 015's caps: 32 runs x 24 attempts = 768 planned, room for 5 retried runs. Spend guard: checkpoint before the next attempt once the CLI list-price estimates of the campaign's calls reach $50 (card 013, the same design, totalled $33.35 at list price).",
+      "list_price_cap_usd": 50
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [
+      60,
+      300
+    ],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "The markdown asks for the repeat flag to be recorded while the run continues. run_pilot.py records the flag only with --stop-on-repeats, which also stops the run, so this card runs without the guard and repeat_flags are derived from the transcripts afterwards (S6b).",
+    "manual": [
+      "Evaluator leakage, evidence loss, or authority escape stops the campaign (run_card.py detects evidence loss and protocol drift; leakage and escape need trajectory review).",
+      "A model_pin_violation stops the campaign as a corrupted protocol (exit 4).",
+      "Do not change the treatment's text or parameters during the card; a change is a new version and a new card.",
+      "Hidden-test leakage stops the campaign: any hidden test name or test output in a request, a tool result, or the workspace of a treatment run (trajectory review), or an oracle_check event with scratch_removed false. On trusted-local the model's commands can read the VM's filesystem, including the scratch copy while a check runs and the task clone under .runtime; review every treatment trajectory for reads outside the workspace."
+    ]
+  },
+  "measurements": {
+    "per_run": [
+      "accepted",
+      "stop_reason",
+      "responses_used",
+      "provider_attempts",
+      "tool_calls",
+      "active_seconds",
+      "wall_seconds",
+      "tokens",
+      "first_edit_response",
+      "rejected_calls",
+      "edit_in_gold_files",
+      "verification_before_finish"
+    ],
+    "campaign": [
+      "acceptance_rate_ci",
+      "per_task_outcomes",
+      "outcome_distribution",
+      "paired_table",
+      "delta:incumbent:check-oracle"
+    ]
+  },
+  "decision_rule": "Mechanism check. Report per arm and set: accepted runs, checks used and the counts they returned, what the model did after a failing count, and runs that finished while their last check still reported failures. A large evolution-set gain says verification, not diagnosis, limits the incumbent (argues for card 013-style verification treatments); a small one says the model cannot find the fault even when told it has not. The oracle arm is never promoted into the incumbent: it changes what the task gives the model.",
+  "report": {
+    "path": "experiments/session_harness/E4-cloud-check-oracle-020-report.md"
+  },
+  "notes": [
+    "Card 015's design (evolution set 001/022/032/057/061, efficiency set 025/034/040, 2 rollouts, arm order seeded per unit with seed 15, gold/noop controls under the treatment arm) on card 019's cloud backend: trusted-local with isolation vm-sandbox, CLI 2.1.284, model pinned as claude-sonnet-5.",
+    "Runs are named c020-<task>-r<n>-<arm>; one runner invocation per task, rollout and arm, with --max-total-calls 24.",
+    "Both arms run in the same VM and card, so the delta is paired within one environment; neither arm is compared with card 015's host runs.",
+    "Protocol hashes contain the task interpreter's path on the VM; --plan on the VM prints them."
+  ]
+}
