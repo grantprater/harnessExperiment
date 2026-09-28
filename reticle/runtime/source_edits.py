@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path, PurePosixPath
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from reticle.runtime.workspace import WorkspaceTracker
 
@@ -38,19 +38,6 @@ def is_source_path(relative: str) -> bool:
         return False
     name = path.name
     return not (name.startswith("test_") or name.endswith("_test.py") or name == "conftest.py")
-
-
-def import_names(relative_paths: Iterable[str]) -> List[str]:
-    """Top-level import names of source files: 'pkg/mod.py' and 'src/pkg/mod.py' give 'pkg', 'six.py' gives 'six'."""
-    names: Set[str] = set()
-    for relative in relative_paths:
-        parts = PurePosixPath(relative).parts
-        if parts and parts[0] == "src" and len(parts) > 1:
-            parts = parts[1:]
-        if not parts:
-            continue
-        names.add(PurePosixPath(parts[0]).stem if len(parts) == 1 else parts[0])
-    return sorted(names)
 
 
 class SourceEditTracker:

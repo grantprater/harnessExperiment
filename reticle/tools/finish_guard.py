@@ -1,59 +1,76 @@
 """Finish guard: a pre-finish verification rule (task-completion-detection treatment, S6).
 
-Card 007's commonest failure was a confident wrong fix: the model edited library code and called finish
-without a check that exercised the edit; in two runs it ran pytest on the hidden (absent) tests, saw that no
-tests ran, and finished anyway. The guard rejects the first finish after an edit to a pre-existing source file
-(``reticle.runtime.source_edits``) unless a ``run`` since that edit shows a test or check actually running.
-It fires at most once per run: the rejection says the next finish is accepted regardless, so a run can never
-be trapped, and an accepted finish that the guard had to let through is recorded as forced.
+Evidence (card 007, weakness mining of all 40 journals): every rejected run that called finish (001-r1, 057-r1,
+057-r2, 061-r1) had run a check after its last edit, an exit-0 ``python -c`` on inputs the model chose; in 3 of 4
+the reported failure was never reproduced at all. "pytest found no tests" happened in 19 of the 32 accepted runs
+too. So neither "a check ran after the edit" nor "no tests ran" separates the failures. What the rejected runs lack
+is a reproduced failure that the fix turns into a pass (most accepted runs lack it too; see the replay below).
 
-What counts as a check (``check_ran``), for a run that finished (success or a non-zero exit; not a timeout,
-a rejected command, or a cancellation) after the latest edit:
-  1. a test-runner summary line (a line ending in "in <seconds>s") reporting at least one test passed, failed,
-     xfailed, xpassed, or errored outside collection; or unittest's "Ran N tests" with N >= 1 once the modules
-     it could not import (reported as unittest.loader._FailedTest) are subtracted;
-  2. a Python run that exercises the edited library: ``python -c CODE`` or ``python SCRIPT.py`` whose code
-     imports the top-level package of an edited file, or ``python -m PACKAGE[.module]``, and that printed
-     something.
-"no tests ran", "collected 0 items", a missing test file, a collection error alone, and a command that
-only prints (does not import the library) do not count. A run that itself changes a source file is its own
-edit, so its output does not verify it.
+Rule (``finish-guard-v2``, fail-then-pass). After an edit to a pre-existing source file
+(``reticle.runtime.source_edits``), finish is accepted only if the run shows a pair of ``run`` calls:
+  1. a command that FAILED before the first source edit: it ran to completion with a non-zero exit code, or its
+     output holds a traceback or AssertionError. A run that executed no check is neither a failure nor a pass:
+     a timeout, rejected or cancelled call, a command that could not start (exit 126/127, "can't open file"),
+     or a test runner that ran no tests (in card 007, 125 git calls exited 127 and 121 pytest calls ran no tests);
+  2. the same command (the same argument list) or the same script path (the first ``.py`` argument, pytest
+     node ids reduced to their file) that SUCCEEDED after the latest source edit: exit code 0, no traceback,
+     no AssertionError.
+Otherwise the first such finish is rejected with a message that says so, and names what would count; the next
+finish is accepted regardless and recorded as forced, so a run can never be trapped. A call that itself edits a
+source file (including a ``run`` command that rewrites one) is an edit, not evidence. Runs of a test runner that
+executed no tests ("no tests ran", "collected 0 items") are recorded as a journal fact; they are not the rule.
+Known limits: a failure of the model's own script (a syntax error, a wrong assertion) counts as a reproduction,
+and a check the model wrote can pass without testing the reported behaviour; the rule asks for the pair, it
+cannot judge the check. Replayed over card 007's journals (offline, from calls.jsonl), it would have fired on
+the 4 rejected runs that finished and on 30 of the 32 accepted runs: it does not separate outcomes either, so
+the card measures what demanding the pair changes, at the cost of about one response per run.
 
-Off by default: the runner composes ``FinishGuardTools`` in only when ``--completion finish-guard`` is given,
-and the guard's name, version, rejection text and source rule then enter the protocol hash. ToolSuite,
-TOOL_SCHEMAS and TOOLSET_VERSION are untouched.
+Off by default: the runner composes ``FinishGuardTools`` in only with ``--completion finish-guard``, and the
+guard's name, version, rejection texts and source rule then enter the protocol hash. ToolSuite, TOOL_SCHEMAS
+and TOOLSET_VERSION are untouched.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import json
+from pathlib import PurePosixPath
 import re
 import shlex
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from reticle.runtime.session import LocalRuntime
-from reticle.runtime.source_edits import SourceEditTracker, import_names
+from reticle.runtime.source_edits import SourceEditTracker
 from reticle.tools.primitives import PYTHON_ALIASES, ToolOutcome
 
 
-FINISH_GUARD_VERSION = "finish-guard-v1"
+FINISH_GUARD_VERSION = "finish-guard-v2"
 FINISH_GUARD_MESSAGE = (
-    "Finish not accepted yet: you changed {files}, and {why}. Before finishing, run a check that exercises the "
-    "change: pytest on a test file you wrote (for example `pytest tests/test_fix.py -q`) that reports at least "
-    "one passed or failed test, or a reproduction script that imports the library and prints the behaviour "
-    "(for example `python repro.py`). Output such as 'no tests ran', 'collected 0 items', 'file or directory not "
-    "found', or a command that only prints does not count; the hidden acceptance tests are not in the workspace, "
-    "so pytest cannot run them. This check happens once: the next finish call will be accepted regardless."
+    "Finish not accepted yet: you changed {files}, but this run has not shown the reported failure reproduced "
+    "and then fixed: {why}. Reproduce the reported failure with a command that fails on the unfixed code (a "
+    "non-zero exit or a traceback; for example a script `python repro.py` whose assertion fails, or `pytest "
+    "tests/test_repro.py -q` with a failing test), then run the same command after the fix and show it passing "
+    "(exit code 0, no traceback). A check that only ever passed, or a different command after the fix, does not "
+    "count. This check happens once: the next finish call will be accepted regardless."
 )
-WHY_NO_RUN = "no run has executed since that change"
-WHY_NO_CHECK = "none of the {count} run(s) since that change showed a test or check executing (last: `{command}`)"
+WHY_NO_FAILURE = "no run failed before your first source edit"
+WHY_NO_RERUN = "`{failing}` failed before your first source edit, but no run has executed since your latest edit"
+WHY_NO_PASS = ("`{failing}` failed before your first source edit, but no run since your latest edit reran it "
+               "(the same command or script) and passed")
+REASONS = {"no_failing_run_before_edit": WHY_NO_FAILURE, "no_run_after_edit": WHY_NO_RERUN,
+           "no_matching_pass_after_edit": WHY_NO_PASS}
 EDIT_CAPABLE_TOOLS = frozenset({"replace_text", "write_file", "run"})
 UNFINISHED_RUN_STATUSES = frozenset({"timeout", "rejected", "cancelled"})
+FAILURE_MARKERS = ("Traceback (most recent call last)", "AssertionError")
+STATUS_LINE = re.compile(r"status: (\S+); exit code: (\S+);")
+NOT_STARTED_EXIT_CODES = frozenset({"None", "126", "127"})  # no exit code; not executable; command not found
+CANNOT_OPEN_SCRIPT = "can't open file"
 SUMMARY_LINE = re.compile(r"\bin \d+(?:\.\d+)?s\b")
 TEST_COUNT = re.compile(r"\b(\d+) (passed|failed|xfailed|xpassed|errors?)\b")
 UNITTEST_RAN = re.compile(r"^Ran (\d+) tests? in\b", re.MULTILINE)
 # unittest reports a module it could not import as a test named after it (unittest.loader._FailedTest).
 UNITTEST_IMPORT_FAILURE = re.compile(r"^ERROR: \S+ \(unittest\.loader\._FailedTest", re.MULTILINE)
+SHOWN_COMMAND_CHARACTERS = 300
 
 
 def tests_executed(output: str) -> int:
@@ -71,48 +88,54 @@ def tests_executed(output: str) -> int:
     return total
 
 
-def _imports(code: str, packages: List[str]) -> bool:
-    return any(re.search(rf"\b(?:from|import)\s+{re.escape(name)}\b", code) for name in packages)
-
-
-def exercises_library(argv: List[str], workspace_root, packages: List[str]) -> bool:
-    """Whether a Python command runs code that imports one of the edited packages."""
-    if not argv or argv[0].lower() not in PYTHON_ALIASES or not packages:
-        return False
-    rest = argv[1:]
-    if "-m" in rest:
-        position = rest.index("-m")
-        module = rest[position + 1] if position + 1 < len(rest) else ""
-        return module.split(".")[0] in packages
-    if "-c" in rest:
-        position = rest.index("-c")
-        return position + 1 < len(rest) and _imports(rest[position + 1], packages)
-    script = next((item for item in rest if not item.startswith("-")), None)
-    if not script or not script.endswith(".py"):
-        return False
-    try:
-        path = (workspace_root / script).resolve()
-        path.relative_to(workspace_root.resolve())
-        return _imports(path.read_text(encoding="utf-8", errors="replace"), packages)
-    except (OSError, ValueError):
-        return False
-
-
-def check_ran(command: str, outcome: ToolOutcome, workspace_root, packages: List[str]) -> bool:
-    """Whether a run tool result shows a test or check actually executing (see the module docstring)."""
+def run_result(command: str, outcome: ToolOutcome) -> Optional[str]:
+    """'failed' or 'passed' for a run that executed a check; None for one that did not: a timeout, rejected, or
+    cancelled call, an unreadable result, a command that could not start (exit 126/127, or python's "can't open
+    file"), or a test runner that ran no tests ("no tests ran" is a recorded fact, not a failure). The command echo
+    is not searched for failure markers."""
     if outcome.status in UNFINISHED_RUN_STATUSES:
-        return False
-    body = outcome.content.split("\n", 1)[1] if "\n" in outcome.content else ""  # drop the "$ command" echo
-    if tests_executed(body) > 0:
-        return True
+        return None
+    echo = f"$ {command}\n"
+    rest = outcome.content[len(echo):] if outcome.content.startswith(echo) else outcome.content
+    status = STATUS_LINE.match(rest)
+    if status is None or status.group(2) in NOT_STARTED_EXIT_CODES:
+        return None
+    output = rest[status.end():]
+    if CANNOT_OPEN_SCRIPT in output:
+        return None
+    argv, _ = command_identity(command)
+    if is_test_runner(argv) and tests_executed(output) == 0:
+        return None
+    return "failed" if status.group(2) != "0" or any(marker in output for marker in FAILURE_MARKERS) else "passed"
+
+
+def command_identity(command: str) -> Tuple[Tuple[str, ...], Optional[str]]:
+    """(the argument list, the script path or None). The script path is the first argument (options and the
+    code after -c skipped) that names a .py file; a pytest node id counts as its file."""
     try:
-        argv = shlex.split(command, posix=True)
+        argv = tuple(shlex.split(command, posix=True))
     except ValueError:
-        return False
-    printed = "--- stdout ---" in body or "--- stderr ---" in body
-    # A test runner (pytest, python -m pytest/unittest) counts only through its summary above: it is not a
-    # python command that imports an edited package, so exercises_library is false for it.
-    return printed and exercises_library(argv, workspace_root, packages)
+        return (command,), None
+    skip_next = False
+    for token in argv[1:]:
+        if skip_next:
+            skip_next = False
+            continue
+        if token == "-c":
+            skip_next = True
+            continue
+        if token.startswith("-"):
+            continue
+        path = token.split("::", 1)[0]
+        if path.endswith(".py"):
+            return argv, PurePosixPath(path).as_posix().removeprefix("./")
+    return argv, None
+
+
+def is_test_runner(argv: Tuple[str, ...]) -> bool:
+    head = argv[0].lower() if argv else ""
+    return head == "pytest" or (head in PYTHON_ALIASES and "-m" in argv
+                                and argv[argv.index("-m") + 1:argv.index("-m") + 2] in (("pytest",), ("unittest",)))
 
 
 def _command(arguments: Any) -> str:
@@ -125,6 +148,22 @@ def _command(arguments: Any) -> str:
     return command if isinstance(command, str) else ""
 
 
+@dataclass(frozen=True)
+class RunRecord:
+    step: int
+    call_id: Optional[str]
+    command: str
+    argv: Tuple[str, ...]
+    script: Optional[str]
+    result: str  # failed | passed
+
+    def same_check(self, other: "RunRecord") -> bool:
+        return self.argv == other.argv or (self.script is not None and self.script == other.script)
+
+    def shown(self) -> Dict[str, Any]:
+        return {"call_id": self.call_id, "command": self.command[:SHOWN_COMMAND_CHARACTERS], "result": self.result}
+
+
 class FinishGuard:
     """State of the guard for one run; journals ``finish_guard`` events (a controller-only kind)."""
 
@@ -134,56 +173,80 @@ class FinishGuard:
     def __init__(self, runtime: LocalRuntime, tracker: SourceEditTracker):
         self.runtime, self.tracker = runtime, tracker
         self.step = 0
+        self.first_edit_step: Optional[int] = None
         self.last_edit_step: Optional[int] = None
-        self.last_check_step: Optional[int] = None
-        self.runs_since_edit: List[str] = []
+        self.runs: List[RunRecord] = []
+        self.no_tests_ran: List[str] = []
         self.triggered = False
         self.reason: Optional[str] = None
         self.forced: Optional[bool] = None  # set when a finish is accepted
+        self.matched: Optional[Dict[str, Any]] = None
+        self._call_id: Optional[str] = None
 
-    def observe(self, name: str, arguments: Any, outcome: ToolOutcome) -> None:
+    def observe(self, name: str, arguments: Any, outcome: ToolOutcome, call_id: Optional[str] = None) -> None:
         """Called after every tool call, in order."""
         self.step += 1
         if name in EDIT_CAPABLE_TOOLS and self.tracker.refresh():
-            self.last_edit_step, self.runs_since_edit = self.step, []
-            return  # a call that edits cannot verify its own edit
-        if name != "run" or self.last_edit_step is None:
+            if self.first_edit_step is None:
+                self.first_edit_step = self.step
+            self.last_edit_step = self.step
+            return  # a call that edits is not evidence about its own edit
+        if name != "run":
             return
         command = _command(arguments)
-        self.runs_since_edit.append(command)
-        if check_ran(command, outcome, self.tracker.root, import_names(self.tracker.edited_files())):
-            self.last_check_step = self.step
+        argv, script = command_identity(command)
+        if is_test_runner(argv) and outcome.status not in UNFINISHED_RUN_STATUSES and \
+                tests_executed(outcome.content) == 0:
+            self.no_tests_ran.append(command[:SHOWN_COMMAND_CHARACTERS])
+        result = run_result(command, outcome)
+        if result is not None:
+            self.runs.append(RunRecord(self.step, call_id, command, argv, script, result))
 
-    def unverified(self) -> bool:
-        return self.last_edit_step is not None and (
-            self.last_check_step is None or self.last_check_step <= self.last_edit_step)
+    def evaluate(self) -> Tuple[Optional[Dict[str, Any]], Optional[str], Optional[RunRecord]]:
+        """(the matched fail-then-pass pair, or None and the reason none matched, and the latest pre-edit failure)."""
+        failures = [run for run in self.runs if run.result == "failed" and run.step < self.first_edit_step]
+        after = [run for run in self.runs if run.step > self.last_edit_step]
+        latest_failure = failures[-1] if failures else None
+        for passed in reversed([run for run in after if run.result == "passed"]):
+            matching = [failed for failed in failures if failed.same_check(passed)]
+            if matching:
+                return {"failed": matching[-1].shown(), "passed": passed.shown()}, None, latest_failure
+        if not failures:
+            return None, "no_failing_run_before_edit", None
+        if not after:
+            return None, "no_run_after_edit", latest_failure
+        return None, "no_matching_pass_after_edit", latest_failure
 
     def decide(self, call_id: Optional[str]) -> Optional[str]:
         """The rejection text for this finish call, or None to accept it."""
-        unverified = self.unverified()
-        if unverified and not self.triggered:
-            self.triggered = True
-            self.reason = "no_run_after_edit" if not self.runs_since_edit else "no_check_in_runs_after_edit"
-            files = self.tracker.edited_files()
-            shown = ", ".join(files[:5]) + (f" and {len(files) - 5} more" if len(files) > 5 else "")
-            why = WHY_NO_RUN if not self.runs_since_edit else WHY_NO_CHECK.format(
-                count=len(self.runs_since_edit), command=self.runs_since_edit[-1][:200])
+        edited = self.first_edit_step is not None
+        matched, reason, failure = self.evaluate() if edited else (None, None, None)
+        facts = {"edited_files": self.tracker.edited_files(), "runs_before_first_edit": sum(
+            1 for run in self.runs if edited and run.step < self.first_edit_step), "runs_after_last_edit": sum(
+            1 for run in self.runs if edited and run.step > self.last_edit_step),
+            "no_tests_ran": list(self.no_tests_ran), "version": self.version}
+        if edited and matched is None and not self.triggered:
+            self.triggered, self.reason = True, reason
             self.runtime.journal.append("finish_guard", {
-                "event": "rejected", "call_id": call_id, "guard_triggered": True, "guard_reason": self.reason,
-                "forced_finish": False, "edited_files": files, "runs_since_edit": list(self.runs_since_edit),
-                "version": self.version,
+                "event": "rejected", "call_id": call_id, "guard_triggered": True, "guard_reason": reason,
+                "forced_finish": False, "matched_pair": None, **facts,
             })
-            return FINISH_GUARD_MESSAGE.format(files=shown, why=why)
-        self.forced = bool(self.triggered and unverified)
+            files = facts["edited_files"]
+            shown = ", ".join(files[:5]) + (f" and {len(files) - 5} more" if len(files) > 5 else "")
+            failing = failure.command[:200] if failure is not None else ""
+            return FINISH_GUARD_MESSAGE.format(files=shown, why=REASONS[reason].format(failing=failing))
+        self.matched = matched
+        self.forced = bool(self.triggered and edited and matched is None)
         self.runtime.journal.append("finish_guard", {
             "event": "accepted", "call_id": call_id, "guard_triggered": self.triggered, "guard_reason": self.reason,
-            "forced_finish": self.forced, "edited_files": self.tracker.edited_files(), "version": self.version,
+            "forced_finish": self.forced, "matched_pair": matched, **facts,
         })
         return None
 
     def record(self) -> Dict[str, Any]:
         return {"guard_triggered": self.triggered, "guard_reason": self.reason, "forced_finish": self.forced,
-                "edited_files": self.tracker.edited_files(), "version": self.version}
+                "matched_pair": self.matched, "edited_files": self.tracker.edited_files(),
+                "no_tests_ran": len(self.no_tests_ran), "version": self.version}
 
 
 class FinishGuardTools:
@@ -198,7 +261,7 @@ class FinishGuardTools:
     def dispatch(self, name, arguments, call_id):
         self._guard_call_id = call_id
         outcome = super().dispatch(name, arguments, call_id)
-        self.finish_guard.observe(name, arguments, outcome)
+        self.finish_guard.observe(name, arguments, outcome, call_id)
         return outcome
 
     def _guarded_finish(self, arguments: Dict[str, Any]) -> ToolOutcome:

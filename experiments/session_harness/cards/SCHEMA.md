@@ -14,7 +14,7 @@ Structure: [`card.schema.json`](card.schema.json) (JSON Schema keywords, checked
 | `007.json` | [E3-calibration-007](../E3-calibration-007.md) | `proposed`; S6a's seed-7 selection, runs `c007-<task>-r<n>`, the recorded v2 controls; blocked only on approval |
 | `008.json` | [E1-cache-layout-008](../E1-cache-layout-008.md), gate 3 only | `proposed`; blocked on gates 1-2, the v4 policy, card 007's evolution set |
 | `009.json` | [E4-diagnostic-commitment-009](../E4-diagnostic-commitment-009.md) | `proposed`; blocked on held-in/held-out lists, a candidate runner, the wording |
-| `013.json` | [E4-finish-guard-013](../E4-finish-guard-013.md) | `proposed`; incumbent vs `--completion finish-guard`, card 007's evolution set + 3 solved-twice tasks, 2 rollouts, seeded order; blocked only on approval |
+| `013.json` | [E4-finish-guard-013](../E4-finish-guard-013.md) | `proposed`; incumbent vs `--completion finish-guard` (v2, fail-then-pass), card 007's evolution set + 3 solved-twice tasks, 2 rollouts, seeded order; blocked only on approval |
 | `014.json` | [E4-midpoint-nudge-014](../E4-midpoint-nudge-014.md) | `proposed`; incumbent vs `--nudge midpoint`, same tasks; blocked only on approval |
 | `015.json` | [E4-check-oracle-015](../E4-check-oracle-015.md) | `proposed`; incumbent vs `--oracle hidden-tests:3` (task-changing arm), same tasks; blocked only on approval |
 

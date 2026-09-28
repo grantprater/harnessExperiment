@@ -10,7 +10,9 @@ triggered message instead of opening-instruction text.
 
 Card 007 ([report](E3-calibration-007-report.md)): 3 of 8 rejections were budget exhaustion without an edit
 (022-r1, 032-r1, 032-r2): long exploration or reproduction with no commitment to a cause. E3 run 4 showed the same
-shape with a weaker model (16 of 20 responses reading, no library edit).
+shape with a weaker model (16 of 20 responses reading, no library edit). Weakness mining of the 40 card-007
+journals (2026-09-28): among rejected runs that edited, the median first edit came at response 15; among accepted
+runs, at response 6. A trigger at half the budget (response 10) sits between the two, so 0.5 is the default.
 
 ## Candidate (runner flag `--nudge midpoint`, `midpoint-nudge-v1`, fraction 0.5)
 

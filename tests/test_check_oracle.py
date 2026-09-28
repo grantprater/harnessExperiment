@@ -268,7 +268,7 @@ class RunnerEndToEndTests(unittest.TestCase):
         self.assertEqual(record["totals"]["model_calls"], 3)  # write, rejected finish, forced finish
         guard = record["treatments"]["completion"]
         self.assertEqual((guard["guard_triggered"], guard["guard_reason"], guard["forced_finish"]),
-                         (True, "no_run_after_edit", True))
+                         (True, "no_failing_run_before_edit", True))
         self.assertEqual(record["treatments"]["nudge"]["fired"], False)
         self.assertEqual(record["treatments"]["oracle"]["calls"], 0)
         workspace = run_dir / "sessions" / "synthetic-mut-001__gold-client" / "workspace"

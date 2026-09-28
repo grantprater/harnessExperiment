@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "id": "E4-finish-guard-013",
-  "title": "Finish guard: reject the first unverified finish after a source edit, once",
+  "title": "Finish guard: demand a reproduced failure that the fix turns into a pass, once",
   "status": "proposed",
   "markdown": "experiments/session_harness/E4-finish-guard-013.md",
-  "hypothesis": "On card 007's evolution set, where 5 of 8 rejections were a wrong fix finished without a check that exercised the edit, rejecting the first unverified finish once (the next finish is accepted regardless) turns some of those runs into verified, accepted fixes, and costs the solved-twice tasks at most one or two responses and no accepted run.",
+  "hypothesis": "On card 007's evolution set, every rejected run that finished had checked its fix only on inputs it chose, and 3 of 4 never reproduced the reported failure. Rejecting the first finish after a source edit, once, unless a command that failed before the first edit passes after the latest edit (the next finish is accepted regardless) makes the model reproduce and recheck the failure, turning some wrong fixes into accepted ones, at a cost of about one response per run on the solved-twice tasks and no accepted run.",
   "run_prefix": "c013",
   "run_name_template": "{prefix}-{task}-r{rollout}-{arm}",
   "runner": {
@@ -72,10 +72,11 @@
       "bundle": {
         "module": "task completion detection",
         "surface": "pre-finish verification rule",
-        "treatment": "finish-guard-v1",
+        "treatment": "finish-guard-v2",
         "flag": "--completion finish-guard",
         "code": "reticle/tools/finish_guard.py",
-        "source_rule": "pre-existing-python-source-v1"
+        "source_rule": "pre-existing-python-source-v1",
+        "rule": "fail-then-pass (same command or script path)"
       }
     }
   ],
@@ -213,7 +214,7 @@
       "delta:incumbent:finish-guard"
     ]
   },
-  "decision_rule": "Mechanism check, not a promotion (8 held-in tasks x 2 rollouts cannot resolve effects below about 15 points). Report per arm and set: accepted runs, guard firings, what followed each rejection (check run, new edit, forced finish), forced finishes the evaluator rejected, responses and active seconds per run. Earn a held-out card only if the treatment loses no accepted run on the efficiency set, its median responses per run there rise by at most 2, and its evolution-set accepted count is at least the incumbent's; otherwise reject and log.",
+  "decision_rule": "Mechanism check, not a promotion (8 held-in tasks x 2 rollouts cannot resolve effects below about 15 points). Report per arm and set: accepted runs, guard firings, what followed each rejection (reproduced and reran, new edit, forced finish), forced finishes the evaluator rejected, responses and active seconds per run. Earn a held-out card only if the treatment loses no accepted run on the efficiency set, its median responses per run there rise by at most 2, and its evolution-set accepted count is at least the incumbent's; otherwise reject and log.",
   "report": {
     "path": "experiments/session_harness/E4-finish-guard-013-report.md"
   },
@@ -221,6 +222,7 @@
     "Runs are named c013-<task>-r<n>-<arm>; one runner invocation per task, rollout and arm, with --max-total-calls 24.",
     "Arm order is seeded per unit (block, task, rollout), so a task's two rollouts can run the arms in different orders; every unit runs both arms.",
     "The incumbent arm is card 007's, so its planned hash per task equals card 007's for that task (for example b0fda8c921ad for sqlparse-mut-001 on this CRLF checkout).",
-    "The treatment enters the protocol hash only through the runner's 'treatments' record; RUNNER_VERSION stays 8."
+    "The treatment enters the protocol hash only through the runner's 'treatments' record; RUNNER_VERSION stays 8.",
+    "finish-guard-v1 ('a check ran since the edit') was replaced by v2 before any run: weakness mining showed all four finished-and-rejected card 007 runs had run an exit-0 check after their last edit. An offline replay of v2 over card 007's journals fires on those 4 and on 30 of 32 accepted runs."
   ]
 }

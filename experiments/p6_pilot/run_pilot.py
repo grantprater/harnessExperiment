@@ -36,8 +36,8 @@ Treatments (S6 harness surfaces; all off by default, and a run with none of them
 executed exactly as before). Each one that is on is described under "treatments" in config.json and in the
 protocol hash (name, version, fixed texts, parameters), and reported under "treatments" in results.jsonl:
   --completion finish-guard  task completion detection: the first finish after an edit to a pre-existing
-                             source file is rejected once unless a run since the edit shows a test or check
-                             executing (reticle/tools/finish_guard.py)
+                             source file is rejected once unless a command that failed before the first edit
+                             passed, rerun, after the latest edit (reticle/tools/finish_guard.py)
   --nudge midpoint           agent loop: once per run, when --nudge-fraction (default 0.5) of the response
                              budget is spent and no pre-existing source file has been edited, one fixed harness
                              message after the latest tool results (reticle/runtime/nudges.py)
@@ -96,7 +96,7 @@ from reticle.tools.check_oracle import (  # noqa: E402
     DEFAULT_MAX_CALLS, ORACLE_VERSION, CheckOracleTools, HiddenTestOracle, check_schema,
 )
 from reticle.tools.finish_guard import (  # noqa: E402
-    FINISH_GUARD_MESSAGE, FINISH_GUARD_VERSION, WHY_NO_CHECK, WHY_NO_RUN, FinishGuard, FinishGuardTools,
+    FINISH_GUARD_MESSAGE, FINISH_GUARD_VERSION, REASONS, FinishGuard, FinishGuardTools,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -169,7 +169,8 @@ TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction", "--oracle")
 def add_treatment_arguments(parser) -> None:
     group = parser.add_argument_group("treatments (off by default; each one that is on enters the protocol hash)")
     group.add_argument("--completion", choices=["finish-guard"], default=None,
-                       help="finish-guard: reject the first unverified finish after a source edit, once")
+                       help="finish-guard: reject the first finish after a source edit, once, unless a "
+                            "command that failed before the edit passes after it")
     group.add_argument("--nudge", choices=["midpoint"], default=None,
                        help="midpoint: one harness message when --nudge-fraction of the responses are spent "
                             "without a source edit")
@@ -186,7 +187,7 @@ def treatments_record(args) -> dict:
     if args.completion == "finish-guard":
         record["completion"] = {
             "name": "finish-guard", "version": FINISH_GUARD_VERSION, "source_rule": SOURCE_RULE_VERSION,
-            "rejection": FINISH_GUARD_MESSAGE, "reasons": [WHY_NO_RUN, WHY_NO_CHECK],
+            "rule": "fail-then-pass", "rejection": FINISH_GUARD_MESSAGE, "reasons": REASONS,
         }
     if args.nudge_fraction is not None and args.nudge is None:
         raise SystemExit("--nudge-fraction needs --nudge midpoint")
