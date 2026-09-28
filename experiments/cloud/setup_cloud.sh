@@ -3,7 +3,8 @@
 #
 #   bash experiments/cloud/setup_cloud.sh
 #
-# 1. uv: the one on PATH, else one installed with pip into .runtime/uv-bootstrap (a python3 venv).
+# 1. uv: the one on PATH, else one installed with pip into .runtime/uv-bootstrap (a python3 venv), else with
+#    pip install --user.
 # 2. Python 3.13.15, the host venvs' interpreter, as a uv-managed CPython (downloaded into the user's uv cache).
 #    If uv cannot provide it, the venvs fall back to `python3 -m venv` (the VM's own Python, 3.11 when probed) and
 #    the summary says so: that is a different task interpreter from the host's and must be reported with results.
@@ -51,6 +52,12 @@ else
       || $NICE "$RUNTIME/uv-bootstrap/bin/pip" install -q uv >/dev/null 2>&1
   fi
   [ -x "$RUNTIME/uv-bootstrap/bin/uv" ] && UV="$RUNTIME/uv-bootstrap/bin/uv"
+  if [ -z "$UV" ]; then  # no venv module (e.g. a python3 without ensurepip): a user-level install
+    say "venv bootstrap failed; trying python3 -m pip install --user uv"
+    $NICE python3 -m pip install -q --user "uv==$UV_VERSION" >/dev/null 2>&1 \
+      || $NICE python3 -m pip install -q --user --break-system-packages "uv==$UV_VERSION" >/dev/null 2>&1 || true
+    [ -x "$HOME/.local/bin/uv" ] && UV="$HOME/.local/bin/uv"
+  fi
 fi
 if [ -n "$UV" ]; then say "uv: $UV ($("$UV" --version 2>/dev/null))"; else note "uv unavailable; falling back to python3 -m venv"; fi
 
