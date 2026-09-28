@@ -38,3 +38,4 @@
 {"acceptance": "accepted", "crash_retry": 0, "exit": 0, "rollout": 2, "run": "c007-sqlparse-mut-073-r2", "seconds": 73.1, "stop": "finish_requested", "task": "sqlparse-mut-073", "ts_utc": "2026-09-28T02:35:26.424479+00:00"}
 {"acceptance": "accepted", "crash_retry": 0, "exit": 0, "rollout": 2, "run": "c007-sqlparse-mut-075-r2", "seconds": 101.8, "stop": "finish_requested", "task": "sqlparse-mut-075", "ts_utc": "2026-09-28T02:37:08.187491+00:00"}
 {"acceptance": "accepted", "crash_retry": 0, "exit": 0, "rollout": 2, "run": "c007-sqlparse-mut-076-r2", "seconds": 216.2, "stop": "finish_requested", "task": "sqlparse-mut-076", "ts_utc": "2026-09-28T02:40:44.395211+00:00"}
+{"campaign": "E3-calibration-007", "finished_runs": 40, "status": "complete", "ts_utc": "2026-09-28T02:40:45.528522+00:00"}

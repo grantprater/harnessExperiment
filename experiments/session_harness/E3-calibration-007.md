@@ -1,7 +1,7 @@
 # E3 calibration 007: mutation-task bank with a capable model through the Reticle interface
 
 Date: 2026-09-27  
-Status: ready to run (wiring proven, smoke passed); awaiting approval  
+Status: **complete 2026-09-28**: 40/40 runs, acceptance 0.80, 2 contrastive + 3 negative tasks; below the pass rule (5 contrastive); difficulty change proposed. [Report](E3-calibration-007-report.md). Approved by the owner in session 2026-09-27; launched by the owner from a terminal.  
 Stage: S6a. Prerequisite: `materialize_workspace` applies `mutation_patch` and removes `hidden_paths`; `run_pilot.py` accepts `--tasks experiments/mutation_tasks/tasks.mutations.json`.
 
 ## Hypothesis
@@ -137,18 +137,16 @@ Two runtime behaviours remain. Neither leaks the hidden tests or the gold patch:
 - A symlink made by a `run` command in the container is unreadable on the Windows host (WinError 1920). Every later
   tool call then raises out of `revision()`, which would end the campaign as an evidence loss.
 
-Command for rollout k (k = 1, 2), run one at a time from the repo root while holding
-`.runtime/locks/live-run.lock`:
+Command as run (amendment 2026-09-28, before the first run): one invocation per run, named `c007-<task>-r<k>`,
+sequential under `.runtime/locks/live-run.lock`, via the committed driver:
 
 ```powershell
-.\.runtime\test-venv\Scripts\python.exe experiments/p6_pilot/run_pilot.py --client claude-cli --models sonnet `
-  --tasks experiments/mutation_tasks/tasks.mutations.json `
-  sqlparse-mut-001 sqlparse-mut-002 sqlparse-mut-022 sqlparse-mut-023 sqlparse-mut-024 sqlparse-mut-025 sqlparse-mut-032 `
-  sqlparse-mut-033 sqlparse-mut-034 sqlparse-mut-040 sqlparse-mut-042 sqlparse-mut-043 sqlparse-mut-044 sqlparse-mut-046 `
-  sqlparse-mut-057 sqlparse-mut-060 sqlparse-mut-061 sqlparse-mut-073 sqlparse-mut-075 sqlparse-mut-076 `
-  --backend oci --arm pressure-recent-v3 --max-calls-per-run 20 --max-attempts-per-run 24 `
-  --elapsed-cap-seconds 1200 --max-tokens 4096 --max-total-calls 480 --run-name e3-cal007-sonnet-rk
+.\.runtime	est-venv\Scripts\python.exe experiments\session_harnessun_card007.py --execute
 ```
+
+Each invocation passes `--client claude-cli --models sonnet --backend oci --arm pressure-recent-v3 --max-calls-per-run 20
+--max-attempts-per-run 24 --elapsed-cap-seconds 1200 --max-tokens 4096 --max-total-calls 48 --tasks <bank> <task>`.
+The earlier 20-task-per-invocation form was not used.
 
 The runner does not do these; they need an operator or a change before the batch:
 
