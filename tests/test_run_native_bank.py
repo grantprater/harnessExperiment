@@ -32,11 +32,16 @@ from pathlib import Path
 if sys.argv[1:] == ["--version"]:
     print("0.0.0 (stub)")
     sys.exit(0)
+if sys.argv[1:] == ["sandbox", "status"]:
+    print(os.environ.get("STUB_SANDBOX_STATUS", json.dumps({"installed": False, "available": False})))
+    sys.exit(0)
 prompt = sys.stdin.buffer.read().decode("utf-8")
 state = Path(os.environ["STUB_CLAUDE_STATE"])
+settings = Path(sys.argv[sys.argv.index("--settings") + 1]) if "--settings" in sys.argv else None
 n = len(list(state.glob("call-*.json"))) + 1
 (state / f"call-{n:03d}.json").write_text(json.dumps({
     "argv": sys.argv[1:], "prompt": prompt, "cwd": os.getcwd(),
+    "settings": settings.read_text(encoding="utf-8") if settings and settings.exists() else None,
     "present": sorted(k for k in ("ANTHROPIC_API_KEY", "CLAUDECODE", "CLAUDE_CODE_SESSION_ID") if k in os.environ)}),
     encoding="utf-8")
 target = Path.cwd() / "pkg" / "mod.py"
@@ -266,7 +271,17 @@ class EndToEndTests(MutationWiringTestCase):
         call = json.loads((self.state / "call-001.json").read_text(encoding="utf-8"))
         self.assertEqual(call["prompt"], config["prompt"])
         self.assertEqual(config["prompt_sha256"], native_control.sha256_text(call["prompt"]))
-        self.assertEqual(call["argv"], native_control.native_arguments("sonnet", 20))
+        settings_file = Path(config["confinement"]["settings_file"])
+        self.assertEqual(call["argv"], native_control.native_arguments("sonnet", 20, settings=settings_file))
+        self.assertEqual(settings_file.parent.name, "c018-synthetic-mut-001-r1")  # beside the workspace, not in it
+        self.assertEqual(call["settings"], config["confinement"]["settings_text"])
+        self.assertEqual(native_control.sha256_text(call["settings"]), config["confinement"]["settings_sha256"])
+        settings = json.loads(call["settings"])
+        self.assertIs(settings["permissions"]["blockReadsOutsideWorkingDirectories"], True)
+        self.assertIn("Bash(curl *)", settings["permissions"]["deny"])
+        self.assertNotIn("sandbox", settings)
+        self.assertEqual(result["confinement"]["layers"], {"read_block": True, "bash_deny": True, "sandbox": False})
+        self.assertFalse(result["confinement"]["observed_active"])  # the stub denied nothing
         self.assertEqual(call["present"], [])  # session links and the API key are stripped
         self.assertTrue(call["cwd"].endswith("workspace"))
         text = (self.root / "c018-campaign.jsonl").read_text(encoding="utf-8")

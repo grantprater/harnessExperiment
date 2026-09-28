@@ -6,6 +6,8 @@ Usage (from the repo root):
   python experiments/session_harness/run_native_bank.py --controls   # scripted gold, noop on sqlparse-mut-001 (no CLI)
   python experiments/session_harness/run_native_bank.py --execute    # run; restartable (skips finished runs)
   [--scratch-root DIR]  parent of native_control's scratch base (default: the system temp folder)
+  [--sandbox]           pass --sandbox to every run (the CLI's OS sandbox; needs `claude sandbox install`, else
+                        every run refuses and the campaign stops at the first)
 
 Rules:
 - run names c018-<task>-r<k>; rollout 1 over all tasks in task-id order, then rollout 2 (rollout-major), the tasks
@@ -59,6 +61,7 @@ COMMIT_EVERY = 10
 MAX_CONSECUTIVE_CLI_FAILURES = 3
 RUN_TIMEOUT_SECONDS = 3600  # 1,200 s agent cap + evaluation (600 s pytest + 120 s) + materialization, with margin
 SCRATCH_ROOT = None
+SANDBOX = False
 TRAILER = "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 EXIT_OK, EXIT_REFUSED, EXIT_CHECKPOINT, EXIT_INTEGRITY, EXIT_LOCKED = 0, 2, 3, 4, 5
 
@@ -78,6 +81,8 @@ def command(name: str, task: str, extra=()) -> list:
     cmd = [PY, str(NATIVE), *FLAGS, "--tasks", str(TASK_FILE), task, "--run-name", name, *extra]
     if SCRATCH_ROOT:
         cmd += ["--scratch-root", str(SCRATCH_ROOT)]
+    if SANDBOX:
+        cmd.append("--sandbox")
     return cmd
 
 
@@ -272,14 +277,16 @@ def print_plan() -> None:
 
 
 def main(argv=None) -> int:
-    global SCRATCH_ROOT
+    global SCRATCH_ROOT, SANDBOX
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--plan", action="store_true")
     group.add_argument("--controls", action="store_true")
     group.add_argument("--execute", action="store_true")
     parser.add_argument("--scratch-root", default=None)
+    parser.add_argument("--sandbox", action="store_true")
     args = parser.parse_args(argv)
+    SANDBOX = args.sandbox
     if args.scratch_root:
         SCRATCH_ROOT = args.scratch_root
     if args.plan:

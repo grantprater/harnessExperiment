@@ -15,8 +15,21 @@ v1 (card 006) ran one upstream P6 task. v2 (card 018) runs any task of a task fi
 The CLI (`claude -p`, stream-json) runs on the host with v1's flags (bypassPermissions, --setting-sources "",
 --no-session-persistence, --safe-mode, --strict-mcp-config, --disable-slash-commands) and `--tools` NATIVE_TOOLS.
 Its init event is checked as it arrives: a tool outside NATIVE_TOOLS (WebFetch, WebSearch, Agent, ...), an MCP server,
-an API key, or another permission mode kills the CLI at once (stop `isolation_abort`). The CLI keeps network and host
-file access; neither can be removed here.
+an API key, or another permission mode kills the CLI at once (stop `isolation_abort`).
+
+CONFINEMENT: every CLI run gets `--settings <scratch>/cli-settings.json` (cli_settings), recorded verbatim with its
+sha256 in config.json under "confinement":
+  layer read_block  permissions.blockReadsOutsideWorkingDirectories: the file tools (Read, Grep, Glob) refuse paths
+                    outside the working directory (the workspace);
+  layer bash_deny   permissions.deny: DENY_NETWORK_COMMANDS, and the read/list commands DENY_READ_VERBS on every
+                    spelling of each hidden root (this repository's checkouts, which hold the task file, the run
+                    records, the evaluator bundles and the task clones; and the run's scratch entries other than the
+                    workspace), for Bash and PowerShell. Pattern rules are best-effort (see DENY_NETWORK_COMMANDS);
+  layer sandbox     only with --sandbox (off by default): sandbox.enabled, no allowed network domain, and
+                    filesystem.denyRead over the hidden paths (sandbox_deny_read). It needs `claude sandbox install`;
+                    unless `claude sandbox status` reports it installed and available, the run refuses to start.
+The CLI enforces the layers; this script cannot see them work until something is denied. result.json records the layers
+that were on and the denials the stream shows ("confinement"); the transcript audit below stays on either way.
 
 LEAK CHECKS: the run refuses to start (exit 3) unless
   1. the scratch base (default %TEMP%/reticle-native-control) is outside this checkout, the main checkout that owns it,
@@ -98,6 +111,26 @@ PROMPT_SUBSTITUTIONS = (
     ("Call finish when you are done.", "Stop when you are done."),
 )
 CLI_FAILURE_STOPS = ("cli_error", "isolation_abort")
+CONFINEMENT_VERSION = "cli-settings-v1"
+SETTINGS_NAME = "cli-settings.json"
+# ---- CLI-enforced confinement: the one place the deny rules are defined. ----------------------------------------
+# Pattern deny is best-effort. A rule matches the start of one command (the CLI splits compound commands), so
+# `python -c "import urllib.request ..."`, a URL or path held in a variable, a script file, an alias, or another
+# spelling of a path still gets through. The transcript audit (summarize_stream) stays on and still decides
+# audit_clean; the rules only make the easy routes fail loudly.
+DENY_NETWORK_COMMANDS = (
+    "curl *", "wget *", "git clone *", "git fetch *", "git pull *", "pip *", "pip3 *", "python -m pip *",
+    "py -m pip *", "uv pip *", "Invoke-WebRequest *", "Invoke-RestMethod *", "iwr *", "irm *",
+)
+# Commands that read or list a path; each is denied on every spelling of every hidden root (hidden_roots).
+DENY_READ_VERBS = ("cat", "type", "head", "tail", "less", "more", "ls", "dir", "find", "grep", "rg", "Get-Content",
+                   "gc", "Get-ChildItem", "gci", "Select-String")
+DENY_TOOLS = ("Bash", "PowerShell")
+# The run's scratch entries besides the workspace: the session store; after the CLI exits, the pristine copy and the
+# evaluator bundle; and the settings file itself.
+SCRATCH_HIDDEN = ("session", "pristine", "evaluator", SETTINGS_NAME)
+DENIAL_TEXT = re.compile(r"permission|denied|not allowed|outside (?:of )?(?:the )?(?:allowed )?working director",
+                         re.IGNORECASE)
 NETWORK_PATTERN = re.compile(
     r"\b(curl|wget|Invoke-WebRequest|Invoke-RestMethod|iwr|irm|pip3?\s+install|pip\s+download|git\s+clone|"
     r"git\s+fetch|git\s+pull|npm\s+install)\b|https?://", re.IGNORECASE)
@@ -186,10 +219,98 @@ def opening_prompt(task: dict) -> str:
     return native_instructions().format(repo=task["repo"], repo_url=task["repo_url"], statement=task["statement"])
 
 
-def native_arguments(model: str, max_turns: int, tools: str = NATIVE_TOOLS) -> list:
-    return ["-p", "--model", model, "--max-turns", str(max_turns), "--permission-mode", "bypassPermissions",
-            "--output-format", "stream-json", "--verbose", "--setting-sources", "", "--no-session-persistence",
-            "--safe-mode", "--strict-mcp-config", "--disable-slash-commands", "--tools", tools]
+def native_arguments(model: str, max_turns: int, tools: str = NATIVE_TOOLS, settings: Optional[Path] = None) -> list:
+    """v1's flags, plus `--settings FILE` (the confinement) when given. --setting-sources "" drops the user, project
+    and local settings files; a --settings file is loaded on top (as the CLI's help says for --restricted)."""
+    arguments = ["-p", "--model", model, "--max-turns", str(max_turns), "--permission-mode", "bypassPermissions",
+                 "--output-format", "stream-json", "--verbose", "--setting-sources", "", "--no-session-persistence",
+                 "--safe-mode", "--strict-mcp-config", "--disable-slash-commands", "--tools", tools]
+    return arguments + (["--settings", str(settings)] if settings is not None else [])
+
+
+def hidden_roots(scratch: Path) -> List[Path]:
+    """Path prefixes the agent must not read: each checkout of this repository (the task clones, task files, run
+    records and evaluator bundles are under the main one) and the run's scratch entries other than the workspace.
+    The scratch base as a whole is not listed, because the workspace is inside it; leak check 3 keeps other runs'
+    directories out of it instead."""
+    return [*checkout_roots(), *(scratch / name for name in SCRATCH_HIDDEN)]
+
+
+def deny_rules(scratch: Path) -> List[str]:
+    """DENY_NETWORK_COMMANDS, and each read verb on each spelling of each hidden root (a spelling that another one
+    already covers as a prefix, such as a worktree under the main checkout's name, is left out), for each tool."""
+    forms = [form for root in hidden_roots(scratch) for form in path_forms(root)]
+    forms = [form for form in dict.fromkeys(forms)
+             if not any(other != form and form.lower().startswith(other.lower()) for other in forms)]
+    rules = []
+    for tool in DENY_TOOLS:
+        rules += [f"{tool}({command})" for command in DENY_NETWORK_COMMANDS]
+        rules += [f"{tool}({verb} {form}*)" for form in forms for verb in DENY_READ_VERBS]
+    return rules
+
+
+def sandbox_deny_read(scratch: Path) -> List[str]:
+    """What the OS sandbox denies reading. Not the checkout roots themselves: the task interpreter and the Python it
+    was made from live in the main checkout's .runtime. So: every top-level entry of each checkout except .runtime,
+    .runtime's task clones, and the run's scratch entries other than the workspace."""
+    paths = []
+    for root in checkout_roots():
+        if root.is_dir():
+            paths += [entry for entry in sorted(root.iterdir()) if entry.name != ".runtime"]
+        paths.append(root / ".runtime" / "bug-mining")
+    paths += [scratch / name for name in SCRATCH_HIDDEN]
+    return [str(path) for path in dict.fromkeys(paths)]
+
+
+def cli_settings(scratch: Path, sandbox: bool = False) -> dict:
+    """The --settings JSON of one run (CONFINEMENT in the module docstring)."""
+    settings = {"permissions": {"blockReadsOutsideWorkingDirectories": True, "deny": deny_rules(scratch)}}
+    if sandbox:
+        settings["sandbox"] = {"enabled": True, "network": {"allowedDomains": []},
+                               "filesystem": {"denyRead": sandbox_deny_read(scratch)}}
+    return settings
+
+
+def settings_text(settings: dict) -> str:
+    return json.dumps(settings, indent=2, ensure_ascii=False) + "\n"
+
+
+def confinement_layers(sandbox: bool) -> dict:
+    return {"read_block": True, "bash_deny": True, "sandbox": bool(sandbox)}
+
+
+def sandbox_status(executable: Optional[str]) -> dict:
+    """`claude sandbox status` (one JSON line; no model call), or {"error": ...}."""
+    if executable is None:
+        return {"error": "claude is not on PATH"}
+    try:
+        completed = subprocess.run([executable, "sandbox", "status"], capture_output=True, text=True, timeout=60,
+                                   env=child_environment()[0])
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"error": repr(exc)}
+    for line in reversed(completed.stdout.splitlines()):
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict):
+            return value
+    return {"error": f"no JSON from `claude sandbox status` (exit {completed.returncode}): "
+                     f"{(completed.stdout + completed.stderr).strip()[-300:]}"}
+
+
+def sandbox_problem(status: Optional[dict]) -> Optional[str]:
+    """Why --sandbox cannot be honoured, or None. The setting alone confines nothing: the install
+    (`claude sandbox install`) must be present and the sandbox available."""
+    status = status or {"error": "not checked"}
+    if status.get("error"):
+        return f"sandbox status unknown: {status['error']}"
+    if not status.get("installed"):
+        return "the CLI sandbox is not installed (run `claude sandbox install` first); --sandbox refuses to start"
+    if not status.get("available"):
+        reasons = status.get("reasons") or status.get("unavailableReason")
+        return f"the CLI sandbox is installed but not available: {reasons}"
+    return None
 
 
 def init_problem(init: dict) -> Optional[str]:
@@ -491,6 +612,9 @@ def summarize_stream(events: list, workspace: Path, base_files: set, allowed_roo
     for use in uses:
         by_name[use["name"]] = by_name.get(use["name"], 0) + 1
     commands = [u for u in uses if u["name"] in COMMAND_TOOLS]
+    denied = [{"response": u["response"], "tool": u["name"], "input": json.dumps(u["input"], ensure_ascii=False)[:200],
+               "result": (outputs.get(u["id"]) or "")[:200]}
+              for u in uses if u["is_error"] and DENIAL_TEXT.search(outputs.get(u["id"]) or "")]
     source_files = {path for path in base_files if is_source_path(path)}
     audit = {"paths_outside_workspace": outside, "network_commands": network, "escape_references": escapes,
              "harness_markers": marker_hits,
@@ -517,6 +641,8 @@ def summarize_stream(events: list, workspace: Path, base_files: set, allowed_roo
                                 for u in uses if u["name"] in EDIT_TOOLS and u["is_error"] is False}),
         "audit": audit,
         "audit_clean": not any(audit.values()),
+        "denied_calls": denied,
+        "permission_denials": (result or {}).get("permission_denials") or [],
         "tool_sequence": [{"response": u["response"], "seconds": u["seconds"], "tool": u["name"],
                            "is_error": u["is_error"], "input": json.dumps(u["input"], ensure_ascii=False)[:200]}
                           for u in uses],
@@ -632,6 +758,9 @@ def parse_arguments(argv=None):
                         help=f"parent of the scratch base {SCRATCH_NAME}/ (default: the system temp folder)")
     parser.add_argument("--scripted", choices=["gold", "noop"], default=None,
                         help="no CLI: a scripted agent stands in (the no-model control of this path)")
+    parser.add_argument("--sandbox", action="store_true",
+                        help="add the CLI's OS sandbox to the settings (no network, denyRead over hidden paths); needs "
+                             "`claude sandbox install` and refuses to start without an installed, available sandbox")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
 
@@ -665,7 +794,10 @@ def main(argv=None) -> int:
     scratch = base / args.run_name
     workspace, pristine, bundle = scratch / "workspace", scratch / "pristine", scratch / "evaluator"
     prompt = opening_prompt(task)
-    arguments = native_arguments(args.model, args.max_turns)
+    settings_path = scratch / SETTINGS_NAME
+    arguments = native_arguments(args.model, args.max_turns, settings=settings_path)
+    settings = cli_settings(scratch, sandbox=args.sandbox)
+    status = sandbox_status(executable or resolve_executable("claude")) if args.sandbox else None
     config = {
         "native_version": NATIVE_VERSION, "run_name": args.run_name, "task_id": task["task_id"],
         "task_file": run_pilot.task_file_record(task_file), "task_contract": run_pilot.task_contract(task),
@@ -684,6 +816,13 @@ def main(argv=None) -> int:
         "reticle_opening_request_sha256": sha256_text(reticle_opening_request(task)),
         "reticle_instructions_sha256": sha256_text(run_pilot.INSTRUCTIONS),
         "allowed_tools": NATIVE_TOOLS,
+        "confinement": {
+            "version": CONFINEMENT_VERSION, "layers": confinement_layers(args.sandbox),
+            "settings_file": str(settings_path), "settings_text": settings_text(settings),
+            "settings_sha256": sha256_text(settings_text(settings)), "sandbox_status": status,
+            "enforced_by": "the CLI (--settings); pattern deny is best-effort; the transcript audit stays on",
+            "confirmed": "not observable before a denial; see result.json confinement",
+        },
         "init_check": "tools == allowed_tools, no MCP server, apiKeySource none, bypassPermissions; else killed",
         "budgets": {"max_turns": args.max_turns, "wall_seconds": args.wall_seconds, "enforcement":
                     "--max-turns in the CLI; hard kill of the CLI process tree at the wall cap"},
@@ -710,6 +849,8 @@ def main(argv=None) -> int:
         print(f"{record_dir} or {scratch} exists; use a new --run-name", file=sys.stderr)
         return EXIT_INVALID
     problems = location_problems(base, args.run_name)
+    if args.sandbox and sandbox_problem(status):
+        problems.append(sandbox_problem(status))
     if problems:
         print(json.dumps({"refused": args.run_name, "leak_checks": problems}, indent=2))
         return EXIT_REFUSED
@@ -721,6 +862,7 @@ def main(argv=None) -> int:
         print(json.dumps({"refused": args.run_name, "leak_checks": problems}, indent=2))
         return EXIT_REFUSED
     base_files = workspace_files(workspace)
+    settings_path.write_text(settings_text(settings), encoding="utf-8")  # a sibling of the workspace, never inside it
     record_dir.mkdir(parents=True)
     runtime = LocalRuntime(scratch / "session", workspace)
     initial_revision = runtime.workspace.revision()
@@ -768,6 +910,10 @@ def main(argv=None) -> int:
         "aborted": run["aborted"], "stop": stop, "cli_failure": stop in CLI_FAILURE_STOPS,
         "turns_used": (summary["result"] or {}).get("num_turns"), "removed_environment": removed, **summary,
         "cost_estimate_usd": (summary["result"] or {}).get("total_cost_usd"),
+        "confinement": {"layers": confinement_layers(args.sandbox),
+                        "settings_sha256": sha256_text(settings_text(settings)),
+                        "denials": len(summary["denied_calls"]) + len(summary["permission_denials"]),
+                        "observed_active": bool(summary["denied_calls"] or summary["permission_denials"])},
         "diff_stat": diff["stat"], "diff_numstat": diff["numstat"],
         "ignored_untracked_files": diff["ignored_untracked"],
         "initial_workspace_revision": initial_revision, "evaluator_version": version,
@@ -781,7 +927,7 @@ def main(argv=None) -> int:
     (record_dir / "result.json").write_text(json.dumps(record, indent=2, ensure_ascii=False), encoding="utf-8")
     print(json.dumps({k: record[k] for k in ("stop", "wall_seconds", "turns_used", "responses", "tool_calls",
                                               "tool_calls_by_name", "first_base_file_edit", "ran_command",
-                                              "audit_clean", "cost_estimate_usd")}, indent=2))
+                                              "audit_clean", "confinement", "cost_estimate_usd")}, indent=2))
     print(json.dumps({k: record["acceptance"][k] for k in ("status", "criterion_outcomes", "test_counts")}, indent=2))
     print(diff["stat"])
     return EXIT_OK

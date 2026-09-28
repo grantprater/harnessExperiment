@@ -187,6 +187,62 @@ class NativeControlTests(unittest.TestCase):
         summary = native_control.summarize_stream(run["events"], self.workspace, set())
         self.assertEqual(native_control.stop_for(run, summary, None), "isolation_abort")
 
+    def test_settings_hold_the_read_block_and_the_deny_list(self):
+        scratch = self.root / "base" / "run"
+        text = native_control.settings_text(native_control.cli_settings(scratch))
+        settings = json.loads(text)  # valid JSON, as written to the --settings file
+        self.assertEqual(set(settings), {"permissions"})
+        permissions = settings["permissions"]
+        self.assertIs(permissions["blockReadsOutsideWorkingDirectories"], True)
+        deny = permissions["deny"]
+        for tool in ("Bash", "PowerShell"):
+            for command in ("curl *", "wget *", "git clone *", "git fetch *", "pip *", "python -m pip *",
+                            "Invoke-WebRequest *", "iwr *"):
+                self.assertIn(f"{tool}({command})", deny)
+        main = native_control.checkout_roots()[-1]
+        for form in native_control.path_forms(main):
+            self.assertIn(f"Bash(cat {form}*)", deny)
+            self.assertIn(f"PowerShell(type {form}*)", deny)
+        for name in ("session", "evaluator", "pristine", "cli-settings.json"):
+            self.assertIn(f"Bash(cat {(scratch / name).as_posix()}*)", deny)
+        workspace = (scratch / "workspace").as_posix()
+        self.assertFalse(any(workspace.lower().startswith(rule[rule.index(" ") + 1:-2].lower())
+                             for rule in deny if rule.endswith("*)") and "/" in rule))  # the workspace stays readable
+        self.assertEqual(len(deny), len(set(deny)))
+        self.assertEqual(native_control.native_arguments("m", 3, settings=scratch / "s.json")[-2:],
+                         ["--settings", str(scratch / "s.json")])
+        self.assertNotIn("--settings", native_control.native_arguments("m", 3))
+
+    def test_sandbox_layer_needs_an_installed_available_sandbox(self):
+        self.assertIn("not installed", native_control.sandbox_problem({"installed": False, "available": False}))
+        self.assertIn("not available", native_control.sandbox_problem({"installed": True, "available": False,
+                                                                       "reasons": ["off"]}))
+        self.assertIn("unknown", native_control.sandbox_problem({"error": "boom"}))
+        self.assertIn("unknown", native_control.sandbox_problem(None))
+        self.assertIsNone(native_control.sandbox_problem({"installed": True, "available": True}))
+        scratch = self.root / "base" / "run"
+        sandbox = native_control.cli_settings(scratch, sandbox=True)["sandbox"]
+        self.assertEqual((sandbox["enabled"], sandbox["network"]), (True, {"allowedDomains": []}))
+        deny_read = sandbox["filesystem"]["denyRead"]
+        main = native_control.checkout_roots()[-1]
+        self.assertIn(str(main / "experiments"), deny_read)
+        self.assertIn(str(main / ".runtime" / "bug-mining"), deny_read)
+        self.assertNotIn(str(main / ".runtime"), deny_read)  # the task interpreter lives there
+        self.assertIn(str(scratch / "evaluator"), deny_read)
+        self.assertNotIn(str(scratch / "workspace"), deny_read)
+
+    def test_denied_calls_are_collected_from_tool_results_and_the_result_event(self):
+        stream = [
+            assistant("m1", use("u1", "Read", file_path="C:/elsewhere/x.py")),
+            result("u1", is_error=True, content="Permission to read C:/elsewhere/x.py was denied."),
+            assistant("m2", use("u2", "Bash", command="python -c 1")), result("u2", is_error=True, content="exit 1"),
+            {"type": "result", "subtype": "success", "num_turns": 2, "is_error": False,
+             "permission_denials": [{"tool_name": "Bash", "tool_input": {"command": "curl x"}}]},
+        ]
+        summary = native_control.summarize_stream(timed(stream), self.workspace, set())
+        self.assertEqual([d["response"] for d in summary["denied_calls"]], [1])
+        self.assertEqual(len(summary["permission_denials"]), 1)
+
     def test_stop_classification(self):
         cases = [({"aborted": "tools"}, {}, None, "isolation_abort"), ({"timed_out": True}, {}, None, "wall_cap"),
                  ({}, {"result": None}, None, "cli_error"),
@@ -301,6 +357,25 @@ class ScriptedPathTests(MutationWiringTestCase):
         self.assertEqual(code, native_control.EXIT_REFUSED)
         self.assertIn("earlier", out)
         self.assertFalse((self.records / "control-gold").exists())
+
+    def test_sandbox_refuses_to_start_without_the_install(self):
+        with mock.patch.object(native_control, "sandbox_status",
+                               return_value={"installed": False, "available": False}) as status:
+            code, out = self.run_native("control-gold", "--scripted", "gold", "--sandbox")
+        status.assert_called_once()
+        self.assertEqual(code, native_control.EXIT_REFUSED)
+        self.assertIn("claude sandbox install", out)
+        self.assertFalse((self.records / "control-gold").exists())
+
+    def test_sandbox_layer_is_recorded_when_installed(self):
+        with mock.patch.object(native_control, "sandbox_status", return_value={"installed": True, "available": True}):
+            code, _ = self.run_native("control-gold", "--scripted", "gold", "--sandbox")
+        self.assertEqual(code, native_control.EXIT_OK)
+        config = json.loads((self.records / "control-gold" / "config.json").read_text(encoding="utf-8"))
+        result = json.loads((self.records / "control-gold" / "result.json").read_text(encoding="utf-8"))
+        self.assertEqual(config["confinement"]["layers"], {"read_block": True, "bash_deny": True, "sandbox": True})
+        self.assertIn('"sandbox"', config["confinement"]["settings_text"])
+        self.assertEqual(result["confinement"]["settings_sha256"], config["confinement"]["settings_sha256"])
 
     def test_the_materialized_workspace_is_the_mutated_tree_without_tests(self):
         seen = {}

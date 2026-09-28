@@ -4,7 +4,8 @@ Date: 2026-09-28
 Status: **approved (owner in session 2026-09-28: 'we should move that up')**. Built and checked offline on
 `wt/native-bank`: native arm v2, campaign driver, paired comparison, unit tests with a stub CLI, and the no-model
 controls (gold accepted, noop rejected; [below](#no-model-controls-done)). **No live run yet**: the campaign waits for the
-live-run lock (card 013 holds it) and for the v1 scratch leftover to be removed ([commands](#commands)).  
+live-run lock (card 013 holds it) ([commands](#commands)). CLI permission settings (read block, deny list) were added
+after review; the optional `--sandbox` layer is off (not installed on this machine).  
 Stage: S6 reference line. Card 006 compared the two harnesses on one easy upstream task (both accepted); card 007
 measured the Reticle interface on 20 mutation tasks (32/40). This card runs the same 20 tasks through the stock harness.
 
@@ -77,12 +78,18 @@ rollout 1 over all tasks in task-id order, then rollout 2. 40 runs, strictly seq
 ## Known mismatches (all stand; none is corrected by this card)
 
 1. **Host with network vs container without.** Native commands run on the Windows host with network and host file
-   access; Reticle commands ran in a Linux container with only the workspace mounted and no network. The evaluator is
-   the same (OCI) for both.
+   access, narrowed only by the CLI's permission settings (the file tools cannot read outside the workspace; common
+   network and read commands on hidden paths are denied by pattern; see below). Reticle commands ran in a Linux
+   container with only the workspace mounted and no network. The evaluator is the same (OCI) for both. The optional
+   `--sandbox` layer (no network for commands, OS-level read denial) would close most of this gap, but it needs
+   `claude sandbox install`, which this machine does not have (`claude sandbox status`: installed false, "The Windows
+   sandbox is not enabled on this build"), so card 018 runs without it.
 2. **Continuous conversation vs stateless per response.** The native model keeps its whole conversation (the CLI's
    window and compaction); each Reticle response saw only what `pressure-recent-v3` rendered within 80,000 bytes.
 3. **Shell vs no shell.** Native has Bash and PowerShell (pipes, `sed -i`, heredocs) plus Claude Code's file tools;
-   Reticle had 15 structured tools and a `run` that takes no shell syntax.
+   Reticle had 15 structured tools and a `run` that takes no shell syntax. The native deny list also refuses a few
+   harmless commands Reticle allowed (`pip list`, `ls`/`cat` of the task interpreter's files under the repository),
+   and the read block keeps Read/Grep/Glob inside the workspace, as Reticle's file tools were.
 4. **"Turns" vs "responses".** The native budget is the CLI's `--max-turns`; the Reticle budget is 20 model responses
    in the durable ledger (plus 24 attempts). The comparison counts native responses as distinct assistant messages
    (API responses) and shows the CLI's `num_turns` beside them; Reticle responses are `agent.model_calls`.
@@ -115,24 +122,49 @@ The CLI runs on the host with `bypassPermissions`, network and host file access.
 - **The evaluator bundle** (the fix commit's test roots) is built only after the CLI has exited, in the scratch
   directory, and deleted with it.
 - **Tools**: WebFetch, WebSearch and Agent are not in `--tools`; the init check kills a run that has them.
+- **CLI permission settings** (`--settings <scratch>\cli-settings.json`, written beside the workspace, recorded verbatim
+  with its sha256 in `config.json` under `confinement`; the rules are defined once, in `native_control.py`):
+  - *read block*, enforced by the CLI: `permissions.blockReadsOutsideWorkingDirectories: true`, so Read, Grep and Glob
+    refuse any path outside the workspace;
+  - *deny list*, enforced by the CLI, pattern-matched and best-effort: for Bash and PowerShell, `curl`, `wget`,
+    `git clone/fetch/pull`, `pip`, `pip3`, `python -m pip`, `py -m pip`, `uv pip`, `Invoke-WebRequest`,
+    `Invoke-RestMethod`, `iwr`, `irm`; and `cat`, `type`, `head`, `tail`, `less`, `more`, `ls`, `dir`, `find`, `grep`,
+    `rg`, `Get-Content`, `gc`, `Get-ChildItem`, `gci`, `Select-String` on every spelling (`C:\`, `C:/`, `/c/`) of the
+    repository root (which covers its worktrees, `.runtime\bug-mining` and the run records) and of the run's scratch
+    entries other than the workspace (session store, pristine copy, evaluator bundle, the settings file). The scratch
+    base itself is not denied, because the workspace is inside it; leak check 3 keeps other runs out of it;
+  - *sandbox*, only with `--sandbox` (off; needs `claude sandbox install`, and refuses to start unless
+    `claude sandbox status` reports it installed and available): commands get no network domain and an OS-level
+    `denyRead` over the repository's top-level entries except `.runtime` (the task interpreter lives there),
+    `.runtime\bug-mining`, and the scratch entries above.
+  Which layers were on is recorded per run (`config.json` and `result.json`, `confinement.layers`). Whether they are
+  live is not observable before something is denied: the init event does not list permissions, and no live smoke was
+  run. A denial shows as an errored tool result or in the result event's `permission_denials`; `result.json` counts
+  them (`confinement.denials`, `observed_active`). That deny rules still apply under `bypassPermissions` is the
+  expected CLI behaviour (deny takes precedence over the permission mode), not something this card has observed.
 - **Context**: `--setting-sources ""` and `--safe-mode` load no CLAUDE.md, memory, skills or MCP servers; the prompt
   names only the upstream repository and the statement.
 
-What does **not** confine it (recorded in `config.json` under `authority`; the audit flags the common forms):
+What does **not** confine it (recorded in `config.json` under `authority`; the audit flags the common forms, and the
+audit decides `audit_clean` whatever the CLI enforced):
 
 - **The network.** The upstream repository (`repo_url` is in the prompt) and PyPI hold the healthy code at or near
-  commit `f66d12c`, from which every bank task is cut, and its test suite. A `git clone`, `pip download` or `curl`
-  would reveal the unmutated function (the gold fix) and the hidden tests. The audit flags these commands and any URL.
-- **Host files.** This repository is readable: `experiments/mutation_tasks/tasks.mutations.json` holds every task's
+  commit `f66d12c`, from which every bank task is cut, and its test suite. The deny list refuses the direct commands,
+  but `python -c "import urllib.request; ..."`, a script file, `git -C x fetch`, `Start-BitsTransfer`, or a command
+  built from variables still reaches them. The audit flags network command words and any URL.
+- **Host files through commands.** The read block covers the file tools only. Through Bash or PowerShell this
+  repository is still readable by any command the deny list does not name (`python -c "print(open(...).read())"`,
+  `sed -n p`, `awk`, `cp`, `Copy-Item`, a path reached through `cd` or a variable):
+  `experiments/mutation_tasks/tasks.mutations.json` holds every task's
   `mutation_patch` and `gold_patch`; `experiments/p6_pilot/runs/*/sessions/*/evaluator` (git-ignored, present in the
   main checkout) holds evaluator bundles with the hidden tests; `.runtime/bug-mining/repos/sqlparse` is a full clone.
   The repository path is discoverable from inside the run: the task interpreter on PATH lives in
   `<repo>\.runtime\bugs-venv`. The audit flags absolute paths outside the workspace and the task interpreter's
   environment, `..` steps, home and temp references, checkout paths and harness words in tool inputs and results.
   An audit that finds none of these does not prove nothing was read (a command can build a path the patterns miss).
-- **The v1 scratch leftover.** `%TEMP%\reticle-native-control\pc-native-sonnet-1\evaluator` (card 006) holds the test
-  roots of `f66d12c` (the hidden tests of every bank task). Leak check 3 refuses every run until it is removed; its
-  evidence is committed under `native_runs/pc-native-sonnet-1/`.
+- **The v1 scratch leftover** (`%TEMP%\reticle-native-control\pc-native-sonnet-1`, card 006, which held the test roots of
+  `f66d12c`) was removed by the orchestrator on 2026-09-28; leak check 3 would refuse any run while such a directory
+  exists.
 
 ## What counts
 
@@ -147,8 +179,7 @@ trajectories of any task where the arms differ by 2 accepted runs. This card set
 From the main checkout's root, with the test interpreter (`.\.runtime\test-venv\Scripts\python.exe`):
 
 ```
-# 0. prerequisites: card 013 finished (the lock is free); the v1 leftover removed (it holds the bank's hidden tests)
-Remove-Item -Recurse -Force "$env:TEMP\reticle-native-control\pc-native-sonnet-1"
+# 0. prerequisites: card 013 finished (the lock is free); %TEMP%\reticle-native-control empty (leak check 3)
 # 1. plan: 40 invocations, lock state, controls, scratch base
 python experiments/session_harness/run_native_bank.py --plan
 # 2. controls (recorded on wt/native-bank; rerun only if native_control.py changes; no model, no lock)
@@ -179,7 +210,7 @@ recorded in their `config.json` has the sha256 given above.
 
 Leak check 3 on this machine as it is now: `native_control.py --scripted gold` with the default scratch base refused
 before materializing anything (exit 3): "`...\Temp\reticle-native-control` holds other runs' directories
-(pc-native-sonnet-1)". That is the v1 leftover named above; the campaign cannot start until it is removed.
+(pc-native-sonnet-1)". That was the v1 leftover named above, since removed.
 
 Offline tests: 382 before, 408 after (26 new: native arm 14, driver 8 including one stub-CLI run end to end through the
 real `native_control.py` path, comparison 4); the same 4 `test_run_card` failures before and after (cards 013-015 status
