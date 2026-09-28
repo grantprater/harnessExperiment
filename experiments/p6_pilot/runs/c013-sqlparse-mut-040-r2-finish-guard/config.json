@@ -1,0 +1,541 @@
+{
+  "runner_version": 8,
+  "protocol_hash": "466d262d51e5",
+  "arm": "pressure-recent-v3",
+  "client": "claude-cli",
+  "models": [
+    "sonnet"
+  ],
+  "provider_routing": {
+    "sonnet": {
+      "client": "claude-cli",
+      "cli_version": "2.1.283 (Claude Code)",
+      "model": "sonnet",
+      "arguments": [
+        "-p",
+        "--model",
+        "sonnet",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--max-turns",
+        "1",
+        "--safe-mode",
+        "--setting-sources",
+        "",
+        "--strict-mcp-config",
+        "--disable-slash-commands",
+        "--no-session-persistence",
+        "--tools",
+        "",
+        "--json-schema",
+        "<reply schema>",
+        "--system-prompt-file",
+        "<system prompt>"
+      ],
+      "reply_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "arguments": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "arguments"
+              ]
+            }
+          }
+        },
+        "required": [
+          "content",
+          "tool_calls"
+        ]
+      },
+      "adapter_version": "claude-cli-adapter-v2",
+      "reply": "the model's first message: a StructuredOutput call, else its direct tool calls",
+      "system_prompt_sha256": "06baf2af07b19557d24e7797315242044a6c3a6b1a713cc3dfebd476082e5a34",
+      "timeout_seconds": 300,
+      "billing": "unknown (local Claude Code subscription login)",
+      "removed_environment": {
+        "names": [
+          "CLAUDECODE",
+          "CLAUDE_PID",
+          "CLAUDE_EFFORT"
+        ],
+        "prefixes": [
+          "CLAUDE_CODE_",
+          "ANTHROPIC_"
+        ]
+      }
+    }
+  },
+  "tasks": [
+    "sqlparse-mut-040"
+  ],
+  "task_file": {
+    "path": "experiments/mutation_tasks/tasks.mutations.json",
+    "sha256_lf": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa"
+  },
+  "task_contracts": [
+    {
+      "task_id": "sqlparse-mut-040",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "compare_flip",
+      "mutation_file": "sqlparse/filters/output.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "56a9faf81c5005215586859ddaf5d00429f613c6569675915424b0c613e548be",
+      "statement_sha256": "96612bda5493117bbfde2df4d765bfedf77dc12ccea65773bdd8e697f245dcd7"
+    }
+  ],
+  "max_calls_per_run": 20,
+  "max_context_bytes": 80000,
+  "max_tokens": 4096,
+  "pytest_timeout_seconds": 600,
+  "temperature": 0,
+  "max_attempts_per_call": 3,
+  "max_total_calls": 24,
+  "instructions": "You are working in a source checkout of {repo} ({repo_url}) at an upstream commit. The following problem was reported:\n\n{statement}\n\nChange the library so the reported behavior is correct. Hidden upstream tests will be run on your final workspace; tests you add or edit are not used for acceptance, but you may write and run tests to check your work (for example `pytest tests/test_example.py -q` with the run tool). Call finish when you are done.",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "glob_files",
+        "description": "Recursively list workspace-relative file paths that match a glob, in sorted order. The glob is matched against each file's relative path and against its file name, using Python fnmatch rules, case-sensitive: '*' and '?' also match '/', and '[abc]' matches one listed character. It never matches file contents. Cache and VCS directories (.git, __pycache__, .pytest_cache, .mypy_cache, .ruff_cache, .tox, .venv, node_modules) are skipped.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "glob": {
+              "type": "string",
+              "description": "Required. For example '*.py', 'tests/*', or 'setup.cfg'."
+            },
+            "path": {
+              "type": "string",
+              "description": "Directory (or single file) to list under, relative to the workspace root. Default '.'."
+            }
+          },
+          "required": [
+            "glob"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_file",
+        "description": "Read a text file with 1-based line numbers. start_line and end_line are inclusive; omit start_line to begin at line 1 and end_line to read to the end. The header reports the range returned and the file's total lines. Long results are shown partially with an output id for paging.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "start_line": {
+              "type": "integer"
+            },
+            "end_line": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "path"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "outline",
+        "description": "List the classes and functions of a Python file with line numbers.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "search_text",
+        "description": "Search file contents for exact text (literal characters, case-sensitive; not a regex). Returns one line per match as path:line: text, with 1-based line numbers, and states the scope searched. file_glob only selects which files are searched.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Required. The exact text to find, e.g. 'def get_real_name('."
+            },
+            "path": {
+              "type": "string",
+              "description": "File or directory to search, relative to the workspace root. Default '.'."
+            },
+            "file_glob": {
+              "type": "string",
+              "description": "Optional glob selecting files by relative path or file name (same rules as glob_files), e.g. '*.py'. It never matches file contents. Default '*'."
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "replace_text",
+        "description": "Replace exact text in a file. Fails without changing the file if old_text is absent, or if it occurs more than once while replace_all is false; set replace_all to replace every occurrence. Reports how many occurrences were replaced and shows the edited lines.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "old_text": {
+              "type": "string"
+            },
+            "new_text": {
+              "type": "string"
+            },
+            "replace_all": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "path",
+            "old_text",
+            "new_text"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "write_file",
+        "description": "Create a file, or overwrite it completely if it already exists, with the given content. Missing parent directories are created. Paths are relative to the workspace root.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "content"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "run",
+        "description": "Run one command in the workspace root without a shell: no pipes, redirection, chaining (&&, ;), cd, or variable expansion; use workspace-relative paths with forward slashes. 'python' and 'pytest' use the task's Python environment. Shows the command, status (including timeout), exit code, stdout, and stderr; long output is shown partially with an output id for paging. A successful exit does not mean the task is accepted.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "For example: pytest tests/test_example.py -q"
+            },
+            "timeout_seconds": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "command"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_output",
+        "description": "Read part of an earlier tool result by its output id (for example out_12). Results that were shown partially say which id and range to request. Give start_line/end_line, or start_byte/end_byte for very long lines.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "start_line": {
+              "type": "integer"
+            },
+            "end_line": {
+              "type": "integer"
+            },
+            "start_byte": {
+              "type": "integer"
+            },
+            "end_byte": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "search_output",
+        "description": "Find lines containing a literal string (plain text, not a regex) in an earlier tool result by its output id.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "query": {
+              "type": "string",
+              "description": "Required. The literal text to find."
+            }
+          },
+          "required": [
+            "id",
+            "query"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "history",
+        "description": "Page through authorized durable session history. The response includes a stable next_cursor.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "after_sequence": {
+              "type": "integer"
+            },
+            "before_sequence": {
+              "type": "integer"
+            },
+            "as_of_sequence": {
+              "type": "integer"
+            },
+            "kinds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "limit": {
+              "type": "integer"
+            },
+            "cursor": {
+              "type": "string"
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "search_history",
+        "description": "Find literal text in authorized prior actions and observations without knowing an output ID.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string"
+            },
+            "kinds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "source": {
+              "type": "string"
+            },
+            "as_of_sequence": {
+              "type": "integer"
+            },
+            "limit": {
+              "type": "integer"
+            },
+            "cursor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_artifact",
+        "description": "Read an authorized session artifact by ID, optionally using an exact byte range.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "start_byte": {
+              "type": "integer"
+            },
+            "end_byte": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "note",
+        "description": "Save a named plain-text note that persists across turns. Pinned notes are placed in context when space allows.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "pin": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name",
+            "content"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_note",
+        "description": "Read a saved note by name.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "finish",
+        "description": "Declare the work complete. The final workspace is then checked independently.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "summary": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "summary"
+          ]
+        }
+      }
+    }
+  ],
+  "toolset_version": "reticle-tools-v3",
+  "execution": {
+    "backend": "isolated-oci",
+    "image": "localhost/reticle-p6-task:py313-v1",
+    "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+    "guest_python": "python",
+    "container_user_arguments": [
+      "--userns",
+      "keep-id"
+    ],
+    "authority": "isolated OCI: task workspace mount only, no network, unprivileged user"
+  },
+  "guards": {
+    "stop_on_repeats": false,
+    "resume_after_provider_stop": 0,
+    "resume_wait_seconds": null
+  },
+  "treatments": {
+    "completion": {
+      "name": "finish-guard",
+      "version": "finish-guard-v2",
+      "source_rule": "pre-existing-python-source-v1",
+      "rule": "fail-then-pass",
+      "rejection": "Finish not accepted yet: you changed {files}, but this run has not shown the reported failure reproduced and then fixed: {why}. Reproduce the reported failure with a command that fails on the unfixed code (a non-zero exit or a traceback; for example a script `python repro.py` whose assertion fails, or `pytest tests/test_repro.py -q` with a failing test), then run the same command after the fix and show it passing (exit code 0, no traceback). A check that only ever passed, or a different command after the fix, does not count. This check happens once: the next finish call will be accepted regardless.",
+      "reasons": {
+        "no_failing_run_before_edit": "no run failed before your first source edit",
+        "no_run_after_edit": "`{failing}` failed before your first source edit, but no run has executed since your latest edit",
+        "no_matching_pass_after_edit": "`{failing}` failed before your first source edit, but no run since your latest edit reran it (the same command or script) and passed"
+      }
+    }
+  },
+  "budgets_per_run": {
+    "sonnet": {
+      "model_responses": 20,
+      "context_bytes": 80000,
+      "model_attempts": 24,
+      "active_seconds": 1200.0
+    }
+  },
+  "created_at": "2026-09-28T08:13:05.869376+00:00",
+  "source_revision": {
+    "commit": "4527cea330076b7e4b4494c4d95fd0243d69ccd6",
+    "tracked_changes": false
+  }
+}
