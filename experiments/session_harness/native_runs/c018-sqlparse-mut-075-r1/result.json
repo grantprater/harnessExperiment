@@ -1,0 +1,377 @@
+{
+  "run_name": "c018-sqlparse-mut-075-r1",
+  "task_id": "sqlparse-mut-075",
+  "model": "sonnet",
+  "native_version": 2,
+  "scripted": null,
+  "started_at": "2026-09-28T15:37:30.162400+00:00",
+  "finished_at": "2026-09-28T15:38:30.979433+00:00",
+  "wall_seconds": 49.4,
+  "timed_out": false,
+  "exit_code": 0,
+  "aborted": null,
+  "stop": "end_turn",
+  "cli_failure": false,
+  "turns_used": 17,
+  "removed_environment": [
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "CLAUDECODE",
+    "CLAUDE_CODE_CHILD_SESSION",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY",
+    "CLAUDE_CODE_ENTRYPOINT",
+    "CLAUDE_CODE_EXECPATH",
+    "CLAUDE_CODE_MESSAGING_SOCKET",
+    "CLAUDE_CODE_MESSAGING_TOKEN",
+    "CLAUDE_CODE_SESSION_ATTENDED",
+    "CLAUDE_CODE_SESSION_ID",
+    "CLAUDE_EFFORT",
+    "CLAUDE_PID"
+  ],
+  "init": {
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Bash",
+      "Edit",
+      "Glob",
+      "Grep",
+      "PowerShell",
+      "Read",
+      "Write"
+    ],
+    "mcp_servers": [],
+    "apiKeySource": "none",
+    "permissionMode": "bypassPermissions",
+    "claude_code_version": "2.1.283",
+    "skills": [],
+    "slash_commands": [],
+    "cwd": "C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-075-r1\\workspace"
+  },
+  "result": {
+    "subtype": "success",
+    "is_error": false,
+    "num_turns": 17,
+    "stop_reason": "end_turn",
+    "terminal_reason": "completed",
+    "duration_ms": 48130,
+    "duration_api_ms": 43004,
+    "total_cost_usd": 0.161135,
+    "usage": {
+      "input_tokens": 34,
+      "cache_creation_input_tokens": 12923,
+      "cache_read_input_tokens": 392925,
+      "output_tokens": 3079,
+      "output_tokens_details": {
+        "thinking_tokens": 399
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 12923,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 176,
+          "cache_read_input_tokens": 28940,
+          "cache_creation_input_tokens": 233,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 233
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "permission_denials": [
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_01CW7iKRAsAh8WjKGkGdRV21",
+        "tool_input": {
+          "command": "cd \"C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-075-r1\\workspace\" && python -c \"\nimport sqlparse\nsql = '''SELECT case when a=1 then 1 else 2 end from foo'''\nprint(sqlparse.format(sql, reindent_aligned=True))\n\"\n"
+        }
+      },
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_015FwjdCK2oWS2bzcZGjCGq6",
+        "tool_input": {
+          "command": "cd \"C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-075-r1\\workspace\" && python -m pytest -q 2>&1 | tail -40"
+        }
+      },
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_01G8RnQ2xwG6t94Va51xX6k6",
+        "tool_input": {
+          "command": "cd \"C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-075-r1\\workspace\" && ls tests 2>&1; ls test 2>&1"
+        }
+      }
+    ],
+    "result": "Fixed the bug in `sqlparse/engine/statement_splitter.py:74-77`: the `END` handler had an inverted condition (`if not (self._block_stack): self._block_stack.pop()`), which popped from an empty list whenever a bare `END` appeared with no open block — exactly what happens when a `CASE ... END` is inside a plain `SELECT` statement (no `BEGIN` context). Corrected it to pop only `if self._block_stack:`, matching the pattern used by the other closing-keyword branches."
+  },
+  "responses": 17,
+  "tool_calls": 16,
+  "tool_calls_by_name": {
+    "Bash": 9,
+    "Read": 2,
+    "Write": 2,
+    "Edit": 1,
+    "Glob": 2
+  },
+  "tool_errors": 5,
+  "first_command": {
+    "response": 1,
+    "seconds": 3.67,
+    "tool": "Bash"
+  },
+  "ran_command": true,
+  "first_base_file_edit": {
+    "response": 7,
+    "seconds": 23.93,
+    "tool": "Edit"
+  },
+  "first_source_edit": {
+    "response": 7,
+    "seconds": 23.93,
+    "tool": "Edit"
+  },
+  "source_rule": "pre-existing-python-source-v1",
+  "first_any_edit": {
+    "response": 4,
+    "seconds": 14.99,
+    "tool": "Write"
+  },
+  "test_commands": 2,
+  "edited_files": [
+    "repro.py",
+    "repro2.py",
+    "sqlparse/engine/statement_splitter.py"
+  ],
+  "audit": {
+    "paths_outside_workspace": [],
+    "network_commands": [],
+    "escape_references": [],
+    "harness_markers": [],
+    "tools_outside_allowed_set": []
+  },
+  "audit_clean": true,
+  "denied_calls": [
+    {
+      "response": 3,
+      "tool": "Bash",
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\" && python -c \\\"\\nimport sqlparse\\nsql = '''SELECT case when a=1 then 1 else 2 en",
+      "result": "python runs inline code, which cannot be checked against the read block; under the read block (permissions.blockReadsOutsideWorkingDirectories) a command the shell parser cannot analyze asks the perso"
+    },
+    {
+      "response": 11,
+      "tool": "Bash",
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\" && ls tests 2>&1; ls test 2>&1\"}",
+      "result": "ls names a path that is computed at run time, which cannot be checked against the read block (permissions.blockReadsOutsideWorkingDirectories)"
+    }
+  ],
+  "permission_denials": [
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_01CW7iKRAsAh8WjKGkGdRV21",
+      "tool_input": {
+        "command": "cd \"C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-075-r1\\workspace\" && python -c \"\nimport sqlparse\nsql = '''SELECT case when a=1 then 1 else 2 end from foo'''\nprint(sqlparse.format(sql, reindent_aligned=True))\n\"\n"
+      }
+    },
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_015FwjdCK2oWS2bzcZGjCGq6",
+      "tool_input": {
+        "command": "cd \"C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-075-r1\\workspace\" && python -m pytest -q 2>&1 | tail -40"
+      }
+    },
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_01G8RnQ2xwG6t94Va51xX6k6",
+      "tool_input": {
+        "command": "cd \"C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-075-r1\\workspace\" && ls tests 2>&1; ls test 2>&1"
+      }
+    }
+  ],
+  "tool_sequence": [
+    {
+      "response": 1,
+      "seconds": 3.67,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\" && grep -rn \\\"pop()\\\" sqlparse/ 2>/dev/null\"}"
+    },
+    {
+      "response": 2,
+      "seconds": 9.52,
+      "tool": "Read",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\\sqlparse\\\\engine\\\\grouping.py\", \"offset\": 1, \"limit\": 90}"
+    },
+    {
+      "response": 3,
+      "seconds": 12.89,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\" && python -c \\\"\\nimport sqlparse\\nsql = '''SELECT case when a=1 then 1 else 2 en"
+    },
+    {
+      "response": 4,
+      "seconds": 14.99,
+      "tool": "Write",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\\repro.py\", \"content\": \"import sqlparse\\n\\nsql = \\\"SELECT case when a=1 then 1 else 2"
+    },
+    {
+      "response": 5,
+      "seconds": 16.73,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\" && python repro.py\"}"
+    },
+    {
+      "response": 6,
+      "seconds": 19.49,
+      "tool": "Read",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\\sqlparse\\\\engine\\\\statement_splitter.py\"}"
+    },
+    {
+      "response": 7,
+      "seconds": 23.93,
+      "tool": "Edit",
+      "is_error": false,
+      "input": "{\"replace_all\": false, \"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\\sqlparse\\\\engine\\\\statement_splitter.py\", \"old_string\": \"     "
+    },
+    {
+      "response": 8,
+      "seconds": 25.72,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\" && python repro.py\"}"
+    },
+    {
+      "response": 9,
+      "seconds": 27.78,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\" && python -m pytest -q 2>&1 | tail -40\"}"
+    },
+    {
+      "response": 10,
+      "seconds": 29.54,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\" && python -m pytest -q\"}"
+    },
+    {
+      "response": 11,
+      "seconds": 32.68,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\" && ls tests 2>&1; ls test 2>&1\"}"
+    },
+    {
+      "response": 12,
+      "seconds": 34.03,
+      "tool": "Glob",
+      "is_error": false,
+      "input": "{\"pattern\": \"**/test_*.py\"}"
+    },
+    {
+      "response": 13,
+      "seconds": 36.09,
+      "tool": "Glob",
+      "is_error": false,
+      "input": "{\"pattern\": \"**/*\"}"
+    },
+    {
+      "response": 14,
+      "seconds": 41.34,
+      "tool": "Write",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\\repro2.py\", \"content\": \"import sqlparse\\n\\ntests = [\\n    \\\"SELECT case when a=1 the"
+    },
+    {
+      "response": 15,
+      "seconds": 43.63,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\" && python repro2.py\"}"
+    },
+    {
+      "response": 16,
+      "seconds": 46.45,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r1\\\\workspace\\\" && rm -f repro.py repro2.py\"}"
+    }
+  ],
+  "cost_estimate_usd": 0.161135,
+  "confinement": {
+    "layers": {
+      "read_block": true,
+      "bash_deny": true,
+      "sandbox": false
+    },
+    "settings_sha256": "6e9c97f8517074fb7d4c9b5f23a12fa8658905f51165cfd41da5111ff10d8070",
+    "denials": 5,
+    "observed_active": true
+  },
+  "diff_stat": " sqlparse/engine/statement_splitter.py | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n",
+  "diff_numstat": "1\t1\tsqlparse/engine/statement_splitter.py\n",
+  "ignored_untracked_files": [],
+  "initial_workspace_revision": "sha256:4950bd7b33a1d5f6f2beb144cb493a8120233afaa99fe5dfdc4c7b40a2f371bb",
+  "evaluator_version": "sqlparse-mut-075:inputs-6c22ee52ed71258a:evaluator-fa0ec3e7394cddd1",
+  "acceptance": {
+    "status": "accepted",
+    "criterion_outcomes": {
+      "fail-to-pass": "pass",
+      "pass-to-pass": "pass"
+    },
+    "report_artifact_id": "art_400e1d12d36c47f9a9b842176fa1a784",
+    "test_counts": {
+      "fail-to-pass": {
+        "expected": 22,
+        "passed": 22,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      },
+      "pass-to-pass": {
+        "expected": 469,
+        "passed": 469,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      }
+    },
+    "final_workspace_revision": "sha256:a6702617e7bfc01e6dba48e0cceb80b73aee3e22a663509a8dc0311d9eaa2e45",
+    "criteria": {
+      "fail-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      },
+      "pass-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      }
+    },
+    "collection_errors": [],
+    "observed_test_count": 493,
+    "pytest_exit_code": 0,
+    "pytest_timed_out": false,
+    "measurement_errors": []
+  },
+  "billing": "unknown (local Claude Code subscription login); cost_estimate_usd is the CLI's list-price estimate",
+  "scratch_removal_error": null
+}

@@ -1,0 +1,47 @@
+diff --git a/scratch_check.py b/scratch_check.py
+new file mode 100644
+index 0000000..9a6ffb6
+--- /dev/null
++++ b/scratch_check.py
+@@ -0,0 +1,2 @@
++import sqlparse, os
++print(os.path.abspath(sqlparse.__file__))
+diff --git a/scratch_test.py b/scratch_test.py
+new file mode 100644
+index 0000000..e3daf8b
+--- /dev/null
++++ b/scratch_test.py
+@@ -0,0 +1,7 @@
++import sqlparse
++
++sql = "CASE WHEN foo = 1 THEN 2 WHEN foo = 3 THEN 4 ELSE 5 END"
++print(sqlparse.format(sql, reindent=True))
++print("---")
++sql2 = "SELECT case when a = 1 then 2 end as foo"
++print(sqlparse.format(sql2, reindent=True))
+diff --git a/scratch_test2.py b/scratch_test2.py
+new file mode 100644
+index 0000000..e910a00
+--- /dev/null
++++ b/scratch_test2.py
+@@ -0,0 +1,7 @@
++import sqlparse
++
++print(sqlparse.format('case when a=1 then 2 end', reindent=True, compact=True))
++print("---")
++print(sqlparse.format(
++    'CASE WHEN foo = 1 THEN 2 WHEN foo = 3 THEN 4 ELSE 5 END',
++    reindent=True, compact=True))
+diff --git a/sqlparse/filters/reindent.py b/sqlparse/filters/reindent.py
+index e9aae75..ea41ac6 100644
+--- a/sqlparse/filters/reindent.py
++++ b/sqlparse/filters/reindent.py
+@@ -193,7 +193,7 @@ class ReindentFilter:
+     def _process_case(self, tlist):
+         iterable = iter(tlist.get_cases())
+         cond, _ = next(iterable)
+-        first = next(cond[1].flatten())
++        first = next(cond[0].flatten())
+ 
+         with offset(self, self._get_offset(tlist[0])):
+             with offset(self, self._get_offset(first)):

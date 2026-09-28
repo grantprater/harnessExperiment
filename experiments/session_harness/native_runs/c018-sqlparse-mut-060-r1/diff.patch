@@ -1,0 +1,39 @@
+diff --git a/_scratch_test.py b/_scratch_test.py
+new file mode 100644
+index 0000000..efd6e31
+--- /dev/null
++++ b/_scratch_test.py
+@@ -0,0 +1,33 @@
++import sqlparse
++
++sql = """
++CREATE OR REPLACE FUNCTION testfunc(input1 INT) RETURNS INT AS $$
++DECLARE
++BEGIN
++  IF input1 = 0 THEN
++    RETURN 0;
++  END IF;
++  RETURN 1;
++END;
++$$ LANGUAGE plpgsql;
++"""
++stmts = sqlparse.split(sql)
++print(len(stmts))
++for s in stmts:
++    print('---')
++    print(s)
++
++sql2 = """
++BEGIN
++  FOR i IN 1..10 LOOP
++    IF i = 5 THEN
++      CONTINUE;
++    END IF;
++  END LOOP;
++END;
++"""
++stmts2 = sqlparse.split(sql2)
++print(len(stmts2))
++for s in stmts2:
++    print('===')
++    print(s)

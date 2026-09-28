@@ -1,0 +1,13 @@
+diff --git a/sqlparse/formatter.py b/sqlparse/formatter.py
+index d158c6c..1fba246 100644
+--- a/sqlparse/formatter.py
++++ b/sqlparse/formatter.py
+@@ -198,7 +198,7 @@ def build_filter_stack(stack, options):
+             fltr = filters.OutputPythonFilter()
+         else:
+             fltr = None
+-        if not (fltr is not None):
++        if fltr is not None:
+             stack.postprocess.append(fltr)
+ 
+     return stack

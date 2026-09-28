@@ -1,0 +1,316 @@
+{
+  "run_name": "c018-sqlparse-mut-076-r1",
+  "task_id": "sqlparse-mut-076",
+  "model": "sonnet",
+  "native_version": 2,
+  "scripted": null,
+  "started_at": "2026-09-28T15:38:32.983276+00:00",
+  "finished_at": "2026-09-28T15:39:09.079815+00:00",
+  "wall_seconds": 25.4,
+  "timed_out": false,
+  "exit_code": 0,
+  "aborted": null,
+  "stop": "end_turn",
+  "cli_failure": false,
+  "turns_used": 11,
+  "removed_environment": [
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "CLAUDECODE",
+    "CLAUDE_CODE_CHILD_SESSION",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY",
+    "CLAUDE_CODE_ENTRYPOINT",
+    "CLAUDE_CODE_EXECPATH",
+    "CLAUDE_CODE_MESSAGING_SOCKET",
+    "CLAUDE_CODE_MESSAGING_TOKEN",
+    "CLAUDE_CODE_SESSION_ATTENDED",
+    "CLAUDE_CODE_SESSION_ID",
+    "CLAUDE_EFFORT",
+    "CLAUDE_PID"
+  ],
+  "init": {
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Bash",
+      "Edit",
+      "Glob",
+      "Grep",
+      "PowerShell",
+      "Read",
+      "Write"
+    ],
+    "mcp_servers": [],
+    "apiKeySource": "none",
+    "permissionMode": "bypassPermissions",
+    "claude_code_version": "2.1.283",
+    "skills": [],
+    "slash_commands": [],
+    "cwd": "C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-076-r1\\workspace"
+  },
+  "result": {
+    "subtype": "success",
+    "is_error": false,
+    "num_turns": 11,
+    "stop_reason": "end_turn",
+    "terminal_reason": "completed",
+    "duration_ms": 23911,
+    "duration_api_ms": 19439,
+    "total_cost_usd": 0.09939520000000002,
+    "usage": {
+      "input_tokens": 22,
+      "cache_creation_input_tokens": 8059,
+      "cache_read_input_tokens": 235976,
+      "output_tokens": 1992,
+      "output_tokens_details": {
+        "thinking_tokens": 426
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 8059,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 172,
+          "cache_read_input_tokens": 24093,
+          "cache_creation_input_tokens": 216,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 216
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "permission_denials": [
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_0173SQdv7rgCxJi1H73RD6TU",
+        "tool_input": {
+          "command": "cd \"C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-076-r1\\workspace\" && python -m pytest tests/test_format.py -q 2>&1 | tail -40"
+        }
+      },
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_01NKufQVfZMPzqG28ADkhSk1",
+        "tool_input": {
+          "command": "python -c \"\nimport sqlparse\nprint(sqlparse.format('select * from foo union select * from bar;', reindent=True))\n\"",
+          "description": "Test reindent behavior manually"
+        }
+      }
+    ],
+    "result": "Fixed the bug: in `sqlparse/filters/reindent.py`'s `_split_kwds`, the condition for inserting a newline before split keywords (FROM, JOIN, AND, GROUP BY, etc.) had its logic inverted — it only inserted a newline when one already existed, instead of when one was missing. Restored `if not (uprev.endswith('\\n') or uprev.endswith('\\r'))`, which fixes reindent for keywords, BETWEEN, parenthesis, and all related cases."
+  },
+  "responses": 11,
+  "tool_calls": 10,
+  "tool_calls_by_name": {
+    "Grep": 1,
+    "Read": 1,
+    "Edit": 1,
+    "Bash": 6,
+    "Write": 1
+  },
+  "tool_errors": 3,
+  "first_command": {
+    "response": 4,
+    "seconds": 10.63,
+    "tool": "Bash"
+  },
+  "ran_command": true,
+  "first_base_file_edit": {
+    "response": 3,
+    "seconds": 9.18,
+    "tool": "Edit"
+  },
+  "first_source_edit": {
+    "response": 3,
+    "seconds": 9.18,
+    "tool": "Edit"
+  },
+  "source_rule": "pre-existing-python-source-v1",
+  "first_any_edit": {
+    "response": 3,
+    "seconds": 9.18,
+    "tool": "Edit"
+  },
+  "test_commands": 2,
+  "edited_files": [
+    "_manual_test.py",
+    "sqlparse/filters/reindent.py"
+  ],
+  "audit": {
+    "paths_outside_workspace": [],
+    "network_commands": [],
+    "escape_references": [],
+    "harness_markers": [],
+    "tools_outside_allowed_set": []
+  },
+  "audit_clean": true,
+  "denied_calls": [
+    {
+      "response": 7,
+      "tool": "Bash",
+      "input": "{\"command\": \"python -c \\\"\\nimport sqlparse\\nprint(sqlparse.format('select * from foo union select * from bar;', reindent=True))\\n\\\"\", \"description\": \"Test reindent behavior manually\"}",
+      "result": "python runs inline code, which cannot be checked against the read block; under the read block (permissions.blockReadsOutsideWorkingDirectories) a command the shell parser cannot analyze asks the perso"
+    }
+  ],
+  "permission_denials": [
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_0173SQdv7rgCxJi1H73RD6TU",
+      "tool_input": {
+        "command": "cd \"C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-076-r1\\workspace\" && python -m pytest tests/test_format.py -q 2>&1 | tail -40"
+      }
+    },
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_01NKufQVfZMPzqG28ADkhSk1",
+      "tool_input": {
+        "command": "python -c \"\nimport sqlparse\nprint(sqlparse.format('select * from foo union select * from bar;', reindent=True))\n\"",
+        "description": "Test reindent behavior manually"
+      }
+    }
+  ],
+  "tool_sequence": [
+    {
+      "response": 1,
+      "seconds": 2.64,
+      "tool": "Grep",
+      "is_error": false,
+      "input": "{\"pattern\": \"class ReindentFilter\", \"output_mode\": \"files_with_matches\"}"
+    },
+    {
+      "response": 2,
+      "seconds": 3.88,
+      "tool": "Read",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-076-r1\\\\workspace\\\\sqlparse\\\\filters\\\\reindent.py\"}"
+    },
+    {
+      "response": 3,
+      "seconds": 9.18,
+      "tool": "Edit",
+      "is_error": false,
+      "input": "{\"replace_all\": false, \"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-076-r1\\\\workspace\\\\sqlparse\\\\filters\\\\reindent.py\", \"old_string\": \"            if"
+    },
+    {
+      "response": 4,
+      "seconds": 10.63,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-076-r1\\\\workspace\\\" && python -m pytest tests/test_format.py -q 2>&1 | tail -40\"}"
+    },
+    {
+      "response": 5,
+      "seconds": 11.67,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"python -m pytest tests/test_format.py -q\", \"description\": \"Run format tests\"}"
+    },
+    {
+      "response": 6,
+      "seconds": 16.25,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"pwd && ls\", \"description\": \"Show current directory and contents\"}"
+    },
+    {
+      "response": 7,
+      "seconds": 18.17,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"python -c \\\"\\nimport sqlparse\\nprint(sqlparse.format('select * from foo union select * from bar;', reindent=True))\\n\\\"\", \"description\": \"Test reindent behavior manually\"}"
+    },
+    {
+      "response": 8,
+      "seconds": 20.29,
+      "tool": "Write",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-076-r1\\\\workspace\\\\_manual_test.py\", \"content\": \"import sqlparse\\n\\nprint(repr(sqlparse.format('select "
+    },
+    {
+      "response": 9,
+      "seconds": 21.23,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"python _manual_test.py\", \"description\": \"Run manual reindent test script\"}"
+    },
+    {
+      "response": 10,
+      "seconds": 23.05,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"rm \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-076-r1\\\\workspace\\\\_manual_test.py\\\"\", \"description\": \"Remove temporary manual test script\"}"
+    }
+  ],
+  "cost_estimate_usd": 0.09939520000000002,
+  "confinement": {
+    "layers": {
+      "read_block": true,
+      "bash_deny": true,
+      "sandbox": false
+    },
+    "settings_sha256": "66cd6dc1946bb34e92983b70e0fb84ef6d9742917e94918f3b731ba5b532249f",
+    "denials": 3,
+    "observed_active": true
+  },
+  "diff_stat": " sqlparse/filters/reindent.py | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n",
+  "diff_numstat": "1\t1\tsqlparse/filters/reindent.py\n",
+  "ignored_untracked_files": [],
+  "initial_workspace_revision": "sha256:cf1c68f7cdbe0e9c0fef3f275f8df3f756fa8efb320ad3725a5915fe3f95c234",
+  "evaluator_version": "sqlparse-mut-076:inputs-6c22ee52ed71258a:evaluator-fa0ec3e7394cddd1",
+  "acceptance": {
+    "status": "accepted",
+    "criterion_outcomes": {
+      "fail-to-pass": "pass",
+      "pass-to-pass": "pass"
+    },
+    "report_artifact_id": "art_5321c8e278e04226ad08e32a8e38ae08",
+    "test_counts": {
+      "fail-to-pass": {
+        "expected": 26,
+        "passed": 26,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      },
+      "pass-to-pass": {
+        "expected": 465,
+        "passed": 465,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      }
+    },
+    "final_workspace_revision": "sha256:a6702617e7bfc01e6dba48e0cceb80b73aee3e22a663509a8dc0311d9eaa2e45",
+    "criteria": {
+      "fail-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      },
+      "pass-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      }
+    },
+    "collection_errors": [],
+    "observed_test_count": 493,
+    "pytest_exit_code": 0,
+    "pytest_timed_out": false,
+    "measurement_errors": []
+  },
+  "billing": "unknown (local Claude Code subscription login); cost_estimate_usd is the CLI's list-price estimate",
+  "scratch_removal_error": null
+}
