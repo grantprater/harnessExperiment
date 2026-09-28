@@ -1,0 +1,4 @@
+# 2026-09-28T22:36:10+00:00 /home/user/harnessExperiment/.runtime/test-venv/bin/python /home/user/harnessExperiment/experiments/p6_pilot/run_pilot.py --client gold --arm pressure-recent-v3 --backend trusted-local --tasks experiments/mutation_tasks/tasks.mutations.json sqlparse-mut-001 sqlparse-mut-006 --run-name c019-control-gold --max-calls-per-run 20 --max-context-bytes 80000 --max-tokens 4096 --pytest-timeout 600 --max-attempts-per-run 24 --elapsed-cap-seconds 1200
+task budgets per run: {"gold-client": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
+sqlparse-mut-001__gold-client: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}
+sqlparse-mut-006__gold-client: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}
