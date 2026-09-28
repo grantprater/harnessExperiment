@@ -38,6 +38,9 @@ protocol hash (name, version, fixed texts, parameters), and reported under "trea
   --completion finish-guard  task completion detection: the first finish after an edit to a pre-existing
                              source file is rejected once unless a run since the edit shows a test or check
                              executing (reticle/tools/finish_guard.py)
+  --nudge midpoint           agent loop: once per run, when --nudge-fraction (default 0.5) of the response
+                             budget is spent and no pre-existing source file has been edited, one fixed harness
+                             message after the latest tool results (reticle/runtime/nudges.py)
 
 Usage (from the repo root):
   python experiments/p6_pilot/run_pilot.py --client gold --run-name gold-check
@@ -81,6 +84,9 @@ from reticle.evaluation import AcceptancePlan, AcceptanceRunner, CriterionContra
 from reticle.runtime import LocalRuntime  # noqa: E402
 from reticle.runtime.contracts import TaskEnvelope  # noqa: E402
 from reticle.runtime.controller import AgentController, AgentLimits, ModelClientError, ModelResponse  # noqa: E402
+from reticle.runtime.nudges import (  # noqa: E402
+    MIDPOINT_NUDGE_TEMPLATE, MIDPOINT_NUDGE_VERSION, MidpointNudge, midpoint_nudge_text,
+)
 from reticle.runtime.source_edits import SOURCE_RULE_VERSION, SourceEditTracker  # noqa: E402
 from reticle.tools import TOOL_SCHEMAS, ToolSuite  # noqa: E402
 from reticle.tools.finish_guard import (  # noqa: E402
@@ -107,7 +113,7 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    is recorded as the model's routing, so it is part of the protocol hash
 #    Later in v8, without a bump: --tasks FILE.json and mutation-task materialisation. Tasks without mutation
 #    fields are exported and hashed exactly as before; a mutation task's contract enters the protocol hash.
-#    Later in v8, without a bump: the S6 treatments (--completion). Off, nothing changes (card 007's recorded
+#    Later in v8, without a bump: the S6 treatments (--completion, --nudge). Off, nothing changes (card 007's recorded
 #    hashes still replay); on, each one's record enters the protocol hash under "treatments". A bump would
 #    change every incumbent hash and block the cards pinned to v8 without any change in what an incumbent runs.
 RUNNER_VERSION = 8
@@ -150,13 +156,18 @@ INSTRUCTIONS = (
 )
 
 
-TREATMENT_FLAGS = ("--completion",)
+TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction")
 
 
 def add_treatment_arguments(parser) -> None:
     group = parser.add_argument_group("treatments (off by default; each one that is on enters the protocol hash)")
     group.add_argument("--completion", choices=["finish-guard"], default=None,
                        help="finish-guard: reject the first unverified finish after a source edit, once")
+    group.add_argument("--nudge", choices=["midpoint"], default=None,
+                       help="midpoint: one harness message when --nudge-fraction of the responses are spent "
+                            "without a source edit")
+    group.add_argument("--nudge-fraction", type=float, default=None, metavar="F",
+                       help="share of the response budget after which --nudge midpoint is due (default 0.5)")
 
 
 def treatments_record(args) -> dict:
@@ -166,6 +177,17 @@ def treatments_record(args) -> dict:
         record["completion"] = {
             "name": "finish-guard", "version": FINISH_GUARD_VERSION, "source_rule": SOURCE_RULE_VERSION,
             "rejection": FINISH_GUARD_MESSAGE, "reasons": [WHY_NO_RUN, WHY_NO_CHECK],
+        }
+    if args.nudge_fraction is not None and args.nudge is None:
+        raise SystemExit("--nudge-fraction needs --nudge midpoint")
+    if args.nudge == "midpoint":
+        fraction = 0.5 if args.nudge_fraction is None else args.nudge_fraction
+        if not 0 < fraction < 1:
+            raise SystemExit(f"--nudge-fraction must be between 0 and 1, not {fraction}")
+        record["nudge"] = {
+            "name": "midpoint", "version": MIDPOINT_NUDGE_VERSION, "source_rule": SOURCE_RULE_VERSION,
+            "fraction": fraction, "template": MIDPOINT_NUDGE_TEMPLATE, "text": midpoint_nudge_text(fraction),
+            "role": "system", "placement": "after the latest tool results, once per run",
         }
     return record
 
@@ -550,8 +572,17 @@ def build_tools(runtime, treatments: dict, base_class, **suite_arguments):
     return tool_class(runtime, **suite_arguments, **extra), state
 
 
+def build_interventions(runtime, treatments: dict, state: dict) -> list:
+    """The agent-loop treatments that are on, for the controller; each one's state is added to state."""
+    interventions = []
+    if "nudge" in treatments:
+        state["nudge"] = MidpointNudge(SourceEditTracker(runtime.workspace), treatments["nudge"]["fraction"])
+        interventions.append(state["nudge"])
+    return interventions
+
+
 def run_invocations(runtime, envelope, tools, client, limits, policy_factory, max_resumes=0,
-                    wait_seconds=0.0, sleep=time.sleep) -> list:
+                    wait_seconds=0.0, sleep=time.sleep, interventions=()) -> list:
     """Run the controller, resuming the same durable session after provider stops.
 
     The transcript, task budgets, and pending work persist across invocations. The wait is paused
@@ -559,7 +590,8 @@ def run_invocations(runtime, envelope, tools, client, limits, policy_factory, ma
     """
     invocations = []
     while True:
-        agent = AgentController(runtime, envelope, tools, client, limits, policy=policy_factory()).run().to_dict()
+        agent = AgentController(runtime, envelope, tools, client, limits, policy=policy_factory(),
+                                interventions=interventions).run().to_dict()
         invocations.append(agent)
         if not is_provider_stop(agent) or len(invocations) > max_resumes:
             return invocations
@@ -942,6 +974,7 @@ def main() -> None:
             runtime, treatments, RepeatGuardTools if args.stop_on_repeats else ToolSuite,
             interpreter=execution["guest_python"], backend=backend, environment={
                 "PYTHONPATH": python_path, "PYTHONIOENCODING": "utf-8"})
+        interventions = build_interventions(runtime, treatments, treatment_state)
         envelope = TaskEnvelope(
             task_id=task["task_id"],
             description=INSTRUCTIONS.format(repo=task["repo"], repo_url=task["repo_url"], statement=task["statement"]),
@@ -967,7 +1000,7 @@ def main() -> None:
         try:
             invocations = run_invocations(
                 runtime, envelope, tools, client, AgentLimits(args.max_calls_per_run, args.max_context_bytes),
-                ARMS[arm], args.resume_after_provider_stop, args.resume_wait_seconds,
+                ARMS[arm], args.resume_after_provider_stop, args.resume_wait_seconds, interventions=interventions,
             )
         except BudgetExceeded as exc:
             budget_stop = str(exc)
