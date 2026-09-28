@@ -380,7 +380,9 @@ class ExpansionTests(unittest.TestCase):
                 card = run_card.load_card(CARDS / f"{name}.json")
                 self.assertEqual(run_card.validate_card(card), [])
                 plan = run_card.build_plan(card, CARDS / f"{name}.json")
-                self.assertEqual(plan.blockers, [])  # cards 013-015 were approved by the owner on 2026-09-28
+                # Approved by the owner on 2026-09-28; a card that has since completed only gains its status blocker.
+                blockers = [b for b in plan.blockers if b != "card status is 'completed'; --execute needs approved or running"]
+                self.assertEqual(blockers, [])
                 self.assertEqual((len(plan.runs), len(plan.controls)), (32, 2))
                 treatment = next(a for a in card["arms"] if a["name"] == arm_name)
                 treatments = runner.treatments_from_args(treatment["extra_args"])

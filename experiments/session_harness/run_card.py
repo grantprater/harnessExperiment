@@ -11,9 +11,12 @@ Modes (exactly one):
   --plan      print every invocation and its expected protocol hash, and the blockers that make
               --execute refuse; nothing runs. With --replay RUN_DIR, compare the planned invocation of
               that name (or the plan's only invocation) with a recorded run's config.json
-  --execute   take the live-run lock (fail if held), preflight each live arm with the runner's own
-              --dry-run, run the invocations sequentially, then write the report skeleton.
-              --resume skips invocations that already have a completed record
+  --execute   take the live-run lock (fail if held), check the machine (an OCI arm needs its pinned engine
+              running; a card with none needs no engine) and log its facts, preflight each live arm with the
+              runner's own --dry-run, run the invocations sequentially, then write the report skeleton.
+              --resume skips invocations that already have a completed record. With
+              budgets.campaign.list_price_cap_usd, stops before the next attempt once the CLI list-price
+              estimates of the campaign's calls reach the cap
   --report    rewrite the report skeleton from whatever results exist; nothing runs
 
 Usage (from the repo root):
@@ -38,9 +41,11 @@ import json
 import math
 import os
 from pathlib import Path
+import platform
 import random
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -982,7 +987,7 @@ def describe_hashes(hashes: Optional[List[str]]) -> str:
 
 def describe_backend(backend: dict) -> str:
     if backend["kind"] == "trusted-local":
-        return "trusted-local"
+        return f"trusted-local ({isolation_of(backend)})"
     image_id = backend["image_id"]
     short = "unresolved" if is_unresolved(image_id) else image_id.split(":")[-1][:12]
     return f"oci {backend['image']}@{short} ({backend['engine']})"
@@ -1112,6 +1117,57 @@ def replay_check(plan: Plan, run_dir: Path, out: Callable[[str], None] = print) 
 # Lock
 # ---------------------------------------------------------------------------------------------
 
+def isolation_of(backend: dict) -> str:
+    """What isolates an arm's candidate commands: the OCI container, or for trusted-local what the card declares
+    (host: none beyond the host account; vm-sandbox: a disposable VM such as a cloud session's). Recorded in the
+    campaign log; not a runner input, so not in the protocol hash."""
+    if backend["kind"] == "oci":
+        return "oci-container"
+    return backend.get("isolation", "host")
+
+
+def engine_problems(plan: "Plan") -> List[str]:
+    """Why an OCI arm of the plan cannot run on this machine: its pinned engine is not on PATH, or does not answer
+    `ENGINE version` (for example a docker client without a daemon). Empty when every arm is trusted-local."""
+    problems = []
+    engines = sorted({inv.arm["backend"]["engine"] for inv in plan.invocations if inv.arm["backend"]["kind"] == "oci"})
+    for engine in engines:
+        executable = shutil.which(engine)
+        if executable is None:
+            problems.append(f"the card pins an OCI backend on {engine}, which is not on PATH: this machine has no "
+                            f"container engine for it. OCI cards cannot run here; use a trusted-local card (a "
+                            f"different protocol, e.g. cards/019.json) or a machine with {engine}")
+            continue
+        try:
+            completed = subprocess.run([executable, "version"], capture_output=True, text=True, timeout=30)
+            answer = completed.returncode, (completed.stderr or completed.stdout).strip()
+        except (OSError, subprocess.SubprocessError) as exc:
+            answer = None, repr(exc)
+        if answer[0] != 0:
+            problems.append(f"the card pins an OCI backend on {engine}, but `{engine} version` fails ({answer[1][-200:]}): "
+                            f"the engine is not running. OCI cards cannot run here until it does")
+    return problems
+
+
+def machine_facts(plan: "Plan", python: str) -> dict:
+    """Host facts for the campaign log: the isolation of every arm, the OS, CPUs, Pythons and CLI version."""
+    facts = {
+        "isolation": {arm["name"]: isolation_of(arm["backend"]) for arm in plan.card["arms"]},
+        "os": platform.platform(), "system": platform.system(), "machine": platform.machine(),
+        "cpu_count": os.cpu_count(), "driver_python": platform.python_version(), "runner_python": python,
+        "task_python": None, "claude_cli_version": None,
+    }
+    module = plan.runner.module if plan.runner else None
+    if module is not None and hasattr(module, "TASK_PYTHON"):
+        facts["task_python"] = str(module.TASK_PYTHON)
+    if module is not None and any(inv.client == "claude-cli" for inv in plan.invocations):
+        try:
+            facts["claude_cli_version"] = module.cli_version()
+        except (SystemExit, OSError, subprocess.SubprocessError) as exc:
+            facts["claude_cli_version"] = f"unavailable: {exc}"
+    return facts
+
+
 class LockHeld(Exception):
     pass
 
@@ -1210,14 +1266,23 @@ class Campaign:
         wanted = set(inv.task_ids)
         return [r for r in read_jsonl(self.runs_root(inv) / name / "results.jsonl") if r.get("task_id") in wanted]
 
-    def used_attempts(self) -> int:
-        total = 0
+    def calls(self) -> List[dict]:
+        """Every attempt record (calls.jsonl) of every attempt directory of the plan's invocations."""
+        rows = []
         for inv in self.plan.invocations:
             if inv.script is None:
                 continue
             for name in self.attempt_names(inv):
-                total += len(read_jsonl(self.runs_root(inv) / name / "calls.jsonl"))
-        return total
+                rows += read_jsonl(self.runs_root(inv) / name / "calls.jsonl")
+        return rows
+
+    def used_attempts(self) -> int:
+        return len(self.calls())
+
+    def list_price_usd(self) -> float:
+        """The sum of the CLI's list-price estimates (result total_cost_usd) over the campaign's attempts; attempts
+        without one (scripted clients, failed spawns, OpenRouter) add nothing. Not a bill: see claude_cli.py."""
+        return round(sum(float((row.get("cli_result") or {}).get("total_cost_usd") or 0) for row in self.calls()), 6)
 
     def log(self, event: str, **fields) -> None:
         self.directory.mkdir(parents=True, exist_ok=True)
@@ -1261,11 +1326,29 @@ def classify(plan: Plan, campaign: Campaign, inv: Invocation, name: str, exit_co
             return Outcome("integrity", f"control_failed: {inv.name} expected {inv.expect} but not on {wrong}", records)
         return Outcome("ok", f"control {inv.name}: all {len(records)} {inv.expect}", records)
     failures = [r for r in records if is_model_failure(r)]
+    pinned = [r for r in failures if "model_pin_violation" in ((r.get("agent") or {}).get("error") or "")]
+    if pinned:  # the CLI answered with another model than the card pins: a corrupted protocol, never retried
+        return Outcome("integrity", f"corrupted_protocol: {(pinned[0].get('agent') or {}).get('error', '')[:300]}", records)
     if failures:
         error = (failures[0].get("agent") or {}).get("error") or ""
         return Outcome("failure", f"model_error: {error[:200]}", records)
     record = records[0]
     return Outcome("ok", f"{record.get('stop')} -> {record.get('acceptance', {}).get('status')}", records)
+
+
+def campaign_spend(campaign: "Campaign", events: Optional[List[dict]] = None) -> dict:
+    """The nested model cost (CLI list price) and call count of a campaign, and its wall time from the first
+    campaign_start to the last campaign event (None before a start)."""
+    events = read_jsonl(campaign.log_path) if events is None else events
+    times = []
+    for event in events:
+        try:
+            times.append((event["event"], datetime.fromisoformat(event["time"])))
+        except (KeyError, ValueError):
+            continue
+    starts = [time for name, time in times if name == "campaign_start"]
+    wall = round((max(time for _, time in times) - starts[0]).total_seconds(), 1) if starts else None
+    return {"nested_cost_usd": campaign.list_price_usd(), "nested_calls": len(campaign.calls()), "wall_seconds": wall}
 
 
 def is_model_failure(record: dict) -> bool:
@@ -1344,6 +1427,13 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
     if existing and not resume:
         out(f"refused: {len(existing)} planned run directories already exist (first: {existing[0]}); pass --resume")
         return EXIT_REFUSED
+    problems = engine_problems(plan)
+    if problems:
+        reason = "refused: " + "; ".join(problems)
+        campaign.log("stop", reason=reason)
+        out(reason)
+        return EXIT_REFUSED
+    campaign.log("host", **machine_facts(plan, python))
     stop = preflight(plan, campaign, python, out)
     if stop:
         campaign.log("stop", reason=stop[1])
@@ -1354,6 +1444,7 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
                  invocations=len(plan.invocations), sets=plan.sets, pid=os.getpid())
     consecutive, wall = 0, card["budgets"]["per_run"].get("invocation_wall_seconds")
     cap = card["budgets"]["campaign"].get("max_model_attempts")
+    price_cap = card["budgets"]["campaign"].get("list_price_cap_usd")
     checked_units = set()
 
     def finish(code: int, reason: str) -> int:
@@ -1365,7 +1456,13 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
 
     def over_cap(inv: Invocation) -> Optional[str]:
         """Before every attempt: the attempt must fit the campaign cap, and the first attempt in a unit
-        (task x rollout) must leave room for every arm of the unit (plan 5.5: launch a pair only when both fit)."""
+        (task x rollout) must leave room for every arm of the unit (plan 5.5: launch a pair only when both fit).
+        With a list-price cap, the campaign's summed CLI list-price estimate must still be below it."""
+        if price_cap is not None and inv.client in LIVE_CLIENTS:
+            spent = campaign.list_price_usd()
+            if spent >= price_cap:
+                return (f"list-price cap: the campaign's calls total ${spent:.2f} at CLI list price, the card's cap is "
+                        f"${price_cap:.2f}")
         if cap is None:
             return None
         pending = [inv]
@@ -1743,6 +1840,19 @@ def render_report(plan: Plan, entries: List[dict]) -> str:
     add("")
     add(f"Incomplete units: {len(incomplete)}" + (f" (first: {incomplete[0]})" if incomplete else "") + ".")
     add("")
+    price_cap = card["budgets"]["campaign"].get("list_price_cap_usd")
+    if price_cap is not None:  # cards with a spend guard (the cloud cards); other reports are unchanged
+        spend = campaign_spend(campaign, events)
+        add("## Spend and time")
+        add("")
+        add(f"- nested model cost (CLI list price): ${spend['nested_cost_usd']:.2f} over {spend['nested_calls']} CLI "
+            f"calls (the sum of `cli_result.total_cost_usd` in the campaign's `calls.jsonl`; card cap ${price_cap:.2f})")
+        wall = spend["wall_seconds"]
+        add(f"- wall time: " + ("n/a" if wall is None else f"{wall:.0f} s ({wall / 3600:.2f} h), first campaign_start "
+                                                          f"to last campaign event"))
+        add("- The supervising session's own usage is not included; the account's usage for the session's period "
+            "minus the nested cost estimates it.")
+        add("")
     add("## Decision rule (from the card)")
     add("")
     add(f"> {card['decision_rule']}")
