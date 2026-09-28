@@ -1,0 +1,5 @@
+1 runs (1 tasks x 1 models), arm pressure-recent-v3, protocol 4de4c291ae7e
+claude-cli 2.1.283 (Claude Code): at most 20 responses per run; every CLI attempt counts toward --max-total-calls=48; billing unknown (local subscription login, no API key)
+per-run guards: {"stop_on_repeats": false, "resume_after_provider_stop": 0, "resume_wait_seconds": null}; backend isolated-oci
+task budgets per run: {"sonnet": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
+sqlparse-mut-043__sonnet: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}
