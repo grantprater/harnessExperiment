@@ -78,9 +78,13 @@ class RecordedHashTests(unittest.TestCase):
         plan = run_card.build_plan(run_card.load_card(CARDS / "007.json"), CARDS / "007.json")
         planned = {inv.run_name: inv.expected_hash for inv in plan.invocations}
         crlf = b"\r\n" in (ROOT / "experiments" / "p6_pilot" / "evaluate_task.py").read_bytes()
-        self.assertEqual(planned["c007-sqlparse-mut-001-r1"], "b0fda8c921ad" if crlf else "412a440aaa43")
-        self.assertEqual((planned["s6a-control-gold-mut-v2"], planned["s6a-control-noop-mut-v2"]),
-                         ("f825e41bc259", "58dfdf928e0b"))
+        if crlf:  # the Windows checkout the recorded runs hashed
+            self.assertEqual(planned["c007-sqlparse-mut-001-r1"], "b0fda8c921ad")
+            self.assertEqual((planned["s6a-control-gold-mut-v2"], planned["s6a-control-noop-mut-v2"]),
+                             ("f825e41bc259", "58dfdf928e0b"))
+        else:  # an LF checkout (Linux): the same protocol, with the recorded CRLF evaluator bytes, gives it too
+            self.assertEqual(planned["c007-sqlparse-mut-001-r1"], "412a440aaa43")
+            self.assertEqual(plan.line_ending_hashes["incumbent"], ("CRLF", "b0fda8c921ad"))
 
     def test_an_alias_contract_is_unchanged_and_a_full_id_is_pinned(self):
         alias = claude_cli.cli_contract("sonnet", max_turns=1, timeout=300, version="v")
