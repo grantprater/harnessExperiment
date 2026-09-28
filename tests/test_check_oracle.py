@@ -233,5 +233,47 @@ class RunnerWiringTests(unittest.TestCase):
             self.assertEqual((state["oracle"].max_calls, state["oracle"].timeout_seconds), (2, 60.0))
 
 
+@unittest.skipUnless(PYTEST_PYTHON, "the evaluator needs an interpreter with pytest")
+class RunnerEndToEndTests(unittest.TestCase):
+    """run_pilot.main() on the synthetic mutation task with every treatment on (gold client, trusted-local)."""
+
+    def test_config_results_and_forced_finish(self):
+        import contextlib
+        import io
+        import shutil
+        from unittest import mock
+        from test_mutation_task_wiring import MutationWiringTestCase
+
+        fixture = MutationWiringTestCase("run")
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
+        task_file = fixture.root / "tasks.synthetic.json"
+        task_file.write_text(json.dumps({"schema_version": 1, "tasks": [fixture.task]}), encoding="utf-8")
+        here = fixture.root / "p6_pilot"
+        here.mkdir()
+        shutil.copyfile(run_pilot.HERE / "evaluate_task.py", here / "evaluate_task.py")
+        flags = ["--completion", "finish-guard", "--nudge", "midpoint", "--oracle", "hidden-tests:2"]
+        argv = ["run_pilot.py", "--client", "gold", "--run-name", "treated", "--tasks", str(task_file),
+                "synthetic-mut-001", "--max-calls-per-run", "6", *flags]
+        with mock.patch.object(run_pilot, "HERE", here), mock.patch.object(run_pilot, "REPOS", fixture.repos),                 mock.patch.object(run_pilot, "TASK_PYTHON", Path(PYTEST_PYTHON)), mock.patch.object(sys, "argv", argv),                 contextlib.redirect_stdout(io.StringIO()):
+            run_pilot.main()
+        run_dir = here / "runs" / "treated"
+        config = json.loads((run_dir / "config.json").read_text(encoding="utf-8"))
+        treatments = run_pilot.treatments_from_args(flags)
+        self.assertEqual(config["treatments"], treatments)
+        self.assertEqual(config["tools"], run_pilot.model_tool_schemas(treatments))
+        record = json.loads((run_dir / "results.jsonl").read_text(encoding="utf-8").splitlines()[0])
+        self.assertEqual(record["protocol_hash"], config["protocol_hash"])
+        self.assertEqual(record["acceptance"]["status"], "accepted")
+        self.assertEqual(record["totals"]["model_calls"], 3)  # write, rejected finish, forced finish
+        guard = record["treatments"]["completion"]
+        self.assertEqual((guard["guard_triggered"], guard["guard_reason"], guard["forced_finish"]),
+                         (True, "no_run_after_edit", True))
+        self.assertEqual(record["treatments"]["nudge"]["fired"], False)
+        self.assertEqual(record["treatments"]["oracle"]["calls"], 0)
+        workspace = run_dir / "sessions" / "synthetic-mut-001__gold-client" / "workspace"
+        self.assertFalse((workspace / "tests").exists())
+
+
 if __name__ == "__main__":
     unittest.main()
