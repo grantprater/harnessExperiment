@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "E4-midpoint-nudge-014",
   "title": "Midpoint nudge: one harness message at half the response budget when no source file is edited",
-  "status": "proposed",
+  "status": "approved",
   "markdown": "experiments/session_harness/E4-midpoint-nudge-014.md",
   "hypothesis": "On card 007's evolution set, where 3 of 8 rejections ran out of responses without an edit, one fixed harness message after half the budget without a source edit makes the model commit to a cause and edit, so fewer runs end at the budget without an edit; runs that edit earlier never see it, so the solved-twice tasks are unaffected.",
   "run_prefix": "c014",
@@ -20,8 +20,8 @@
       "done": true
     },
     {
-      "text": "owner approval recorded in the markdown card (then set status to running)",
-      "done": false
+      "text": "owner approval recorded in the markdown card (then set status to running) (owner, in session 2026-09-28: 'you can continue... implementing those'; sequence approved)",
+      "done": true
     }
   ],
   "arms": [

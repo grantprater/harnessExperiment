@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "E4-check-oracle-015",
   "title": "Bounded check oracle: check() returns hidden fail_to_pass counts, at most 3 calls per run",
-  "status": "proposed",
+  "status": "approved",
   "markdown": "experiments/session_harness/E4-check-oracle-015.md",
   "hypothesis": "Giving the model three counts-only checks of the hidden fail_to_pass tests raises acceptance on card 007's evolution set, whose failures include wrong fixes finished without verification; how much it raises it separates a verification limit from a diagnosis limit. This arm changes the task, so its result is not a harness improvement on the same task.",
   "run_prefix": "c015",
@@ -20,8 +20,8 @@
       "done": true
     },
     {
-      "text": "owner approval recorded in the markdown card (then set status to running)",
-      "done": false
+      "text": "owner approval recorded in the markdown card (then set status to running) (owner, in session 2026-09-28: 'you can continue... implementing those'; sequence approved)",
+      "done": true
     }
   ],
   "arms": [
