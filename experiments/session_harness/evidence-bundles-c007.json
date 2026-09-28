@@ -1,0 +1,567 @@
+{
+  "runs": 40,
+  "clusters": 9,
+  "minable_clusters": 5,
+  "bundles": [
+    {
+      "cluster": 1,
+      "signature": "fail_to_pass_failed | edit_outside_gold | edit_verified",
+      "verifier_cause": "fail_to_pass_failed",
+      "causal_status": "edit_outside_gold",
+      "mechanism": "edit_verified",
+      "size": 3,
+      "distinct_tasks": 2,
+      "tasks": [
+        "sqlparse-mut-001",
+        "sqlparse-mut-057"
+      ],
+      "representative_runs": [
+        "c007-sqlparse-mut-001-r1",
+        "c007-sqlparse-mut-057-r1"
+      ],
+      "symptoms": {
+        "stop_classes": {
+          "finish": 3
+        },
+        "verified_before_finish": {
+          "true": 3
+        },
+        "edit_in_gold_files": {
+          "false": 3
+        },
+        "phase_counts": {
+          "explore": 32,
+          "reproduce": 6,
+          "edit": 3,
+          "verify": 1,
+          "finish": 3,
+          "other": 1
+        },
+        "members": [
+          {
+            "run": "c007-sqlparse-mut-001-r1",
+            "task_id": "sqlparse-mut-001",
+            "stop_class": "finish",
+            "responses": 15,
+            "tool_calls": 28,
+            "first_edit_response": 13,
+            "verified_before_finish": true,
+            "edit_in_gold_files": false,
+            "edited_files": [
+              "sqlparse/filters/reindent.py"
+            ],
+            "rejected_calls": 0,
+            "stuck_responses": [],
+            "refetch_calls": 0,
+            "criterion_outcomes": {
+              "fail-to-pass": "fail",
+              "pass-to-pass": "pass"
+            },
+            "test_counts": {
+              "fail-to-pass": {
+                "expected": 1,
+                "failing": 1,
+                "missing": 0
+              },
+              "pass-to-pass": {
+                "expected": 490,
+                "failing": 0,
+                "missing": 0
+              }
+            },
+            "phases": "explorex8 reproduce explore reproduce explore edit verify finish"
+          },
+          {
+            "run": "c007-sqlparse-mut-057-r1",
+            "task_id": "sqlparse-mut-057",
+            "stop_class": "finish",
+            "responses": 17,
+            "tool_calls": 36,
+            "first_edit_response": 15,
+            "verified_before_finish": true,
+            "edit_in_gold_files": false,
+            "edited_files": [
+              "sqlparse/engine/grouping.py"
+            ],
+            "rejected_calls": 0,
+            "stuck_responses": [],
+            "refetch_calls": 0,
+            "criterion_outcomes": {
+              "fail-to-pass": "fail",
+              "pass-to-pass": "pass"
+            },
+            "test_counts": {
+              "fail-to-pass": {
+                "expected": 1,
+                "failing": 1,
+                "missing": 0
+              },
+              "pass-to-pass": {
+                "expected": 490,
+                "failing": 0,
+                "missing": 0
+              }
+            },
+            "phases": "explorex9 reproduce explorex3 reproduce edit other finish"
+          },
+          {
+            "run": "c007-sqlparse-mut-057-r2",
+            "task_id": "sqlparse-mut-057",
+            "stop_class": "finish",
+            "responses": 14,
+            "tool_calls": 31,
+            "first_edit_response": 11,
+            "verified_before_finish": true,
+            "edit_in_gold_files": false,
+            "edited_files": [
+              "sqlparse/engine/grouping.py"
+            ],
+            "rejected_calls": 0,
+            "stuck_responses": [],
+            "refetch_calls": 0,
+            "criterion_outcomes": {
+              "fail-to-pass": "fail",
+              "pass-to-pass": "pass"
+            },
+            "test_counts": {
+              "fail-to-pass": {
+                "expected": 1,
+                "failing": 1,
+                "missing": 0
+              },
+              "pass-to-pass": {
+                "expected": 490,
+                "failing": 0,
+                "missing": 0
+              }
+            },
+            "phases": "explorex7 reproduce explore reproduce edit explorex2 finish"
+          }
+        ]
+      },
+      "contrastive_pairs": [
+        {
+          "task_id": "sqlparse-mut-001",
+          "rejected": "c007-sqlparse-mut-001-r1",
+          "accepted": "c007-sqlparse-mut-001-r2",
+          "accepted_signature": "accepted | refetch_after_omission+edit_outside_gold | edit_verified",
+          "accepted_first_edit_response": 17,
+          "accepted_phases": "explorex6 reproducex2 explore reproducex3 explore reproduce explorex2 edit verify finish"
+        }
+      ],
+      "negative_pairs": [
+        {
+          "task_id": "sqlparse-mut-057",
+          "runs": [
+            "c007-sqlparse-mut-057-r1",
+            "c007-sqlparse-mut-057-r2"
+          ],
+          "signatures": {
+            "c007-sqlparse-mut-057-r1": "fail_to_pass_failed | edit_outside_gold | edit_verified",
+            "c007-sqlparse-mut-057-r2": "fail_to_pass_failed | edit_outside_gold | edit_verified"
+          }
+        }
+      ],
+      "module": {
+        "primary": [
+          {
+            "module": "task completion detection",
+            "basis": "3 of 3 runs called finish on a workspace the evaluator rejected: the pre-finish verification rule accepted the fix"
+          }
+        ],
+        "secondary": []
+      },
+      "prior_attempts": []
+    },
+    {
+      "cluster": 2,
+      "signature": "budget | none | reproduce_no_edit",
+      "verifier_cause": "budget",
+      "causal_status": "none",
+      "mechanism": "reproduce_no_edit",
+      "size": 2,
+      "distinct_tasks": 1,
+      "tasks": [
+        "sqlparse-mut-032"
+      ],
+      "representative_runs": [
+        "c007-sqlparse-mut-032-r1"
+      ],
+      "symptoms": {
+        "stop_classes": {
+          "budget": 2
+        },
+        "verified_before_finish": {
+          "false": 2
+        },
+        "edit_in_gold_files": {
+          "false": 2
+        },
+        "phase_counts": {
+          "explore": 28,
+          "reproduce": 12
+        },
+        "members": [
+          {
+            "run": "c007-sqlparse-mut-032-r1",
+            "task_id": "sqlparse-mut-032",
+            "stop_class": "budget",
+            "responses": 20,
+            "tool_calls": 39,
+            "first_edit_response": null,
+            "verified_before_finish": false,
+            "edit_in_gold_files": false,
+            "edited_files": [],
+            "rejected_calls": 0,
+            "stuck_responses": [],
+            "refetch_calls": 0,
+            "criterion_outcomes": {
+              "fail-to-pass": "fail",
+              "pass-to-pass": "pass"
+            },
+            "test_counts": {
+              "fail-to-pass": {
+                "expected": 1,
+                "failing": 1,
+                "missing": 0
+              },
+              "pass-to-pass": {
+                "expected": 490,
+                "failing": 0,
+                "missing": 0
+              }
+            },
+            "phases": "explorex14 reproducex6"
+          },
+          {
+            "run": "c007-sqlparse-mut-032-r2",
+            "task_id": "sqlparse-mut-032",
+            "stop_class": "budget",
+            "responses": 20,
+            "tool_calls": 34,
+            "first_edit_response": null,
+            "verified_before_finish": false,
+            "edit_in_gold_files": false,
+            "edited_files": [],
+            "rejected_calls": 0,
+            "stuck_responses": [],
+            "refetch_calls": 0,
+            "criterion_outcomes": {
+              "fail-to-pass": "fail",
+              "pass-to-pass": "pass"
+            },
+            "test_counts": {
+              "fail-to-pass": {
+                "expected": 1,
+                "failing": 1,
+                "missing": 0
+              },
+              "pass-to-pass": {
+                "expected": 490,
+                "failing": 0,
+                "missing": 0
+              }
+            },
+            "phases": "explorex10 reproducex2 explorex2 reproducex2 explorex2 reproducex2"
+          }
+        ]
+      },
+      "contrastive_pairs": [],
+      "negative_pairs": [
+        {
+          "task_id": "sqlparse-mut-032",
+          "runs": [
+            "c007-sqlparse-mut-032-r1",
+            "c007-sqlparse-mut-032-r2"
+          ],
+          "signatures": {
+            "c007-sqlparse-mut-032-r1": "budget | none | reproduce_no_edit",
+            "c007-sqlparse-mut-032-r2": "budget | none | reproduce_no_edit"
+          }
+        }
+      ],
+      "module": {
+        "primary": [
+          {
+            "module": "agent loop",
+            "basis": "2 of 2 runs reached the response budget without an accepted fix: continuation, stagnation, and commitment rules"
+          }
+        ],
+        "secondary": []
+      },
+      "prior_attempts": []
+    },
+    {
+      "cluster": 3,
+      "signature": "budget | refetch_after_omission | explore_only",
+      "verifier_cause": "budget",
+      "causal_status": "refetch_after_omission",
+      "mechanism": "explore_only",
+      "size": 1,
+      "distinct_tasks": 1,
+      "tasks": [
+        "sqlparse-mut-022"
+      ],
+      "representative_runs": [
+        "c007-sqlparse-mut-022-r1"
+      ],
+      "symptoms": {
+        "stop_classes": {
+          "budget": 1
+        },
+        "verified_before_finish": {
+          "false": 1
+        },
+        "edit_in_gold_files": {
+          "false": 1
+        },
+        "phase_counts": {
+          "explore": 20
+        },
+        "members": [
+          {
+            "run": "c007-sqlparse-mut-022-r1",
+            "task_id": "sqlparse-mut-022",
+            "stop_class": "budget",
+            "responses": 20,
+            "tool_calls": 53,
+            "first_edit_response": null,
+            "verified_before_finish": false,
+            "edit_in_gold_files": false,
+            "edited_files": [],
+            "rejected_calls": 0,
+            "stuck_responses": [],
+            "refetch_calls": 9,
+            "criterion_outcomes": {
+              "fail-to-pass": "fail",
+              "pass-to-pass": "pass"
+            },
+            "test_counts": {
+              "fail-to-pass": {
+                "expected": 41,
+                "failing": 41,
+                "missing": 0
+              },
+              "pass-to-pass": {
+                "expected": 450,
+                "failing": 0,
+                "missing": 0
+              }
+            },
+            "phases": "explorex20"
+          }
+        ]
+      },
+      "contrastive_pairs": [
+        {
+          "task_id": "sqlparse-mut-022",
+          "rejected": "c007-sqlparse-mut-022-r1",
+          "accepted": "c007-sqlparse-mut-022-r2",
+          "accepted_signature": "accepted | none | edit_verified",
+          "accepted_first_edit_response": 15,
+          "accepted_phases": "explorex3 reproduce explorex7 reproduce explorex2 edit verify finish"
+        }
+      ],
+      "negative_pairs": [],
+      "module": {
+        "primary": [
+          {
+            "module": "agent loop",
+            "basis": "1 of 1 runs reached the response budget without an accepted fix: continuation, stagnation, and commitment rules"
+          }
+        ],
+        "secondary": [
+          {
+            "module": "context management",
+            "flag": "refetch_after_omission",
+            "basis": "calls re-issued because the context policy had omitted their results: context budget and omission policy"
+          }
+        ]
+      },
+      "prior_attempts": []
+    },
+    {
+      "cluster": 4,
+      "signature": "pass_to_pass_regression | none | edit_unverified",
+      "verifier_cause": "pass_to_pass_regression",
+      "causal_status": "none",
+      "mechanism": "edit_unverified",
+      "size": 1,
+      "distinct_tasks": 1,
+      "tasks": [
+        "sqlparse-mut-061"
+      ],
+      "representative_runs": [
+        "c007-sqlparse-mut-061-r2"
+      ],
+      "symptoms": {
+        "stop_classes": {
+          "budget": 1
+        },
+        "verified_before_finish": {
+          "false": 1
+        },
+        "edit_in_gold_files": {
+          "true": 1
+        },
+        "phase_counts": {
+          "explore": 13,
+          "reproduce": 4,
+          "edit": 2,
+          "verify": 1
+        },
+        "members": [
+          {
+            "run": "c007-sqlparse-mut-061-r2",
+            "task_id": "sqlparse-mut-061",
+            "stop_class": "budget",
+            "responses": 20,
+            "tool_calls": 42,
+            "first_edit_response": 17,
+            "verified_before_finish": false,
+            "edit_in_gold_files": true,
+            "edited_files": [
+              "sqlparse/filters/reindent.py"
+            ],
+            "rejected_calls": 0,
+            "stuck_responses": [],
+            "refetch_calls": 0,
+            "criterion_outcomes": {
+              "fail-to-pass": "fail",
+              "pass-to-pass": "fail"
+            },
+            "test_counts": {
+              "fail-to-pass": {
+                "expected": 15,
+                "failing": 2,
+                "missing": 0
+              },
+              "pass-to-pass": {
+                "expected": 476,
+                "failing": 1,
+                "missing": 0
+              }
+            },
+            "phases": "explorex10 reproduce explore reproducex3 explore edit verify explore edit"
+          }
+        ]
+      },
+      "contrastive_pairs": [],
+      "negative_pairs": [
+        {
+          "task_id": "sqlparse-mut-061",
+          "runs": [
+            "c007-sqlparse-mut-061-r1",
+            "c007-sqlparse-mut-061-r2"
+          ],
+          "signatures": {
+            "c007-sqlparse-mut-061-r1": "pass_to_pass_regression | none | edit_verified",
+            "c007-sqlparse-mut-061-r2": "pass_to_pass_regression | none | edit_unverified"
+          }
+        }
+      ],
+      "module": {
+        "primary": [
+          {
+            "module": "agent loop",
+            "basis": "1 of 1 runs reached the response budget without an accepted fix: continuation, stagnation, and commitment rules"
+          }
+        ],
+        "secondary": []
+      },
+      "prior_attempts": []
+    },
+    {
+      "cluster": 5,
+      "signature": "pass_to_pass_regression | none | edit_verified",
+      "verifier_cause": "pass_to_pass_regression",
+      "causal_status": "none",
+      "mechanism": "edit_verified",
+      "size": 1,
+      "distinct_tasks": 1,
+      "tasks": [
+        "sqlparse-mut-061"
+      ],
+      "representative_runs": [
+        "c007-sqlparse-mut-061-r1"
+      ],
+      "symptoms": {
+        "stop_classes": {
+          "finish": 1
+        },
+        "verified_before_finish": {
+          "true": 1
+        },
+        "edit_in_gold_files": {
+          "true": 1
+        },
+        "phase_counts": {
+          "explore": 12,
+          "reproduce": 2,
+          "edit": 2,
+          "verify": 2,
+          "finish": 1
+        },
+        "members": [
+          {
+            "run": "c007-sqlparse-mut-061-r1",
+            "task_id": "sqlparse-mut-061",
+            "stop_class": "finish",
+            "responses": 19,
+            "tool_calls": 53,
+            "first_edit_response": 15,
+            "verified_before_finish": true,
+            "edit_in_gold_files": true,
+            "edited_files": [
+              "sqlparse/filters/reindent.py"
+            ],
+            "rejected_calls": 0,
+            "stuck_responses": [],
+            "refetch_calls": 0,
+            "criterion_outcomes": {
+              "fail-to-pass": "fail",
+              "pass-to-pass": "fail"
+            },
+            "test_counts": {
+              "fail-to-pass": {
+                "expected": 15,
+                "failing": 15,
+                "missing": 0
+              },
+              "pass-to-pass": {
+                "expected": 476,
+                "failing": 1,
+                "missing": 0
+              }
+            },
+            "phases": "explorex7 reproduce explorex5 reproduce edit verifyx2 edit finish"
+          }
+        ]
+      },
+      "contrastive_pairs": [],
+      "negative_pairs": [
+        {
+          "task_id": "sqlparse-mut-061",
+          "runs": [
+            "c007-sqlparse-mut-061-r1",
+            "c007-sqlparse-mut-061-r2"
+          ],
+          "signatures": {
+            "c007-sqlparse-mut-061-r1": "pass_to_pass_regression | none | edit_verified",
+            "c007-sqlparse-mut-061-r2": "pass_to_pass_regression | none | edit_unverified"
+          }
+        }
+      ],
+      "module": {
+        "primary": [
+          {
+            "module": "task completion detection",
+            "basis": "1 of 1 runs called finish on a workspace the evaluator rejected: the pre-finish verification rule accepted the fix"
+          }
+        ],
+        "secondary": []
+      },
+      "prior_attempts": []
+    }
+  ]
+}

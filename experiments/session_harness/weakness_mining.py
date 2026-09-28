@@ -4,8 +4,9 @@ Per run this computes, from the journal only (events.jsonl and the artifact stor
 
 - the verifier cause: why the evaluator's verdict came out as it did (one value, first match wins; see
   `verifier_cause`);
-- the causal status: flags for rejected calls, repeated calls, the repeat stop, an edit outside the gold
-  files, and no verification before finish;
+- the causal status: flags for rejected calls, repeated calls, calls re-issued after the context policy
+  omitted their earlier result, the repeat stop, an edit outside the gold files, and no verification before
+  finish;
 - rule phase labels, one per assistant response (explore, reproduce, edit, verify, finish, stuck, other;
   the rules never emit `diagnose`, which needs judgement), and the run labels of
   `labels/SCHEMA.md` (first edit response, verified before finish, edit in gold files, mechanism).
@@ -13,19 +14,34 @@ Per run this computes, from the journal only (events.jsonl and the artifact stor
 The failure signature is (verifier cause, causal status, mechanism). Runs are clustered on the exact
 signature and clusters are ranked by distinct-task support, then run support.
 
+A call repeats an earlier identical call only if that call's result was still in the model's context when the
+response was made: the journal's `context_manifest` for each request lists the transcript units the context
+policy omitted, and re-issuing a call whose result was omitted is a refetch, counted separately.
+
+The evaluator's per-test outcome is in the journal too: the acceptance decision references a report artifact,
+which references the evaluator's tool output; `test_counts` gives, per criterion, how many of the expected tests
+still fail. It is a symptom for the evidence bundles and not part of the signature.
+
 Inputs other than the journal: the task file supplies `gold_source_files` (the hidden gold patch's files are
 not in the journal; only `edit_outside_gold` and `edit_in_gold_files` need them). `results.jsonl` is read only
 to cross-check the journal's stop reason and acceptance; `calls.jsonl` is not read. A Claude Code native run
 directory (`stream.jsonl` + `result.json`, from `native_control.py`) has no Reticle journal; it is read from
 its stream and result file instead and marked as such.
 
+`--bundles FILE` also writes one evidence bundle per minable cluster (S6 loop step 2): size, distinct tasks,
+representative runs, the members' rule facts as symptoms, contrastive pairs (an accepted run of the same task) and
+negative pairs (every run of the task rejected), and the module the stop points at (`module_for`). Gold file names
+stay out of the bundles; only the signature's `edit_outside_gold` flag and `edit_in_gold_files` carry them.
+
 Usage:
   python experiments/session_harness/weakness_mining.py RUN_DIR [RUN_DIR ...] [--tasks FILE ...] [--json]
+      [--bundles FILE]
 """
 
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 from dataclasses import dataclass, field
 import json
 from pathlib import Path, PurePosixPath
@@ -56,6 +72,11 @@ EXPLORE_COMMANDS = {
     "ls", "dir", "cat", "head", "tail", "less", "more", "grep", "rg", "find", "pwd", "echo", "wc", "tree",
     "type", "which", "where", "git", "get-childitem", "get-content", "select-string",
 }
+# Run commands that look without exercising the code under test: test discovery (`pytest --collect-only`) and
+# package-manager commands (`pip ...`, `python -m pip ...`).
+LOOK_ONLY_RUN = re.compile(
+    r"^(?:\S*python[\d.]*\s+-m\s+)?(?:pytest|py\.test)\b.*\s--co(?:llect-only)?\b"
+    r"|^(?:\S*python[\d.]*\s+-m\s+)?pip[\d.]*\b", re.IGNORECASE)
 SCRATCH_NAME = re.compile(r"^(test_|tests?_|repro|reproduce|debug|check|scratch|tmp|temp|try|verify)|_test\.py$",
                           re.IGNORECASE)
 CD_PREFIX = re.compile(r"^\s*cd\s+(\"[^\"]*\"|'[^']*'|\S+)\s*(&&|;)\s*")
@@ -80,6 +101,8 @@ class Response:
     index: int
     text: str
     calls: List[Call] = field(default_factory=list)
+    # earlier responses whose transcript units the context policy left out of the request for this response
+    omitted: frozenset = frozenset()
 
 
 @dataclass
@@ -97,6 +120,7 @@ class Trajectory:
     evaluator_error: bool
     results_check: Optional[str] = None  # agreement of journal-derived stop/acceptance with results.jsonl
     statement: str = ""  # the task statement the model saw (for labelling prompts)
+    test_counts: Optional[Dict[str, Dict[str, int]]] = None  # criterion -> expected, failing, missing test counts
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -177,6 +201,7 @@ def load_reticle_run(run_dir: Path, session_dir: Optional[Path] = None) -> Traje
     attempt_outcomes: List[str] = []
     exhausted_resource = run_result = decision = None
     evaluator_error = False
+    omitted_by_response: Dict[int, frozenset] = {}
     for event in events:
         kind, payload = event["kind"], event.get("payload") or {}
         if kind == "task_contract" and task_id is None:
@@ -196,6 +221,9 @@ def load_reticle_run(run_dir: Path, session_dir: Optional[Path] = None) -> Traje
             evaluator_error = True
         elif kind == "acceptance_decision":
             decision = payload.get("decision") or {}
+        elif kind == "context_manifest":
+            number, omitted = _manifest_omissions(payload.get("manifest") or {})
+            omitted_by_response[number] = omitted  # a later request for the same response replaces an earlier one
 
     responses: List[Response] = []
     by_call_id: Dict[str, Call] = {}
@@ -221,6 +249,8 @@ def load_reticle_run(run_dir: Path, session_dir: Optional[Path] = None) -> Traje
                 call.status = (message.get("_reticle_output") or {}).get("status") or (
                     (outcomes.get(call.call_id or "") or {}).get("status"))
                 call.content = _text(message.get("content"))
+    for response in responses:
+        response.omitted = omitted_by_response.get(response.index, frozenset())
     _number_mutations(responses)
 
     run_result = run_result or {}
@@ -235,9 +265,34 @@ def load_reticle_run(run_dir: Path, session_dir: Optional[Path] = None) -> Traje
             c.tool in FINISH_TOOLS and c.status == "success" for r in responses for c in r.calls),
         acceptance_status=status, criterion_outcomes=dict(decision.get("criterion_outcomes") or {}),
         evaluator_error=evaluator_error or status not in {"accepted", "rejected"}, statement=statement,
+        test_counts=_evaluator_test_counts(session_dir, decision),
     )
     trajectory.results_check = _check_results(run_dir, trajectory)
     return trajectory
+
+
+def _evaluator_test_counts(session_dir: Path, decision: dict) -> Optional[Dict[str, Dict[str, int]]]:
+    """Per criterion, the expected, failing, and missing test counts from the evaluator's tool output artifact."""
+    try:
+        report = json.loads(read_artifact(session_dir, decision["report_artifact_id"]).decode("utf-8"))
+        output = read_artifact(session_dir, report["tool_output_artifact_id"]).decode("utf-8", errors="replace")
+        data, _ = json.JSONDecoder().raw_decode(output, output.index("{"))
+        return {name: {"expected": len(value.get("coverage_ids") or []), "failing": len(value.get("failing") or []),
+                       "missing": len(value.get("missing") or [])} for name, value in data["criteria"].items()}
+    except (KeyError, ValueError, TypeError, AttributeError, OSError):
+        return None  # no report, or an evaluator output this reader does not know
+
+
+def _manifest_omissions(manifest: dict) -> tuple:
+    """(number of the response this request produced, numbers of the earlier responses it omitted).
+
+    Transcript unit k of a manifest is response k + 1 (one unit per assistant message with its tool results);
+    the request that produces response n holds or omits units 0 .. n - 2."""
+    units = [int(key.split(":")[1]) for key in manifest.get("message_order") or []
+             if isinstance(key, str) and key.startswith("transcript:")]
+    omitted = [item["unit_index"] for item in manifest.get("omitted_items") or []
+               if item.get("kind") == "transcript_unit" and isinstance(item.get("unit_index"), int)]
+    return max(units + omitted, default=-1) + 2, frozenset(unit + 1 for unit in omitted)
 
 
 def _check_results(run_dir: Path, trajectory: Trajectory) -> Optional[str]:
@@ -390,29 +445,33 @@ class RuleLabels:
     stuck_responses: List[int]
     rejected_calls: int
     verify_responses: List[int] = field(default_factory=list)  # responses with a verify call that was not rejected
+    # calls that would repeat an earlier identical call, except that every such earlier result had been omitted
+    # from the model's context by the context policy
+    refetch_calls: int = 0
 
 
 def label_trajectory(trajectory: Trajectory) -> RuleLabels:
     created: set = set()  # files the run created (scratch or new source)
     scratch: set = set()
-    seen: Dict[str, List[Call]] = {}
+    seen: Dict[str, List[tuple]] = {}  # call key -> [(response number, call)]
     base_edits: List[dict] = []
     phases: List[str] = []
     stuck_responses: List[int] = []
     verify_positions: List[int] = []
     verify_responses: List[int] = []
-    last_edit_position, position = 0, 0
+    last_edit_position, position, refetch_calls = 0, 0, 0
     for response in trajectory.responses:
         call_phases = []
         for call in response.calls:
             position += 1
             key = call_key(call)
-            repeat = any(
-                earlier.status == "rejected"
-                or (earlier.revision == call.revision if earlier.revision and call.revision
-                    else earlier.mutations_before == call.mutations_before)
-                for earlier in seen.get(key, []))
-            seen.setdefault(key, []).append(call)
+            same = [number for number, earlier in seen.get(key, [])
+                    if earlier.status == "rejected"
+                    or (earlier.revision == call.revision if earlier.revision and call.revision
+                        else earlier.mutations_before == call.mutations_before)]
+            repeat = any(number not in response.omitted for number in same)
+            refetch_calls += bool(same) and not repeat
+            seen.setdefault(key, []).append((response.index, call))
             phase = _call_phase(call, created, scratch, bool(base_edits))
             if phase == "edit" and call.status == "success":
                 path = call_path(call)
@@ -445,7 +504,7 @@ def label_trajectory(trajectory: Trajectory) -> RuleLabels:
         verified_after_last_edit=bool(base_edits) and any(p > last_edit_position for p in verify_positions),
         stuck_responses=stuck_responses,
         rejected_calls=sum(1 for r in trajectory.responses for c in r.calls if c.status == "rejected"),
-        verify_responses=verify_responses,
+        verify_responses=verify_responses, refetch_calls=refetch_calls,
     )
 
 
@@ -464,9 +523,10 @@ def _call_phase(call: Call, created: set, scratch: set, edited_base: bool) -> st
             return "reproduce"
         return "edit"
     if call.tool in RUN_TOOLS:
-        words = call_command(call).split()
+        command = call_command(call)
+        words = command.split()
         first = PurePosixPath(words[0].replace("\\", "/")).name.lower() if words else ""
-        if first in EXPLORE_COMMANDS:
+        if first in EXPLORE_COMMANDS or LOOK_ONLY_RUN.search(command):
             return "explore"
         return "verify" if edited_base else "reproduce"
     return "other"
@@ -511,6 +571,8 @@ def causal_flags(trajectory: Trajectory, labels: RuleLabels, gold_files: Optiona
         flags.append("rejected_calls")
     if labels.stuck_responses:
         flags.append("repeated_call")
+    if labels.refetch_calls:
+        flags.append("refetch_after_omission")
     if trajectory.stop_class == "repeat_stop":
         flags.append("repeat_stop")
     if gold_files is None:
@@ -535,11 +597,13 @@ def analyse(trajectory: Trajectory, gold_files: Optional[set]) -> dict:
         "stop_class": trajectory.stop_class,
         "acceptance": trajectory.acceptance_status,
         "criterion_outcomes": trajectory.criterion_outcomes,
+        "test_counts": trajectory.test_counts,
         "verifier_cause": verifier_cause(trajectory, labels),
         "causal_status": "+".join(flags) or "none",
         "mechanism": mechanism_for(trajectory, labels),
         "rejected_calls": labels.rejected_calls,
         "stuck_responses": labels.stuck_responses,
+        "refetch_calls": labels.refetch_calls,
         "first_edit_response": labels.first_edit_response,
         "verified_before_finish": labels.verified_after_last_edit,
         "edit_in_gold_files": None if gold_files is None else any(e["path"] in gold_files for e in labels.base_edits),
@@ -572,6 +636,90 @@ def cluster(records: Iterable[dict]) -> List[dict]:
                                            -c["tasks"], -c["runs"], c["signature"]))
 
 
+# The five ModularRSI module scopes of IMPLEMENTATION_PLAN.md S6 ("What is editable and what is frozen").
+MODULES = ("agent loop", "tool use", "observation management", "context management", "task completion detection")
+FLAG_MODULES = {
+    "rejected_calls": ("tool use", "calls were rejected by the interface: tool descriptions, argument hints, "
+                                   "rejection messages"),
+    "repeated_call": ("agent loop", "identical calls repeated with their results in context: stagnation rules"),
+    "repeat_stop": ("agent loop", "the runner's repeat guard ended the run: stagnation rules"),
+    "refetch_after_omission": ("context management", "calls re-issued because the context policy had omitted "
+                                                     "their results: context budget and omission policy"),
+    "no_verification_before_finish": ("task completion detection", "finish without a check after the last edit: "
+                                                                   "pre-finish verification rule"),
+}
+
+
+def module_for(members: List[dict]) -> dict:
+    """The module a cluster's mechanism points at: primary from how the members stopped, secondary from the flags.
+
+    A run that called `finish` on a rejected workspace points at task completion detection (the pre-finish rule let
+    it finish); a run stopped by the budget points at the agent loop (continuation and commitment within the budget).
+    """
+    stops = Counter(member["stop_class"] for member in members)
+    primary = []
+    if stops.get("finish"):
+        primary.append(("task completion detection", f"{stops['finish']} of {len(members)} runs called finish on a "
+                        "workspace the evaluator rejected: the pre-finish verification rule accepted the fix"))
+    if stops.get("budget"):
+        primary.append(("agent loop", f"{stops['budget']} of {len(members)} runs reached the response budget "
+                        "without an accepted fix: continuation, stagnation, and commitment rules"))
+    if stops.get("repeat_stop"):
+        primary.append(("agent loop", f"{stops['repeat_stop']} of {len(members)} runs were ended by the repeat guard"))
+    flags = sorted({flag for member in members for flag in member["causal_status"].split("+") if flag in FLAG_MODULES})
+    return {"primary": [{"module": module, "basis": basis} for module, basis in primary],
+            "secondary": [{"module": FLAG_MODULES[flag][0], "flag": flag, "basis": FLAG_MODULES[flag][1]}
+                          for flag in flags]}
+
+
+SYMPTOM_KEYS = ("stop_class", "responses", "tool_calls", "first_edit_response", "verified_before_finish",
+                "edit_in_gold_files", "edited_files", "rejected_calls", "stuck_responses", "refetch_calls",
+                "criterion_outcomes", "test_counts")
+
+
+def evidence_bundles(records: List[dict], clusters: List[dict]) -> List[dict]:
+    """One bundle per minable cluster, in cluster rank order (S6 loop step 2; no proposals)."""
+    by_run = {record["run"]: record for record in records}
+    by_task: Dict[str, List[dict]] = {}
+    for record in records:
+        by_task.setdefault(record["task_id"], []).append(record)
+    bundles = []
+    for rank, item in enumerate(clusters, 1):
+        if not item["minable"]:
+            continue
+        members = [by_run[run] for run in item["members"]]
+        tasks = list(dict.fromkeys(member["task_id"] for member in members))
+        contrastive, negative = [], []
+        for task in tasks:
+            runs = by_task[task]
+            accepted = [r for r in runs if r["verifier_cause"] == "accepted"]
+            for member in (m for m in members if m["task_id"] == task):
+                contrastive += [{"task_id": task, "rejected": member["run"], "accepted": partner["run"],
+                                 "accepted_signature": partner["signature"],
+                                 "accepted_first_edit_response": partner["first_edit_response"],
+                                 "accepted_phases": phase_string(partner["phases"])} for partner in accepted]
+            if not accepted:
+                negative.append({"task_id": task, "runs": [r["run"] for r in runs],
+                                 "signatures": {r["run"]: r["signature"] for r in runs}})
+        bundles.append({
+            "cluster": rank, "signature": item["signature"], "verifier_cause": item["verifier_cause"],
+            "causal_status": item["causal_status"], "mechanism": item["mechanism"],
+            "size": item["runs"], "distinct_tasks": item["tasks"], "tasks": tasks,
+            "representative_runs": [next(m["run"] for m in members if m["task_id"] == task) for task in tasks],
+            "symptoms": {
+                "stop_classes": dict(Counter(m["stop_class"] for m in members)),
+                "verified_before_finish": dict(Counter(str(m["verified_before_finish"]).lower() for m in members)),
+                "edit_in_gold_files": dict(Counter(str(m["edit_in_gold_files"]).lower() for m in members)),
+                "phase_counts": dict(Counter(phase for m in members for phase in m["phases"])),
+                "members": [{"run": m["run"], "task_id": m["task_id"], **{key: m.get(key) for key in SYMPTOM_KEYS},
+                             "phases": phase_string(m["phases"])} for m in members],
+            },
+            "contrastive_pairs": contrastive, "negative_pairs": negative,
+            "module": module_for(members), "prior_attempts": [],
+        })
+    return bundles
+
+
 def load_gold_files(task_files: Iterable[Path]) -> Dict[str, set]:
     gold: Dict[str, set] = {}
     for path in task_files:
@@ -591,6 +739,14 @@ def phase_string(phases: List[str]) -> str:
     return " ".join(f"{phase}x{count}" if count > 1 else phase for phase, count in runs) or "-"
 
 
+def failing_tests(counts: Optional[dict]) -> str:
+    """'failing/expected' for fail-to-pass, then pass-to-pass, e.g. '13/15, 1/476'."""
+    if not counts:
+        return "n/a"
+    return ", ".join(f"{counts[name]['failing'] + counts[name]['missing']}/{counts[name]['expected']}"
+                     for name in ("fail-to-pass", "pass-to-pass") if name in counts)
+
+
 def render_tables(records: List[dict], clusters: List[dict]) -> str:
     lines = ["| # | Verifier cause | Causal status | Mechanism | Runs | Tasks | Minable | Runs in cluster |",
              "|---:|---|---|---|---:|---:|---|---|"]
@@ -598,13 +754,14 @@ def render_tables(records: List[dict], clusters: List[dict]) -> str:
         lines.append(f"| {number} | `{item['verifier_cause']}` | `{item['causal_status']}` | `{item['mechanism']}` | "
                      f"{item['runs']} | {item['tasks']} | {'yes' if item['minable'] else 'no'} | "
                      f"{', '.join(item['members'])} |")
-    lines += ["", "| Run | Task | Source | Stop (class) | Acceptance | Rejected | Stuck responses | First edit | "
-              "Edit in gold | Verified before finish | Phases (rule) | results.jsonl |",
-              "|---|---|---|---|---|---:|---|---:|---|---|---|---|"]
+    lines += ["", "| Run | Task | Source | Stop (class) | Acceptance | Tests failing (f2p, p2p) | Rejected | "
+              "Stuck responses | Refetched calls | First edit | Edit in gold | Verified before finish | "
+              "Phases (rule) | results.jsonl |", "|---|---|---|---|---|---|---:|---|---:|---:|---|---|---|---|"]
     for r in records:
         lines.append(
             f"| {r['run']} | {r['task_id']} | {r['source']} | `{r['stop_reason']}` ({r['stop_class']}) | "
-            f"{r['acceptance']} | {r['rejected_calls']} | {', '.join(map(str, r['stuck_responses'])) or '-'} | "
+            f"{r['acceptance']} | {failing_tests(r.get('test_counts'))} | {r['rejected_calls']} | "
+            f"{', '.join(map(str, r['stuck_responses'])) or '-'} | {r['refetch_calls']} | "
             f"{r['first_edit_response'] or '-'} | {r['edit_in_gold_files']} | {r['verified_before_finish']} | "
             f"{phase_string(r['phases'])} | {r['results_check'] or 'n/a'} |")
     return "\n".join(lines)
@@ -616,6 +773,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     parser.add_argument("--tasks", nargs="*", type=Path, default=list(DEFAULT_TASK_FILES),
                         help="task files that supply gold_source_files")
     parser.add_argument("--json", action="store_true", help="also print one JSON record per run")
+    parser.add_argument("--bundles", type=Path, help="write the minable clusters' evidence bundles to this JSON file")
     args = parser.parse_args(argv)
     gold = load_gold_files(args.tasks)
     records = []
@@ -626,7 +784,13 @@ def main(argv: Optional[List[str]] = None) -> None:
         for record in records:
             print(json.dumps(record))
         print()
-    print(render_tables(records, cluster(records)))
+    clusters = cluster(records)
+    print(render_tables(records, clusters))
+    if args.bundles:
+        bundles = evidence_bundles(records, clusters)
+        args.bundles.write_text(json.dumps({"runs": len(records), "clusters": len(clusters),
+                                            "minable_clusters": len(bundles), "bundles": bundles}, indent=2) + "\n",
+                                encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":
