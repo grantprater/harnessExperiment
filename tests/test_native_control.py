@@ -112,6 +112,8 @@ class NativeControlTests(unittest.TestCase):
             assistant("m4", use("u4", "Bash", command="python -c \"print(1..2)\" && echo ...")), result("u4"),
             assistant("m5", use("u5", "Bash", command="cat notes.txt")),
             result("u5", content=[{"type": "text", "text": '"mutation_patch": "--- a/x"'}]),
+            assistant("m6", use("u6", "Edit", file_path="pkg/mod.py", old_string="x", new_string="from .. import y")),
+            result("u6"),
         ]
         summary = native_control.summarize_stream(timed(stream), self.workspace, set(), markers=markers)
         self.assertEqual([e["response"] for e in summary["audit"]["escape_references"]], [1, 2, 3])
@@ -133,6 +135,17 @@ class NativeControlTests(unittest.TestCase):
         self.assertEqual({(hit["response"], hit["where"]) for hit in summary["audit"]["harness_markers"]},
                          {(2, "result")})
         self.assertIn("/c/", "".join(native_control.path_forms(Path("C:/x/y"))))
+
+    def test_interpreter_roots_are_the_environment_and_its_base_python(self):
+        environment = self.root / "venv"
+        (environment / "Scripts").mkdir(parents=True)
+        base = self.root / "base-python"
+        (environment / "pyvenv.cfg").write_text(f"home = {base}\ninclude-system-site-packages = false\n",
+                                                encoding="utf-8")
+        roots = native_control.interpreter_roots(environment / "Scripts" / "python.exe")
+        self.assertEqual(roots, (environment, base))
+        self.assertEqual(native_control.interpreter_roots(self.root / "bare" / "Scripts" / "python.exe"),
+                         (self.root / "bare",))
 
     def test_prompt_is_the_reticle_request_with_only_the_tool_phrases_replaced(self):
         task = {"repo": "demo", "repo_url": "https://example.invalid/demo",
@@ -157,6 +170,22 @@ class NativeControlTests(unittest.TestCase):
                        {"permissionMode": "default"}):
             with self.subTest(change=change):
                 self.assertIsNotNone(native_control.init_problem(dict(ALLOWED_INIT, **change)))
+
+    def test_a_failed_init_check_kills_the_cli_at_once(self):
+        fake = self.root / "fake_cli.py"
+        init = dict(ALLOWED_INIT, tools=[*ALLOWED_INIT["tools"], "WebFetch"])
+        fake.write_text("import json, sys, time\n"
+                        f"print(json.dumps({init!r}), flush=True)\n"
+                        "print('not json', flush=True)\n"
+                        "time.sleep(60)\n", encoding="utf-8")
+        run = native_control.run_cli([sys.executable, str(fake)], "prompt", self.root, dict(native_control.os.environ),
+                                     90, self.root / "stream.jsonl", self.root / "stderr.txt",
+                                     check_init=native_control.init_problem)
+        self.assertIn("WebFetch", run["aborted"])
+        self.assertFalse(run["timed_out"])
+        self.assertLess(run["wall_seconds"], 45)
+        summary = native_control.summarize_stream(run["events"], self.workspace, set())
+        self.assertEqual(native_control.stop_for(run, summary, None), "isolation_abort")
 
     def test_stop_classification(self):
         cases = [({"aborted": "tools"}, {}, None, "isolation_abort"), ({"timed_out": True}, {}, None, "wall_cap"),

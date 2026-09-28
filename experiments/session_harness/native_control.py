@@ -149,6 +149,20 @@ def task_interpreter() -> Path:
     return next((path for path in candidates if path.exists()), run_pilot.TASK_PYTHON)
 
 
+def interpreter_roots(interpreter: Path) -> tuple:
+    """The task interpreter's environment and the base Python it was made from (pyvenv.cfg `home`): the only places
+    outside the workspace the audit accepts, since tracebacks, `which python` and stdlib reads name them."""
+    environment = interpreter.parent.parent
+    roots = [environment]
+    config = environment / "pyvenv.cfg"
+    if config.exists():
+        for line in config.read_text(encoding="utf-8", errors="replace").splitlines():
+            key, _, value = line.partition("=")
+            if key.strip() == "home" and value.strip():
+                roots.append(Path(value.strip()))
+    return tuple(roots)
+
+
 def scratch_base(scratch_root: Optional[str] = None) -> Path:
     return Path(scratch_root or tempfile.gettempdir()).resolve() / SCRATCH_NAME
 
@@ -325,14 +339,19 @@ def run_cli(argv: list, prompt: str, cwd: Path, env: dict, wall_seconds: float, 
                 try:
                     event = json.loads(line)
                 except json.JSONDecodeError:
+                    event = None
+                if not isinstance(event, dict):
                     event = {"unparsed": line}
                 record = {"t": round(time.monotonic() - start, 2), "event": event}
                 events.append(record)
                 sink.write(json.dumps(record, ensure_ascii=False) + "\n")
                 sink.flush()
-                if (check_init is not None and not aborted and isinstance(event, dict)
+                if (check_init is not None and not aborted
                         and event.get("type") == "system" and event.get("subtype") == "init"):
-                    problem = check_init(event)
+                    try:
+                        problem = check_init(event)
+                    except Exception as exc:  # a malformed init event is a failed check, not a stalled reader
+                        problem = f"init check failed: {exc!r}"
                     if problem:
                         aborted.append(problem)
                         kill_tree(process)
@@ -455,7 +474,11 @@ def summarize_stream(events: list, workspace: Path, base_files: set, allowed_roo
                 if not allowed(path_text):
                     outside.append({"response": use["response"], "tool": use["name"], "command_path": path_text})
         inputs = list(_strings(use["input"]))
-        escape = next((text for text in inputs if ESCAPE_PATTERN.search(text)), None)
+        # Commands and path arguments only: file contents (Edit/Write) legitimately hold `..` (relative imports) or `~`.
+        where_to = [use["input"].get(key) for key in ("command", *PATH_KEYS)]
+        if use["name"] == "Glob":
+            where_to.append(use["input"].get("pattern"))
+        escape = next((text for text in where_to if isinstance(text, str) and ESCAPE_PATTERN.search(text)), None)
         if escape is not None:
             escapes.append({"response": use["response"], "tool": use["name"], "text": escape[:300]})
         result_text = masked(outputs.get(use["id"]) or "")
@@ -666,6 +689,7 @@ def main(argv=None) -> int:
                     "--max-turns in the CLI; hard kill of the CLI process tree at the wall cap"},
         "scratch_base": str(base), "workspace": str(workspace), "execution": execution,
         "pytest_timeout_seconds": args.pytest_timeout, "task_interpreter": str(interpreter),
+        "audit_allowed_roots": [str(root) for root in interpreter_roots(interpreter)],
         "environment_added": {"PATH": f"{interpreter.parent} (prepended)", "PYTHONPATH": "workspace (its src/ if any)",
                               "PYTHONIOENCODING": "utf-8", "OMP/MKL/OPENBLAS_NUM_THREADS": "1"},
         "authority": {
@@ -725,7 +749,7 @@ def main(argv=None) -> int:
               flush=True)
         run = run_cli([executable, *arguments], prompt, workspace, environment, args.wall_seconds,
                       record_dir / "stream.jsonl", record_dir / "stderr.txt", check_init=init_problem)
-    summary = summarize_stream(run["events"], workspace, base_files, allowed_roots=(interpreter.parent.parent,),
+    summary = summarize_stream(run["events"], workspace, base_files, allowed_roots=interpreter_roots(interpreter),
                                markers=tuple(leak_markers()))
     stop = stop_for(run, summary, args.scripted)
     run_pilot.materialize_workspace(task, repo, pristine)  # after the agent step, so the CLI never sees a second tree
