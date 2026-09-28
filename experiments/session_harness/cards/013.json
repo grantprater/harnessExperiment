@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "E4-finish-guard-013",
   "title": "Finish guard: demand a reproduced failure that the fix turns into a pass, once",
-  "status": "proposed",
+  "status": "approved",
   "markdown": "experiments/session_harness/E4-finish-guard-013.md",
   "hypothesis": "On card 007's evolution set, every rejected run that finished had checked its fix only on inputs it chose, and 3 of 4 never reproduced the reported failure. Rejecting the first finish after a source edit, once, unless a command that failed before the first edit passes after the latest edit (the next finish is accepted regardless) makes the model reproduce and recheck the failure, turning some wrong fixes into accepted ones, at a cost of about one response per run on the solved-twice tasks and no accepted run.",
   "run_prefix": "c013",
@@ -20,8 +20,8 @@
       "done": true
     },
     {
-      "text": "owner approval recorded in the markdown card (then set status to running)",
-      "done": false
+      "text": "owner approval recorded in the markdown card (then set status to running) (owner, in session 2026-09-28: 'you can continue... implementing those'; sequence approved)",
+      "done": true
     }
   ],
   "arms": [
