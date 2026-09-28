@@ -1,0 +1,381 @@
+{
+  "run_name": "c018-sqlparse-mut-002-r1",
+  "task_id": "sqlparse-mut-002",
+  "model": "sonnet",
+  "native_version": 2,
+  "scripted": null,
+  "started_at": "2026-09-28T08:18:01.511574+00:00",
+  "finished_at": "2026-09-28T08:18:46.803632+00:00",
+  "wall_seconds": 35.2,
+  "timed_out": false,
+  "exit_code": 0,
+  "aborted": null,
+  "stop": "end_turn",
+  "cli_failure": false,
+  "turns_used": 15,
+  "removed_environment": [
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "CLAUDECODE",
+    "CLAUDE_CODE_CHILD_SESSION",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY",
+    "CLAUDE_CODE_ENTRYPOINT",
+    "CLAUDE_CODE_EXECPATH",
+    "CLAUDE_CODE_MESSAGING_SOCKET",
+    "CLAUDE_CODE_MESSAGING_TOKEN",
+    "CLAUDE_CODE_SESSION_ATTENDED",
+    "CLAUDE_CODE_SESSION_ID",
+    "CLAUDE_EFFORT",
+    "CLAUDE_PID"
+  ],
+  "init": {
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Bash",
+      "Edit",
+      "Glob",
+      "Grep",
+      "PowerShell",
+      "Read",
+      "Write"
+    ],
+    "mcp_servers": [],
+    "apiKeySource": "none",
+    "permissionMode": "bypassPermissions",
+    "claude_code_version": "2.1.283",
+    "skills": [],
+    "slash_commands": [],
+    "cwd": "C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-002-r1\\workspace"
+  },
+  "result": {
+    "subtype": "success",
+    "is_error": false,
+    "num_turns": 15,
+    "stop_reason": "end_turn",
+    "terminal_reason": "completed",
+    "duration_ms": 34158,
+    "duration_api_ms": 29109,
+    "total_cost_usd": 0.1206834,
+    "usage": {
+      "input_tokens": 30,
+      "cache_creation_input_tokens": 7689,
+      "cache_read_input_tokens": 315187,
+      "output_tokens": 2683,
+      "output_tokens_details": {
+        "thinking_tokens": 451
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 7689,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 166,
+          "cache_read_input_tokens": 23782,
+          "cache_creation_input_tokens": 157,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 157
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "permission_denials": [
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_013aGdHstpSChze5GWNaC6Px",
+        "tool_input": {
+          "command": "cd C:/Users/grant/AppData/Local/Temp/reticle-native-control/c018-sqlparse-mut-002-r1/workspace && python -m pytest tests/ -q 2>&1 | tail -30"
+        }
+      },
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_01DEAwH8Uaq7eHgdgqccUpDe",
+        "tool_input": {
+          "command": "find / -iname \"test_regressions.py\" 2>/dev/null; find / -path \"*/sqlparse/tests*\" -maxdepth 6 2>/dev/null | head",
+          "description": "Search for test directory"
+        }
+      },
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_01UECnxiRGUrvSv3nQuy7oj8",
+        "tool_input": {
+          "command": "find / -iname \"test_regressions.py\" 2>/dev/null",
+          "description": "Search for test file across filesystem"
+        }
+      },
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_01VA7QGKBG6VwLTdX4hXZ4rA",
+        "tool_input": {
+          "command": "python -c \"\nimport sqlparse\ns = sqlparse.parse('SELECT * FROM foo')[0]\nprint(s.get_type())\ns2 = sqlparse.parse('  -- comment\\nSELECT 1')[0]\nprint(s2.get_type())\n\"",
+          "description": "Sanity check statement get_type after fix"
+        }
+      }
+    ],
+    "result": "The regression was a missing `not` in `TokenList.token_first`'s matcher in `sqlparse/sql.py`. It was returning the first whitespace/comment token instead of skipping past them, so `get_type()` and other code relying on `token_first` saw the wrong token (e.g., whitespace) and fell through to `'UNKNOWN'`. Restored the `not` and verified `get_type()` now correctly returns `SELECT` in plain, leading-whitespace, and leading-comment cases."
+  },
+  "responses": 15,
+  "tool_calls": 14,
+  "tool_calls_by_name": {
+    "Bash": 10,
+    "Read": 2,
+    "Edit": 1,
+    "Write": 1
+  },
+  "tool_errors": 5,
+  "first_command": {
+    "response": 1,
+    "seconds": 2.59,
+    "tool": "Bash"
+  },
+  "ran_command": true,
+  "first_base_file_edit": {
+    "response": 5,
+    "seconds": 16.29,
+    "tool": "Edit"
+  },
+  "first_source_edit": {
+    "response": 5,
+    "seconds": 16.29,
+    "tool": "Edit"
+  },
+  "source_rule": "pre-existing-python-source-v1",
+  "first_any_edit": {
+    "response": 5,
+    "seconds": 16.29,
+    "tool": "Edit"
+  },
+  "test_commands": 2,
+  "edited_files": [
+    "_check.py",
+    "sqlparse/sql.py"
+  ],
+  "audit": {
+    "paths_outside_workspace": [],
+    "network_commands": [],
+    "escape_references": [],
+    "harness_markers": [],
+    "tools_outside_allowed_set": []
+  },
+  "audit_clean": true,
+  "denied_calls": [
+    {
+      "response": 10,
+      "tool": "Bash",
+      "input": "{\"command\": \"find / -iname \\\"test_regressions.py\\\" 2>/dev/null\", \"description\": \"Search for test file across filesystem\"}",
+      "result": "Reads outside the working directories are blocked (permissions.blockReadsOutsideWorkingDirectories). Add the directory with /add-dir, or remove that setting."
+    },
+    {
+      "response": 11,
+      "tool": "Bash",
+      "input": "{\"command\": \"python -c \\\"\\nimport sqlparse\\ns = sqlparse.parse('SELECT * FROM foo')[0]\\nprint(s.get_type())\\ns2 = sqlparse.parse('  -- comment\\\\nSELECT 1')[0]\\nprint(s2.get_type())\\n\\\"\", \"description\"",
+      "result": "python runs inline code, which cannot be checked against the read block; under the read block (permissions.blockReadsOutsideWorkingDirectories) a command the shell parser cannot analyze asks the perso"
+    }
+  ],
+  "permission_denials": [
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_013aGdHstpSChze5GWNaC6Px",
+      "tool_input": {
+        "command": "cd C:/Users/grant/AppData/Local/Temp/reticle-native-control/c018-sqlparse-mut-002-r1/workspace && python -m pytest tests/ -q 2>&1 | tail -30"
+      }
+    },
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_01DEAwH8Uaq7eHgdgqccUpDe",
+      "tool_input": {
+        "command": "find / -iname \"test_regressions.py\" 2>/dev/null; find / -path \"*/sqlparse/tests*\" -maxdepth 6 2>/dev/null | head",
+        "description": "Search for test directory"
+      }
+    },
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_01UECnxiRGUrvSv3nQuy7oj8",
+      "tool_input": {
+        "command": "find / -iname \"test_regressions.py\" 2>/dev/null",
+        "description": "Search for test file across filesystem"
+      }
+    },
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_01VA7QGKBG6VwLTdX4hXZ4rA",
+      "tool_input": {
+        "command": "python -c \"\nimport sqlparse\ns = sqlparse.parse('SELECT * FROM foo')[0]\nprint(s.get_type())\ns2 = sqlparse.parse('  -- comment\\nSELECT 1')[0]\nprint(s2.get_type())\n\"",
+        "description": "Sanity check statement get_type after fix"
+      }
+    }
+  ],
+  "tool_sequence": [
+    {
+      "response": 1,
+      "seconds": 2.59,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"grep -rn \\\"def get_type\\\" C:/Users/grant/AppData/Local/Temp/reticle-native-control/c018-sqlparse-mut-002-r1/workspace/sqlparse/\"}"
+    },
+    {
+      "response": 2,
+      "seconds": 7.0,
+      "tool": "Read",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r1\\\\workspace\\\\sqlparse\\\\sql.py\", \"offset\": 400, \"limit\": 70}"
+    },
+    {
+      "response": 3,
+      "seconds": 8.79,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"grep -n \\\"def token_first\\\\|def token_next\\\\b\\\\|def token_index\\\\|def token_next_by\\\\|def _token_matching\\\" C:/Users/grant/AppData/Local/Temp/reticle-native-control/c018-sqlparse-mut-002-"
+    },
+    {
+      "response": 4,
+      "seconds": 10.55,
+      "tool": "Read",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r1\\\\workspace\\\\sqlparse\\\\sql.py\", \"offset\": 220, \"limit\": 100}"
+    },
+    {
+      "response": 5,
+      "seconds": 16.29,
+      "tool": "Edit",
+      "is_error": false,
+      "input": "{\"replace_all\": false, \"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r1\\\\workspace\\\\sqlparse\\\\sql.py\", \"old_string\": \"        # this on is inconsi"
+    },
+    {
+      "response": 6,
+      "seconds": 17.59,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"cd C:/Users/grant/AppData/Local/Temp/reticle-native-control/c018-sqlparse-mut-002-r1/workspace && python -m pytest tests/ -q 2>&1 | tail -30\"}"
+    },
+    {
+      "response": 7,
+      "seconds": 18.61,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"python -m pytest tests/ -q\", \"description\": \"Run full test suite\"}"
+    },
+    {
+      "response": 8,
+      "seconds": 21.02,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"pwd; ls\", \"description\": \"Show current directory and contents\"}"
+    },
+    {
+      "response": 9,
+      "seconds": 23.08,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"find / -iname \\\"test_regressions.py\\\" 2>/dev/null; find / -path \\\"*/sqlparse/tests*\\\" -maxdepth 6 2>/dev/null | head\", \"description\": \"Search for test directory\"}"
+    },
+    {
+      "response": 10,
+      "seconds": 24.15,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"find / -iname \\\"test_regressions.py\\\" 2>/dev/null\", \"description\": \"Search for test file across filesystem\"}"
+    },
+    {
+      "response": 11,
+      "seconds": 26.09,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"python -c \\\"\\nimport sqlparse\\ns = sqlparse.parse('SELECT * FROM foo')[0]\\nprint(s.get_type())\\ns2 = sqlparse.parse('  -- comment\\\\nSELECT 1')[0]\\nprint(s2.get_type())\\n\\\"\", \"description\""
+    },
+    {
+      "response": 12,
+      "seconds": 28.31,
+      "tool": "Write",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r1\\\\workspace\\\\_check.py\", \"content\": \"import sqlparse\\n\\ns = sqlparse.parse('SELECT * FROM foo')[0"
+    },
+    {
+      "response": 13,
+      "seconds": 29.89,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"python _check.py\", \"description\": \"Run sanity check script\"}"
+    },
+    {
+      "response": 14,
+      "seconds": 32.16,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"rm _check.py\", \"description\": \"Remove temporary check script\"}"
+    }
+  ],
+  "cost_estimate_usd": 0.1206834,
+  "confinement": {
+    "layers": {
+      "read_block": true,
+      "bash_deny": true,
+      "sandbox": false
+    },
+    "settings_sha256": "1917969c0ac1b59b13ca94f426b4c4a7c85fa18e5891ba6e74b6ffe181b2dda8",
+    "denials": 6,
+    "observed_active": true
+  },
+  "diff_stat": " sqlparse/sql.py | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n",
+  "diff_numstat": "1\t1\tsqlparse/sql.py\n",
+  "ignored_untracked_files": [],
+  "initial_workspace_revision": "sha256:9079c5250cd96decdedadd2d4ee4e3cd15da0cbcd929333252eef2d3c0b830a8",
+  "evaluator_version": "sqlparse-mut-002:inputs-6c22ee52ed71258a:evaluator-fa0ec3e7394cddd1",
+  "acceptance": {
+    "status": "accepted",
+    "criterion_outcomes": {
+      "fail-to-pass": "pass",
+      "pass-to-pass": "pass"
+    },
+    "report_artifact_id": "art_16702fea0bef450ebd316cbcfd1bada7",
+    "test_counts": {
+      "fail-to-pass": {
+        "expected": 9,
+        "passed": 9,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      },
+      "pass-to-pass": {
+        "expected": 482,
+        "passed": 482,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      }
+    },
+    "final_workspace_revision": "sha256:a6702617e7bfc01e6dba48e0cceb80b73aee3e22a663509a8dc0311d9eaa2e45",
+    "criteria": {
+      "fail-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      },
+      "pass-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      }
+    },
+    "collection_errors": [],
+    "observed_test_count": 493,
+    "pytest_exit_code": 0,
+    "pytest_timed_out": false,
+    "measurement_errors": []
+  },
+  "billing": "unknown (local Claude Code subscription login); cost_estimate_usd is the CLI's list-price estimate",
+  "scratch_removal_error": null
+}

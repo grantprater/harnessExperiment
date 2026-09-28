@@ -1,0 +1,14 @@
+diff --git a/scratch_test.py b/scratch_test.py
+new file mode 100644
+index 0000000..52ad9a1
+--- /dev/null
++++ b/scratch_test.py
+@@ -0,0 +1,8 @@
++import sqlparse
++
++s = 'select foo; select bar'
++print(repr(sqlparse.format(s, reindent=True)))
++s = 'select foo; select bar;'
++print(repr(sqlparse.format(s, reindent=True)))
++s = 'select foo\n; select bar;'
++print(repr(sqlparse.format(s, reindent=True)))

@@ -1,0 +1,24 @@
+diff --git a/scratch_test.py b/scratch_test.py
+new file mode 100644
+index 0000000..eff04f8
+--- /dev/null
++++ b/scratch_test.py
+@@ -0,0 +1,18 @@
++import sqlparse
++
++tests = [
++    'SELECT * FROM foo WHERE 1',
++    'SELECT * FROM foo WHERE 1=1 AND (a=1 OR b=2',
++    'SELECT * FROM foo WHERE (a=1',
++    'SELECT * FROM foo WHERE a IN (1,2',
++    'foo WHERE (',
++    'WHERE (a=1',
++    'SELECT a FROM (SELECT * FROM foo WHERE a=1',
++    'SELECT * FROM foo GROUP BY a WHERE a = 1',
++    'invalid where clause',
++]
++for sql in tests:
++    try:
++        print(sql, '->', repr(sqlparse.format(sql, reindent=True)))
++    except Exception as e:
++        print(sql, '-> ERROR', type(e).__name__, e)

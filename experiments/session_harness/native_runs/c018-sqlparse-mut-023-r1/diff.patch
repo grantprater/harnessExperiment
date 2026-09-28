@@ -1,0 +1,13 @@
+diff --git a/sqlparse/sql.py b/sqlparse/sql.py
+index 571c9fb..ec44a6d 100644
+--- a/sqlparse/sql.py
++++ b/sqlparse/sql.py
+@@ -274,7 +274,7 @@ class TokenList(Token):
+         return self._token_matching(lambda tk: imt(tk, i, m, t), idx, end)
+ 
+     def token_not_matching(self, funcs, idx):
+-        funcs = (funcs,) if isinstance(funcs, (list, tuple)) else funcs
++        funcs = (funcs,) if not isinstance(funcs, (list, tuple)) else funcs
+         funcs = [lambda tk, func=func: not func(tk) for func in funcs]
+         return self._token_matching(funcs, idx)
+ 

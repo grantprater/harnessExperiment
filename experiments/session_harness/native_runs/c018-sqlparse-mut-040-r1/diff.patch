@@ -1,0 +1,13 @@
+diff --git a/sqlparse/filters/output.py b/sqlparse/filters/output.py
+index f4ffe50..235db54 100644
+--- a/sqlparse/filters/output.py
++++ b/sqlparse/filters/output.py
+@@ -34,7 +34,7 @@ class OutputFilter:
+ class OutputPythonFilter(OutputFilter):
+     def _process(self, stream, varname, has_nl):
+         # SQL query assignation to varname
+-        if self.count >= 1:
++        if self.count > 1:
+             yield sql.Token(T.Whitespace, '\n')
+         yield sql.Token(T.Name, varname)
+         yield sql.Token(T.Whitespace, ' ')

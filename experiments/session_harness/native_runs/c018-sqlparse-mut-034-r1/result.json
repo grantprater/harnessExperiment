@@ -1,0 +1,308 @@
+{
+  "run_name": "c018-sqlparse-mut-034-r1",
+  "task_id": "sqlparse-mut-034",
+  "model": "sonnet",
+  "native_version": 2,
+  "scripted": null,
+  "started_at": "2026-09-28T15:26:44.960611+00:00",
+  "finished_at": "2026-09-28T15:27:22.558177+00:00",
+  "wall_seconds": 27.7,
+  "timed_out": false,
+  "exit_code": 0,
+  "aborted": null,
+  "stop": "end_turn",
+  "cli_failure": false,
+  "turns_used": 12,
+  "removed_environment": [
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "CLAUDECODE",
+    "CLAUDE_CODE_CHILD_SESSION",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY",
+    "CLAUDE_CODE_ENTRYPOINT",
+    "CLAUDE_CODE_EXECPATH",
+    "CLAUDE_CODE_MESSAGING_SOCKET",
+    "CLAUDE_CODE_MESSAGING_TOKEN",
+    "CLAUDE_CODE_SESSION_ATTENDED",
+    "CLAUDE_CODE_SESSION_ID",
+    "CLAUDE_EFFORT",
+    "CLAUDE_PID"
+  ],
+  "init": {
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Bash",
+      "Edit",
+      "Glob",
+      "Grep",
+      "PowerShell",
+      "Read",
+      "Write"
+    ],
+    "mcp_servers": [],
+    "apiKeySource": "none",
+    "permissionMode": "bypassPermissions",
+    "claude_code_version": "2.1.283",
+    "skills": [],
+    "slash_commands": [],
+    "cwd": "C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-034-r1\\workspace"
+  },
+  "result": {
+    "subtype": "success",
+    "is_error": false,
+    "num_turns": 12,
+    "stop_reason": "end_turn",
+    "terminal_reason": "completed",
+    "duration_ms": 26443,
+    "duration_api_ms": 20701,
+    "total_cost_usd": 0.08678340000000001,
+    "usage": {
+      "input_tokens": 24,
+      "cache_creation_input_tokens": 4866,
+      "cache_read_input_tokens": 229057,
+      "output_tokens": 2146,
+      "output_tokens_details": {
+        "thinking_tokens": 165
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 4866,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 195,
+          "cache_read_input_tokens": 20926,
+          "cache_creation_input_tokens": 190,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 190
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "permission_denials": [
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_017XPRoMK26WcSvHVrafoVmr",
+        "tool_input": {
+          "command": "cd \"C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-034-r1\\workspace\" && python -c \"\nimport sqlparse\nsql = 'WITH x AS (SELECT 1) SELECT * FROM x'\np = sqlparse.parse(sql)[0]\nprint(p.get_type())\nsql2 = 'WITH a AS (SELECT 1), -- comment\\nb AS (SELECT 2) SELECT * FROM a, b'\np2 = sqlparse.parse(sql2)[0]\nprint(p2.get_type())\n\"\n"
+        }
+      }
+    ],
+    "result": "Fixed. The bug was an inverted condition in `Statement.get_type()` (`sqlparse/sql.py`): `elif token.ttype != T.Keyword.CTE:` should have been `==`, since that branch's logic is specifically for walking past a CTE's identifier(s) to find the trailing DML keyword. With `!=` it never actually handled CTE statements, so `WITH ... SELECT ...` fell through to `UNKNOWN`. Changed to `==` and verified both a basic CTE and a CTE with a comment between clauses now correctly report `SELECT`."
+  },
+  "responses": 12,
+  "tool_calls": 11,
+  "tool_calls_by_name": {
+    "Grep": 2,
+    "Read": 1,
+    "Edit": 1,
+    "Bash": 5,
+    "Glob": 1,
+    "Write": 1
+  },
+  "tool_errors": 3,
+  "first_command": {
+    "response": 5,
+    "seconds": 10.63,
+    "tool": "Bash"
+  },
+  "ran_command": true,
+  "first_base_file_edit": {
+    "response": 4,
+    "seconds": 9.11,
+    "tool": "Edit"
+  },
+  "first_source_edit": {
+    "response": 4,
+    "seconds": 9.11,
+    "tool": "Edit"
+  },
+  "source_rule": "pre-existing-python-source-v1",
+  "first_any_edit": {
+    "response": 4,
+    "seconds": 9.11,
+    "tool": "Edit"
+  },
+  "test_commands": 2,
+  "edited_files": [
+    "sqlparse/sql.py",
+    "verify_fix.py"
+  ],
+  "audit": {
+    "paths_outside_workspace": [],
+    "network_commands": [],
+    "escape_references": [],
+    "harness_markers": [],
+    "tools_outside_allowed_set": []
+  },
+  "audit_clean": true,
+  "denied_calls": [
+    {
+      "response": 8,
+      "tool": "Bash",
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-034-r1\\\\workspace\\\" && python -c \\\"\\nimport sqlparse\\nsql = 'WITH x AS (SELECT 1) SELECT * FROM x'\\n",
+      "result": "python runs inline code, which cannot be checked against the read block; under the read block (permissions.blockReadsOutsideWorkingDirectories) a command the shell parser cannot analyze asks the perso"
+    }
+  ],
+  "permission_denials": [
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_017XPRoMK26WcSvHVrafoVmr",
+      "tool_input": {
+        "command": "cd \"C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-034-r1\\workspace\" && python -c \"\nimport sqlparse\nsql = 'WITH x AS (SELECT 1) SELECT * FROM x'\np = sqlparse.parse(sql)[0]\nprint(p.get_type())\nsql2 = 'WITH a AS (SELECT 1), -- comment\\nb AS (SELECT 2) SELECT * FROM a, b'\np2 = sqlparse.parse(sql2)[0]\nprint(p2.get_type())\n\"\n"
+      }
+    }
+  ],
+  "tool_sequence": [
+    {
+      "response": 1,
+      "seconds": 2.61,
+      "tool": "Grep",
+      "is_error": false,
+      "input": "{\"pattern\": \"get_type\", \"path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-034-r1\\\\workspace\", \"output_mode\": \"files_with_matches\"}"
+    },
+    {
+      "response": 2,
+      "seconds": 4.45,
+      "tool": "Grep",
+      "is_error": false,
+      "input": "{\"pattern\": \"def get_type|CTE|WITH\", \"path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-034-r1\\\\workspace\\\\sqlparse\\\\sql.py\", \"output_mode\": \"content\", \"-n\": tr"
+    },
+    {
+      "response": 3,
+      "seconds": 5.88,
+      "tool": "Read",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-034-r1\\\\workspace\\\\sqlparse\\\\sql.py\", \"offset\": 400, \"limit\": 65}"
+    },
+    {
+      "response": 4,
+      "seconds": 9.11,
+      "tool": "Edit",
+      "is_error": false,
+      "input": "{\"replace_all\": false, \"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-034-r1\\\\workspace\\\\sqlparse\\\\sql.py\", \"old_string\": \"        elif token.ttype != "
+    },
+    {
+      "response": 5,
+      "seconds": 10.63,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-034-r1\\\\workspace\\\" && python -m pytest tests -k \\\"issue227 or issue632\\\" -q\"}"
+    },
+    {
+      "response": 6,
+      "seconds": 16.24,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-034-r1\\\\workspace\\\" && python -m pytest -k \\\"issue227 or issue632\\\" -q\"}"
+    },
+    {
+      "response": 7,
+      "seconds": 17.77,
+      "tool": "Glob",
+      "is_error": false,
+      "input": "{\"pattern\": \"**/test_*.py\"}"
+    },
+    {
+      "response": 8,
+      "seconds": 20.05,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-034-r1\\\\workspace\\\" && python -c \\\"\\nimport sqlparse\\nsql = 'WITH x AS (SELECT 1) SELECT * FROM x'\\n"
+    },
+    {
+      "response": 9,
+      "seconds": 22.11,
+      "tool": "Write",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-034-r1\\\\workspace\\\\verify_fix.py\", \"content\": \"import sqlparse\\n\\nsql = 'WITH x AS (SELECT 1) SELECT * "
+    },
+    {
+      "response": 10,
+      "seconds": 23.21,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-034-r1\\\\workspace\\\" && python verify_fix.py\"}"
+    },
+    {
+      "response": 11,
+      "seconds": 24.88,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-034-r1\\\\workspace\\\" && rm verify_fix.py\"}"
+    }
+  ],
+  "cost_estimate_usd": 0.08678340000000001,
+  "confinement": {
+    "layers": {
+      "read_block": true,
+      "bash_deny": true,
+      "sandbox": false
+    },
+    "settings_sha256": "dbad37fe50be7f97448ce6342169679f45762ded84b095e354cac10fb5afd537",
+    "denials": 2,
+    "observed_active": true
+  },
+  "diff_stat": " sqlparse/sql.py | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n",
+  "diff_numstat": "1\t1\tsqlparse/sql.py\n",
+  "ignored_untracked_files": [],
+  "initial_workspace_revision": "sha256:e8ca4080eca3109b5e87c540da9b97ca96957fb7bed63947e60eb5d8f0f56804",
+  "evaluator_version": "sqlparse-mut-034:inputs-6c22ee52ed71258a:evaluator-fa0ec3e7394cddd1",
+  "acceptance": {
+    "status": "accepted",
+    "criterion_outcomes": {
+      "fail-to-pass": "pass",
+      "pass-to-pass": "pass"
+    },
+    "report_artifact_id": "art_223417b295d84f34b8d9c7b9757bed88",
+    "test_counts": {
+      "fail-to-pass": {
+        "expected": 2,
+        "passed": 2,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      },
+      "pass-to-pass": {
+        "expected": 489,
+        "passed": 489,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      }
+    },
+    "final_workspace_revision": "sha256:a6702617e7bfc01e6dba48e0cceb80b73aee3e22a663509a8dc0311d9eaa2e45",
+    "criteria": {
+      "fail-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      },
+      "pass-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      }
+    },
+    "collection_errors": [],
+    "observed_test_count": 493,
+    "pytest_exit_code": 0,
+    "pytest_timed_out": false,
+    "measurement_errors": []
+  },
+  "billing": "unknown (local Claude Code subscription login); cost_estimate_usd is the CLI's list-price estimate",
+  "scratch_removal_error": null
+}

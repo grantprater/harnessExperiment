@@ -1,0 +1,8 @@
+diff --git a/repro.py b/repro.py
+new file mode 100644
+index 0000000..b17212f
+--- /dev/null
++++ b/repro.py
+@@ -0,0 +1,2 @@
++import sqlparse
++print(sqlparse.format('SELECT * FROM foo WHERE bar = 1;', reindent=True))
