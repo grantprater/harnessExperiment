@@ -63,6 +63,10 @@
   },
   "pytest_timeout_seconds": 600,
   "task_interpreter": "C:\\Users\\grant\\harnessExperiment\\.runtime\\bugs-venv\\Scripts\\python.exe",
+  "audit_allowed_roots": [
+    "C:\\Users\\grant\\harnessExperiment\\.runtime\\bugs-venv",
+    "C:\\Users\\grant\\harnessExperiment\\.runtime\\python\\cpython-3.13.15-windows-x86_64-none"
+  ],
   "environment_added": {
     "PATH": "C:\\Users\\grant\\harnessExperiment\\.runtime\\bugs-venv\\Scripts (prepended)",
     "PYTHONPATH": "workspace (its src/ if any)",

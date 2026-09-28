@@ -10,8 +10,8 @@
       "sqlparse/filters/others.py"
     ]
   },
-  "started_at": "2026-09-28T05:45:55.555393+00:00",
-  "finished_at": "2026-09-28T05:46:05.989810+00:00",
+  "started_at": "2026-09-28T05:50:25.839744+00:00",
+  "finished_at": "2026-09-28T05:50:36.958807+00:00",
   "wall_seconds": 0.1,
   "timed_out": false,
   "exit_code": null,
@@ -70,7 +70,7 @@
       "fail-to-pass": "pass",
       "pass-to-pass": "pass"
     },
-    "report_artifact_id": "art_250ff2db70874d2c8cb5663bdddf8590",
+    "report_artifact_id": "art_374385c84b074561a3b7d472167c84e8",
     "test_counts": {
       "fail-to-pass": {
         "expected": 1,

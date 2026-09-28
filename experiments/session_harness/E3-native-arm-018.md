@@ -161,8 +161,9 @@ python experiments/session_harness/compare_native_c007.py
 
 ## No-model controls (done)
 
-2026-09-28, `run_native_bank.py --controls --scratch-root <session scratchpad>` from `wt/native-bank` at `5bf5860`
-(the records say `tracked_changes: true`: `REGISTER.md` and `IMPLEMENTATION_PLAN.md` were edited, not code). Each control
+2026-09-28, `run_native_bank.py --controls --scratch-root <session scratchpad>` from `wt/native-bank` at `f21aee6`, the
+final code of this card (the records say `tracked_changes: true`: the staged removal of the first control records, not
+code; that first pass, at `5bf5860` before the audit fixes, gave the same outcomes and counts). Each control
 went through the driver's `run_one` into `native_control.py --scripted <kind>`: leak checks, `materialize_workspace`,
 the scripted agent in place of the CLI, the pristine copy and `git diff`, the evaluator bundle built afterwards,
 `AcceptanceRunner` in OCI image `8b74015e5079`, scratch removal. No CLI and no model.

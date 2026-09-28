@@ -7,8 +7,8 @@
     "kind": "noop",
     "changed": []
   },
-  "started_at": "2026-09-28T05:46:08.108015+00:00",
-  "finished_at": "2026-09-28T05:46:19.505576+00:00",
+  "started_at": "2026-09-28T05:50:38.871264+00:00",
+  "finished_at": "2026-09-28T05:50:49.603456+00:00",
   "wall_seconds": 0.0,
   "timed_out": false,
   "exit_code": null,
@@ -67,7 +67,7 @@
       "fail-to-pass": "fail",
       "pass-to-pass": "pass"
     },
-    "report_artifact_id": "art_475bcfe3125e4a028f08fddc75339d90",
+    "report_artifact_id": "art_5bf02f800ee74004bb80e3c1c28ddab5",
     "test_counts": {
       "fail-to-pass": {
         "expected": 1,
