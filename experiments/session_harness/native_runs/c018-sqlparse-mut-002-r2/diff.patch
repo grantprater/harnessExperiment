@@ -1,0 +1,13 @@
+diff --git a/sqlparse/sql.py b/sqlparse/sql.py
+index b3ab11d..ec44a6d 100644
+--- a/sqlparse/sql.py
++++ b/sqlparse/sql.py
+@@ -265,7 +265,7 @@ class TokenList(Token):
+         """
+         # this on is inconsistent, using Comment instead of T.Comment...
+         def matcher(tk):
+-            return ((skip_ws and tk.is_whitespace)
++            return not ((skip_ws and tk.is_whitespace)
+                         or (skip_cm and imt(tk, t=T.Comment, i=Comment)))
+         return self._token_matching(matcher)[1]
+ 

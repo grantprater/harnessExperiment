@@ -1,0 +1,30 @@
+diff --git a/scratch_test.py b/scratch_test.py
+new file mode 100644
+index 0000000..c2ead52
+--- /dev/null
++++ b/scratch_test.py
+@@ -0,0 +1,10 @@
++import sqlparse
++
++tests = [
++    'select foo; select bar',
++    'select foo\n;\nselect bar',
++    'select foo; select bar;',
++]
++for sql in tests:
++    res = sqlparse.format(sql, reindent=True)
++    print(repr(sql), '->', repr(res))
+diff --git a/scratch_test2.py b/scratch_test2.py
+new file mode 100644
+index 0000000..edddb1d
+--- /dev/null
++++ b/scratch_test2.py
+@@ -0,0 +1,8 @@
++import sqlparse
++
++sql = 'select foo\n;\nselect bar'
++stmts = sqlparse.parse(sql)
++for s in stmts:
++    print('STMT:', repr(str(s)))
++    for t in s.tokens:
++        print('  ', t.ttype, repr(t.value))

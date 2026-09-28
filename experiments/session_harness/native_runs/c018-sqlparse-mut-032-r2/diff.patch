@@ -1,0 +1,23 @@
+diff --git a/repro.py b/repro.py
+new file mode 100644
+index 0000000..cc9f78a
+--- /dev/null
++++ b/repro.py
+@@ -0,0 +1,17 @@
++import sqlparse
++
++tests = [
++    'SELECT * FROM foo WHERE',
++    'foo where',
++    'foo bar WHERE',
++    'SELECT * FROM foo WHERE bar',
++    'WHERE',
++    'SELECT * FROM foo WHERE x = 1 AND',
++    'SELECT * FROM foo WHERE AND x = 1',
++]
++for t in tests:
++    try:
++        r = sqlparse.format(t, reindent_aligned=True)
++        print(repr(t), '->', repr(r))
++    except Exception as e:
++        print(repr(t), 'ERROR', type(e).__name__, e)

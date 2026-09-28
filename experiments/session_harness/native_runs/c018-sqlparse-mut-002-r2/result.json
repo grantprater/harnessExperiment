@@ -1,0 +1,346 @@
+{
+  "run_name": "c018-sqlparse-mut-002-r2",
+  "task_id": "sqlparse-mut-002",
+  "model": "sonnet",
+  "native_version": 2,
+  "scripted": null,
+  "started_at": "2026-09-28T15:40:36.971289+00:00",
+  "finished_at": "2026-09-28T15:41:41.141081+00:00",
+  "wall_seconds": 53.7,
+  "timed_out": false,
+  "exit_code": 0,
+  "aborted": null,
+  "stop": "end_turn",
+  "cli_failure": false,
+  "turns_used": 15,
+  "removed_environment": [
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "CLAUDECODE",
+    "CLAUDE_CODE_CHILD_SESSION",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY",
+    "CLAUDE_CODE_ENTRYPOINT",
+    "CLAUDE_CODE_EXECPATH",
+    "CLAUDE_CODE_MESSAGING_SOCKET",
+    "CLAUDE_CODE_MESSAGING_TOKEN",
+    "CLAUDE_CODE_SESSION_ATTENDED",
+    "CLAUDE_CODE_SESSION_ID",
+    "CLAUDE_EFFORT",
+    "CLAUDE_PID"
+  ],
+  "init": {
+    "model": "claude-sonnet-5",
+    "tools": [
+      "Bash",
+      "Edit",
+      "Glob",
+      "Grep",
+      "PowerShell",
+      "Read",
+      "Write"
+    ],
+    "mcp_servers": [],
+    "apiKeySource": "none",
+    "permissionMode": "bypassPermissions",
+    "claude_code_version": "2.1.283",
+    "skills": [],
+    "slash_commands": [],
+    "cwd": "C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-002-r2\\workspace"
+  },
+  "result": {
+    "subtype": "success",
+    "is_error": false,
+    "num_turns": 15,
+    "stop_reason": "end_turn",
+    "terminal_reason": "completed",
+    "duration_ms": 52511,
+    "duration_api_ms": 47766,
+    "total_cost_usd": 0.12269439999999997,
+    "usage": {
+      "input_tokens": 30,
+      "cache_creation_input_tokens": 7529,
+      "cache_read_input_tokens": 307392,
+      "output_tokens": 3104,
+      "output_tokens_details": {
+        "thinking_tokens": 656
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 7529,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 196,
+          "cache_read_input_tokens": 23622,
+          "cache_creation_input_tokens": 157,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 157
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "permission_denials": [
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_01WWe8xCmMSg64hwNscuimPg",
+        "tool_input": {
+          "command": "cd \"C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-002-r2\\workspace\" && python -m pytest tests/ -q 2>&1 | tail -30",
+          "description": "Run full test suite"
+        }
+      },
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_01TqJ5FyZ1pn4GZAEpHGyBt5",
+        "tool_input": {
+          "command": "python -c \"\nimport sqlparse\nprint(sqlparse.parse('SELECT * FROM foo')[0].get_type())\nprint(sqlparse.parse('  SELECT * FROM foo')[0].get_type())\nprint(sqlparse.parse('-- comment\\nSELECT 1')[0].get_type())\n\"",
+          "description": "Sanity check get_type behavior"
+        }
+      }
+    ],
+    "result": "The bug was in `TokenList.token_first` in `sqlparse/sql.py:257` — its `matcher` function had inverted logic (missing a `not`), so it matched whitespace/comment tokens instead of skipping them, causing `token_first` to return the wrong token (e.g., a whitespace token instead of the leading `SELECT` keyword). This broke `get_type()` and everything relying on `token_first`. Added the missing `not` to restore correct behavior; verified `get_type()` now correctly returns `SELECT` in plain, leading-whitespace, and leading-comment cases."
+  },
+  "responses": 15,
+  "tool_calls": 14,
+  "tool_calls_by_name": {
+    "Grep": 4,
+    "Bash": 7,
+    "Read": 1,
+    "Edit": 1,
+    "Write": 1
+  },
+  "tool_errors": 3,
+  "first_command": {
+    "response": 5,
+    "seconds": 16.48,
+    "tool": "Bash"
+  },
+  "ran_command": true,
+  "first_base_file_edit": {
+    "response": 7,
+    "seconds": 29.87,
+    "tool": "Edit"
+  },
+  "first_source_edit": {
+    "response": 7,
+    "seconds": 29.87,
+    "tool": "Edit"
+  },
+  "source_rule": "pre-existing-python-source-v1",
+  "first_any_edit": {
+    "response": 7,
+    "seconds": 29.87,
+    "tool": "Edit"
+  },
+  "test_commands": 2,
+  "edited_files": [
+    "_check.py",
+    "sqlparse/sql.py"
+  ],
+  "audit": {
+    "paths_outside_workspace": [],
+    "network_commands": [],
+    "escape_references": [],
+    "harness_markers": [],
+    "tools_outside_allowed_set": []
+  },
+  "audit_clean": true,
+  "denied_calls": [
+    {
+      "response": 11,
+      "tool": "Bash",
+      "input": "{\"command\": \"python -c \\\"\\nimport sqlparse\\nprint(sqlparse.parse('SELECT * FROM foo')[0].get_type())\\nprint(sqlparse.parse('  SELECT * FROM foo')[0].get_type())\\nprint(sqlparse.parse('-- comment\\\\nSEL",
+      "result": "python runs inline code, which cannot be checked against the read block; under the read block (permissions.blockReadsOutsideWorkingDirectories) a command the shell parser cannot analyze asks the perso"
+    }
+  ],
+  "permission_denials": [
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_01WWe8xCmMSg64hwNscuimPg",
+      "tool_input": {
+        "command": "cd \"C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-002-r2\\workspace\" && python -m pytest tests/ -q 2>&1 | tail -30",
+        "description": "Run full test suite"
+      }
+    },
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_01TqJ5FyZ1pn4GZAEpHGyBt5",
+      "tool_input": {
+        "command": "python -c \"\nimport sqlparse\nprint(sqlparse.parse('SELECT * FROM foo')[0].get_type())\nprint(sqlparse.parse('  SELECT * FROM foo')[0].get_type())\nprint(sqlparse.parse('-- comment\\nSELECT 1')[0].get_type())\n\"",
+        "description": "Sanity check get_type behavior"
+      }
+    }
+  ],
+  "tool_sequence": [
+    {
+      "response": 1,
+      "seconds": 4.7,
+      "tool": "Grep",
+      "is_error": false,
+      "input": "{\"pattern\": \"get_type\", \"path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r2\\\\workspace\", \"output_mode\": \"files_with_matches\"}"
+    },
+    {
+      "response": 2,
+      "seconds": 7.23,
+      "tool": "Grep",
+      "is_error": false,
+      "input": "{\"pattern\": \"get_type\", \"path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r2\\\\workspace\\\\sqlparse\\\\sql.py\", \"output_mode\": \"content\", \"-A\": 20}"
+    },
+    {
+      "response": 3,
+      "seconds": 9.78,
+      "tool": "Grep",
+      "is_error": false,
+      "input": "{\"pattern\": \"def token_first\", \"path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r2\\\\workspace\\\\sqlparse\\\\sql.py\", \"-A\": 20}"
+    },
+    {
+      "response": 4,
+      "seconds": 12.64,
+      "tool": "Grep",
+      "is_error": false,
+      "input": "{\"pattern\": \"token_first|_token_matching|def token_next\\\\b\", \"path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r2\\\\workspace\\\\sqlparse\\\\sql.py\", \"-A\": 15}"
+    },
+    {
+      "response": 5,
+      "seconds": 16.48,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"grep -n \\\"def token\\\" \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r2\\\\workspace\\\\sqlparse\\\\sql.py\\\"\", \"description\": \"List token_ methods in sq"
+    },
+    {
+      "response": 6,
+      "seconds": 21.56,
+      "tool": "Read",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r2\\\\workspace\\\\sqlparse\\\\sql.py\", \"offset\": 220, \"limit\": 100}"
+    },
+    {
+      "response": 7,
+      "seconds": 29.87,
+      "tool": "Edit",
+      "is_error": false,
+      "input": "{\"replace_all\": false, \"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r2\\\\workspace\\\\sqlparse\\\\sql.py\", \"old_string\": \"        # this on is inconsi"
+    },
+    {
+      "response": 8,
+      "seconds": 32.24,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"cd \\\"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r2\\\\workspace\\\" && python -m pytest tests/ -q 2>&1 | tail -30\", \"description\": \"Run full test su"
+    },
+    {
+      "response": 9,
+      "seconds": 34.08,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"python -m pytest tests/ -q\", \"description\": \"Run full test suite\"}"
+    },
+    {
+      "response": 10,
+      "seconds": 37.04,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"pwd && ls\", \"description\": \"Check current directory\"}"
+    },
+    {
+      "response": 11,
+      "seconds": 40.32,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"python -c \\\"\\nimport sqlparse\\nprint(sqlparse.parse('SELECT * FROM foo')[0].get_type())\\nprint(sqlparse.parse('  SELECT * FROM foo')[0].get_type())\\nprint(sqlparse.parse('-- comment\\\\nSEL"
+    },
+    {
+      "response": 12,
+      "seconds": 44.04,
+      "tool": "Write",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-002-r2\\\\workspace\\\\_check.py\", \"content\": \"import sqlparse\\nprint(sqlparse.parse('SELECT * FROM foo')[0"
+    },
+    {
+      "response": 13,
+      "seconds": 46.89,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"python _check.py\", \"description\": \"Run sanity check script\"}"
+    },
+    {
+      "response": 14,
+      "seconds": 50.22,
+      "tool": "Bash",
+      "is_error": false,
+      "input": "{\"command\": \"rm _check.py\", \"description\": \"Remove temporary check script\"}"
+    }
+  ],
+  "cost_estimate_usd": 0.12269439999999997,
+  "confinement": {
+    "layers": {
+      "read_block": true,
+      "bash_deny": true,
+      "sandbox": false
+    },
+    "settings_sha256": "dea39a0e95a2ac19c1c323067d83464613d07e404bbcda7d7b17393263e24a4a",
+    "denials": 3,
+    "observed_active": true
+  },
+  "diff_stat": " sqlparse/sql.py | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n",
+  "diff_numstat": "1\t1\tsqlparse/sql.py\n",
+  "ignored_untracked_files": [],
+  "initial_workspace_revision": "sha256:9079c5250cd96decdedadd2d4ee4e3cd15da0cbcd929333252eef2d3c0b830a8",
+  "evaluator_version": "sqlparse-mut-002:inputs-6c22ee52ed71258a:evaluator-fa0ec3e7394cddd1",
+  "acceptance": {
+    "status": "accepted",
+    "criterion_outcomes": {
+      "fail-to-pass": "pass",
+      "pass-to-pass": "pass"
+    },
+    "report_artifact_id": "art_895459fbfef042749efbda95ff3806ee",
+    "test_counts": {
+      "fail-to-pass": {
+        "expected": 9,
+        "passed": 9,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      },
+      "pass-to-pass": {
+        "expected": 482,
+        "passed": 482,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      }
+    },
+    "final_workspace_revision": "sha256:a6702617e7bfc01e6dba48e0cceb80b73aee3e22a663509a8dc0311d9eaa2e45",
+    "criteria": {
+      "fail-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      },
+      "pass-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      }
+    },
+    "collection_errors": [],
+    "observed_test_count": 493,
+    "pytest_exit_code": 0,
+    "pytest_timed_out": false,
+    "measurement_errors": []
+  },
+  "billing": "unknown (local Claude Code subscription login); cost_estimate_usd is the CLI's list-price estimate",
+  "scratch_removal_error": null
+}

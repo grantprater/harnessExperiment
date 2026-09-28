@@ -1,0 +1,13 @@
+diff --git a/sqlparse/sql.py b/sqlparse/sql.py
+index 1e790e8..ec44a6d 100644
+--- a/sqlparse/sql.py
++++ b/sqlparse/sql.py
+@@ -430,7 +430,7 @@ class Statement(TokenList):
+         elif token.ttype in (T.Keyword.DML, T.Keyword.DDL):
+             return token.normalized
+ 
+-        elif token.ttype != T.Keyword.CTE:
++        elif token.ttype == T.Keyword.CTE:
+             # The WITH keyword should be followed by either an Identifier or
+             # an IdentifierList containing the CTE definitions;  the actual
+             # DML keyword (e.g. SELECT, INSERT) will follow next.

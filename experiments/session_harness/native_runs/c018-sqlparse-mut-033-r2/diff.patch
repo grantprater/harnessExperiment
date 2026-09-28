@@ -1,0 +1,36 @@
+diff --git a/repro.py b/repro.py
+new file mode 100644
+index 0000000..487ef7b
+--- /dev/null
++++ b/repro.py
+@@ -0,0 +1,4 @@
++import sqlparse
++
++sql = 'select a.*, b.* from a, b'
++print(repr(sqlparse.format(sql, reindent=True)))
+diff --git a/repro2.py b/repro2.py
+new file mode 100644
+index 0000000..0246c7d
+--- /dev/null
++++ b/repro2.py
+@@ -0,0 +1,20 @@
++import sqlparse
++from sqlparse.sql import IdentifierList
++
++sql = 'select a.*, b.* from a, b'
++parsed = sqlparse.parse(sql)[0]
++for tok in parsed.tokens:
++    print(repr(tok.ttype), repr(tok))
++
++il = None
++for tok in parsed.tokens:
++    if isinstance(tok, IdentifierList):
++        il = tok
++print("IL:", il)
++if il:
++    for t in il.tokens:
++        print("  ", repr(t.ttype), repr(t))
++    ids = list(il.get_identifiers())
++    print("identifiers:", ids)
++    first = ids[0]
++    print("first flatten:", list(first.flatten()))

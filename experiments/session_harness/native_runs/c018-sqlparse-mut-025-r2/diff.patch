@@ -1,0 +1,13 @@
+diff --git a/sqlparse/tokens.py b/sqlparse/tokens.py
+index 1c35704..a8263a3 100644
+--- a/sqlparse/tokens.py
++++ b/sqlparse/tokens.py
+@@ -20,6 +20,8 @@ class _TokenType(tuple):
+ 
+     def __getattr__(self, name):
+         # don't mess with dunder
++        if name.startswith('__') and name.endswith('__'):
++            raise AttributeError
+         new = _TokenType(self + (name,))
+         setattr(self, name, new)
+         new.parent = self

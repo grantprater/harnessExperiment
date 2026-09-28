@@ -1,0 +1,58 @@
+diff --git a/out.txt b/out.txt
+new file mode 100644
+index 0000000..7f23b04
+--- /dev/null
++++ b/out.txt
+@@ -0,0 +1,4 @@
++ERROR: file or directory not found: tests/
++
++
++no tests ran in 0.25s
+diff --git a/out2.txt b/out2.txt
+new file mode 100644
+index 0000000..d207a0f
+--- /dev/null
++++ b/out2.txt
+@@ -0,0 +1,34 @@
++Traceback (most recent call last):
++  File "C:\Users\grant\AppData\Local\Temp\reticle-native-control\c018-sqlparse-mut-022-r2\workspace\t.py", line 2, in <module>
++    print(sqlparse.format('select * from foo', reindent=True))
++          ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++  File "C:\Users\grant\AppData\Local\Temp\reticle-native-control\c018-sqlparse-mut-022-r2\workspace\sqlparse\__init__.py", line 60, in format
++    return "".join(stack.run(sql, encoding))
++           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
++  File "C:\Users\grant\AppData\Local\Temp\reticle-native-control\c018-sqlparse-mut-022-r2\workspace\sqlparse\engine\filter_stack.py", line 44, in run
++    filter_.process(stmt)
++    ~~~~~~~~~~~~~~~^^^^^^
++  File "C:\Users\grant\AppData\Local\Temp\reticle-native-control\c018-sqlparse-mut-022-r2\workspace\sqlparse\filters\reindent.py", line 241, in process
++    self._process(stmt)
++    ~~~~~~~~~~~~~^^^^^^
++  File "C:\Users\grant\AppData\Local\Temp\reticle-native-control\c018-sqlparse-mut-022-r2\workspace\sqlparse\filters\reindent.py", line 103, in _process
++    func(tlist)
++    ~~~~^^^^^^^
++  File "C:\Users\grant\AppData\Local\Temp\reticle-native-control\c018-sqlparse-mut-022-r2\workspace\sqlparse\filters\reindent.py", line 235, in _process_default
++    self._split_kwds(tlist)
++    ~~~~~~~~~~~~~~~~^^^^^^^
++  File "C:\Users\grant\AppData\Local\Temp\reticle-native-control\c018-sqlparse-mut-022-r2\workspace\sqlparse\filters\reindent.py", line 71, in _split_kwds
++    tidx, token = self._next_token(tlist)
++                  ~~~~~~~~~~~~~~~~^^^^^^^
++  File "C:\Users\grant\AppData\Local\Temp\reticle-native-control\c018-sqlparse-mut-022-r2\workspace\sqlparse\filters\reindent.py", line 63, in _next_token
++    tidx, token = self._next_token(tlist, tidx)
++                  ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
++  File "C:\Users\grant\AppData\Local\Temp\reticle-native-control\c018-sqlparse-mut-022-r2\workspace\sqlparse\filters\reindent.py", line 63, in _next_token
++    tidx, token = self._next_token(tlist, tidx)
++                  ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
++  File "C:\Users\grant\AppData\Local\Temp\reticle-native-control\c018-sqlparse-mut-022-r2\workspace\sqlparse\filters\reindent.py", line 60, in _next_token
++    tidx, token = tlist.token_next_by(m=m_split, idx=idx)
++                  ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
++  File "C:\Users\grant\AppData\Local\Temp\reticle-native-control\c018-sqlparse-mut-022-r2\workspace\sqlparse\sql.py", line 273, in token_next_by
++    idx += 1
++TypeError: unsupported operand type(s) for +=: 'NoneType' and 'int'
+diff --git a/t.py b/t.py
+new file mode 100644
+index 0000000..efe94eb
+--- /dev/null
++++ b/t.py
+@@ -0,0 +1,2 @@
++import sqlparse
++print(sqlparse.format('select * from foo', reindent=True))

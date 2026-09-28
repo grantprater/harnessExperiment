@@ -1,0 +1,26 @@
+diff --git a/scratch_test.py b/scratch_test.py
+new file mode 100644
+index 0000000..fa2663d
+--- /dev/null
++++ b/scratch_test.py
+@@ -0,0 +1,7 @@
++import sqlparse
++
++sql = 'select * from (select * from foo where bar = 1) x'
++p = sqlparse.parse(sql)[0]
++p._pprint_tree()
++print('---')
++print(repr(str(p)))
+diff --git a/sqlparse/sql.py b/sqlparse/sql.py
+index 43b7ce0..ec44a6d 100644
+--- a/sqlparse/sql.py
++++ b/sqlparse/sql.py
+@@ -506,7 +506,7 @@ class Parenthesis(TokenList):
+ 
+     @property
+     def _groupable_tokens(self):
+-        return self.tokens[1:-2]
++        return self.tokens[1:-1]
+ 
+ 
+ class SquareBrackets(TokenList):
