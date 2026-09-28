@@ -1,0 +1,13 @@
+diff --git a/sqlparse/utils.py b/sqlparse/utils.py
+index 2b7084e..58c0245 100644
+--- a/sqlparse/utils.py
++++ b/sqlparse/utils.py
+@@ -86,6 +86,8 @@ def imt(token, i=None, m=None, t=None):
+     :param t: TokenType or Tuple/List of TokenTypes
+     :return:  bool
+     """
++    if token is None:
++        return False
+     if i and isinstance(token, i):
+         return True
+     if m:

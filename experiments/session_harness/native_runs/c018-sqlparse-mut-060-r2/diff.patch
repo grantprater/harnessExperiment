@@ -1,0 +1,13 @@
+diff --git a/sqlparse/engine/statement_splitter.py b/sqlparse/engine/statement_splitter.py
+index 0058cb6..bc57d17 100644
+--- a/sqlparse/engine/statement_splitter.py
++++ b/sqlparse/engine/statement_splitter.py
+@@ -51,7 +51,7 @@ class StatementSplitter:
+     def _handle_closing_keyword(self, unified):
+         """Handle closing keywords for blocks"""
+         if unified == 'END IF':
+-            if not (self._block_stack and self._block_stack[-1] == 'IF'):
++            if self._block_stack and self._block_stack[-1] == 'IF':
+                 self._block_stack.pop()
+                 return -1
+         elif unified == 'END FOR':

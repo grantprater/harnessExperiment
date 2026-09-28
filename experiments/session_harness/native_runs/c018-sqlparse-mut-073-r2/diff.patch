@@ -1,0 +1,13 @@
+diff --git a/sqlparse/filters/aligned_indent.py b/sqlparse/filters/aligned_indent.py
+index 2f2138e..6ac99d6 100644
+--- a/sqlparse/filters/aligned_indent.py
++++ b/sqlparse/filters/aligned_indent.py
+@@ -72,7 +72,7 @@ class AlignedIndentFilter:
+         end_token = tlist.token_next_by(m=(T.Keyword, 'END'))[1]
+         cases.append((None, [end_token]))
+ 
+-        condition_width = [0 if cond else len(' '.join(map(str, cond)))
++        condition_width = [len(' '.join(map(str, cond))) if cond else 0
+                            for cond, _ in cases]
+         max_cond_width = max(condition_width)
+ 

@@ -1,0 +1,235 @@
+{
+  "run_name": "c018-sqlparse-mut-046-r2",
+  "task_id": "sqlparse-mut-046",
+  "model": "sonnet",
+  "native_version": 2,
+  "scripted": null,
+  "started_at": "2026-09-28T21:04:26.757993+00:00",
+  "finished_at": "2026-09-28T21:04:44.099782+00:00",
+  "wall_seconds": 9.4,
+  "timed_out": false,
+  "exit_code": 0,
+  "aborted": null,
+  "stop": "end_turn",
+  "cli_failure": false,
+  "turns_used": 6,
+  "removed_environment": [
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "CLAUDECODE",
+    "CLAUDE_CODE_CHILD_SESSION",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY",
+    "CLAUDE_CODE_ENTRYPOINT",
+    "CLAUDE_CODE_EXECPATH",
+    "CLAUDE_CODE_MESSAGING_SOCKET",
+    "CLAUDE_CODE_MESSAGING_TOKEN",
+    "CLAUDE_CODE_SESSION_ATTENDED",
+    "CLAUDE_CODE_SESSION_ID",
+    "CLAUDE_EFFORT",
+    "CLAUDE_PID"
+  ],
+  "init": {
+    "model": "claude-sonnet-5-5",
+    "tools": [
+      "Bash",
+      "Edit",
+      "Glob",
+      "Grep",
+      "PowerShell",
+      "Read",
+      "Write"
+    ],
+    "mcp_servers": [],
+    "apiKeySource": "none",
+    "permissionMode": "bypassPermissions",
+    "claude_code_version": "2.1.284",
+    "skills": [],
+    "slash_commands": [],
+    "cwd": "C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-046-r2\\workspace"
+  },
+  "result": {
+    "subtype": "success",
+    "is_error": false,
+    "num_turns": 6,
+    "stop_reason": "end_turn",
+    "terminal_reason": "completed",
+    "duration_ms": 8054,
+    "duration_api_ms": 7848,
+    "total_cost_usd": 0.037525800000000005,
+    "usage": {
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 4268,
+      "cache_read_input_tokens": 56019,
+      "output_tokens": 923,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 4268,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 168,
+          "cache_read_input_tokens": 13259,
+          "cache_creation_input_tokens": 271,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 271
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "permission_denials": [],
+    "result": "I fixed the regression in `sqlparse/formatter.py`. I haven't run the tests, including the four that were failing.\n\nThe check that decides whether to attach the output-format filter was inverted. It was `if not (fltr is not None):`, so the Python and PHP filters were built and then never added. Only an unrecognised format ever got a filter, and that filter was `None`. I changed it to `if fltr is not None:`.\n\nI didn't touch `sqlparse/filters/output.py`. The filter classes there look correct."
+  },
+  "responses": 5,
+  "tool_calls": 5,
+  "tool_calls_by_name": {
+    "Grep": 2,
+    "Read": 2,
+    "Edit": 1
+  },
+  "tool_errors": 0,
+  "first_command": null,
+  "ran_command": false,
+  "first_base_file_edit": {
+    "response": 4,
+    "seconds": 7.03,
+    "tool": "Edit"
+  },
+  "first_source_edit": {
+    "response": 4,
+    "seconds": 7.03,
+    "tool": "Edit"
+  },
+  "source_rule": "pre-existing-python-source-v1",
+  "first_any_edit": {
+    "response": 4,
+    "seconds": 7.03,
+    "tool": "Edit"
+  },
+  "test_commands": 0,
+  "edited_files": [
+    "sqlparse/formatter.py"
+  ],
+  "audit": {
+    "paths_outside_workspace": [],
+    "network_commands": [],
+    "escape_references": [],
+    "harness_markers": [],
+    "tools_outside_allowed_set": []
+  },
+  "audit_clean": true,
+  "denied_calls": [],
+  "permission_denials": [],
+  "tool_sequence": [
+    {
+      "response": 1,
+      "seconds": 2.39,
+      "tool": "Grep",
+      "is_error": false,
+      "input": "{\"pattern\": \"python|php\", \"path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-046-r2\\\\workspace\\\\sqlparse\\\\filters\\\\output.py\", \"output_mode\": \"content\"}"
+    },
+    {
+      "response": 2,
+      "seconds": 3.77,
+      "tool": "Read",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-046-r2\\\\workspace\\\\sqlparse\\\\filters\\\\output.py\"}"
+    },
+    {
+      "response": 2,
+      "seconds": 4.17,
+      "tool": "Grep",
+      "is_error": false,
+      "input": "{\"pattern\": \"output_format|OutputFilter\", \"path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-046-r2\\\\workspace\\\\sqlparse\", \"output_mode\": \"content\"}"
+    },
+    {
+      "response": 3,
+      "seconds": 5.66,
+      "tool": "Read",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-046-r2\\\\workspace\\\\sqlparse\\\\formatter.py\", \"offset\": 185, \"limit\": 30}"
+    },
+    {
+      "response": 4,
+      "seconds": 7.03,
+      "tool": "Edit",
+      "is_error": false,
+      "input": "{\"replace_all\": false, \"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-046-r2\\\\workspace\\\\sqlparse\\\\formatter.py\", \"old_string\": \"        if not (fltr i"
+    }
+  ],
+  "cost_estimate_usd": 0.037525800000000005,
+  "confinement": {
+    "layers": {
+      "read_block": true,
+      "bash_deny": true,
+      "sandbox": false
+    },
+    "settings_sha256": "aba82ad209993f6f7146ee37dba14b232aeb8bfb540fb260605a0ae6193ddd60",
+    "denials": 0,
+    "observed_active": false
+  },
+  "diff_stat": " sqlparse/formatter.py | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n",
+  "diff_numstat": "1\t1\tsqlparse/formatter.py\n",
+  "ignored_untracked_files": [],
+  "initial_workspace_revision": "sha256:8b3844815ed99acd6cd92346852d28707107c533f546562eb1dc51bf0b6fbb94",
+  "evaluator_version": "sqlparse-mut-046:inputs-6c22ee52ed71258a:evaluator-fa0ec3e7394cddd1",
+  "acceptance": {
+    "status": "accepted",
+    "criterion_outcomes": {
+      "fail-to-pass": "pass",
+      "pass-to-pass": "pass"
+    },
+    "report_artifact_id": "art_5acb636493fd463f991786a7b8a18f07",
+    "test_counts": {
+      "fail-to-pass": {
+        "expected": 4,
+        "passed": 4,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      },
+      "pass-to-pass": {
+        "expected": 487,
+        "passed": 487,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      }
+    },
+    "final_workspace_revision": "sha256:a6702617e7bfc01e6dba48e0cceb80b73aee3e22a663509a8dc0311d9eaa2e45",
+    "criteria": {
+      "fail-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      },
+      "pass-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      }
+    },
+    "collection_errors": [],
+    "observed_test_count": 493,
+    "pytest_exit_code": 0,
+    "pytest_timed_out": false,
+    "measurement_errors": []
+  },
+  "billing": "unknown (local Claude Code subscription login); cost_estimate_usd is the CLI's list-price estimate",
+  "scratch_removal_error": null
+}
