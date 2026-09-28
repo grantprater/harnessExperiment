@@ -1,0 +1,13 @@
+diff --git a/sqlparse/filters/reindent.py b/sqlparse/filters/reindent.py
+index 88eb1cf..ea41ac6 100644
+--- a/sqlparse/filters/reindent.py
++++ b/sqlparse/filters/reindent.py
+@@ -77,7 +77,7 @@ class ReindentFilter:
+                 del tlist.tokens[pidx]
+                 tidx -= 1
+ 
+-            if (uprev.endswith('\n') or uprev.endswith('\r')):
++            if not (uprev.endswith('\n') or uprev.endswith('\r')):
+                 tlist.insert_before(tidx, self.nl())
+                 tidx += 1
+ 

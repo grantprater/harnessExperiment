@@ -1,0 +1,13 @@
+diff --git a/sqlparse/engine/statement_splitter.py b/sqlparse/engine/statement_splitter.py
+index bfd2179..bc57d17 100644
+--- a/sqlparse/engine/statement_splitter.py
++++ b/sqlparse/engine/statement_splitter.py
+@@ -72,7 +72,7 @@ class StatementSplitter:
+                 self._block_stack.pop()
+                 return -1
+         elif unified == 'END':
+-            if not (self._block_stack):
++            if self._block_stack:
+                 self._block_stack.pop()
+             return -1
+         return 0

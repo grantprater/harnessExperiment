@@ -1,0 +1,314 @@
+{
+  "run_name": "c018-sqlparse-mut-075-r2",
+  "task_id": "sqlparse-mut-075",
+  "model": "sonnet",
+  "native_version": 2,
+  "scripted": null,
+  "started_at": "2026-09-28T21:06:24.702457+00:00",
+  "finished_at": "2026-09-28T21:06:49.601972+00:00",
+  "wall_seconds": 16.8,
+  "timed_out": false,
+  "exit_code": 0,
+  "aborted": null,
+  "stop": "end_turn",
+  "cli_failure": false,
+  "turns_used": 11,
+  "removed_environment": [
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "CLAUDECODE",
+    "CLAUDE_CODE_CHILD_SESSION",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY",
+    "CLAUDE_CODE_ENTRYPOINT",
+    "CLAUDE_CODE_EXECPATH",
+    "CLAUDE_CODE_MESSAGING_SOCKET",
+    "CLAUDE_CODE_MESSAGING_TOKEN",
+    "CLAUDE_CODE_SESSION_ATTENDED",
+    "CLAUDE_CODE_SESSION_ID",
+    "CLAUDE_EFFORT",
+    "CLAUDE_PID"
+  ],
+  "init": {
+    "model": "claude-sonnet-5-5",
+    "tools": [
+      "Bash",
+      "Edit",
+      "Glob",
+      "Grep",
+      "PowerShell",
+      "Read",
+      "Write"
+    ],
+    "mcp_servers": [],
+    "apiKeySource": "none",
+    "permissionMode": "bypassPermissions",
+    "claude_code_version": "2.1.284",
+    "skills": [],
+    "slash_commands": [],
+    "cwd": "C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-075-r2\\workspace"
+  },
+  "result": {
+    "subtype": "success",
+    "is_error": false,
+    "num_turns": 11,
+    "stop_reason": "end_turn",
+    "terminal_reason": "completed",
+    "duration_ms": 15430,
+    "duration_api_ms": 12728,
+    "total_cost_usd": 0.0673354,
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 7635,
+      "cache_read_input_tokens": 108667,
+      "output_tokens": 1503,
+      "output_tokens_details": {
+        "thinking_tokens": 43
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 7635,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 209,
+          "cache_read_input_tokens": 16765,
+          "cache_creation_input_tokens": 132,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 132
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard"
+    },
+    "permission_denials": [
+      {
+        "tool_name": "Bash",
+        "tool_use_id": "toolu_014LqkKTzEoAUTsh195B2Cwo",
+        "tool_input": {
+          "command": "cd C:/Users/grant/AppData/Local/Temp/reticle-native-control/c018-sqlparse-mut-075-r2/workspace && python -m pytest tests/test_format.py -q -x 2>&1 | tail -30"
+        }
+      },
+      {
+        "tool_name": "PowerShell",
+        "tool_use_id": "toolu_012QYgjmL3TEymqJbBdCkW8h",
+        "tool_input": {
+          "command": "cd C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-075-r2\\workspace; python -m pytest tests -q 2>&1 | Select-Object -Last 8"
+        }
+      }
+    ],
+    "result": "The tests aren't in the workspace, so I couldn't run any. The fix is a one-line change in `sqlparse/engine/statement_splitter.py`.\n\nIn `_handle_closing_keyword`, the `END` branch had an inverted condition. It called `self._block_stack.pop()` when the stack was empty, which raises `IndexError: pop from empty list`. I changed `if not (self._block_stack):` to `if self._block_stack:`, so it only pops when there is something to pop. That is the error your first failing check reports, and it fires on any statement with a `CASE ... END`, so it plausibly accounts for the other 21 too."
+  },
+  "responses": 8,
+  "tool_calls": 10,
+  "tool_calls_by_name": {
+    "Grep": 2,
+    "Read": 2,
+    "Bash": 1,
+    "Edit": 1,
+    "PowerShell": 3,
+    "Glob": 1
+  },
+  "tool_errors": 4,
+  "first_command": {
+    "response": 3,
+    "seconds": 6.55,
+    "tool": "Bash"
+  },
+  "ran_command": true,
+  "first_base_file_edit": {
+    "response": 4,
+    "seconds": 8.09,
+    "tool": "Edit"
+  },
+  "first_source_edit": {
+    "response": 4,
+    "seconds": 8.09,
+    "tool": "Edit"
+  },
+  "source_rule": "pre-existing-python-source-v1",
+  "first_any_edit": {
+    "response": 4,
+    "seconds": 8.09,
+    "tool": "Edit"
+  },
+  "test_commands": 4,
+  "edited_files": [
+    "sqlparse/engine/statement_splitter.py"
+  ],
+  "audit": {
+    "paths_outside_workspace": [],
+    "network_commands": [],
+    "escape_references": [],
+    "harness_markers": [],
+    "tools_outside_allowed_set": []
+  },
+  "audit_clean": true,
+  "denied_calls": [
+    {
+      "response": 5,
+      "tool": "PowerShell",
+      "input": "{\"command\": \"cd C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r2\\\\workspace; python -m pytest tests -q 2>&1 | Select-Object -Last 8\"}",
+      "result": "python names a path that is computed at run time, which cannot be checked against the read block (permissions.blockReadsOutsideWorkingDirectories)"
+    }
+  ],
+  "permission_denials": [
+    {
+      "tool_name": "Bash",
+      "tool_use_id": "toolu_014LqkKTzEoAUTsh195B2Cwo",
+      "tool_input": {
+        "command": "cd C:/Users/grant/AppData/Local/Temp/reticle-native-control/c018-sqlparse-mut-075-r2/workspace && python -m pytest tests/test_format.py -q -x 2>&1 | tail -30"
+      }
+    },
+    {
+      "tool_name": "PowerShell",
+      "tool_use_id": "toolu_012QYgjmL3TEymqJbBdCkW8h",
+      "tool_input": {
+        "command": "cd C:\\Users\\grant\\AppData\\Local\\Temp\\reticle-native-control\\c018-sqlparse-mut-075-r2\\workspace; python -m pytest tests -q 2>&1 | Select-Object -Last 8"
+      }
+    }
+  ],
+  "tool_sequence": [
+    {
+      "response": 1,
+      "seconds": 2.41,
+      "tool": "Grep",
+      "is_error": false,
+      "input": "{\"pattern\": \"\\\\.pop\\\\(\", \"path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r2\\\\workspace\\\\sqlparse\", \"output_mode\": \"content\"}"
+    },
+    {
+      "response": 2,
+      "seconds": 3.92,
+      "tool": "Read",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r2\\\\workspace\\\\sqlparse\\\\engine\\\\grouping.py\", \"limit\": 90}"
+    },
+    {
+      "response": 2,
+      "seconds": 4.51,
+      "tool": "Grep",
+      "is_error": false,
+      "input": "{\"pattern\": \"CASE|END\", \"path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r2\\\\workspace\\\\sqlparse\\\\keywords.py\", \"output_mode\": \"content\"}"
+    },
+    {
+      "response": 3,
+      "seconds": 6.01,
+      "tool": "Read",
+      "is_error": false,
+      "input": "{\"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r2\\\\workspace\\\\sqlparse\\\\engine\\\\statement_splitter.py\", \"limit\": 150}"
+    },
+    {
+      "response": 3,
+      "seconds": 6.55,
+      "tool": "Bash",
+      "is_error": true,
+      "input": "{\"command\": \"cd C:/Users/grant/AppData/Local/Temp/reticle-native-control/c018-sqlparse-mut-075-r2/workspace && python -m pytest tests/test_format.py -q -x 2>&1 | tail -30\"}"
+    },
+    {
+      "response": 4,
+      "seconds": 8.09,
+      "tool": "Edit",
+      "is_error": false,
+      "input": "{\"replace_all\": false, \"file_path\": \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r2\\\\workspace\\\\sqlparse\\\\engine\\\\statement_splitter.py\", \"old_string\": \"     "
+    },
+    {
+      "response": 4,
+      "seconds": 8.37,
+      "tool": "PowerShell",
+      "is_error": true,
+      "input": "{\"command\": \"python -m pytest tests -q 2>&1 | Select-Object -Last 8\"}"
+    },
+    {
+      "response": 5,
+      "seconds": 10.84,
+      "tool": "PowerShell",
+      "is_error": true,
+      "input": "{\"command\": \"cd C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\reticle-native-control\\\\c018-sqlparse-mut-075-r2\\\\workspace; python -m pytest tests -q 2>&1 | Select-Object -Last 8\"}"
+    },
+    {
+      "response": 6,
+      "seconds": 12.26,
+      "tool": "PowerShell",
+      "is_error": true,
+      "input": "{\"command\": \"python -m pytest tests -q 2>&1 | Select-Object -Last 8\"}"
+    },
+    {
+      "response": 7,
+      "seconds": 14.39,
+      "tool": "Glob",
+      "is_error": false,
+      "input": "{\"pattern\": \"tests/test_split.py\"}"
+    }
+  ],
+  "cost_estimate_usd": 0.0673354,
+  "confinement": {
+    "layers": {
+      "read_block": true,
+      "bash_deny": true,
+      "sandbox": false
+    },
+    "settings_sha256": "b603dcceb401561e356a6afd28a52ca75bea10d0306ee3a6fbe2a6438e522f29",
+    "denials": 3,
+    "observed_active": true
+  },
+  "diff_stat": " sqlparse/engine/statement_splitter.py | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n",
+  "diff_numstat": "1\t1\tsqlparse/engine/statement_splitter.py\n",
+  "ignored_untracked_files": [],
+  "initial_workspace_revision": "sha256:4950bd7b33a1d5f6f2beb144cb493a8120233afaa99fe5dfdc4c7b40a2f371bb",
+  "evaluator_version": "sqlparse-mut-075:inputs-6c22ee52ed71258a:evaluator-fa0ec3e7394cddd1",
+  "acceptance": {
+    "status": "accepted",
+    "criterion_outcomes": {
+      "fail-to-pass": "pass",
+      "pass-to-pass": "pass"
+    },
+    "report_artifact_id": "art_7ba7331bd65442409743dbc2e2d766e0",
+    "test_counts": {
+      "fail-to-pass": {
+        "expected": 22,
+        "passed": 22,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      },
+      "pass-to-pass": {
+        "expected": 469,
+        "passed": 469,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      }
+    },
+    "final_workspace_revision": "sha256:a6702617e7bfc01e6dba48e0cceb80b73aee3e22a663509a8dc0311d9eaa2e45",
+    "criteria": {
+      "fail-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      },
+      "pass-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      }
+    },
+    "collection_errors": [],
+    "observed_test_count": 493,
+    "pytest_exit_code": 0,
+    "pytest_timed_out": false,
+    "measurement_errors": []
+  },
+  "billing": "unknown (local Claude Code subscription login); cost_estimate_usd is the CLI's list-price estimate",
+  "scratch_removal_error": null
+}
