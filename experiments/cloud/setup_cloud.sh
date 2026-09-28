@@ -5,13 +5,15 @@
 #
 # 1. uv: the one on PATH, else one installed with pip into .runtime/uv-bootstrap (a python3 venv), else with
 #    pip install --user.
-# 2. Python 3.13.15, the host venvs' interpreter, as a uv-managed CPython (downloaded into the user's uv cache).
-#    If uv cannot provide it, the venvs fall back to `python3 -m venv` (the VM's own Python, 3.11 when probed) and
-#    the summary says so: that is a different task interpreter from the host's and must be reported with results.
-#    RETICLE_CLOUD_PYTHON=/path/to/python makes both venvs from that interpreter instead.
+# 2. The interpreter both venvs are made from, the first usable of: RETICLE_CLOUD_PYTHON=/path/to/python; Python
+#    3.13.15 (the host venvs' interpreter) from `uv python install`; any 3.13 already on the VM (python3.13 on PATH,
+#    pyenv, `uv python find 3.13`); `uv python install 3.13`, then 3.12; python3.12 on PATH; the system python3 (3.11
+#    when probed). uv's output goes to .runtime/setup-python.log, and a NOTE names the choice and why each preferred
+#    source was skipped: any other version is a different task interpreter from the host's and must be reported.
 # 3. .runtime/bugs-venv: the task interpreter (run_pilot.TASK_PYTHON resolves .runtime/bugs-venv/bin/python on
 #    Linux), exactly experiments/cloud/bugs-venv.requirements.txt (the host's pip freeze).
-# 4. .runtime/test-venv: the unit-test interpreter, exactly experiments/cloud/test-venv.requirements.txt.
+# 4. .runtime/test-venv: the unit-test interpreter, exactly experiments/cloud/test-venv.requirements.txt, or on a
+#    Python older than 3.12 exactly test-venv.requirements-py311.txt (numpy 2.5 needs 3.12; a NOTE says so).
 # 5. .runtime/bug-mining/repos/sqlparse: the clone run_pilot.ensure_commits expects, with the tasks' base commit.
 # 6. A readiness summary; the last line is READY or NOT READY (exit 0 or 1).
 #
@@ -62,18 +64,81 @@ fi
 if [ -n "$UV" ]; then say "uv: $UV ($("$UV" --version 2>/dev/null))"; else note "uv unavailable; falling back to python3 -m venv"; fi
 
 # ---- 2. the interpreter the venvs are made from -----------------------------------------------------------------
-BASE_PYTHON="${RETICLE_CLOUD_PYTHON:-}"
-if [ -z "$BASE_PYTHON" ] && [ -n "$UV" ]; then
-  $NICE "$UV" python install "$PYTHON_VERSION" >/dev/null 2>&1 || true
-  BASE_PYTHON="$("$UV" python find "$PYTHON_VERSION" 2>/dev/null || true)"
+# First usable of: RETICLE_CLOUD_PYTHON; uv's CPython 3.13.15; any 3.13 already here (python3.13 on PATH, pyenv, uv
+# python find); uv's newest 3.13, then 3.12; python3.12 on PATH; the system python3. uv's output goes to $PY_LOG.
+PY_LOG="$RUNTIME/setup-python.log"
+: > "$PY_LOG"
+BASE_PYTHON=""
+BASE_SOURCE=""
+SKIPPED=()  # why each preferred source was not used
+py_version() { "$1" -c 'import platform; print(platform.python_version())' 2>/dev/null; }
+log_tail() { tail -n "${1:-4}" "$PY_LOG" | tr -s '\n' '|' | sed 's/|$//'; }
+try_python() {  # try_python SOURCE WANT PATH: adopt PATH when it runs and its version is WANT (3.x.y) or 3.x.*
+  local source="$1" want="$2" candidate="$3" have
+  [ -n "$BASE_PYTHON" ] && return 0
+  if [ -z "$candidate" ]; then SKIPPED+=("$source: none found"); return 1; fi
+  have="$(py_version "$candidate")"
+  case "$have" in
+    "$want"|"$want".*) BASE_PYTHON="$candidate"; BASE_SOURCE="$source"; return 0 ;;
+  esac
+  SKIPPED+=("$source: $candidate reports '${have:-no version}', not $want")
+  return 1
+}
+uv_find() { "$UV" python find --system "$1" 2>>"$PY_LOG"; }
+uv_install() {  # uv_install REQUEST: uv python install REQUEST (logged), then the interpreter it provides
+  [ -n "$BASE_PYTHON" ] && return 0
+  if [ -z "$UV" ]; then SKIPPED+=("uv python install $1: no uv"); return 1; fi
+  printf -- '---- %s python install %s\n' "$UV" "$1" >> "$PY_LOG"
+  if ! $NICE "$UV" python install "$1" >>"$PY_LOG" 2>&1; then
+    SKIPPED+=("uv python install $1 failed: $(log_tail 3)")
+    [ "$1" = "$PYTHON_VERSION" ] && note "uv python install $PYTHON_VERSION failed; last lines of $PY_LOG: $(log_tail 6)"
+    return 1
+  fi
+  try_python "uv python install $1" "$1" "$(uv_find "$1")"
+}
+pyenv_python() {  # pyenv_python MINOR: the newest pyenv-installed CPython MINOR.*
+  local root=""
+  if command -v pyenv >/dev/null 2>&1; then root="$(pyenv root 2>/dev/null)"; fi
+  [ -n "$root" ] || root="${PYENV_ROOT:-$HOME/.pyenv}"
+  [ -d "$root/versions" ] || return 0
+  ls -d "$root/versions/$1".* 2>/dev/null | grep -E "/$1\.[0-9]+$" | sort -V | tail -n 1 | sed "s|\$|/bin/python$1|"
+}
+
+if [ -n "${RETICLE_CLOUD_PYTHON:-}" ]; then
+  if [ -x "$RETICLE_CLOUD_PYTHON" ] && [ -n "$(py_version "$RETICLE_CLOUD_PYTHON")" ]; then
+    BASE_PYTHON="$RETICLE_CLOUD_PYTHON"; BASE_SOURCE="RETICLE_CLOUD_PYTHON"
+  else
+    fail "RETICLE_CLOUD_PYTHON=$RETICLE_CLOUD_PYTHON does not run; discovering an interpreter instead"
+  fi
 fi
+uv_install "$PYTHON_VERSION"
+try_python "python3.13 on PATH" 3.13 "$(command -v python3.13 2>/dev/null)"
+try_python "pyenv" 3.13 "$(pyenv_python 3.13)"
+[ -n "$UV" ] && try_python "uv python find 3.13" 3.13 "$(uv_find 3.13)"
+uv_install 3.13
+uv_install 3.12
+try_python "python3.12 on PATH" 3.12 "$(command -v python3.12 2>/dev/null)"
+try_python "system python3" 3 "$(command -v python3 2>/dev/null)"
 if [ -z "$BASE_PYTHON" ]; then
-  BASE_PYTHON="$(command -v python3)"
-  note "Python $PYTHON_VERSION unavailable; using $BASE_PYTHON ($("$BASE_PYTHON" --version 2>&1)), not the host's $PYTHON_VERSION"
+  fail "no Python interpreter found (see $PY_LOG)"
+  echo "NOT READY"
+  exit 1
 fi
-BASE_VERSION="$("$BASE_PYTHON" -c 'import platform; print(platform.python_version())' 2>/dev/null)"
-say "base interpreter: $BASE_PYTHON ($BASE_VERSION)"
-[ "$BASE_VERSION" = "$PYTHON_VERSION" ] || note "task interpreter is Python $BASE_VERSION; the host's is $PYTHON_VERSION"
+BASE_VERSION="$(py_version "$BASE_PYTHON")"
+say "base interpreter: $BASE_PYTHON ($BASE_VERSION), from $BASE_SOURCE"
+if [ "$BASE_VERSION" != "$PYTHON_VERSION" ]; then
+  if [ "$BASE_SOURCE" = "RETICLE_CLOUD_PYTHON" ]; then
+    note "base interpreter is RETICLE_CLOUD_PYTHON ($BASE_VERSION), not the host's $PYTHON_VERSION"
+  else
+    note "Python $PYTHON_VERSION unavailable; chose $BASE_PYTHON ($BASE_VERSION) from $BASE_SOURCE. Skipped: $(IFS=";"; echo "${SKIPPED[*]+${SKIPPED[*]}}")"
+  fi
+  note "task interpreter is Python $BASE_VERSION; the host's is $PYTHON_VERSION"
+fi
+TEST_REQUIREMENTS="$HERE/test-venv.requirements.txt"
+if ! "$BASE_PYTHON" -c 'import sys; sys.exit(sys.version_info < (3, 12))'; then
+  TEST_REQUIREMENTS="$HERE/test-venv.requirements-py311.txt"
+  note "Python $BASE_VERSION < 3.12: test-venv uses $(basename "$TEST_REQUIREMENTS") (numpy 2.4.6, not the host's 2.5.3)"
+fi
 
 # ---- 3-4. venvs ------------------------------------------------------------------------------------------------
 make_venv() {  # make_venv NAME REQUIREMENTS
@@ -101,7 +166,7 @@ make_venv() {  # make_venv NAME REQUIREMENTS
   fi
 }
 make_venv bugs-venv "$HERE/bugs-venv.requirements.txt"
-make_venv test-venv "$HERE/test-venv.requirements.txt"
+make_venv test-venv "$TEST_REQUIREMENTS"
 
 # ---- 5. the sqlparse clone -------------------------------------------------------------------------------------
 if [ ! -d "$REPO/.git" ]; then
