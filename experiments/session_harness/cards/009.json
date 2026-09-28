@@ -6,13 +6,13 @@
   "markdown": "experiments/session_harness/E4-diagnostic-commitment-009.md",
   "hypothesis": "A three-sentence addition to the opening instructions (state the suspected cause, edit by the budget midpoint, run the narrowest check before finish) raises acceptance on held-in and held-out tasks without changing any other surface.",
   "run_prefix": "c009",
-  "runner": {"script": "experiments/p6_pilot/run_pilot.py", "runner_version": 8, "task_file_flag": "--task-file"},
+  "runner": {"script": "experiments/p6_pilot/run_pilot.py", "runner_version": 8},
   "environment": {"claude_cli_version": "2.1.283 (Claude Code)"},
   "prerequisites": [
     {"text": "Card 007 complete, and E3-calibration-007.sets.json lists held_in (up to 8 tasks whose trajectories produced the evidence) and held_out (8 other evolution-set tasks never inspected while writing the candidate)", "done": false},
     {"text": "S6b signatures have chosen the target cluster", "done": false},
     {"text": "Candidate wording fixed in the markdown card before any run", "done": false},
-    {"text": "S6a wiring for the mutation task file (see card 007)", "done": false},
+    {"text": "S6a wiring for the mutation task file: run_pilot.py --tasks FILE.json IDS with materializer mutation-workspace-v2 (merged at eb3c160)", "done": true},
     {"text": "owner approval (then set status to approved)", "done": false}
   ],
   "arms": [

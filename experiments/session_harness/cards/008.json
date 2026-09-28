@@ -6,13 +6,13 @@
   "markdown": "experiments/session_harness/E1-cache-layout-008.md",
   "hypothesis": "Moving the resource status last and omitting history in pages keeps the request prefix byte-stable without changing how the model behaves: acceptance does not regress versus v3 on the same tasks.",
   "run_prefix": "c008",
-  "runner": {"script": "experiments/p6_pilot/run_pilot.py", "runner_version": 8, "task_file_flag": "--task-file"},
+  "runner": {"script": "experiments/p6_pilot/run_pilot.py", "runner_version": 8},
   "environment": {"claude_cli_version": "2.1.283 (Claude Code)"},
   "prerequisites": [
     {"text": "Gate 1: E1 fixtures pass for pressure-recent-v4 (no model calls)", "done": false},
     {"text": "Gate 2: cache_replay.py on run 4 and the card-007 trajectories: cacheable fraction above 85% at 80,000 bytes; page breaks equal pages at 40,000 and 20,000", "done": false},
     {"text": "run_pilot.py offers --arm pressure-recent-v4 (card 008 track; update runner.runner_version if it bumps)", "done": false},
-    {"text": "S6a wiring for the mutation task file (see card 007)", "done": false},
+    {"text": "S6a wiring for the mutation task file: run_pilot.py --tasks FILE.json IDS with materializer mutation-workspace-v2 (merged at eb3c160)", "done": true},
     {"text": "owner approval (then set status to approved)", "done": false}
   ],
   "arms": [

@@ -57,7 +57,7 @@ class Fixture:
         card = {
             "schema_version": 1, "id": "test-card", "status": "approved", "markdown": "test-card.md",
             "hypothesis": "h", "run_prefix": "tc",
-            "runner": {"script": str(self.script), "runner_version": 1, "task_file_flag": "--task-file"},
+            "runner": {"script": str(self.script), "runner_version": 1},
             "environment": {"claude_cli_version": STUB_CLI},
             "arms": [arm("a", "stub-policy-a"), arm("b", "stub-policy-b")],
             "controls": [],
@@ -164,7 +164,7 @@ class CardValidationTests(unittest.TestCase):
         self.assertIn("prerequisite not done: wire the runner", joined)
         self.assertIn("unresolved $.environment.claude_cli_version: pin after the CLI update", joined)
         self.assertIn("missing.json does not exist yet", joined)
-        self.assertIsNone(plan.arm_hashes["a"])  # no hash without the pinned CLI version
+        self.assertEqual(plan.arm_hashes["a"], [])  # no hash without the pinned CLI version
         self.assertEqual(fixture.execute(plan), run_card.EXIT_REFUSED)
         self.assertFalse(fixture.lock.exists())
         self.assertEqual(fixture.invoked(), [])
@@ -256,32 +256,106 @@ class ExpansionTests(unittest.TestCase):
                      "container_user_arguments": ["--user", "65534:65534"]}
         routing = {"m": module.cli_contract("m", max_turns=1, timeout=300, version=STUB_CLI)}
         guards = {"stop_on_repeats": False, "resume_after_provider_stop": 0, "resume_wait_seconds": None}
-        self.assertEqual(plan.arm_hashes["a"], module.protocol_hash("stub-policy-a", routing, execution, guards))
+        self.assertEqual(plan.arm_hashes["a"], [module.protocol_hash("stub-policy-a", routing, execution, guards)])
         self.assertIn("--oci-image", plan.runs[0].args)
 
-    def test_task_file_flag_and_unsupported_flags_block(self):
+    def test_task_file_goes_first_in_tasks_and_unknown_flags_block(self):
         fixture = Fixture(self)
         other = fixture.dir / "other_tasks.json"
         shutil.copy(fixture.dir / "tasks.json", other)
         card = fixture.card()
+        plan = fixture.plan(card)
+        tasks_at = plan.runs[0].args.index("--tasks")
+        self.assertEqual(plan.runs[0].args[tasks_at + 1:tasks_at + 3], [plan.runs[0].task_ids[0], "--run-name"])
         card["tasks"]["file"] = str(other)
         plan = fixture.plan(card)
         self.assertEqual(plan.blockers, [])
-        self.assertIn("--task-file", plan.runs[0].args)
-        card["runner"]["task_file_flag"] = "--tasks-from"
+        tasks_at = plan.runs[0].args.index("--tasks")
+        self.assertEqual(plan.runs[0].args[tasks_at + 1:tasks_at + 3], [str(other), plan.runs[0].task_ids[0]])
+        card["arms"][0]["extra_args"] = ["--bogus-flag"]
+        self.assertIn("does not accept --bogus-flag", "\n".join(fixture.plan(card).blockers))
+
+    def test_runner_without_task_file_selection_blocks_another_file(self):
+        fixture = Fixture(self)
+        source = fixture.script.read_text(encoding="utf-8").replace("def load_tasks(", "def _load_tasks(")
+        fixture.script.write_text(source.replace("= load_tasks(", "= _load_tasks("), encoding="utf-8")
+        card = fixture.card()
+        self.assertEqual(fixture.plan(card).blockers, [])  # the default task file needs no selection
+        other = fixture.dir / "other_tasks.json"
+        shutil.copy(fixture.dir / "tasks.json", other)
+        card["tasks"]["file"] = str(other)
+        self.assertIn("it cannot select", "\n".join(fixture.plan(card).blockers))
+
+    def test_task_contracts_give_one_hash_per_task_and_the_runner_agrees(self):
+        tasks = [{"task_id": "m1", "mutation_patch": "one"}, {"task_id": "m2", "mutation_patch": "two"},
+                 {"task_id": "p3"}]
+        fixture = Fixture(self, tasks=tasks)
+        card = fixture.card(controls=[{"name": "gold", "client": "gold", "task_set": "all", "like_arm": "a",
+                                       "expect": "accepted"}])
+        card["blocks"][0].update(arms=["a"], arm_order={"rule": "fixed"})
         plan = fixture.plan(card)
-        self.assertIn("does not accept --tasks-from", "\n".join(plan.blockers))
+        by_task = {}
+        for inv in plan.runs:
+            by_task.setdefault(inv.task_ids[0], set()).add(inv.expected_hash)
+        self.assertTrue(all(len(hashes) == 1 for hashes in by_task.values()))  # rollouts share a hash
+        self.assertEqual(len({next(iter(h)) for h in by_task.values()}), 3)
+        self.assertEqual(len(plan.arm_hashes["a"]), 3)
+        self.assertEqual([c["task_id"] for c in plan.controls[0].expected_config["task_contracts"]], ["m1", "m2"])
+        import subprocess
+        for inv in [plan.controls[0], *plan.runs[:3]]:
+            printed = subprocess.run([sys.executable, str(inv.script), *inv.args, "--dry-run"], capture_output=True,
+                                     text=True, check=True).stdout
+            self.assertEqual(run_card.HASH_LINE.search(printed).group(1), inv.expected_hash, inv.run_name)
+        self.assertEqual(fixture.execute(plan), run_card.EXIT_OK)  # recorded task_file and contracts match the plan
+
+    def test_run_name_template_and_control_names_are_recognised_on_resume(self):
+        fixture = Fixture(self)
+        card = fixture.card(run_name_template="{prefix}-{task}-r{rollout}",
+                            controls=[{"name": "gold", "client": "gold", "task_set": "all", "like_arm": "a",
+                                       "expect": "accepted", "run_name": "earlier-gold-control"}])
+        card["blocks"][0]["arms"] = ["a"]
+        plan = fixture.plan(card)
+        self.assertEqual([inv.run_name for inv in plan.invocations],
+                         ["earlier-gold-control", "tc-t1-r1", "tc-t2-r1", "tc-t1-r2", "tc-t2-r2"])
+        self.assertEqual(fixture.execute(plan), run_card.EXIT_OK)
+        self.assertEqual(fixture.execute(plan, resume=True), run_card.EXIT_OK)
+        self.assertEqual(len(fixture.invoked()), 5)  # the resume ran nothing
+        skipped = [e["run"] for e in fixture.events(plan) if e["event"] == "skip"]
+        self.assertEqual(skipped, [inv.run_name for inv in plan.invocations])
+        bad = copy.deepcopy(card)
+        bad["run_name_template"] = "{prefix}-{task}"
+        self.assertIn("run_name_template: must contain {task} and {rollout}", run_card.validate_card(bad))
+        bad["run_name_template"] = "{prefix}-{task}-r{rollout}-{model}"
+        self.assertTrue(any(e.startswith("run_name_template:") for e in run_card.validate_card(bad)))
 
     def test_card_007_plan(self):
         card = run_card.load_card(CARDS / "007.json")
         plan = run_card.build_plan(card, CARDS / "007.json")
         self.assertEqual((len(plan.invocations), len(plan.controls), len(plan.runs)), (42, 2, 40))
-        tasks = [inv.task_ids[0] for inv in plan.runs]
-        self.assertEqual(len(set(tasks)), 20)
-        self.assertTrue(all(tasks.count(t) == 2 for t in set(tasks)))
-        self.assertEqual(tasks[:20], tasks[20:])
-        self.assertEqual(len({inv.expected_hash for inv in plan.runs}), 1)
-        self.assertIn("does not accept --task-file", "\n".join(plan.blockers))  # S6a wiring is pending
+        selected = json.loads((ROOT / "experiments" / "session_harness" / "E3-calibration-007-tasks.json")
+                              .read_text(encoding="utf-8"))["task_ids"]
+        self.assertEqual(plan.sets["calibration"], selected)
+        self.assertEqual([inv.run_name for inv in plan.controls],
+                         ["s6a-control-gold-mut-v2", "s6a-control-noop-mut-v2"])
+        self.assertEqual([inv.run_name for inv in plan.runs],
+                         [f"c007-{task}-r{rollout}" for rollout in (1, 2) for task in selected])
+        self.assertEqual(len(plan.arm_hashes["incumbent"]), 20)  # one per task contract, shared by both rollouts
+        self.assertTrue(all("--max-total-calls" in inv.args and inv.args[inv.args.index("--max-total-calls") + 1]
+                            == "24" for inv in plan.runs))
+        self.assertEqual(plan.blockers, ["card status is 'proposed'; --execute needs approved or running",
+                                         "prerequisite not done: owner approval recorded in the markdown card "
+                                         "(then set status to running)"])
+
+    def test_card_007_replays_the_recorded_v2_controls(self):
+        evaluator = ROOT / "experiments" / "p6_pilot" / "evaluate_task.py"
+        if b"\r\n" not in evaluator.read_bytes():
+            self.skipTest("the v2 controls were recorded on a CRLF checkout; see the positive-control test")
+        plan = run_card.build_plan(run_card.load_card(CARDS / "007.json"), CARDS / "007.json")
+        for name, recorded in (("s6a-control-gold-mut-v2", "f825e41bc259"), ("s6a-control-noop-mut-v2", "58dfdf928e0b")):
+            lines = []
+            self.assertTrue(run_card.replay_check(plan, ROOT / "experiments" / "p6_pilot" / "runs" / name,
+                                                  out=lines.append), lines)
+            self.assertIn(f"planned {recorded}, recorded {recorded}", lines[-1])
 
     def test_positive_control_replays_to_the_recorded_hash(self):
         card = run_card.load_card(CARDS / "006-replay.json")
@@ -291,7 +365,7 @@ class ExpansionTests(unittest.TestCase):
             lines = []
             self.assertTrue(run_card.replay_check(plan, ROOT / "experiments" / "p6_pilot" / "runs" /
                                                   "pc-reticle-sonnet-2", out=lines.append), lines)
-            self.assertEqual(plan.arm_hashes["reticle"], "6f1061c028c8")
+            self.assertEqual(plan.arm_hashes["reticle"], ["6f1061c028c8"])
         else:  # an LF checkout: the same card, with CRLF evaluator bytes, gives the recorded hash
             self.assertEqual(plan.line_ending_hashes["reticle"], ("CRLF", "6f1061c028c8"))
 

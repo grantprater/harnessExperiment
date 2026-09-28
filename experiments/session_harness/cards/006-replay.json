@@ -6,7 +6,7 @@
   "markdown": "experiments/session_harness/E3-positive-control-006.md",
   "hypothesis": "H-R: Claude Sonnet 5, acting only through the Reticle tools under runner v8 / pressure-recent-v3 / reticle-tools-v3 in the pinned OCI image, leaves a final workspace that the hidden upstream tests accept, within 20 responses and 20 minutes.",
   "run_prefix": "c006r",
-  "runner": {"script": "experiments/p6_pilot/run_pilot.py", "runner_version": 8, "task_file_flag": null},
+  "runner": {"script": "experiments/p6_pilot/run_pilot.py", "runner_version": 8},
   "environment": {"claude_cli_version": "2.1.283 (Claude Code)"},
   "prerequisites": [
     {"text": "gold/noop controls pc-v8-control-gold-sqlparse and pc-v8-control-noop-sqlparse passed", "done": true},

@@ -15,6 +15,7 @@
     "markdown": {"type": "string", "minLength": 1},
     "hypothesis": {"type": "string", "minLength": 1},
     "run_prefix": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "run_name_template": {"type": "string", "minLength": 1},
     "runner": {"$ref": "#/$defs/runner"},
     "environment": {
       "type": "object",
@@ -134,8 +135,7 @@
       "required": ["script", "runner_version"],
       "properties": {
         "script": {"type": "string", "minLength": 1},
-        "runner_version": {"type": "integer", "minimum": 1},
-        "task_file_flag": {"anyOf": [{"type": "string", "pattern": "^--[a-z0-9-]+$"}, {"type": "null"}]}
+        "runner_version": {"type": "integer", "minimum": 1}
       }
     },
     "backend": {
@@ -198,7 +198,8 @@
         "client": {"enum": ["gold", "noop", "breaker", "gamer", "tester"]},
         "task_set": {"type": "string", "minLength": 1},
         "like_arm": {"type": "string", "minLength": 1},
-        "expect": {"enum": ["accepted", "rejected"]}
+        "expect": {"enum": ["accepted", "rejected"]},
+        "run_name": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"}
       }
     },
     "task_set": {

@@ -4,6 +4,9 @@ It exposes the names run_card.RunnerAdapter reads (protocol_hash, resolve_execut
 accepts the flags run_card emits, prints the protocol line on --dry-run, and otherwise writes
 config.json, calls.jsonl, and results.jsonl under runs/<run-name>/ next to itself, as run_pilot.py does.
 
+It follows run_pilot.py after S6a: --tasks [FILE.json] [TASK_ID ...], a task contract (here: tasks with a
+mutation_patch) enters the protocol hash, and config.json records task_file and task_contracts.
+
 Behaviour comes from the JSON file named by CARD_STUB_BEHAVIOUR:
   {"log": PATH, "attempts": N, "runs": {RUN_NAME: BEHAVIOUR}}
 where BEHAVIOUR is accept (default for live clients and gold), reject (default for noop), model_error,
@@ -66,11 +69,38 @@ def resolve_execution(backend_name, image):
                      "container_user_arguments": backend.user_arguments()}
 
 
-def protocol_hash(arm, routing, execution, guards):
-    return hashlib.sha256(json.dumps({
-        "runner_version": RUNNER_VERSION, "arm": arm, "provider_routing": routing, "execution": execution,
-        "guards": guards, "toolset_version": TOOLSET_VERSION,
-    }, sort_keys=True).encode("utf-8")).hexdigest()[:12]
+DEFAULT_TASK_FILE = HERE / "tasks.json"
+
+
+def protocol_hash(arm, routing, execution, guards, task_contracts=()):
+    inputs = {"runner_version": RUNNER_VERSION, "arm": arm, "provider_routing": routing, "execution": execution,
+              "guards": guards, "toolset_version": TOOLSET_VERSION}
+    if task_contracts:
+        inputs["task_contracts"] = sorted(task_contracts, key=lambda contract: contract["task_id"])
+    return hashlib.sha256(json.dumps(inputs, sort_keys=True).encode("utf-8")).hexdigest()[:12]
+
+
+def load_tasks(selection=None):
+    """--tasks [FILE.json] [TASK_ID ...], as run_pilot.py: a .json argument names the task file."""
+    selection = list(selection or [])
+    files = [item for item in selection if item.lower().endswith(".json")]
+    path = Path(files[0]) if files else DEFAULT_TASK_FILE
+    tasks = json.loads(path.read_text(encoding="utf-8"))["tasks"]
+    wanted = [item for item in selection if item not in files]
+    if wanted:
+        tasks = [t for t in tasks if t["task_id"] in wanted]
+    return path.resolve(), tasks
+
+
+def task_file_record(path):
+    return {"path": str(path), "sha256_lf": hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()}
+
+
+def task_contract(task):
+    if not task.get("mutation_patch"):
+        return None
+    return {"task_id": task["task_id"], "materializer": "stub-v1",
+            "mutation_patch_sha256": hashlib.sha256(task["mutation_patch"].encode("utf-8")).hexdigest()}
 
 
 def main():
@@ -82,7 +112,6 @@ def main():
     parser.add_argument("--run-name", required=True)
     parser.add_argument("--models", nargs="*", default=[])
     parser.add_argument("--provider", action="append", default=[])
-    parser.add_argument("--task-file", default=None)
     parser.add_argument("--tasks", nargs="*", default=None)
     parser.add_argument("--max-calls-per-run", type=int, default=25)
     parser.add_argument("--max-context-bytes", type=int, default=80_000)
@@ -100,9 +129,9 @@ def main():
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    task_file = Path(args.task_file) if args.task_file else HERE / "tasks.json"
-    tasks = json.loads(task_file.read_text(encoding="utf-8"))["tasks"]
-    task_ids = [t["task_id"] for t in tasks if t["task_id"] in (args.tasks or [])]
+    task_file, tasks = load_tasks(args.tasks)
+    task_ids = [t["task_id"] for t in tasks]
+    contracts = [c for c in (task_contract(t) for t in tasks) if c is not None]
     live = args.client in ("openrouter", "claude-cli")
     models = args.models if live else [f"{args.client}-client"]
     if args.client == "claude-cli":
@@ -113,7 +142,7 @@ def main():
     _, execution = resolve_execution(args.backend, args.oci_image)
     guards = {"stop_on_repeats": args.stop_on_repeats, "resume_after_provider_stop": args.resume_after_provider_stop,
               "resume_wait_seconds": args.resume_wait_seconds if args.resume_after_provider_stop else None}
-    arm_hash = protocol_hash(args.arm, routing, execution, guards)
+    arm_hash = protocol_hash(args.arm, routing, execution, guards, contracts)
 
     behaviour_path = os.environ.get("CARD_STUB_BEHAVIOUR")
     behaviour = json.loads(Path(behaviour_path).read_text(encoding="utf-8")) if behaviour_path else {}
@@ -146,6 +175,7 @@ def main():
         "pytest_timeout_seconds": args.pytest_timeout, "max_total_calls": args.max_total_calls,
         "toolset_version": TOOLSET_VERSION, "execution": execution, "guards": guards,
         "budgets_per_run": {model: budgets for model in models},
+        "task_file": task_file_record(task_file), "task_contracts": contracts,
     }
     run_dir = HERE / "runs" / args.run_name
     run_dir.mkdir(parents=True, exist_ok=True)

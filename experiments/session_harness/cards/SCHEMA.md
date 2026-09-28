@@ -11,7 +11,7 @@ Structure: [`card.schema.json`](card.schema.json) (JSON Schema keywords, checked
 | File | Markdown card | State |
 |---|---|---|
 | `006-replay.json` | [E3-positive-control-006](../E3-positive-control-006.md), Arm R run 2 | `completed`; exists for the replay-hash check |
-| `007.json` | [E3-calibration-007](../E3-calibration-007.md) | `proposed`; blocked on S6a's task-file flag and approval |
+| `007.json` | [E3-calibration-007](../E3-calibration-007.md) | `proposed`; S6a's seed-7 selection, runs `c007-<task>-r<n>`, the recorded v2 controls; blocked only on approval |
 | `008.json` | [E1-cache-layout-008](../E1-cache-layout-008.md), gate 3 only | `proposed`; blocked on gates 1-2, the v4 policy, card 007's evolution set |
 | `009.json` | [E4-diagnostic-commitment-009](../E4-diagnostic-commitment-009.md) | `proposed`; blocked on held-in/held-out lists, a candidate runner, the wording |
 
@@ -37,12 +37,12 @@ cap). Exit codes: 0 done, 2 invalid/blocked/refused, 3 checkpoint stop, 4 integr
 | `schema_version` | `1` |
 | `id`, `title`, `markdown`, `hypothesis` | identity; `markdown` is the human card's path |
 | `status` | `proposed`, `approved`, `running`, `completed`, `invalidated`, `inconclusive`; only `approved` and `running` execute |
-| `run_prefix` | run directories are `<run_prefix>-<task>-r<rollout>-<arm>` and `<run_prefix>-control-<name>` |
-| `runner` | `script` (default runner), `runner_version` (must equal the script's `RUNNER_VERSION`), `task_file_flag` (the flag that selects a task file other than the runner's default `tasks.json`; `null` if the card uses the default) |
+| `run_prefix`, `run_name_template` | run directories are `run_name_template` filled with `prefix`, `task`, `rollout`, `arm`, `block` (default `{prefix}-{task}-r{rollout}-{arm}`; must contain `{task}` and `{rollout}`); controls are `<run_prefix>-control-<name>` unless they give `run_name`. Names must match existing directories for `--resume` to recognise them |
+| `runner` | `script` (default runner) and `runner_version` (must equal the script's `RUNNER_VERSION`). A task file other than the runner's default goes first in `--tasks` (`--tasks FILE.json ID ...`); a runner without that selection blocks the plan |
 | `environment.claude_cli_version` | the `claude --version` string the protocol hash is computed with; `null` only when no arm uses `claude-cli` |
 | `prerequisites` | `{text, done}`; any `done: false` blocks execution |
 | `arms[]` | see below |
-| `controls[]` | scripted-client runs before the arms: `{name, client: gold/noop/breaker/gamer/tester, task_set, like_arm, expect: accepted/rejected}`; one invocation over the whole set, with the named arm's policy, backend and guards. A control whose outcome differs from `expect` is an integrity stop |
+| `controls[]` | scripted-client runs before the arms: `{name, client: gold/noop/breaker/gamer/tester, task_set, like_arm, expect: accepted/rejected, run_name}`; one invocation over the whole set, with the named arm's policy, backend and guards. A control whose outcome differs from `expect` is an integrity stop |
 | `tasks` | `file` (task JSON), `file_sha256` (sha256 with CRLF folded to LF, the bytes git stores), `sets` (named task sets, below) |
 | `blocks[]` | `{name, task_set, arms, rollouts, arm_order: {rule: fixed or seeded, seed}}` |
 | `schedule` | `rollout-major` (default: rollout 1 of every task before rollout 2, so an early stop leaves balanced evidence) or `task-major` |
@@ -94,7 +94,8 @@ Each set has exactly one source, optionally followed by `take: {count, seed}` (a
   of `distinct_by` (lists compared sorted); group by `stratify_by`, shuffle the group order, and take round-robin
   across groups until `count`. Deterministic for a given task file, which `file_sha256` pins.
 - `ref`: `{path, key, sha256}`: the id list under `key` in a JSON file a person or an earlier card writes (for
-  example `E3-calibration-007.sets.json`, keys `evolution_set`, `held_in`, `held_out`). Missing until written;
+  example `E3-calibration-007-tasks.json`, key `task_ids`, or `E3-calibration-007.sets.json`, keys `evolution_set`,
+  `held_in`, `held_out`). Missing until written;
   pin `sha256` once it is.
 - `from_sets`: the ordered union of other sets.
 - `unresolved`: a reason; the set blocks execution.
@@ -134,19 +135,36 @@ machine rather than the card; the card pins them and `--execute` checks them:
    (`core.autocrlf=true`) they have CRLF line endings; a Linux checkout of the same commit has LF and records a
    different hash for the same protocol. `--plan` prints the other-line-ending hash after the arms.
 
+Since S6a the hash also covers each task's **contract** (materializer version, mutation kind and file, hidden
+paths, patch and statement digests) for tasks that alter the exported tree, so every mutation task has its own
+hash, and an invocation over several tasks hashes all their contracts together. `run_card.py` computes each
+invocation's hash from the runner's own `task_contract`; rollouts of one task share a hash.
+
 Before the first run, `--execute` runs the runner with `--dry-run` once per live arm and requires the printed hash
 to equal the planned one (scripted clients print no hash; their recorded `config.json` is checked after the run).
-After every invocation the recorded `config.json` (16 fields: protocol hash, arm, client, models, routing, tasks,
-budgets, execution, guards, and limits) and every result's `protocol_hash` must match the plan, or the campaign
-stops as `corrupted_protocol`.
+After every invocation the recorded `config.json` (18 fields: protocol hash, arm, client, models, routing, tasks,
+task file and task contracts, budgets, execution, guards, and limits) and every result's `protocol_hash` must match
+the plan, or the campaign stops as `corrupted_protocol`.
 
 The protocol hash itself covers the runner version, context policy, instructions, tool schemas, evaluator bytes,
-managed root files, routing, execution, guards and toolset version. It does **not** cover budgets, task ids, or
-`max_tokens`, so the replay check compares the full recorded config, not only the hash.
+managed root files, routing, execution, guards, toolset version and task contracts. It does **not** cover budgets,
+task ids of tasks without a contract, or `max_tokens`, so the replay check compares the full recorded config, not
+only the hash.
 
-Replay: `--plan --replay RUN_DIR` compares a one-run card's planned config with `RUN_DIR/config.json`.
-`006-replay.json` against `experiments/p6_pilot/runs/pc-reticle-sonnet-2` gives `6f1061c028c8`, identical to the
-recorded hash, with all 16 fields matching.
+Replay: `--plan --replay RUN_DIR` compares the planned invocation named like `RUN_DIR` (or the card's only
+invocation) with `RUN_DIR/config.json`. Fields a runner revision did not yet record (`task_file`, `task_contracts`)
+are reported as not recorded, not as differences. Results on this checkout:
+
+| Card | Recorded run | Planned = recorded |
+|---|---|---|
+| `006-replay.json` | `pc-reticle-sonnet-2` (positive control Arm R) | `6f1061c028c8`, 16 recorded fields |
+| `007.json` control `gold` | `s6a-control-gold-mut-v2` (materializer v2) | `f825e41bc259`, 18 fields |
+| `007.json` control `noop` | `s6a-control-noop-mut-v2` (materializer v2) | `58dfdf928e0b`, 18 fields |
+
+For the 20 calibration tasks, each planned hash equals what `run_pilot.py --dry-run` prints for that invocation
+(20 of 20). No claude-cli run under materializer v2 was recorded: the S6a smoke (`77fe1c56aad3`, `sqlparse-mut-006`)
+used v1, whose contract has no `materializer` field. The card's arm with the smoke's recorded contract reproduces
+`77fe1c56aad3`, and with the current contract gives `5443fc7cbec4`; that field is the only difference.
 
 ## Execution
 
@@ -182,7 +200,9 @@ recorded hash, with all 16 fields matching.
   script (`arm.runner`).
 - **Toolset version and command timeout.** Asserted, not selected: the card fails to plan if they differ from the
   runner's.
-- **Task file.** Runner v8 reads only `experiments/p6_pilot/tasks.json`; cards 007-009 need the flag S6a adds.
+- **Several tasks in one arm invocation.** The runner accepts `--tasks FILE.json ID ID ...` in one process (card
+  007's markdown prints that form, `e3-cal007-sonnet-rk`); a card arm runs one task per invocation, and only controls
+  span a task set. The two forms record different protocol hashes.
 - **Record repeats without stopping.** The runner flags three identical observations only with `--stop-on-repeats`,
   which also stops the run; card 007 runs without the guard and derives repeat flags afterwards.
 - **Fallbacks that change the protocol**, such as card 007's "trusted-local if the image is missing": a different

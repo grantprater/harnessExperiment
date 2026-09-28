@@ -9,8 +9,8 @@ shelling out to the runner (experiments/p6_pilot/run_pilot.py). It never calls a
 Modes (exactly one):
   --validate  schema and semantic checks only
   --plan      print every invocation and its expected protocol hash, and the blockers that make
-              --execute refuse; nothing runs. With --replay RUN_DIR, compare the plan's single run
-              invocation with a recorded run's config.json
+              --execute refuse; nothing runs. With --replay RUN_DIR, compare the planned invocation of
+              that name (or the plan's only invocation) with a recorded run's config.json
   --execute   take the live-run lock (fail if held), preflight each live arm with the runner's own
               --dry-run, run the invocations sequentially, then write the report skeleton.
               --resume skips invocations that already have a completed record
@@ -52,6 +52,10 @@ SCHEMA_PATH = Path(__file__).resolve().parent / "cards" / "card.schema.json"
 LIVE_CLIENTS = ("openrouter", "claude-cli")
 EXECUTABLE_STATUSES = ("approved", "running")
 EXIT_OK, EXIT_REFUSED, EXIT_CHECKPOINT, EXIT_INTEGRITY, EXIT_LOCKED = 0, 2, 3, 4, 5
+DEFAULT_RUN_NAME_TEMPLATE = "{prefix}-{task}-r{rollout}-{arm}"
+# config.json fields added to runner v8 after some runs were recorded (S6a: --tasks FILE.json); a replay of an
+# older run reports them as not recorded instead of as differences.
+LATER_CONFIG_FIELDS = frozenset({"task_file", "task_contracts"})
 HASH_LINE = re.compile(r"protocol ([0-9a-f]{12})\b")
 # Flags the runner call is built from. A card cannot pass them through extra_args.
 RESERVED_FLAGS = frozenset({
@@ -251,11 +255,17 @@ def validate_card(card) -> List[str]:
             errors.append(f"{where}.guards: resume_wait_seconds must be null when resume_after_provider_stop is 0")
         if guards["resume_after_provider_stop"] > 0 and guards["resume_wait_seconds"] is None:
             errors.append(f"{where}.guards: resume_wait_seconds is required when resuming")
-        task_flag = (card["runner"].get("task_file_flag") or "")
         for item in arm.get("extra_args", []):
             flag = item.split("=", 1)[0]
-            if flag in RESERVED_FLAGS or (task_flag and flag == task_flag):
+            if flag in RESERVED_FLAGS:
                 errors.append(f"{where}.extra_args: {flag} is set from structured card fields")
+    template = card.get("run_name_template", DEFAULT_RUN_NAME_TEMPLATE)
+    try:
+        template.format(prefix="p", task="t", rollout=1, arm="a", block="b")
+        if "{task}" not in template or "{rollout}" not in template:
+            errors.append("run_name_template: must contain {task} and {rollout}")
+    except (KeyError, IndexError, ValueError) as exc:
+        errors.append(f"run_name_template: {exc!r}; placeholders are prefix, task, rollout, arm, block")
     if budgets.get("cost_usd") is not None and budgets.get("attempt_cost_reservation_usd") is None:
         errors.append("budgets.per_run: cost_usd needs attempt_cost_reservation_usd (explicit, not priced at run time)")
     timeouts = budgets["command_timeout_seconds"]
@@ -471,7 +481,22 @@ class RunnerAdapter:
         spec.loader.exec_module(module)
         self.module = module
         self.runs_root = script.parent / "runs"
-        self.default_task_file = (script.parent / "tasks.json").resolve()
+        self.default_task_file = Path(getattr(module, "DEFAULT_TASK_FILE", script.parent / "tasks.json")).resolve()
+
+    def selects_task_file(self) -> bool:
+        """Whether --tasks accepts FILE.json (runner v8 after S6a); earlier runners read only their default."""
+        return hasattr(self.module, "load_tasks")
+
+    def task_contracts(self, tasks: List[dict]) -> List[dict]:
+        """The runner's own task contracts, in the order given (file order); empty for runners without them."""
+        function = getattr(self.module, "task_contract", None)
+        if function is None:
+            return []
+        return [contract for contract in (function(task) for task in tasks) if contract is not None]
+
+    def task_file_record(self, path: Path) -> Optional[dict]:
+        function = getattr(self.module, "task_file_record", None)
+        return function(path) if function is not None else None
 
     @classmethod
     def load(cls, script: Path) -> "RunnerAdapter":
@@ -536,11 +561,13 @@ class RunnerAdapter:
             return {model: dict(module.UNPINNED_ROUTING)}
         return {f"{client}-client": dict(module.UNPINNED_ROUTING)}
 
-    def protocol_hash(self, policy: str, routing: dict, execution: dict, guards: dict) -> str:
+    def protocol_hash(self, policy: str, routing: dict, execution: dict, guards: dict, contracts=()) -> str:
+        if contracts:  # only runners that define task contracts produce any
+            return self.module.protocol_hash(policy, routing, execution, guards, contracts)
         return self.module.protocol_hash(policy, routing, execution, guards)
 
     def other_line_ending_hash(self, policy: str, routing: dict, execution: dict,
-                               guards: dict) -> Optional[Tuple[str, str]]:
+                               guards: dict, contracts=()) -> Optional[Tuple[str, str]]:
         """The runner hashes evaluate_task.py's bytes as checked out, so a checkout with the other line
         endings (git autocrlf on Windows versus Linux) records a different hash for the same protocol.
         Returns (other line ending, the hash it would give), or None if the runner hashes no such file."""
@@ -563,7 +590,7 @@ class RunnerAdapter:
             (Path(scratch) / "evaluate_task.py").write_bytes(other)
             saved, module.HERE = module.HERE, Path(scratch)
             try:
-                return label, module.protocol_hash(policy, routing, execution, guards)
+                return label, self.protocol_hash(policy, routing, execution, guards, contracts)
             finally:
                 module.HERE = saved
 
@@ -635,7 +662,7 @@ class Plan:
     sets: Dict[str, Optional[List[str]]]
     invocations: List[Invocation]
     blockers: List[str]
-    arm_hashes: Dict[str, Optional[str]]
+    arm_hashes: Dict[str, List[str]]  # distinct expected hashes of the arm's runs (one per task contract set)
     arm_notes: Dict[str, str]
     runner: Optional[RunnerAdapter]
     line_ending_hashes: Dict[str, Tuple[str, str]] = field(default_factory=dict)
@@ -672,8 +699,9 @@ def expand_units(blocks: List[dict], sets: Dict[str, Optional[List[str]]], sched
     return units
 
 
-def runner_args(card: dict, adapter_task_default: Optional[Path], client: str, arm: dict, task_ids: List[str],
+def runner_args(card: dict, default_task_file: Optional[Path], client: str, arm: dict, task_ids: List[str],
                 run_name: str) -> List[str]:
+    """The runner call. A task file other than the runner's default goes first in --tasks (--tasks FILE.json IDS)."""
     budgets = card["budgets"]["per_run"]
     args = ["--client", client]
     if client in LIVE_CLIENTS:
@@ -683,10 +711,10 @@ def runner_args(card: dict, adapter_task_default: Optional[Path], client: str, a
     args += ["--arm", arm["policy"], "--backend", "oci" if arm["backend"]["kind"] == "oci" else "trusted-local"]
     if arm["backend"]["kind"] == "oci":
         args += ["--oci-image", arm["backend"]["image"]]
-    task_file = resolve_path(card["tasks"]["file"])
-    if adapter_task_default is None or task_file != adapter_task_default:
-        args += [card["runner"].get("task_file_flag") or "--task-file", card["tasks"]["file"]]
-    args += ["--tasks", *task_ids, "--run-name", run_name,
+    args.append("--tasks")
+    if default_task_file is None or resolve_path(card["tasks"]["file"]) != default_task_file:
+        args.append(card["tasks"]["file"])
+    args += [*task_ids, "--run-name", run_name,
              "--max-calls-per-run", number_arg(budgets["responses"]),
              "--max-context-bytes", number_arg(budgets["context_bytes"]),
              "--max-tokens", number_arg(budgets["max_tokens"]),
@@ -766,16 +794,15 @@ def build_plan(card: dict, card_path: Path) -> Plan:
 
     main_runner = adapter_for(card["runner"], "card")
     cli_version = card["environment"]["claude_cli_version"]
-    arm_hashes: Dict[str, Optional[str]] = {}
-    arm_parts: Dict[Tuple[str, str], Tuple[Optional[RunnerAdapter], Optional[str], Optional[dict]]] = {}
+    arm_parts: Dict[Tuple[str, str], Tuple[Optional[RunnerAdapter], Optional[dict]]] = {}
 
     def protocol_for(arm: dict, client: str, owner: str):
-        """(adapter, expected hash, recorded-config parts) for an arm run with a given client."""
+        """(adapter, the task-independent protocol parts: routing, execution, guards) for an arm and client."""
         key = (arm["name"], client)
         if key in arm_parts:
             return arm_parts[key]
         adapter = adapter_for(arm.get("runner", card["runner"]), owner)
-        result = (adapter, None, None)
+        result = (adapter, None)
         if adapter is not None:
             module = adapter.module
             problems, pending = [], []  # pending inputs are already blockers via their unresolved placeholders
@@ -791,29 +818,21 @@ def build_plan(card: dict, card_path: Path) -> Plan:
             if problems or pending:
                 arm_notes[owner] = "; ".join(problems + pending)
             else:
-                routing = adapter.routing(client, arm.get("model"), arm.get("provider"), cli_version)
-                execution = adapter.execution(arm["backend"])
-                guards = guards_record(arm)
-                protocol = adapter.protocol_hash(arm["policy"], routing, execution, guards)
-                parts = {"routing": routing, "execution": execution, "guards": guards}
-                result = (adapter, protocol, parts)
+                parts = {"routing": adapter.routing(client, arm.get("model"), arm.get("provider"), cli_version),
+                         "execution": adapter.execution(arm["backend"]), "guards": guards_record(arm)}
+                result = (adapter, parts)
         arm_parts[key] = result
         return result
 
     arms = {arm["name"]: arm for arm in card["arms"]}
-    line_ending_hashes: Dict[str, Tuple[str, str]] = {}
     for arm in card["arms"]:
-        adapter, protocol, parts = protocol_for(arm, arm["client"], f"arm {arm['name']}")
-        arm_hashes[arm["name"]] = protocol
-        if parts is not None:
-            variant = adapter.other_line_ending_hash(arm["policy"], parts["routing"], parts["execution"], parts["guards"])
-            if variant:
-                line_ending_hashes[arm["name"]] = variant
-        declared = arm.get("expected_protocol_hash")
-        if declared and protocol and declared != protocol:
-            blockers.append(f"arm {arm['name']}: computed protocol {protocol} differs from the card's {declared}")
+        adapter, _ = protocol_for(arm, arm["client"], f"arm {arm['name']}")
         if arm.get("extra_args"):
             arm_notes[f"arm {arm['name']}"] = "extra_args may change the hash; verified only at --execute"
+        if adapter is not None and universe is not None and not adapter.selects_task_file() and \
+                resolve_path(card["tasks"]["file"]) != adapter.default_task_file:
+            blockers.append(f"runner {display_path(adapter.script)} reads only {display_path(adapter.default_task_file)}; "
+                            f"it cannot select {card['tasks']['file']}")
 
     timeouts = main_runner.command_timeouts() if main_runner else None
     declared_timeouts = card["budgets"]["per_run"]["command_timeout_seconds"]
@@ -824,22 +843,33 @@ def build_plan(card: dict, card_path: Path) -> Plan:
 
     invocations: List[Invocation] = []
     prefix = card["run_prefix"]
+    template = card.get("run_name_template", DEFAULT_RUN_NAME_TEMPLATE)
+    task_file_path = resolve_path(card["tasks"]["file"])
+    line_ending_hashes: Dict[str, Tuple[str, str]] = {}
 
     def add(kind, name, client, arm, task_ids, run_name, **extra):
-        adapter, protocol, parts = protocol_for(arm, client, f"{kind} {name}")
+        adapter, parts = protocol_for(arm, client, f"{kind} {name}")
         invocation = Invocation(len(invocations) + 1, kind, name, client, arm, task_ids, slug(run_name), **extra)
         invocation.script = adapter.script if adapter else None
         default_tasks = adapter.default_task_file if adapter else None
         invocation.args = runner_args(card, default_tasks, client, arm, task_ids, invocation.run_name)
-        invocation.expected_hash = protocol
-        if parts is not None and universe is not None:
+        if parts is not None and universe is not None and all(t in universe.tasks for t in task_ids):
             module = adapter.module
+            ordered = universe.in_file_order(task_ids)  # the runner keeps file order
+            contracts = adapter.task_contracts([universe.tasks[t] for t in ordered])
+            protocol = adapter.protocol_hash(arm["policy"], parts["routing"], parts["execution"], parts["guards"],
+                                             contracts)
+            invocation.expected_hash = protocol
+            if kind == "run" and arm["name"] not in line_ending_hashes:
+                variant = adapter.other_line_ending_hash(arm["policy"], parts["routing"], parts["execution"],
+                                                         parts["guards"], contracts)
+                if variant:
+                    line_ending_hashes[arm["name"]] = variant
             live = client in LIVE_CLIENTS
             model = run_model(client, arm)
             invocation.expected_config = {
                 "runner_version": module.RUNNER_VERSION, "protocol_hash": protocol, "arm": arm["policy"],
-                "client": client, "models": [model], "provider_routing": parts["routing"],
-                "tasks": universe.in_file_order(task_ids),
+                "client": client, "models": [model], "provider_routing": parts["routing"], "tasks": ordered,
                 "max_calls_per_run": card["budgets"]["per_run"]["responses"],
                 "max_context_bytes": card["budgets"]["per_run"]["context_bytes"],
                 "max_tokens": card["budgets"]["per_run"]["max_tokens"],
@@ -848,18 +878,31 @@ def build_plan(card: dict, card_path: Path) -> Plan:
                 "toolset_version": module.TOOLSET_VERSION, "execution": parts["execution"], "guards": parts["guards"],
                 "budgets_per_run": {model: per_run_budgets(card)},
             }
+            record = adapter.task_file_record(task_file_path)
+            if record is not None:  # runners that record the task file also record the task contracts
+                invocation.expected_config.update({"task_file": record, "task_contracts": contracts})
         invocations.append(invocation)
 
     for control in card.get("controls", []):
         task_ids = sets.get(control["task_set"])
         if task_ids:
             add("control", control["name"], control["client"], arms[control["like_arm"]], list(task_ids),
-                f"{prefix}-control-{control['name']}", expect=control["expect"])
+                control.get("run_name") or f"{prefix}-control-{control['name']}", expect=control["expect"])
     for block_name, task_id, rollout, order in expand_units(card["blocks"], sets, card.get("schedule", "rollout-major")):
         for arm_name in order:
             arm = arms[arm_name]
-            add("run", arm_name, arm["client"], arm, [task_id], f"{prefix}-{task_id}-r{rollout}-{arm_name}",
+            add("run", arm_name, arm["client"], arm, [task_id],
+                template.format(prefix=prefix, task=task_id, rollout=rollout, arm=arm_name, block=block_name),
                 block=block_name, rollout=rollout)
+
+    arm_hashes: Dict[str, List[str]] = {}
+    for arm in card["arms"]:
+        mine = [inv for inv in invocations if inv.kind == "run" and inv.name == arm["name"]]
+        arm_hashes[arm["name"]] = sorted({inv.expected_hash for inv in mine if inv.expected_hash})
+        declared = arm.get("expected_protocol_hash")
+        wrong = sorted({inv.expected_hash for inv in mine if inv.expected_hash and inv.expected_hash != declared})
+        if declared and wrong:
+            blockers.append(f"arm {arm['name']}: computed protocol {', '.join(wrong)} differs from the card's {declared}")
 
     names = [inv.run_name for inv in invocations]
     duplicates = sorted({name for name in names if names.count(name) > 1})
@@ -901,6 +944,15 @@ def command_line(inv: Invocation, python: str = "python") -> str:
     return shlex.join([python, script, *inv.args])
 
 
+def describe_hashes(hashes: Optional[List[str]]) -> str:
+    """One hash, a short list, or a count: mutation tasks give one protocol hash per task contract."""
+    if not hashes:
+        return "n/a"
+    if len(hashes) <= 2:
+        return ", ".join(hashes)
+    return f"{len(hashes)} distinct (one per task contract; see each invocation)"
+
+
 def describe_backend(backend: dict) -> str:
     if backend["kind"] == "trusted-local":
         return "trusted-local"
@@ -932,7 +984,7 @@ def print_plan(plan: Plan, limit: Optional[int] = None, out: Callable[[str], Non
         out(f"  {name} ({detail}): " + (f"{len(ids)} tasks: {', '.join(ids)}" if ids is not None else "unresolved"))
     out("arms (expected protocol hash from the card's pins; --execute checks it with the runner's --dry-run):")
     for arm in card["arms"]:
-        protocol = plan.arm_hashes.get(arm["name"]) or "n/a"
+        protocol = describe_hashes(plan.arm_hashes.get(arm["name"]))
         declared = arm.get("expected_protocol_hash")
         pin = f", card declares {declared}" if declared else ""
         note = plan.arm_notes.get(f"arm {arm['name']}")
@@ -944,9 +996,10 @@ def print_plan(plan: Plan, limit: Optional[int] = None, out: Callable[[str], Non
             f"{inv.expected_hash or 'n/a'}")
     if plan.line_ending_hashes:
         label = next(iter(plan.line_ending_hashes.values()))[0]
+        firsts = {inv.name: inv.expected_hash for inv in reversed(plan.runs)}
         out(f"  note: the runner hashes evaluate_task.py's bytes as checked out; with {label} line endings (another "
-            f"checkout or OS) the same arms would record " + ", ".join(
-                f"{name} {variant[1]}" for name, variant in plan.line_ending_hashes.items()))
+            f"checkout or OS) each arm's first run would record " + ", ".join(
+                f"{name} {variant[1]} (not {firsts.get(name)})" for name, variant in plan.line_ending_hashes.items()))
     for block in card["blocks"]:
         count = len(plan.sets.get(block["task_set"]) or [])
         order = block["arm_order"]
@@ -987,31 +1040,44 @@ def plan_json(plan: Plan) -> dict:
 
 
 def replay_check(plan: Plan, run_dir: Path, out: Callable[[str], None] = print) -> bool:
-    """Compare the plan's single run invocation with a recorded run's config.json, field by field."""
-    if len(plan.runs) != 1:
-        out(f"replay: the card plans {len(plan.runs)} runs; a replay card must plan exactly one")
+    """Compare one planned invocation with a recorded run's config.json, field by field: the invocation whose run
+    name is the directory's name, else the plan's only invocation."""
+    named = [inv for inv in plan.invocations if inv.run_name == run_dir.name]
+    if named:
+        invocation = named[0]
+    elif len(plan.invocations) == 1:
+        invocation = plan.invocations[0]
+    else:
+        out(f"replay: no planned invocation is named {run_dir.name}, and the card plans {len(plan.invocations)}")
         return False
-    expected = plan.runs[0].expected_config
+    expected = invocation.expected_config
     if expected is None:
         out("replay: the plan has no expected config (see blockers)")
         return False
     recorded = json.loads((run_dir / "config.json").read_text(encoding="utf-8"))
-    ok = True
-    out(f"replay of {display_path(run_dir)} (recorded at source {recorded.get('source_revision', {}).get('commit', '?')[:12]}):")
+    ok, unrecorded = True, []
+    out(f"replay of {display_path(run_dir)} against invocation [{invocation.index}] {invocation.run_name} "
+        f"(recorded at source {recorded.get('source_revision', {}).get('commit', '?')[:12]}):")
     for key, value in expected.items():
+        if key not in recorded and key in LATER_CONFIG_FIELDS:
+            unrecorded.append(key)
+            continue
         same = recorded.get(key) == value
         ok &= same
         shown = json.dumps(value)[:70] if key != "protocol_hash" else value
         out(f"  {'match ' if same else 'DIFFER'} {key}: {shown}"
             + ("" if same else f"  (recorded {json.dumps(recorded.get(key))[:70]})"))
+    if unrecorded:
+        out(f"  not recorded by that runner revision (added later): {', '.join(unrecorded)}")
     results = run_dir / "results.jsonl"
     if results.exists():
         hashes = sorted({json.loads(line)["protocol_hash"] for line in results.read_text(encoding="utf-8").splitlines()
                          if line.strip()})
         out(f"  results.jsonl protocol hashes: {hashes}")
         ok &= hashes == [expected["protocol_hash"]]
-    out(f"replay: {'identical' if ok else 'DIFFERENT'} (planned {expected['protocol_hash']}, recorded "
-        f"{recorded.get('protocol_hash')})")
+    compared = len(expected) - len(unrecorded)
+    out(f"replay: {'identical' if ok else 'DIFFERENT'} in {compared} recorded fields (planned {expected['protocol_hash']}, "
+        f"recorded {recorded.get('protocol_hash')})")
     return ok
 
 
@@ -1471,7 +1537,8 @@ def render_report(plan: Plan, entries: List[dict]) -> str:
     for arm in card["arms"]:
         add(f"| {arm['name']} | {arm['client']} {arm.get('model') or ''} | {arm['policy']} | {arm['toolset']} | "
             f"{_cell(describe_backend(arm['backend']))} | `{json.dumps(guards_record(arm))}` | "
-            f"{plan.arm_hashes.get(arm['name']) or 'n/a'} | {', '.join(sorted(recorded.get(arm['name'], []))) or '-'} |")
+            f"{describe_hashes(plan.arm_hashes.get(arm['name']))} | "
+            f"{describe_hashes(sorted(h for h in recorded.get(arm['name'], []) if h)) if recorded.get(arm['name']) else '-'} |")
     add("")
     add("## Tasks")
     add("")
