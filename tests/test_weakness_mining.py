@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / "experiments" / "session_harness"))
 
 from reticle.context import TranscriptStore  # noqa: E402
 from reticle.runtime import LocalRuntime  # noqa: E402
+import jev_labeller  # noqa: E402
 import label_phases  # noqa: E402
 import weakness_mining as wm  # noqa: E402
 
@@ -137,6 +138,7 @@ class WeaknessMiningTests(unittest.TestCase):
         self.assertTrue(record["verified_before_finish"])
         self.assertTrue(record["edit_in_gold_files"])
         self.assertEqual(record["results_check"], None)  # no results.jsonl in this run directory
+        self.assertEqual(wm.label_trajectory(wm.load_run(self.root / "good")).verify_responses, [2, 3])
 
     def test_stop_classes_map_to_verifier_causes(self):
         cases = [
@@ -246,6 +248,143 @@ class LabelAgreementTests(unittest.TestCase):
                          {"phase": "stuck", "mechanism": "loops"})
         with self.assertRaises(ValueError):
             label_phases.parse_reply('{"phase": "planning"}')
+
+
+def jev_reply(phase="explore", edited=0.02, verified=0.01, confidence=0.9):
+    probabilities = {name: (confidence if name == phase.lower() else (1 - confidence) / 7) for name in wm.PHASES}
+    return {"model": "typesafe/jev-1.13", "answers": {
+        "phase": {"type": "choice", "choice": phase, "probabilities": probabilities, "confidence": confidence},
+        "edited_existing_source": {"type": "noul", "noul": edited},
+        "verified_after_edit": {"type": "noul", "noul": verified}},
+        "usage": {"input_tokens": 1200, "cost": 0.00002}}
+
+
+class StubTransport:
+    """Stands in for the HTTP call: records each request and answers from a queue (no network)."""
+
+    def __init__(self, *replies):
+        self.replies, self.requests = list(replies), []
+
+    def __call__(self, url, body, headers, timeout):
+        self.requests.append({"url": url, "body": body, "headers": headers, "timeout": timeout})
+        reply = self.replies.pop(0) if len(self.replies) > 1 else self.replies[0]
+        if isinstance(reply, Exception):
+            raise reply
+        return reply
+
+
+class JevLabellerTests(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp_dir.name)
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def test_request_shape_is_one_choice_and_two_yes_no_questions(self):
+        transport = StubTransport(jev_reply())
+        jev_labeller.ask("STATE", transport=transport, key="test-key")
+        request = transport.requests[0]
+        self.assertEqual(request["url"], "https://openrouter.ai/api/alpha/decisions")
+        self.assertEqual(request["headers"], {"Authorization": "Bearer test-key", "Content-Type": "application/json"})
+        body = request["body"]
+        self.assertEqual(set(body), {"model", "state", "questions"})
+        self.assertEqual((body["model"], body["state"]), ("typesafe/jev-1.13", "STATE"))
+        questions = body["questions"]
+        self.assertEqual(set(questions), {"phase", "edited_existing_source", "verified_after_edit"})
+        self.assertEqual(questions["phase"]["type"], "choice")
+        self.assertEqual(set(questions["phase"]["criteria"]), set(wm.PHASES))
+        self.assertTrue(all(isinstance(rubric, str) and rubric for rubric in questions["phase"]["criteria"].values()))
+        for name in ("edited_existing_source", "verified_after_edit"):
+            self.assertEqual(questions[name]["type"], "noul")
+            self.assertEqual(set(questions[name]["criteria"]), {"true", "false"})
+        json.dumps(body)  # serialisable as sent
+
+    def test_reply_parsing_and_malformed_replies(self):
+        parsed = jev_labeller.parse_answers(jev_reply("Verify", edited=0.1, verified=0.97, confidence=0.8))
+        self.assertEqual(parsed["phase"], "verify")
+        self.assertEqual((parsed["edited_existing_source"], parsed["verified_after_edit"]), (0.1, 0.97))
+        self.assertEqual((parsed["confidence"], parsed["cost"], parsed["input_tokens"]), (0.8, 0.00002, 1200))
+        self.assertEqual(parsed["model"], "typesafe/jev-1.13")
+        self.assertAlmostEqual(parsed["probabilities"]["verify"], 0.8)
+        bad_phase = jev_reply()
+        bad_phase["answers"]["phase"]["choice"] = "planning"
+        bad_noul = jev_reply()
+        bad_noul["answers"]["verified_after_edit"] = {"type": "noul", "noul": 1.5}
+        missing = jev_reply()
+        del missing["answers"]["edited_existing_source"]
+        for reply in (bad_phase, bad_noul, missing, {"error": {"message": "x"}}):
+            with self.assertRaises(ValueError):
+                jev_labeller.parse_answers(reply)
+
+    def test_one_retry_then_failure(self):
+        transport = StubTransport(RuntimeError("HTTP 502: bad gateway"), jev_reply("edit"))
+        self.assertEqual(jev_labeller.ask("S", transport=transport, key="k", retry_wait=0)["attempts"], 2)
+        with self.assertRaises(RuntimeError):
+            jev_labeller.ask("S", transport=StubTransport(OSError("down")), key="k", retry_wait=0)
+
+    def test_label_jev_writes_one_row_per_response_keyed_by_run_and_response(self):
+        run = SyntheticRun(self.root, "good")
+        run.respond(read("pkg/core.py"))
+        run.respond(("replace_text", {"path": "pkg/core.py", "old_text": "a", "new_text": "b"}, "success",
+                     "Replaced 1 occurrence(s)", BASE),
+                    ("run", {"command": "python -m pytest tests -q"}, "success", "3 passed", EDITED))
+        run.respond(("finish", {"summary": "fixed"}, "success", "Finish recorded.", EDITED))
+        run_dir = run.end("finish_requested", "accepted", fail_to_pass="pass")
+        transport = StubTransport(jev_reply("explore"), jev_reply("edit", edited=0.95, verified=0.9),
+                                  jev_reply("finish"))
+        out = self.root / "labels_jev.jsonl"
+        label_phases.label_jev([run_dir], out, transport=transport, key="secret-key")
+        rows = label_phases.read_labels(out)
+        self.assertEqual([(r["run"], r["response"]) for r in rows], [("good", 1), ("good", 2), ("good", 3)])
+        self.assertEqual(set(rows[1]), {
+            "kind", "run", "task_id", "response", "rule_phase", "rule_edited_existing_source",
+            "rule_verified_after_edit", "jev_phase", "jev_probabilities", "jev_confidence",
+            "jev_edited_existing_source", "jev_verified_after_edit", "jev_cost", "jev_model", "jev"})
+        self.assertEqual([r["rule_phase"] for r in rows], ["explore", "edit", "finish"])
+        self.assertEqual([r["jev_phase"] for r in rows], ["explore", "edit", "finish"])
+        self.assertEqual([r["rule_edited_existing_source"] for r in rows], [False, True, False])
+        self.assertEqual([r["rule_verified_after_edit"] for r in rows], [False, True, False])
+        self.assertEqual((rows[1]["jev_edited_existing_source"], rows[1]["jev_verified_after_edit"]), (0.95, 0.9))
+        self.assertEqual((rows[1]["jev_cost"], rows[1]["jev_model"]), (0.00002, "typesafe/jev-1.13"))
+        self.assertEqual(rows[1]["jev"]["questions_sha256"], jev_labeller.QUESTIONS_SHA256)
+        trajectory = wm.load_run(run_dir)
+        state = label_phases.render_request(trajectory, trajectory.responses[1])
+        self.assertEqual(transport.requests[1]["body"]["state"], state)  # the Claude labeller's user message
+        self.assertNotIn("secret-key", out.read_text(encoding="utf-8"))
+        label_phases.label_jev([run_dir], out, transport=transport, key="secret-key")  # resumes: nothing to do
+        self.assertEqual(len(transport.requests), 3)
+
+    def test_jev_agreement_tables(self):
+        def jev_row(number, phase, confidence, edited=0.0, verified=0.0, rule_edited=False):
+            return {"kind": "response", "run": "r", "response": number, "rule_phase": "explore",
+                    "rule_edited_existing_source": rule_edited, "rule_verified_after_edit": False,
+                    "jev_phase": phase, "jev_probabilities": {phase: confidence, "explore": 1 - confidence}
+                    if phase != "explore" else {"explore": confidence, "diagnose": 1 - confidence},
+                    "jev_confidence": confidence, "jev_edited_existing_source": edited,
+                    "jev_verified_after_edit": verified, "jev_cost": 0.00002, "jev_model": "typesafe/jev-1.13",
+                    "jev": {"at": f"2026-09-27T12:00:0{number}.000+00:00", "latency_s": 0.2, "attempts": 1,
+                            "input_tokens": 100, "request_sha256": str(number), "questions_sha256": "q"}}
+
+        records = [{"kind": "response", "run": "r", "response": i, "rule_phase": "explore", "claude_phase": claude,
+                    "gold_phase": "explore"} for i, claude in ((1, "explore"), (2, "diagnose"), (3, "explore"))]
+        records.append({"kind": "run", "run": "r", "rule": {"first_edit_response": None,
+                                                           "verified_before_finish": False},
+                        "human": {"first_edit_response": None, "verified_before_finish": False}})
+        first = [jev_row(1, "explore", 1.0), jev_row(2, "diagnose", 0.6), jev_row(3, "explore", 0.8, edited=0.7)]
+        second = [jev_row(1, "explore", 1.0), jev_row(2, "explore", 0.55), jev_row(3, "explore", 0.8, edited=0.7)]
+        text = label_phases.jev_agreement_tables(records, first, second)
+        self.assertIn("Jev = gold 2/3 (66.7%)", text)
+        self.assertIn("| explore | 3 | 3 | 2 | 2 | 2/3 | 0.21 | 0.80 | 0.80 | 1.00 |", text)
+        self.assertIn("| diagnose | 0 | 0 | 1 | 1 | 0/0 | - | 0.00 | 0.00 | 1.00 |", text)
+        self.assertAlmostEqual(label_phases.wilson_lower(40, 40), 40 / (40 + 1.96 ** 2))
+        self.assertIn("| r | 2 | explore | explore | diagnose | diagnose | 0.6 | diagnose 0.60, explore 0.40 |", text)
+        self.assertIn("| (0.5, 0.7] | 1 | 0.600 | 0 | 0.00 |", text)
+        self.assertIn("| (0.99, 1.0] | 1 | 1.000 | 1 | 1.00 |", text)
+        self.assertIn("| edited_existing_source | 0 | 0 | - | 3 | 1 | 0.700 |", text)
+        self.assertIn("| r | None / None / 3 | False / False / False | 3 | - |", text)
+        self.assertIn("identical phase 2/3 (66.7%)", text)
+        self.assertIn("| first | 3 (3) | 0.000060 | 300 | 0.6 | 2.2 | typesafe/jev-1.13 |", text)
 
 
 if __name__ == "__main__":

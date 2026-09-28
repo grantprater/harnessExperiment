@@ -1,18 +1,28 @@
-"""Label every assistant response of recorded runs two ways, rules and Claude, and measure their agreement.
+"""Label every assistant response of recorded runs by rules, Claude, or Jev, and measure their agreement.
 
-Rules: `weakness_mining.label_trajectory`. Claude: the local CLI in headless mode (subscription login, no API key,
-no tools, no settings), one call per response, with the fixed system prompt `labels/claude_phase_prompt.md` and a
-user message holding the task statement, a one-line summary of each earlier response, and the response's text,
-calls, and results. Calls are serialised and run under the shared live-run lock
-(`.runtime/locks/live-run.lock` in the main checkout), so they never overlap a live harness run.
+Rules: `weakness_mining.label_trajectory`. Claude (`--labeller claude`, the default): the local CLI in headless mode
+(subscription login, no API key, no tools, no settings), one call per response, with the fixed system prompt
+`labels/claude_phase_prompt.md` and a user message holding the task statement, a one-line summary of each earlier
+response, and the response's text, calls, and results. Claude calls are serialised and run under the shared
+live-run lock (`.runtime/locks/live-run.lock` in the main checkout), so they never overlap a live harness run.
+
+Jev (`--labeller jev`, see `jev_labeller.py`): OpenRouter's decisions endpoint, one serialised call per response
+with the same rendered user message as its state and three questions (phase, edited_existing_source,
+verified_after_edit). It reads the key from `OPENROUTER_API_KEY` in the environment. Its records go to a separate
+file, `labels/labels_jev.jsonl` by default, keyed by (run, response), so the held-out `labels.jsonl` is never
+rewritten; each record also carries the rule-derived facts the two yes/no questions are scored against.
 
 `label` appends one record per response to the labels file and skips responses already labelled, so an
 interrupted pass resumes. `agreement` prints per-phase agreement between the rules and Claude and, where gold labels
-exist, each method's agreement with them, then every disagreement.
+exist, each method's agreement with them, then every disagreement. `agreement --labeller jev` prints Jev against
+gold, the rules, and Claude, its confidence calibration, the yes/no questions against the rule facts, cost and time,
+and, given `--repeat`, the determinism of a second identical pass.
 
 Usage:
   python experiments/session_harness/label_phases.py label RUN_DIR [RUN_DIR ...] [--labels FILE] [--model sonnet]
+  python experiments/session_harness/label_phases.py label RUN_DIR [RUN_DIR ...] --labeller jev [--labels FILE]
   python experiments/session_harness/label_phases.py agreement [--labels FILE]
+  python experiments/session_harness/label_phases.py agreement --labeller jev [--jev FILE] [--repeat FILE]
 """
 
 from __future__ import annotations
@@ -23,6 +33,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -37,10 +48,12 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "experiments" / "p6_pilot"))
 
+import jev_labeller as jev  # noqa: E402
 import weakness_mining as wm  # noqa: E402
 from claude_cli import ISOLATION_ARGUMENTS, child_environment, resolve_executable  # noqa: E402
 
 LABELS = HERE / "labels" / "labels.jsonl"
+LABELS_JEV = HERE / "labels" / "labels_jev.jsonl"
 PROMPT = HERE / "labels" / "claude_phase_prompt.md"
 RESULT_CHARS, ARGUMENT_CHARS, STATEMENT_CHARS = 1500, 1500, 1500
 
@@ -180,6 +193,58 @@ def label(run_dirs: List[Path], labels_path: Path, model: str) -> None:
                       f"({reply['latency_s']} s) {reply['mechanism']}", flush=True)
 
 
+def rule_facts(trajectory: wm.Trajectory) -> Dict[int, Dict[str, object]]:
+    """Per response: the rule phase and the journal-derived answers to Jev's two yes/no questions."""
+    rules = wm.label_trajectory(trajectory)
+    edited = {edit["response"] for edit in rules.base_edits}
+    return {response.index: {"rule_phase": phase, "rule_edited_existing_source": response.index in edited,
+                             "rule_verified_after_edit": response.index in rules.verify_responses}
+            for response, phase in zip(trajectory.responses, rules.phases)}
+
+
+def jev_record(trajectory: wm.Trajectory, response: wm.Response, facts: Dict[str, object], request: str,
+               reply: Dict[str, object], at: str) -> dict:
+    return {
+        "kind": "response", "run": trajectory.run, "task_id": trajectory.task_id, "response": response.index,
+        **facts,
+        "jev_phase": reply["phase"], "jev_probabilities": reply["probabilities"],
+        "jev_confidence": reply["confidence"], "jev_edited_existing_source": reply["edited_existing_source"],
+        "jev_verified_after_edit": reply["verified_after_edit"], "jev_cost": reply["cost"],
+        "jev_model": reply["model"],
+        "jev": {"endpoint": jev.ENDPOINT, "requested_model": jev.MODEL, "at": at, "attempts": reply["attempts"],
+                "latency_s": reply["latency_s"], "input_tokens": reply["input_tokens"],
+                "output_tokens": reply.get("output_tokens"),
+                "questions_sha256": jev.QUESTIONS_SHA256,
+                "request_sha256": hashlib.sha256(request.encode("utf-8")).hexdigest()},
+    }
+
+
+def label_jev(run_dirs: List[Path], labels_path: Path, transport: jev.Transport = jev.post_json,
+              key: Optional[str] = None) -> None:
+    done = {(r["run"], r["response"]) for r in read_labels(labels_path) if r.get("kind") == "response"}
+    key = key or jev.api_key()
+    labels_path.parent.mkdir(parents=True, exist_ok=True)
+    started, calls, cost = time.time(), 0, 0.0
+    for run_dir in run_dirs:
+        trajectory = wm.load_run(run_dir)
+        facts = rule_facts(trajectory)
+        for response in trajectory.responses:
+            if (trajectory.run, response.index) in done:
+                continue
+            request = render_request(trajectory, response)
+            at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+            reply = jev.ask(request, transport=transport, key=key)
+            record = jev_record(trajectory, response, facts[response.index], request, reply, at)
+            with labels_path.open("a", encoding="utf-8", newline="\n") as stream:
+                stream.write(json.dumps(record, ensure_ascii=False) + "\n")
+            calls += reply["attempts"]
+            cost += reply["cost"] or 0.0
+            print(f"{trajectory.run} #{response.index}: rule={record['rule_phase']} jev={reply['phase']} "
+                  f"(confidence {reply['confidence']}, edited {reply['edited_existing_source']:.2f}, "
+                  f"verified {reply['verified_after_edit']:.2f}, {reply['latency_s']} s)", flush=True)
+    print(f"{calls} calls, cost ${cost:.6f}, wall {time.time() - started:.1f} s", flush=True)
+
+
 def agreement_tables(records: List[dict]) -> str:
     rows = [r for r in records if r.get("kind") == "response" and r.get("claude_phase")]
     if not rows:
@@ -218,6 +283,183 @@ def agreement_tables(records: List[dict]) -> str:
     return "\n".join(lines)
 
 
+CONFIDENCE_BINS = (0.0, 0.5, 0.7, 0.9, 0.99, 1.0)  # fixed before any Jev reply was seen; the first bin includes 0
+YES_NO = ("edited_existing_source", "verified_after_edit")
+
+
+def _specific(first: List[str], second: List[str], phase: str) -> str:
+    n_first, n_second = first.count(phase), second.count(phase)
+    both = sum(a == phase == b for a, b in zip(first, second))
+    return f"{2 * both / (n_first + n_second):.2f}" if n_first + n_second else "-"
+
+
+def wilson_lower(successes: int, total: int, z: float = 1.96) -> Optional[float]:
+    """Lower end of the Wilson 95% interval for a proportion (n/(n + z^2) when every case agrees)."""
+    if not total:
+        return None
+    share = successes / total
+    centre = share + z * z / (2 * total)
+    margin = z * math.sqrt(share * (1 - share) / total + z * z / (4 * total * total))
+    return (centre - margin) / (1 + z * z / total)
+
+
+def _wall_seconds(rows: List[dict]) -> float:
+    times = sorted((datetime.fromisoformat(r["jev"]["at"]), r["jev"]["latency_s"]) for r in rows)
+    return (times[-1][0] - times[0][0]).total_seconds() + times[-1][1]
+
+
+def _top(probabilities: Dict[str, float], count: int = 2) -> str:
+    ranked = sorted(probabilities.items(), key=lambda item: -item[1])[:count]
+    return ", ".join(f"{phase} {value:.2f}" for phase, value in ranked)
+
+
+def _confidence_bin(value: object) -> Optional[int]:
+    if not isinstance(value, (int, float)):
+        return None
+    for number, (low, high) in enumerate(zip(CONFIDENCE_BINS, CONFIDENCE_BINS[1:])):
+        if low < value <= high or (number == 0 and value == low):
+            return number
+    return None
+
+
+def jev_agreement_tables(records: List[dict], jev_rows: List[dict], repeat_rows: Optional[List[dict]] = None,
+                         threshold: float = 0.5) -> str:
+    """Jev against gold, rules, and Claude on the responses present in both files; see the module docstring."""
+    labelled = {(r["run"], r["response"]): r for r in records if r.get("kind") == "response"}
+    rows = [{**labelled[(j["run"], j["response"])], **j} for j in jev_rows
+            if j.get("kind") == "response" and (j["run"], j["response"]) in labelled]
+    if not rows:
+        return "no Jev-labelled responses that are also in the labels file"
+    n = len(rows)
+    columns = {name: [r.get(f"{name}_phase") for r in rows] for name in ("gold", "rule", "claude", "jev")}
+    jev_phases = columns["jev"]
+
+    def versus(name: str) -> str:
+        same = sum(a == b for a, b in zip(jev_phases, columns[name]))
+        return f"{same}/{n} ({100 * same / n:.1f}%), kappa {kappa(jev_phases, columns[name]):.2f}"
+
+    lines = [f"Responses: {n}. Jev = gold {versus('gold')}; Jev = rules {versus('rule')}; "
+             f"Jev = Claude {versus('claude')}. For reference: rules = gold "
+             f"{sum(a == b for a, b in zip(columns['rule'], columns['gold']))}/{n}, Claude = gold "
+             f"{sum(a == b for a, b in zip(columns['claude'], columns['gold']))}/{n}.", "",
+             "| Phase | Gold | Rule | Claude | Jev | Jev = gold, of gold | 95% lower bound | Specific: Jev-gold | "
+             "Jev-rule | Jev-Claude |", "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+    for phase in wm.PHASES:
+        if not any(phase in column for column in columns.values()):
+            continue
+        in_gold = [j for j, g in zip(jev_phases, columns["gold"]) if g == phase]
+        hits = sum(j == phase for j in in_gold)
+        bound = wilson_lower(hits, len(in_gold))
+        lines.append(f"| {phase} | {len(in_gold)} | {columns['rule'].count(phase)} | "
+                     f"{columns['claude'].count(phase)} | {jev_phases.count(phase)} | {hits}/{len(in_gold)} | "
+                     f"{'-' if bound is None else f'{bound:.2f}'} | "
+                     f"{_specific(jev_phases, columns['gold'], phase)} | "
+                     f"{_specific(jev_phases, columns['rule'], phase)} | "
+                     f"{_specific(jev_phases, columns['claude'], phase)} |")
+
+    differ = [r for r in rows if r["jev_phase"] != r.get("gold_phase")]
+    lines += ["", "Every response where Jev differs from gold:" if differ else "Jev differs from gold on no response."]
+    if differ:
+        lines += ["", "| Run | # | Gold | Rule | Claude | Jev | Confidence | Top probabilities |",
+                  "|---|---:|---|---|---|---|---:|---|"]
+    for r in differ:
+        lines.append(f"| {r['run']} | {r['response']} | {r.get('gold_phase')} | {r['rule_phase']} | "
+                     f"{r.get('claude_phase')} | {r['jev_phase']} | {r['jev_confidence']} | "
+                     f"{_top(r['jev_probabilities'])} |")
+
+    diagnose_probability = [r["jev_probabilities"].get("diagnose", 0.0) for r in rows]
+    lines += ["", f"`diagnose`: Jev chose it {jev_phases.count('diagnose')} times (Claude "
+              f"{columns['claude'].count('diagnose')}, gold {columns['gold'].count('diagnose')}); Jev's diagnose "
+              f"probability: mean {sum(diagnose_probability) / n:.3f}, max {max(diagnose_probability):.3f}.", "",
+              "| Run | # (Claude said diagnose) | Gold | Jev | Jev's diagnose probability |", "|---|---:|---|---|---:|"]
+    for r in rows:
+        if r.get("claude_phase") == "diagnose":
+            lines.append(f"| {r['run']} | {r['response']} | {r.get('gold_phase')} | {r['jev_phase']} | "
+                         f"{r['jev_probabilities'].get('diagnose', 0.0):.3f} |")
+
+    lines += ["", "Calibration of `jev_confidence` against gold (bins fixed in advance):", "",
+              "| Confidence | Responses | Mean confidence | Jev = gold | Accuracy |", "|---|---:|---:|---:|---:|"]
+    for number, (low, high) in enumerate(zip(CONFIDENCE_BINS, CONFIDENCE_BINS[1:])):
+        members = [r for r in rows if _confidence_bin(r["jev_confidence"]) == number]
+        label = f"[{low}, {high}]" if number == 0 else f"({low}, {high}]"
+        if not members:
+            lines.append(f"| {label} | 0 | - | - | - |")
+            continue
+        correct = sum(r["jev_phase"] == r.get("gold_phase") for r in members)
+        lines.append(f"| {label} | {len(members)} | {sum(r['jev_confidence'] for r in members) / len(members):.3f} | "
+                     f"{correct} | {correct / len(members):.2f} |")
+    brier = sum(sum((r["jev_probabilities"].get(phase, 0.0) - (phase == r.get("gold_phase"))) ** 2
+                    for phase in wm.PHASES) for r in rows) / n
+    top_match = sum(r["jev_probabilities"] and isinstance(r["jev_confidence"], (int, float))
+                    and abs(r["jev_confidence"] - max(r["jev_probabilities"].values())) < 1e-9 for r in rows)
+    lines += ["", f"Multi-class Brier score against gold: {brier:.4f} (0 is perfect, 2 is the worst). "
+              f"`jev_confidence` equals the top option's probability on {top_match}/{n} responses."]
+
+    lines += ["", f"Yes/no questions against the rule-derived facts (yes = Jev's value >= {threshold}, "
+              "fixed in advance):", "",
+              "| Question | Rule yes | Jev yes when rule yes | Lowest Jev value when rule yes | Rule no | "
+              "Jev yes when rule no | Highest Jev value when rule no |", "|---|---:|---:|---:|---:|---:|---:|"]
+    for name in YES_NO:
+        yes = [r[f"jev_{name}"] for r in rows if r[f"rule_{name}"]]
+        no = [r[f"jev_{name}"] for r in rows if not r[f"rule_{name}"]]
+        lines.append(f"| {name} | {len(yes)} | {sum(v >= threshold for v in yes)} | "
+                     f"{f'{min(yes):.3f}' if yes else '-'} | {len(no)} | {sum(v >= threshold for v in no)} | "
+                     f"{f'{max(no):.3f}' if no else '-'} |")
+    misses = [r for r in rows if any((r[f"jev_{name}"] >= threshold) != bool(r[f"rule_{name}"]) for name in YES_NO)]
+    if misses:
+        lines += ["", "| Run | # | Rule phase | Jev phase | Jev edited | Rule edited | Jev verified | Rule verified |",
+                  "|---|---:|---|---|---:|---|---:|---|"]
+        for r in misses:
+            lines.append(f"| {r['run']} | {r['response']} | {r['rule_phase']} | {r['jev_phase']} | "
+                         f"{r['jev_edited_existing_source']:.3f} | {r['rule_edited_existing_source']} | "
+                         f"{r['jev_verified_after_edit']:.3f} | {r['rule_verified_after_edit']} |")
+
+    run_records = {r["run"]: r for r in records if r.get("kind") == "run"}
+    lines += ["", "Run labels derived from Jev's per-response answers (first edit = first response with edited >= "
+              "threshold; verified = verified >= threshold at or after Jev's last edit response):", "",
+              "| Run | First edit: rule / adjudicated / Jev | Verified before finish: rule / adjudicated / Jev | "
+              "Jev edit responses | Jev verify responses |", "|---|---|---|---|---|"]
+    for run in dict.fromkeys(r["run"] for r in rows):
+        mine = sorted((r for r in rows if r["run"] == run), key=lambda r: r["response"])
+        edits = [r["response"] for r in mine if r["jev_edited_existing_source"] >= threshold]
+        checks = [r["response"] for r in mine if r["jev_verified_after_edit"] >= threshold]
+        verified = bool(edits) and any(number >= edits[-1] for number in checks)
+        record = run_records.get(run) or {}
+        rule, human = record.get("rule") or {}, record.get("human") or {}
+        lines.append(f"| {run} | {rule.get('first_edit_response')} / {human.get('first_edit_response')} / "
+                     f"{edits[0] if edits else None} | {rule.get('verified_before_finish')} / "
+                     f"{human.get('verified_before_finish')} / {verified} | "
+                     f"{', '.join(map(str, edits)) or '-'} | {', '.join(map(str, checks)) or '-'} |")
+
+    passes = [("first", rows)]
+    if repeat_rows:
+        first = {(r["run"], r["response"]): r for r in rows}
+        pairs = [(first[(r["run"], r["response"])], r) for r in repeat_rows
+                 if r.get("kind") == "response" and (r["run"], r["response"]) in first]
+        passes.append(("second", [second for _, second in pairs]))
+        same_phase = sum(a["jev_phase"] == b["jev_phase"] for a, b in pairs)
+        same_request = sum(a["jev"]["request_sha256"] == b["jev"]["request_sha256"]
+                           and a["jev"]["questions_sha256"] == b["jev"]["questions_sha256"] for a, b in pairs)
+        probability_gap = max(abs(a["jev_probabilities"].get(p, 0.0) - b["jev_probabilities"].get(p, 0.0))
+                              for a, b in pairs for p in wm.PHASES)
+        yes_no_gap = max(abs(a[f"jev_{name}"] - b[f"jev_{name}"]) for a, b in pairs for name in YES_NO)
+        lines += ["", f"Determinism, second identical pass ({same_request}/{len(pairs)} with identical request and "
+                  f"question hashes): identical phase {same_phase}/{len(pairs)} "
+                  f"({100 * same_phase / len(pairs):.1f}%); identical confidence "
+                  f"{sum(a['jev_confidence'] == b['jev_confidence'] for a, b in pairs)}/{len(pairs)}; largest "
+                  f"phase-probability change {probability_gap:.4f}; largest yes/no change {yes_no_gap:.4f}; second "
+                  f"pass = gold {sum(b['jev_phase'] == a.get('gold_phase') for a, b in pairs)}/{len(pairs)}."]
+    lines += ["", "| Pass | Responses (attempts) | Cost (USD) | Input tokens | Sum of latencies (s) | Wall time (s) | "
+              "Model |", "|---|---:|---:|---:|---:|---:|---|"]
+    for name, members in passes:
+        lines.append(f"| {name} | {len(members)} ({sum(r['jev']['attempts'] for r in members)}) | "
+                     f"{sum(r['jev_cost'] or 0.0 for r in members):.6f} | "
+                     f"{sum(r['jev']['input_tokens'] or 0 for r in members)} | "
+                     f"{sum(r['jev']['latency_s'] for r in members):.1f} | {_wall_seconds(members):.1f} | "
+                     f"{', '.join(sorted({str(r['jev_model']) for r in members}))} |")
+    return "\n".join(lines)
+
+
 def kappa(first: List[str], second: List[str]) -> float:
     total = len(first)
     observed = sum(a == b for a, b in zip(first, second)) / total
@@ -231,13 +473,22 @@ def main(argv: Optional[List[str]] = None) -> None:
     sub = parser.add_subparsers(dest="command", required=True)
     label_parser = sub.add_parser("label")
     label_parser.add_argument("runs", nargs="+", type=Path)
-    label_parser.add_argument("--labels", type=Path, default=LABELS)
-    label_parser.add_argument("--model", default="sonnet")
+    label_parser.add_argument("--labeller", choices=("claude", "jev"), default="claude")
+    label_parser.add_argument("--labels", type=Path, help=f"default {LABELS.name}, or {LABELS_JEV.name} for Jev")
+    label_parser.add_argument("--model", default="sonnet", help="Claude CLI model (Claude labeller only)")
     agreement_parser = sub.add_parser("agreement")
+    agreement_parser.add_argument("--labeller", choices=("claude", "jev"), default="claude")
     agreement_parser.add_argument("--labels", type=Path, default=LABELS)
+    agreement_parser.add_argument("--jev", type=Path, default=LABELS_JEV)
+    agreement_parser.add_argument("--repeat", type=Path, help="a second Jev pass over the same responses")
     args = parser.parse_args(argv)
-    if args.command == "label":
-        label(args.runs, args.labels, args.model)
+    if args.command == "label" and args.labeller == "jev":
+        label_jev(args.runs, args.labels or LABELS_JEV)
+    elif args.command == "label":
+        label(args.runs, args.labels or LABELS, args.model)
+    elif args.labeller == "jev":
+        print(jev_agreement_tables(read_labels(args.labels), read_labels(args.jev),
+                                   read_labels(args.repeat) if args.repeat else None))
     else:
         print(agreement_tables(read_labels(args.labels)))
 

@@ -389,6 +389,7 @@ class RuleLabels:
     verified_after_last_edit: bool
     stuck_responses: List[int]
     rejected_calls: int
+    verify_responses: List[int] = field(default_factory=list)  # responses with a verify call that was not rejected
 
 
 def label_trajectory(trajectory: Trajectory) -> RuleLabels:
@@ -399,6 +400,7 @@ def label_trajectory(trajectory: Trajectory) -> RuleLabels:
     phases: List[str] = []
     stuck_responses: List[int] = []
     verify_positions: List[int] = []
+    verify_responses: List[int] = []
     last_edit_position, position = 0, 0
     for response in trajectory.responses:
         call_phases = []
@@ -424,6 +426,8 @@ def label_trajectory(trajectory: Trajectory) -> RuleLabels:
                 scratch.add(call_path(call))
             if phase == "verify" and call.status != "rejected":
                 verify_positions.append(position)
+                if response.index not in verify_responses:
+                    verify_responses.append(response.index)
             call_phases.append((phase, repeat))
         if not call_phases:
             last = response.index == len(trajectory.responses)
@@ -441,6 +445,7 @@ def label_trajectory(trajectory: Trajectory) -> RuleLabels:
         verified_after_last_edit=bool(base_edits) and any(p > last_edit_position for p in verify_positions),
         stuck_responses=stuck_responses,
         rejected_calls=sum(1 for r in trajectory.responses for c in r.calls if c.status == "rejected"),
+        verify_responses=verify_responses,
     )
 
 
