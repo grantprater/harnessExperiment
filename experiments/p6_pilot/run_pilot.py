@@ -119,9 +119,10 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    is recorded as the model's routing, so it is part of the protocol hash
 #    Later in v8, without a bump: --tasks FILE.json and mutation-task materialisation. Tasks without mutation
 #    fields are exported and hashed exactly as before; a mutation task's contract enters the protocol hash.
-#    Later in v8, without a bump: the S6 treatments (--completion, --nudge, --oracle). Off, nothing changes (card 007's recorded
-#    hashes still replay); on, each one's record enters the protocol hash under "treatments". A bump would
-#    change every incumbent hash and block the cards pinned to v8 without any change in what an incumbent runs.
+#    Later in v8, without a bump: the S6 treatments (--completion, --nudge, --oracle). Off, nothing changes
+#    (card 007's recorded hashes still replay); on, each one's record enters the protocol hash under
+#    "treatments". A bump would change every incumbent hash and block the cards pinned to v8 without any
+#    change in what an incumbent runs.
 RUNNER_VERSION = 8
 CLI_TIMEOUT_SECONDS = 300  # per attempt, as the OpenRouter client's HTTP timeout
 CLI_MAX_TURNS = 1  # the reply is the model's first message; the CLI stops before a second model turn
@@ -175,7 +176,8 @@ def add_treatment_arguments(parser) -> None:
     group.add_argument("--nudge-fraction", type=float, default=None, metavar="F",
                        help="share of the response budget after which --nudge midpoint is due (default 0.5)")
     group.add_argument("--oracle", default=None, metavar="hidden-tests[:K]",
-                       help=f"a check() tool: hidden fail_to_pass counts only, K calls per run (default {DEFAULT_MAX_CALLS})")
+                       help="a check() tool: hidden fail_to_pass counts only, at most K calls per run "
+                            f"(default {DEFAULT_MAX_CALLS})")
 
 
 def treatments_record(args) -> dict:

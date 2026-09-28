@@ -103,7 +103,7 @@ class Fixture:
 
 class CardValidationTests(unittest.TestCase):
     def test_repository_cards_validate(self):
-        for name in ("006-replay", "007", "008", "009"):
+        for name in ("006-replay", "007", "008", "009", "011", "012", "013", "014", "015"):
             card = run_card.load_card(CARDS / f"{name}.json")
             self.assertEqual(run_card.validate_card(card), [], name)
 
@@ -368,6 +368,42 @@ class ExpansionTests(unittest.TestCase):
             self.assertEqual(plan.arm_hashes["reticle"], ["6f1061c028c8"])
         else:  # an LF checkout: the same card, with CRLF evaluator bytes, gives the recorded hash
             self.assertEqual(plan.line_ending_hashes["reticle"], ("CRLF", "6f1061c028c8"))
+
+    def test_treatment_cards_plan_the_runner_hashes_and_keep_the_incumbent(self):
+        """Cards 013-015: the treatment flag in extra_args is hashed as the runner hashes it; the incumbent arm
+        plans card 007's hash for every shared task; only the approval blockers remain."""
+        runner = run_card.RunnerAdapter.load(ROOT / "experiments" / "p6_pilot" / "run_pilot.py").module
+        card_007 = run_card.build_plan(run_card.load_card(CARDS / "007.json"), CARDS / "007.json")
+        hash_007 = {inv.task_ids[0]: inv.expected_hash for inv in card_007.runs}
+        for name, arm_name in (("013", "finish-guard"), ("014", "midpoint-nudge"), ("015", "check-oracle")):
+            with self.subTest(card=name):
+                card = run_card.load_card(CARDS / f"{name}.json")
+                self.assertEqual(run_card.validate_card(card), [])
+                plan = run_card.build_plan(card, CARDS / f"{name}.json")
+                self.assertEqual(plan.blockers, ["card status is 'proposed'; --execute needs approved or running",
+                                                 "prerequisite not done: owner approval recorded in the markdown "
+                                                 "card (then set status to running)"])
+                self.assertEqual((len(plan.runs), len(plan.controls)), (32, 2))
+                treatment = next(a for a in card["arms"] if a["name"] == arm_name)
+                treatments = runner.treatments_from_args(treatment["extra_args"])
+                self.assertTrue(treatments)
+                for inv in plan.runs:
+                    if inv.name == "incumbent":
+                        self.assertEqual(inv.expected_hash, hash_007[inv.task_ids[0]])
+                        self.assertNotIn("treatments", inv.expected_config)
+                    else:
+                        self.assertNotEqual(inv.expected_hash, hash_007[inv.task_ids[0]])
+                        self.assertEqual(inv.expected_config["treatments"], treatments)
+                        self.assertEqual(inv.args[-len(treatment["extra_args"]):], treatment["extra_args"])
+                        contracts = [runner.task_contract(t) for t in plan.universe.tasks.values()
+                                     if t["task_id"] == inv.task_ids[0]]
+                        routing = inv.expected_config["provider_routing"]
+                        self.assertEqual(inv.expected_hash, runner.protocol_hash(
+                            "pressure-recent-v3", routing, inv.expected_config["execution"],
+                            inv.expected_config["guards"], contracts, treatments))
+                orders = {tuple(inv.name for inv in plan.runs if (inv.task_ids, inv.rollout) == (u.task_ids, u.rollout))
+                          for u in plan.runs}
+                self.assertEqual(len(orders), 2)  # seeded per unit: both arm orders occur
 
 
 class LockTests(unittest.TestCase):
