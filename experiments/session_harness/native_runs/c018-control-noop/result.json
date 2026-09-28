@@ -7,8 +7,8 @@
     "kind": "noop",
     "changed": []
   },
-  "started_at": "2026-09-28T05:50:38.871264+00:00",
-  "finished_at": "2026-09-28T05:50:49.603456+00:00",
+  "started_at": "2026-09-28T06:15:16.815536+00:00",
+  "finished_at": "2026-09-28T06:15:28.244147+00:00",
   "wall_seconds": 0.0,
   "timed_out": false,
   "exit_code": null,
@@ -54,8 +54,20 @@
     "tools_outside_allowed_set": []
   },
   "audit_clean": true,
+  "denied_calls": [],
+  "permission_denials": [],
   "tool_sequence": [],
   "cost_estimate_usd": null,
+  "confinement": {
+    "layers": {
+      "read_block": true,
+      "bash_deny": true,
+      "sandbox": false
+    },
+    "settings_sha256": "22d9dd8fc7e17e0e02edf6ee5f6b183a9538893178189e0bc5c7a0ee9a2abf2b",
+    "denials": 0,
+    "observed_active": false
+  },
   "diff_stat": "",
   "diff_numstat": "",
   "ignored_untracked_files": [],
@@ -67,7 +79,7 @@
       "fail-to-pass": "fail",
       "pass-to-pass": "pass"
     },
-    "report_artifact_id": "art_5bf02f800ee74004bb80e3c1c28ddab5",
+    "report_artifact_id": "art_81ec10b1195d46729aaff4bd29f720ab",
     "test_counts": {
       "fail-to-pass": {
         "expected": 1,

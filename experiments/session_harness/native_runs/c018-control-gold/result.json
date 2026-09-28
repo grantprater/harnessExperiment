@@ -10,8 +10,8 @@
       "sqlparse/filters/others.py"
     ]
   },
-  "started_at": "2026-09-28T05:50:25.839744+00:00",
-  "finished_at": "2026-09-28T05:50:36.958807+00:00",
+  "started_at": "2026-09-28T06:15:02.693808+00:00",
+  "finished_at": "2026-09-28T06:15:14.777911+00:00",
   "wall_seconds": 0.1,
   "timed_out": false,
   "exit_code": null,
@@ -57,8 +57,20 @@
     "tools_outside_allowed_set": []
   },
   "audit_clean": true,
+  "denied_calls": [],
+  "permission_denials": [],
   "tool_sequence": [],
   "cost_estimate_usd": null,
+  "confinement": {
+    "layers": {
+      "read_block": true,
+      "bash_deny": true,
+      "sandbox": false
+    },
+    "settings_sha256": "b0a971c8e00301fd187643c34e6841ddbe435c34cb761ada9bda381d88ceb557",
+    "denials": 0,
+    "observed_active": false
+  },
   "diff_stat": " sqlparse/filters/others.py | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n",
   "diff_numstat": "1\t1\tsqlparse/filters/others.py\n",
   "ignored_untracked_files": [],
@@ -70,7 +82,7 @@
       "fail-to-pass": "pass",
       "pass-to-pass": "pass"
     },
-    "report_artifact_id": "art_374385c84b074561a3b7d472167c84e8",
+    "report_artifact_id": "art_5d021b1459fa4932bd5c50cff3003efa",
     "test_counts": {
       "fail-to-pass": {
         "expected": 1,

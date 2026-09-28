@@ -2,3 +2,5 @@
 {"acceptance": "rejected", "control": "c018-control-noop", "exit": 0, "kind": "noop", "seconds": 13.5, "ts_utc": "2026-09-28T05:46:19.641261+00:00"}
 {"acceptance": "accepted", "control": "c018-control-gold", "exit": 0, "kind": "gold", "seconds": 13.3, "ts_utc": "2026-09-28T05:50:37.085426+00:00"}
 {"acceptance": "rejected", "control": "c018-control-noop", "exit": 0, "kind": "noop", "seconds": 12.7, "ts_utc": "2026-09-28T05:50:49.760263+00:00"}
+{"acceptance": "accepted", "control": "c018-control-gold", "exit": 0, "kind": "gold", "seconds": 14.3, "ts_utc": "2026-09-28T06:15:14.907694+00:00"}
+{"acceptance": "rejected", "control": "c018-control-noop", "exit": 0, "kind": "noop", "seconds": 13.5, "ts_utc": "2026-09-28T06:15:28.383712+00:00"}

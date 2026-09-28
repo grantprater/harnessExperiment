@@ -192,9 +192,9 @@ python experiments/session_harness/compare_native_c007.py
 
 ## No-model controls (done)
 
-2026-09-28, `run_native_bank.py --controls --scratch-root <session scratchpad>` from `wt/native-bank` at `f21aee6`, the
+2026-09-28, `run_native_bank.py --controls --scratch-root <session scratchpad>` from `wt/native-bank` at `213c084`, the
 final code of this card (the records say `tracked_changes: true`: the staged removal of the first control records, not
-code; that first pass, at `5bf5860` before the audit fixes, gave the same outcomes and counts). Each control
+code; earlier passes at `5bf5860` and `f21aee6`, before the audit fixes and the CLI settings, gave the same outcomes and counts). Each control
 went through the driver's `run_one` into `native_control.py --scripted <kind>`: leak checks, `materialize_workspace`,
 the scripted agent in place of the CLI, the pristine copy and `git diff`, the evaluator bundle built afterwards,
 `AcceptanceRunner` in OCI image `8b74015e5079`, scratch removal. No CLI and no model.
@@ -212,6 +212,6 @@ Leak check 3 on this machine as it is now: `native_control.py --scripted gold` w
 before materializing anything (exit 3): "`...\Temp\reticle-native-control` holds other runs' directories
 (pc-native-sonnet-1)". That was the v1 leftover named above, since removed.
 
-Offline tests: 382 before, 408 after (26 new: native arm 14, driver 8 including one stub-CLI run end to end through the
-real `native_control.py` path, comparison 4); the same 4 `test_run_card` failures before and after (cards 013-015 status
-and `note_stop`, unrelated).
+Offline tests: 382 before, 413 after (31 new: native arm 19, driver 8 including one stub-CLI run end to end through the
+real `native_control.py` path, comparison 4). The 4 `test_run_card` failures present before (cards 013-015 status
+and `note_stop`) were fixed on this branch by `299d861`; the suite is now all green (4 OCI skips).
