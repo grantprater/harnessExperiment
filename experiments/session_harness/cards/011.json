@@ -58,7 +58,7 @@
       "task_set": "controls",
       "like_arm": "incumbent",
       "expect": "accepted",
-      "run_name": "s6a-control-gold-mut-v2"
+      "run_name": "c011-control-gold"
     },
     {
       "name": "noop",
@@ -66,7 +66,7 @@
       "task_set": "controls",
       "like_arm": "incumbent",
       "expect": "rejected",
-      "run_name": "s6a-control-noop-mut-v2"
+      "run_name": "c011-control-noop"
     }
   ],
   "tasks": {
@@ -119,7 +119,7 @@
       "invocation_wall_seconds": 3600
     },
     "campaign": {
-      "max_runs": 6,
+      "max_runs": 8,
       "max_model_attempts": 320,
       "monetary_cap_usd": null,
       "note": "6 runs x 48 attempts = 288, plus room for 1 rerun"
