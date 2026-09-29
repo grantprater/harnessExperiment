@@ -2,3 +2,4 @@
 {"time": "2026-09-28T23:02:03.418702+00:00", "event": "commit", "runs_finished": 10, "result": "committed and pushed"}
 {"time": "2026-09-28T23:45:13.148807+00:00", "event": "commit", "runs_finished": 20, "result": "committed and pushed"}
 {"time": "2026-09-29T00:17:24.613330+00:00", "event": "commit", "runs_finished": 30, "result": "committed and pushed"}
+{"time": "2026-09-29T00:50:51.396955+00:00", "event": "end", "exit_code": 0, "detail": "run_card exited 0", "finished_at": "2026-09-29T00:50:48.487681+00:00", "commit": "committed and pushed", "status": {"card": "E3-cloud-replication-019", "runs_planned": 40, "runs_finished": 40, "runs_accepted": 31, "failed_attempts": 5, "controls": {"gold": "ok", "noop": "ok"}, "nested_cost_usd": 29.171146, "nested_calls": 620, "wall_seconds": 8028.0, "last_stop": {"time": "2026-09-29T00:50:47+00:00", "event": "campaign_end", "reason": "campaign complete: 42 invocations"}, "spend_cap_usd": 40}}
