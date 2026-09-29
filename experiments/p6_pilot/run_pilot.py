@@ -48,11 +48,12 @@ protocol hash (name, version, fixed texts, parameters), and reported under "trea
 claude-cli client options (off by default; not treatments, since they change how a reply is obtained, not what the
 model is offered; one that is on is recorded in the CLI contract under provider_routing and so in the protocol hash;
 other clients ignore them):
-  --cli-reply-recovery lenient-json+second-turn
+  --cli-reply-recovery lenient-json+second-turn-on-retry
                              adapter v3: a StructuredOutput input the CLI could not parse is used when
-                             json.loads(raw, strict=False) accepts it, else the CLI runs one more model turn
-                             (--max-turns 2) and the second message's StructuredOutput call is the reply. What it
-                             did is recorded per attempt in calls.jsonl and per run in results.jsonl
+                             json.loads(raw, strict=False) accepts it; after a rejected StructuredOutput call, the
+                             request's later attempts run at --max-turns 2 and may take the second message's
+                             StructuredOutput call (first attempts keep v2's --max-turns 1). What it did is recorded
+                             per attempt in calls.jsonl (cli_max_turns, ...) and per run in results.jsonl
                              ("cli_reply_recovery"); see claude_cli.py
 
 Usage (from the repo root):
@@ -113,7 +114,7 @@ HERE = Path(__file__).resolve().parent
 DEFAULT_TASK_FILE = HERE / "tasks.json"
 sys.path.insert(0, str(HERE))
 from claude_cli import (  # noqa: E402
-    RECOVERY_MAX_TURNS, REPLY_RECOVERY, ClaudeCliClient, cli_contract, cli_version,
+    REPLY_RECOVERY, RETRY_MAX_TURNS, ClaudeCliClient, cli_contract, cli_version,
 )
 from interpreters import task_python  # noqa: E402
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
@@ -141,8 +142,8 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    "treatments". A bump would change every incumbent hash and block the cards pinned to v8 without any
 #    change in what an incumbent runs.
 #    Later in v8, without a bump, for the same reason: the claude-cli client option --cli-reply-recovery. Off,
-#    the CLI contract and every hash are exactly as before; on, the contract (adapter v3, --max-turns 2, the
-#    recovery rules) changes the protocol hash through provider_routing.
+#    the CLI contract and every hash are exactly as before; on, the contract (adapter v3, --max-turns 2 on
+#    retries after a rejected StructuredOutput call, the recovery rules) changes the hash through provider_routing.
 RUNNER_VERSION = 8
 CLI_TIMEOUT_SECONDS = 300  # per attempt, as the OpenRouter client's HTTP timeout
 CLI_MAX_TURNS = 1  # the reply is the model's first message; the CLI stops before a second model turn
@@ -252,8 +253,9 @@ def add_client_arguments(parser) -> None:
                                       "protocol hash through the CLI contract)")
     group.add_argument("--cli-reply-recovery", choices=[REPLY_RECOVERY], default=None,
                        help=f"{REPLY_RECOVERY}: when the CLI cannot parse the model's StructuredOutput input, use "
-                            "it if json.loads(raw, strict=False) accepts it, else let the CLI return its rejection "
-                            f"for one more model turn (--max-turns {RECOVERY_MAX_TURNS}); adapter v3 (claude_cli.py)")
+                            "it if json.loads(raw, strict=False) accepts it; after a rejected StructuredOutput "
+                            f"call, run the request's later attempts at --max-turns {RETRY_MAX_TURNS} so the CLI "
+                            "returns its rejection for one more model turn; adapter v3 (claude_cli.py)")
 
 
 def client_options_from_args(argv) -> dict:
@@ -269,7 +271,7 @@ def cli_routing_contract(model: str, version: str, client_options=None) -> dict:
     recovery = (client_options or {}).get("reply_recovery")
     if recovery is None:
         return cli_contract(model, max_turns=CLI_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version)
-    return cli_contract(model, max_turns=RECOVERY_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version,
+    return cli_contract(model, max_turns=CLI_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version,
                         reply_recovery=recovery)
 
 
@@ -1018,7 +1020,8 @@ def main() -> None:
             f"{surface} {value['name']} {value['version']}" for surface, value in sorted(treatments.items())))
     if client_options:
         print(f"claude-cli reply recovery {client_options['reply_recovery']} (adapter "
-              f"{routing[models[0]]['adapter_version']}, --max-turns {RECOVERY_MAX_TURNS}; in the protocol hash)")
+              f"{routing[models[0]]['adapter_version']}: --max-turns {CLI_MAX_TURNS}, {RETRY_MAX_TURNS} on retries "
+              f"after a rejected StructuredOutput call; in the protocol hash)")
     elif args.cli_reply_recovery:
         print(f"--cli-reply-recovery applies to the claude-cli client only; the {args.client} client ignores it")
     if args.dry_run:
@@ -1076,13 +1079,9 @@ def main() -> None:
         if args.client == "openrouter":
             inner = OpenRouterClient(api_key, model, calls_path, run_id, budget, args.max_tokens, routing[model])
         elif args.client == "claude-cli":
-            if client_options:
-                inner = ClaudeCliClient(model, calls_path, run_id, budget, max_attempts=MAX_ATTEMPTS,
-                                        timeout=CLI_TIMEOUT_SECONDS, max_turns=RECOVERY_MAX_TURNS,
-                                        reply_recovery=client_options["reply_recovery"])
-            else:
-                inner = ClaudeCliClient(model, calls_path, run_id, budget, max_attempts=MAX_ATTEMPTS,
-                                        timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS)
+            inner = ClaudeCliClient(model, calls_path, run_id, budget, max_attempts=MAX_ATTEMPTS,
+                                    timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS,
+                                    **({"reply_recovery": client_options["reply_recovery"]} if client_options else {}))
         else:
             inner = scripted_client(args.client, task, repo)
         client = GuardedClient(inner, tools, args.stop_on_repeats)

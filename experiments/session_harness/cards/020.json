@@ -38,7 +38,7 @@
       },
       "extra_args": [
         "--cli-reply-recovery",
-        "lenient-json+second-turn"
+        "lenient-json+second-turn-on-retry"
       ],
       "expected_protocol_hash": null,
       "note": "Card 019's incumbent arm (card 007's protocol on the cloud backend, model pinned) with CLI reply recovery (adapter v3), which card 019's five model_error restarts call for; without that option its planned hash per task equals card 019's for the same task on the same VM path."
@@ -62,7 +62,7 @@
         "--oracle",
         "hidden-tests:3",
         "--cli-reply-recovery",
-        "lenient-json+second-turn"
+        "lenient-json+second-turn-on-retry"
       ],
       "expected_protocol_hash": null,
       "note": "The incumbent arm (with the same CLI reply recovery) plus --oracle hidden-tests:3 (card 015's treatment arm on the cloud backend). The check tool runs the evaluator through the trusted-local backend on a scratch copy outside the workspace, as final acceptance does on this backend.",
@@ -220,6 +220,6 @@
     "Runs are named c020-<task>-r<n>-<arm>; one runner invocation per task, rollout and arm, with --max-total-calls 24.",
     "Both arms run in the same VM and card, so the delta is paired within one environment; neither arm is compared with card 015's host runs.",
     "Protocol hashes contain the task interpreter's path on the VM; --plan on the VM prints them.",
-    "Both arms run with --cli-reply-recovery lenient-json+second-turn (claude-cli adapter v3, --max-turns 2): card 019 lost 5 runs (restarted as -a2/-a3) to StructuredOutput inputs the CLI could not parse three times in a row. The option is the same in both arms, so it is not part of the delta; it is in the CLI contract, so both arms' hashes differ from card 019's. The gold/noop controls take the check-oracle arm's extra_args and ignore it."
+    "Both arms run with --cli-reply-recovery lenient-json+second-turn-on-retry (claude-cli adapter v3: v2's --max-turns 1 on every first attempt, lenient JSON for an unparsed StructuredOutput input, --max-turns 2 only on retries after a rejected StructuredOutput call): card 019 lost 5 runs (restarted as -a2/-a3) to StructuredOutput inputs the CLI could not parse three times in a row. The option is the same in both arms, so it is not part of the delta; it is in the CLI contract, so both arms' hashes differ from card 019's. The gold/noop controls take the check-oracle arm's extra_args and ignore it."
   ]
 }
