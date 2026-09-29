@@ -63,6 +63,7 @@ def main(argv=None) -> int:
     parser.add_argument("--tasks-file", default="experiments/mutation_tasks/tasks.mutations.json")
     parser.add_argument("--repos", type=Path, default=run_pilot.REPOS)
     parser.add_argument("--model", required=True)
+    parser.add_argument("--label", default="v1", help="names this attempt's files (the nudge text version)")
     args = parser.parse_args(argv)
     _, tasks = run_pilot.load_tasks([args.tasks_file, args.task])
     task = tasks[0]
@@ -72,7 +73,8 @@ def main(argv=None) -> int:
         tree = repro_verifiers.materialize(task, args.repos, temp / "workspace")
         messages = transcript(task, tree)
         tools = run_pilot.model_tool_schemas(run_pilot.treatments_from_args(TREATMENT_ARGS))
-        client = ClaudeCliClient(args.model, args.out / "calls.jsonl", f"smoke021-{args.task}",
+        calls_path = args.out / f"calls-{args.task}-{args.label}.jsonl"
+        client = ClaudeCliClient(args.model, calls_path, f"smoke021-{args.task}",
                                  run_pilot.CallBudget(1, 0), max_attempts=1, timeout=300, max_turns=1,
                                  reply_recovery=REPLY_RECOVERY)
         reply = client.complete(messages, tools).message
@@ -90,7 +92,7 @@ def main(argv=None) -> int:
         commits = [json.loads(c["function"]["arguments"]) for c in reply.get("tool_calls") or []
                    if c["function"]["name"] == "commit_hypothesis"]
         last = commits[-1] if commits else {}
-        attempts = [json.loads(line) for line in (args.out / "calls.jsonl").read_text(encoding="utf-8").splitlines()]
+        attempts = [json.loads(line) for line in calls_path.read_text(encoding="utf-8").splitlines()]
         record = {
             "task_id": task["task_id"], "model": args.model, "nudge": commit_nudge_text(0.5),
             "messages": messages, "reply": reply, "dispatched": outcomes,
@@ -103,7 +105,7 @@ def main(argv=None) -> int:
                                                for a in attempts),
             "reported_model": [a.get("reported_model") for a in attempts],
         }
-        (args.out / f"commit-reply-{task['task_id']}.json").write_text(json.dumps(record, indent=2) + "\n",
+        (args.out / f"commit-reply-{task['task_id']}-{args.label}.json").write_text(json.dumps(record, indent=2) + "\n",
                                                                      encoding="utf-8", newline="\n")
         print(json.dumps({key: record[key] for key in ("task_id", "committed", "located_file", "located_function",
                                                         "line_distance", "cli_list_price_estimate_usd")}))

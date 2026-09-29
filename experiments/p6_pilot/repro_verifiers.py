@@ -23,7 +23,8 @@ Every generation attempt checks the CLI's init event (tools exactly Read, Glob, 
 server; no API key from the environment; the pinned model in init, messages and modelUsage) and audits every
 tool call: a Read, Glob or Grep that named a path outside the workspace copy and was not refused fails the attempt.
 Each attempt's stream is kept beside the manifest for review. Cost is the CLI's list-price estimate
-(total_cost_usd); --spend-cap-usd stops before an attempt once the manifest's recorded spend reaches it.
+(total_cost_usd); --spend-cap-usd stops before an attempt once the manifest's recorded spend would pass it, and a
+task that can get no call at all is recorded as unavailable (reason "generation spend cap reached").
 
 Usage (from the repository root):
   python experiments/p6_pilot/repro_verifiers.py generate --out experiments/session_harness/verifiers/021 \\
@@ -428,9 +429,15 @@ def generate(args) -> int:
             print(f"{task['task_id']}: already in the manifest ({manifest['tasks'][task['task_id']]['status']}); kept")
             continue
         spend_left = args.spend_cap_usd - manifest_spend(manifest)
-        if spend_left < args.attempt_budget_usd:
-            print(f"spend cap ${args.spend_cap_usd:.2f} reached (${manifest_spend(manifest):.2f} recorded); stopping")
-            break
+        if spend_left < args.attempt_budget_usd:  # no call is possible: the task's verifier is unavailable
+            print(f"{task['task_id']}: spend cap ${args.spend_cap_usd:.2f} reached "
+                  f"(${manifest_spend(manifest):.2f} recorded); unavailable")
+            manifest["tasks"][task["task_id"]] = {
+                "status": "unavailable", "attempts": 0, "cost_usd": 0.0, "reason": "generation spend cap reached",
+                "statement_sha256": hashlib.sha256(task["statement"].encode("utf-8")).hexdigest(),
+                "generated_at": utc_now()}
+            save_manifest(manifest_path, manifest)
+            continue
         entry = generate_task(task, out_dir=out_dir, repos=Path(args.repos), model=args.model, python=python,
                               max_attempts=args.max_attempts, attempt_budget=args.attempt_budget_usd,
                               spend_left=spend_left)
@@ -545,7 +552,7 @@ def main(argv=None) -> int:
     generate_parser.add_argument("--max-attempts", type=int, default=MAX_ATTEMPTS)
     generate_parser.add_argument("--attempt-budget-usd", type=float, default=ATTEMPT_BUDGET_USD,
                                  help="the CLI's --max-budget-usd per attempt")
-    generate_parser.add_argument("--spend-cap-usd", type=float, default=6.0,
+    generate_parser.add_argument("--spend-cap-usd", type=float, default=8.0,
                                  help="stop before an attempt once the manifest's recorded spend would pass it")
     commands.choices["score"].add_argument("--validity-file", default="validity.json")
     agree_parser = commands.add_parser("agree")

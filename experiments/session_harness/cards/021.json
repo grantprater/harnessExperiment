@@ -177,8 +177,8 @@
       "max_runs": 36,
       "max_model_attempts": 1000,
       "monetary_cap_usd": null,
-      "note": "36 runs x 24 attempts = 864 planned, room for 5 retried runs. Expected nested cost about $40 at CLI list price (card 020: $26.84 for 32 runs, about $1.2 per hard run and $0.24 per easy run by token share; 30 hard runs and 6 easy runs here). Spend guard: checkpoint before the next attempt at $54, so that with verifier generation (its own cap, $6) the card stays within $60.",
-      "list_price_cap_usd": 54
+      "note": "36 runs x 24 attempts = 864 planned, room for 5 retried runs. Expected nested cost about $40 at CLI list price (card 020: $26.84 for 32 runs, about $1.2 per hard run and $0.24 per easy run by token share; 30 hard runs and 6 easy runs here). Spend guard: checkpoint before the next attempt at $52, so that with verifier generation (its own cap, $8) the card stays within $60.",
+      "list_price_cap_usd": 52
     }
   },
   "stop_rules": {
@@ -228,7 +228,7 @@
     "Card 020's layout and backend (trusted-local in the cloud VM, isolation vm-sandbox, CLI 2.1.284, model pinned as claude-sonnet-5, CLI reply recovery in both arms), with 3 rollouts on the hard set and 1 on the easy set; 36 runs, 20 responses and 24 attempts each.",
     "Runs are named c021-<task>-r<n>-<arm>; one runner invocation per task, rollout and arm, with --max-total-calls 24.",
     "The verifier-commit arm's hashes contain the verifier manifest's sha256 (LF-normalized), so they change once the manifest is generated; --plan on the VM after generation prints the final ones. The incumbent's do not depend on it.",
-    "Verifier generation (repro_verifiers.py generate) is one to three headless claude -p calls per task, same pinned model, fresh context, only Read/Glob/Grep on a temporary copy of the pre-edit workspace, --permission-mode dontAsk; its own spend cap is $6 (at most $0.60 per call). It is not part of the campaign's calls.jsonl; its cost is in the manifest.",
+    "Verifier generation (repro_verifiers.py generate) is one to three headless claude -p calls per task, same pinned model, fresh context, only Read/Glob/Grep on a temporary copy of the pre-edit workspace, --permission-mode dontAsk; its own spend cap is $8 (at most $0.60 per call; the host smoke spent $0.32 per call at a $0.30 cap, 17 turns); a task that can get no call under the cap is recorded as unavailable. It is not part of the campaign's calls.jsonl; its cost is in the manifest.",
     "Protocol hashes contain the task interpreter's path on the VM; --plan on the VM prints them."
   ]
 }

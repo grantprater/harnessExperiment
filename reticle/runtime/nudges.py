@@ -79,12 +79,16 @@ class MidpointNudge:
 # nudge, because the commitment is also the card's instrument: conditioning it on "no edit yet" would leave the
 # prediction record missing exactly in the runs that had already committed to a fix.
 COMMIT_NUDGE_VERSION = "commit-nudge-v1"
+# The first draft ("... Commit to your leading hypothesis now: call commit_hypothesis ...") was ignored in both host
+# smoke replies (experiments/session_harness/smoke-021-host/commit-reply, *-draft): the model kept exploring. v1 asks
+# for the call in this reply, before any other tool call, and names what comes in the next reply.
 COMMIT_NUDGE_TEMPLATE = (
-    "{share} of the response budget is spent. Commit to your leading hypothesis now: call commit_hypothesis with "
-    "the file, function, line and mechanism you believe cause the reported behavior, one specific observation you "
-    "will make next (a command or a read), and exactly what it will show if you are right. Make that observation, "
-    "then call record_observation with what it showed and whether it matched; if it did not, say what surprised "
-    "you and revise the hypothesis. Then edit the most likely cause and verify the fix."
+    "{share} of the response budget is spent. This reply must start with a commit_hypothesis call, before any other "
+    "tool call: the file, function, line and mechanism you believe cause the reported behavior, one specific "
+    "observation you will make next (a command or a read), and exactly what it will show if you are right. Make "
+    "that observation in the same reply. In your next reply, call record_observation with what it showed and "
+    "whether it matched; if it did not, say what surprised you and revise the hypothesis. Then edit the most likely "
+    "cause and verify the fix."
 )
 
 

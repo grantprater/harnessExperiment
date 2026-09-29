@@ -74,6 +74,17 @@ def commitment_schemas() -> List[Dict[str, Any]]:
     return json.loads(json.dumps(COMMITMENT_SCHEMAS))
 
 
+def _coerced(arguments: Dict[str, Any], parameters: Dict[str, Any]) -> Dict[str, Any]:
+    """An integer argument given as a string of digits ("163") becomes the integer; the host smoke's first
+    commitment was rejected only for that (line "1")."""
+    result = dict(arguments)
+    for key, value in arguments.items():
+        if (parameters["properties"].get(key) or {}).get("type") == "integer" and isinstance(value, str) \
+                and value.strip().isdigit():
+            result[key] = int(value.strip())
+    return result
+
+
 def _problems(arguments: Dict[str, Any], parameters: Dict[str, Any]) -> List[str]:
     properties = parameters["properties"]
     problems = [f"unknown argument {key!r}" for key in sorted(arguments) if key not in properties]
@@ -168,6 +179,7 @@ class CommitmentTools:
             return self._journaled(call_id, name, {"raw_arguments": parsed}, lambda: ToolOutcome(
                 "ERROR: arguments must be a JSON object; nothing was recorded.", "rejected"))
         parameters = _COMMIT_PARAMETERS if name == COMMIT_TOOL else _OBSERVE_PARAMETERS
+        parsed = _coerced(parsed, parameters)
         problems = _problems(parsed, parameters)
         if name == OBSERVE_TOOL and parsed.get("matched") is False and not str(parsed.get("surprise") or "").strip():
             problems.append("'surprise' is required when matched is false")

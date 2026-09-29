@@ -192,7 +192,7 @@ class CommitmentToolTests(unittest.TestCase):
     def test_bad_arguments_are_rejected_and_nothing_is_recorded(self):
         full = dict(file="a.py", function="f", line=3, mechanism="m", observation="o", prediction="p")
         cases = [("commit_hypothesis", {k: v for k, v in full.items() if k != "prediction"}, "missing argument"),
-                 ("commit_hypothesis", {**full, "line": "3"}, "'line' must be integer"),
+                 ("commit_hypothesis", {**full, "line": "three"}, "'line' must be integer"),
                  ("commit_hypothesis", {**full, "line": True}, "'line' must be integer"),
                  ("commit_hypothesis", {**full, "mechanism": " "}, "non-empty"),
                  ("commit_hypothesis", {**full, "extra": 1}, "unknown argument"),
@@ -205,6 +205,9 @@ class CommitmentToolTests(unittest.TestCase):
                 self.assertIn(message, outcome.content)
         self.assertEqual(self.tools.dispatch("commit_hypothesis", "{not json", "cx").status, "rejected")
         self.assertEqual((self.log.record()["commits"], self.log.record()["observations"]), (0, 0))
+        digits = self.tools.dispatch("commit_hypothesis", json.dumps({**full, "line": " 163"}), "cd")
+        self.assertEqual(digits.status, "success")
+        self.assertEqual(self.log.commits[0]["line"], 163)
 
     def test_tools_absent_without_the_option(self):
         plain = ToolSuite(self.runtime, interpreter=sys.executable)
@@ -256,7 +259,7 @@ class CommitmentNudgeTests(unittest.TestCase):
         self.assertEqual([(m["name"], m["version"], m["after_response"]) for m in messages],
                          [("commit", "commit-nudge-v1", 3)])
         self.assertEqual(messages[0]["content"], commit_nudge_text(0.5))
-        self.assertTrue(commit_nudge_text(0.5).startswith("Half of the response budget is spent. Commit"))
+        self.assertTrue(commit_nudge_text(0.5).startswith("Half of the response budget is spent. This reply must"))
         self.assertIn(commit_nudge_text(0.5), json.dumps(client.requests[3]))
         self.assertNotIn(commit_nudge_text(0.5), json.dumps(client.requests[2]))
         self.assertEqual(nudge.record(), {"fired": True, "after_response": 3, "fraction": 0.5,
@@ -502,6 +505,14 @@ class GenerationTests(VerifierFixture):
         entry = json.loads((self.out / "manifest.json").read_text(encoding="utf-8"))["tasks"]["synthetic-mut-001"]
         self.assertEqual((entry["status"], entry["attempts"]), ("unavailable", 2))
         self.assertNotIn("file", entry)
+
+    def test_a_task_past_the_spend_cap_is_unavailable_without_a_call(self):
+        self.replies(reply_with(VALID_TEST))
+        self.generate("--spend-cap-usd", "0.10")
+        entry = json.loads((self.out / "manifest.json").read_text(encoding="utf-8"))["tasks"]["synthetic-mut-001"]
+        self.assertEqual((entry["status"], entry["attempts"], entry["reason"]),
+                         ("unavailable", 0, "generation spend cap reached"))
+        self.assertEqual(self.stub_calls(), [])
 
     def test_isolation_problems_stop_and_freeze_nothing(self):
         cases = {"tool_isolation_violation": stream(init(("Read", "Bash", "StructuredOutput")),

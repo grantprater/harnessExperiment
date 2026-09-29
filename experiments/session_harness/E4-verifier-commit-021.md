@@ -107,16 +107,19 @@ splits it; if it does not, splitting it is moot.
   `midpoint-nudge-v1` it fires **whether or not a source file was edited**: the commitment is also the card's
   instrument, and conditioning it on "no edit yet" would leave the prediction record missing exactly in the runs that
   had committed to a fix.
-- **Text** (hashed; the share follows the fraction): "Half of the response budget is spent. Commit to your leading
-  hypothesis now: call commit_hypothesis with the file, function, line and mechanism you believe cause the reported
-  behavior, one specific observation you will make next (a command or a read), and exactly what it will show if you
-  are right. Make that observation, then call record_observation with what it showed and whether it matched; if it
-  did not, say what surprised you and revise the hypothesis. Then edit the most likely cause and verify the fix."
-  It does not name `check()`, so the same text serves a commit-only arm later.
+- **Text** (hashed; the share follows the fraction): "Half of the response budget is spent. This reply must start
+  with a commit_hypothesis call, before any other tool call: the file, function, line and mechanism you believe cause
+  the reported behavior, one specific observation you will make next (a command or a read), and exactly what it will
+  show if you are right. Make that observation in the same reply. In your next reply, call record_observation with
+  what it showed and whether it matched; if it did not, say what surprised you and revise the hypothesis. Then edit
+  the most likely cause and verify the fix." It does not name `check()`, so the same text serves a commit-only arm
+  later. A softer first draft ("Commit to your leading hypothesis now: call commit_hypothesis ...") was ignored in
+  both host smoke replies (the model kept searching); this wording was followed in both (smoke below).
 - **Structured fields** ([`reticle/tools/commitment.py`](../../reticle/tools/commitment.py), `commitment-tools-v1`):
   `commit_hypothesis(file, function, line, mechanism, observation, prediction)` and
   `record_observation(observed, matched, surprise, revised_hypothesis)` (surprise required when `matched` is
-  false), offered from the first request so the tool list never changes mid-run. Neither acts on the workspace. Each
+  false; a line given as a string of digits is taken as the integer, since the smoke's first commitment was rejected
+  only for `"line": "1"`), offered from the first request so the tool list never changes mid-run. Neither acts on the workspace. Each
   call is journaled (`hypothesis_commit`, `hypothesis_observation`) with its fields, whether it came after the nudge,
   the workspace revision, and for an observation the tool calls made since the commitment it answers.
 - **The grader-free instrument** ([`score_commitments.py`](score_commitments.py)): per run, the prediction status
@@ -165,17 +168,17 @@ timeout 600 s. Campaign: 36 runs, at most 1000 model attempts.
 
 | Item | Estimate (CLI list price) | Guard |
 |---|---|---|
-| 30 hard runs | ~$36 (card 020: ~$1.2 per hard run by token share; up to ~$1.8) | campaign spend guard $54 |
+| 30 hard runs | ~$36 (card 020: ~$1.2 per hard run by token share; up to ~$1.8) | campaign spend guard $52 |
 | 6 easy runs | ~$1.5 | (same) |
-| Verifier generation, 8 tasks, 1-3 calls each | ~$2-4 | $0.60 per call (CLI `--max-budget-usd`), $6 in total |
-| This session's live smoke | measured below | ~$1 |
+| Verifier generation, 8 tasks, 1-3 calls each | ~$3-5 (host smoke: $0.32 per call, stopped by a $0.30 cap after 17 turns) | $0.60 per call (CLI `--max-budget-usd`), $8 in total; a task that can get no call under the cap is `unavailable` |
+| This session's live smoke | $0.71 (below) | ~$1 |
 
-Expected total about $40-42; worst case within $60.
+Campaign spend guard $52 (checkpoint before the next attempt). Expected total about $41-43; worst case within $60.
 
 ### Stop rules
 
 Card 020's, plus: never regenerate, edit or drop a frozen test after generation (whatever its validity); an
-unavailable verifier stays unavailable; a generation attempt with an isolation, login, model-pin or out-of-workspace
+unavailable verifier stays unavailable (including one left unavailable by the $8 generation cap); a generation attempt with an isolation, login, model-pin or out-of-workspace
 problem stops generation; trajectory review reports reads of the verifier directory.
 
 ### Decision rule
@@ -209,14 +212,47 @@ Offline validation (no model): [`tests/test_card021_verifier_commit.py`](../../t
 a scripted reproduction test through the `check()` path fails on the mutated tree (1 failing, 1 passing) and passes on
 the gold tree (0, 2); a fix turns the count; the cap holds; a gaming conftest cannot change counts; an unavailable
 verifier runs nothing; generation against a stub `claude` sends a blind test back with its counts and freezes the
-failing one, refuses isolation and out-of-workspace problems, leaves a task unavailable after the attempts run out,
+failing one, refuses isolation and out-of-workspace problems, leaves a task unavailable after the attempts run out or past the spend cap (without a call),
 and scores a valid and an invalid test correctly; `agree` builds the confusion matrix without touching evidence; the
 commitment nudge fires once at half budget even after an edit and the model's commitments are journaled; the runner
 records, hashes and offers exactly what `model_tool_schemas` lists; an end-to-end gold run with both treatments.
 
 ## Live smoke (this session, host, CLI 2.1.284, `claude-sonnet-5`)
 
-*Filled below after the smoke.*
+Evidence: [`smoke-021-host/`](smoke-021-host). Total $0.71 at CLI list price. These tests are smoke evidence only; the
+card's manifest is generated on the VM (`RUN_IN_CLOUD-021.md` steps 5-6), so no test here is frozen for the campaign.
+
+**Verifier generation** (`repro_verifiers.py generate`, per-call cap lowered to $0.30 and total cap to $0.85 for the
+smoke; the card uses $0.60 and $8). Every call's init event listed exactly `Glob, Grep, Read, StructuredOutput`, no
+MCP server, `permissionMode` `dontAsk`, `apiKeySource` `none`, and `claude-sonnet-5` in init, messages and
+`modelUsage`; every Read/Glob/Grep path was inside the temporary pre-edit copy.
+
+| Task | Calls | Cost | Turns | Pre-edit (collected / failed) | Mutated check() | Gold check() | Valid |
+|---|---|---|---|---|---|---|---|
+| sqlparse-mut-057 (hard; mutation in `Function.get_window`, sql.py) | 1 | $0.320 | 17 | 3 / 1 | failing 1, passing 2 | **failing 1**, passing 2 | **no** |
+| sqlparse-mut-061 (hard; mutation in `ReindentFilter._process_identifierlist`) | 1 | $0.319 | 17 | 2 / 1 | failing 1, passing 1 | failing 0, passing 2 | **yes** |
+
+Both calls ended as `error_max_budget_usd` after their StructuredOutput reply (the $0.30 cap was binding; the card's
+$0.60 leaves room). 057's test is the instructive failure: the statement ("grouping function ... `assert False`")
+led the generator to a different, real upstream behavior (a lower-case `as` in `CREATE TABLE ... AS SELECT` is not
+recognized in `group_functions`), so its test fails on the gold tree as well. The gold-free rule (fails on the
+pre-edit tree) cannot tell this apart from a reproduction of the reported bug; only validity scoring can, which is
+why it is the card's key diagnostic and why the check() schema says the test may be wrong. One of two valid is a
+smoke, not an estimate.
+
+**Commitment replies** (`smoke021_commit_reply.py`: a stubbed transcript of the task prompt, one `read_file` of the
+mutated region, then the nudge; one request through the runner's claude-cli client with the verifier-commit tool
+list; the reply's commitment calls dispatched against the commitment tools):
+
+| Text | Task | Reply | Commitment |
+|---|---|---|---|
+| first draft | 057 | two `search_text` calls | none ($0.025) |
+| first draft | 061 | one `read_file` call | none ($0.013) |
+| v1 (the card's) | 057 | `commit_hypothesis` first, then two searches | rejected for `"line": "1"` (now coerced); names `grouping.py` `group_functions`, not the mutated `sql.py` `Function.get_window`, though the transcript showed line 646 ($0.014) |
+| v1 (the card's) | 061 | `commit_hypothesis` | recorded; mutated file and function, line 163 vs 139 ($0.023) |
+
+The 057 reply reproduces the observation audit's pattern in one request: the mutated line was on screen and the
+committed hypothesis pointed elsewhere.
 
 ## Reporting
 
