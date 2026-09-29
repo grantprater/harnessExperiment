@@ -196,8 +196,23 @@ The evaluator needs no change: `build_evaluator` already restores the whole `tes
     the timeout were chosen by rule, not tuned.
 11. **One source state (resolved 2026-09-28).** The generator hard-coded `sqlparse`, `tests` and
     the source task id. They are now parameters of a [repos.json](repos.json) entry (`--repo`,
-    default `sqlparse`), with `pythonpath` for src layouts; the sqlparse bank regenerates byte for
-    byte from its entry. The second bank, boltons ([tasks.boltons.json](tasks.boltons.json)), is described in [card 023](../session_harness/E3-calibration-023.md).
+    default `sqlparse`), with `pythonpath` for src layouts.
+
+    Checks that the sqlparse path is unchanged:
+    - Its candidate pool (531) and scheduled order, with every patch, hash identically under the old and
+      new code.
+    - A full regeneration on 2026-09-28, on a heavily loaded host, reproduced 74 of the 76 task records
+      byte for byte. `sqlparse-mut-072` differed only in a memory address inside its failure message
+      (`<DML 'select' at 0x...>`); that address changes on every run, under the old code too.
+    - `sqlparse-mut-044` was lost to the 60 s wall-clock timeout: 75.9 s under load, against 3.2 s
+      originally. Two rejected candidates also timed out instead of being too destructive. Rebuilt on
+      its own, `sqlparse-mut-044` reproduced its recorded 3-test failing set, and its gold patch
+      passed.
+
+    Regeneration is therefore not deterministic under load or across processes, and the committed
+    bank stays the reference. The second bank, boltons
+    ([tasks.boltons.json](tasks.boltons.json)), is described in
+    [card 023](../session_harness/E3-calibration-023.md).
 
 ## Not done
 
