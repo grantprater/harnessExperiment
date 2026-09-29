@@ -352,15 +352,18 @@ class CloudCardTests(unittest.TestCase):
         self.assertEqual(card["status"], "proposed")
         self.assertEqual(len(plan.blockers), 2)
         self.assertEqual([a["name"] for a in card["arms"]], [a["name"] for a in c015["arms"]])
-        self.assertEqual([a["extra_args"] for a in card["arms"]], [a["extra_args"] for a in c015["arms"]])
+        # Card 015's extra_args plus the same CLI reply recovery in both arms (card 019's restarts).
+        self.assertEqual([a["extra_args"] for a in card["arms"]],
+                         [a["extra_args"] + ["--cli-reply-recovery", claude_cli.REPLY_RECOVERY] for a in c015["arms"]])
         self.assertEqual(card["blocks"], c015["blocks"])
         self.assertEqual(card["tasks"], c015["tasks"])
         self.assertEqual((len(plan.runs), len(plan.controls)), (32, 2))
         _, plan_019 = self.plan("019")
         hash_019 = {inv.task_ids[0]: inv.expected_hash for inv in plan_019.runs}
-        for inv in plan.runs:
-            if inv.name == "incumbent":
-                self.assertEqual(inv.expected_hash, hash_019[inv.task_ids[0]])
+        for inv in plan.runs:  # the recovery option is in the CLI contract, so no run shares card 019's hash
+            self.assertNotEqual(inv.expected_hash, hash_019[inv.task_ids[0]])
+            self.assertEqual(inv.expected_config["provider_routing"][PINNED]["reply_recovery"]["name"],
+                             claude_cli.REPLY_RECOVERY)
 
 
 class CampaignWrapperTests(unittest.TestCase):

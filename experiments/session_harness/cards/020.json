@@ -36,9 +36,12 @@
         "resume_after_provider_stop": 0,
         "resume_wait_seconds": null
       },
-      "extra_args": [],
+      "extra_args": [
+        "--cli-reply-recovery",
+        "lenient-json+second-turn"
+      ],
       "expected_protocol_hash": null,
-      "note": "Card 019's incumbent arm (card 007's protocol on the cloud backend, model pinned); its planned hash per task equals card 019's for the same task on the same VM path."
+      "note": "Card 019's incumbent arm (card 007's protocol on the cloud backend, model pinned) with CLI reply recovery (adapter v3), which card 019's five model_error restarts call for; without that option its planned hash per task equals card 019's for the same task on the same VM path."
     },
     {
       "name": "check-oracle",
@@ -57,10 +60,12 @@
       },
       "extra_args": [
         "--oracle",
-        "hidden-tests:3"
+        "hidden-tests:3",
+        "--cli-reply-recovery",
+        "lenient-json+second-turn"
       ],
       "expected_protocol_hash": null,
-      "note": "Card 019's incumbent arm plus --oracle hidden-tests:3 (card 015's treatment arm on the cloud backend). The check tool runs the evaluator through the trusted-local backend on a scratch copy outside the workspace, as final acceptance does on this backend.",
+      "note": "The incumbent arm (with the same CLI reply recovery) plus --oracle hidden-tests:3 (card 015's treatment arm on the cloud backend). The check tool runs the evaluator through the trusted-local backend on a scratch copy outside the workspace, as final acceptance does on this backend.",
       "bundle": {
         "module": "tool use",
         "surface": "added tool (task-changing arm)",
@@ -214,6 +219,7 @@
     "Card 015's design (evolution set 001/022/032/057/061, efficiency set 025/034/040, 2 rollouts, arm order seeded per unit with seed 15, gold/noop controls under the treatment arm) on card 019's cloud backend: trusted-local with isolation vm-sandbox, CLI 2.1.284, model pinned as claude-sonnet-5.",
     "Runs are named c020-<task>-r<n>-<arm>; one runner invocation per task, rollout and arm, with --max-total-calls 24.",
     "Both arms run in the same VM and card, so the delta is paired within one environment; neither arm is compared with card 015's host runs.",
-    "Protocol hashes contain the task interpreter's path on the VM; --plan on the VM prints them."
+    "Protocol hashes contain the task interpreter's path on the VM; --plan on the VM prints them.",
+    "Both arms run with --cli-reply-recovery lenient-json+second-turn (claude-cli adapter v3, --max-turns 2): card 019 lost 5 runs (restarted as -a2/-a3) to StructuredOutput inputs the CLI could not parse three times in a row. The option is the same in both arms, so it is not part of the delta; it is in the CLI contract, so both arms' hashes differ from card 019's. The gold/noop controls take the check-oracle arm's extra_args and ignore it."
   ]
 }
