@@ -1,0 +1,415 @@
+{
+ "base_rate_range": [
+  0.2,
+  0.8
+ ],
+ "builder_sha256": "3246daddd41281d95e7c5503d8506d892172219375a909f07a878ed109e6fd75",
+ "builder_version": "forecast-bank-v1",
+ "candidates": {
+  "generated": 1760,
+  "kept": 1528,
+  "not_resolvable": 0,
+  "outside_base_rate_range": 232,
+  "too_few_windows": 0
+ },
+ "cells_with_a_kept_candidate": {
+  "august": 120,
+  "july": 120
+ },
+ "fetch_end": "2026-09-27",
+ "forecast_dates": [
+  "2026-07-06",
+  "2026-07-13",
+  "2026-07-20",
+  "2026-07-27",
+  "2026-08-03",
+  "2026-08-10",
+  "2026-08-17",
+  "2026-08-24"
+ ],
+ "history_start": "2023-01-01",
+ "horizons": [
+  7,
+  14,
+  28
+ ],
+ "last_date_per_series": {
+  "DCOILWTICO": "2026-09-22",
+  "DEXJPUS": "2026-09-25",
+  "DEXUSEU": "2026-09-25",
+  "DGS10": "2026-09-25",
+  "SP500": "2026-09-25",
+  "VIXCLS": "2026-09-22",
+  "cairo_precip": "2026-09-27",
+  "cairo_tmax": "2026-09-27",
+  "london_precip": "2026-09-27",
+  "london_tmax": "2026-09-27",
+  "moscow_precip": "2026-09-27",
+  "moscow_tmax": "2026-09-27",
+  "mumbai_precip": "2026-09-27",
+  "mumbai_tmax": "2026-09-27",
+  "new_york_precip": "2026-09-27",
+  "new_york_tmax": "2026-09-27",
+  "quakes_california_m25": "2026-09-26",
+  "quakes_world_m45": "2026-09-26",
+  "sao_paulo_precip": "2026-09-27",
+  "sao_paulo_tmax": "2026-09-27",
+  "sydney_precip": "2026-09-27",
+  "sydney_tmax": "2026-09-27",
+  "tokyo_precip": "2026-09-27",
+  "tokyo_tmax": "2026-09-27",
+  "wiki_bitcoin": "2026-09-27",
+  "wiki_chess": "2026-09-27",
+  "wiki_einstein": "2026-09-27",
+  "wiki_moon": "2026-09-27",
+  "wiki_python": "2026-09-27",
+  "wiki_ww2": "2026-09-27"
+ },
+ "min_windows": 52,
+ "raw": {
+  "fred-DCOILWTICO.csv": {
+   "bytes": 16346,
+   "sha256": "80b30019917b154a3bac1d5de25f52d4f6ed3ea031254410b26426f6c6bcbb9f",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILWTICO&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-DEXJPUS.csv": {
+   "bytes": 17323,
+   "sha256": "4c41d7928c4495b259b2c671cda1f1ab09271314194639c4d7381386339e4964",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXJPUS&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-DEXUSEU.csv": {
+   "bytes": 17323,
+   "sha256": "ff32dddbf0a9690fde93aa96877b7fb7e013be5744b47bad9042d4462d71d0d2",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXUSEU&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-DGS10.csv": {
+   "bytes": 15447,
+   "sha256": "c6fb8475a890ee42202121aafa777de03e9100a9ae90213b107258726921ea19",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-SP500.csv": {
+   "bytes": 18263,
+   "sha256": "d1c2eb7f8c53ea4d7476512361fca339d11f6424d13bf35c8c801d47610ea191",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-VIXCLS.csv": {
+   "bytes": 16481,
+   "sha256": "9fb543e68d5e48af93e0b539b5a5cd469b80ae42d1437911ff2281be9300dcc5",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "open-meteo-cairo.json": {
+   "bytes": 31738,
+   "sha256": "5c79ce2a25245e94f87f19e659fc4635888429d3f1598c2cca8d2b52f181238d",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=30.04&longitude=31.24&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-london.json": {
+   "bytes": 31560,
+   "sha256": "09c69364c0f9343ce3d4fcf1c50dce3d35f11052f2f8cccc19a394437ad6e934",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=51.51&longitude=-0.13&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-moscow.json": {
+   "bytes": 31464,
+   "sha256": "d5ffd9b44d80682a0922a62ec071a80944dc1446385be6714571f42040253524",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=55.76&longitude=37.62&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-mumbai.json": {
+   "bytes": 31983,
+   "sha256": "327a82b1129d13546b39d26dcab07cbe06129a531db5b4302bbfd19230e606b2",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=19.08&longitude=72.88&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-new_york.json": {
+   "bytes": 31600,
+   "sha256": "abb05596405297e7474c8d5cd20e666671e9f9f26081aac4e4089f9dc67f92b4",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=40.71&longitude=-74.01&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-sao_paulo.json": {
+   "bytes": 31934,
+   "sha256": "3ff7e2742270a475a524c8139ff812f2e5593587b8461212fb2209f680df13be",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=-23.55&longitude=-46.63&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-sydney.json": {
+   "bytes": 31844,
+   "sha256": "932775b222b2ae81ccc9b2e42106def8cf79e8c6185143266f6030930d910391",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=-33.87&longitude=151.21&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-tokyo.json": {
+   "bytes": 31766,
+   "sha256": "7e070239913679690dee73552dd39f31740e7934da09b8e70d952da00d41b368",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=35.68&longitude=139.69&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "usgs-quakes_california_m25-2023.csv": {
+   "bytes": 183850,
+   "sha256": "13485322b5e645cadddfb7317a0797f4fe8fc185bb01441ffa85ee58ac4c8280",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2023-01-01&endtime=2024-01-01&minmagnitude=2.5&maxlatitude=42&maxlongitude=-114&minlatitude=32&minlongitude=-125&orderby=time-asc"
+  },
+  "usgs-quakes_california_m25-2024.csv": {
+   "bytes": 267079,
+   "sha256": "8bee1c5b6c95cc302576197b44cff53e03519ae5df62bda0c704db0041e67cef",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2024-01-01&endtime=2025-01-01&minmagnitude=2.5&maxlatitude=42&maxlongitude=-114&minlatitude=32&minlongitude=-125&orderby=time-asc"
+  },
+  "usgs-quakes_california_m25-2025.csv": {
+   "bytes": 236718,
+   "sha256": "10835fd2fd2b5c7697ce3b6764ccc192fee2bd017f1079d051decd9f5d48c38e",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2025-01-01&endtime=2026-01-01&minmagnitude=2.5&maxlatitude=42&maxlongitude=-114&minlatitude=32&minlongitude=-125&orderby=time-asc"
+  },
+  "usgs-quakes_california_m25-2026.csv": {
+   "bytes": 205135,
+   "sha256": "c5305be5c0b667b54b9dfd89150158d5e34f70119c9b6966df615d0bc53d66aa",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2026-01-01&endtime=2026-09-27&minmagnitude=2.5&maxlatitude=42&maxlongitude=-114&minlatitude=32&minlongitude=-125&orderby=time-asc"
+  },
+  "usgs-quakes_world_m45-2023.csv": {
+   "bytes": 1441174,
+   "sha256": "1b8db6a098b40f3755bae736d1d3f27e5953928318b55123c71d20cd4674ff61",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2023-01-01&endtime=2024-01-01&minmagnitude=4.5&orderby=time-asc"
+  },
+  "usgs-quakes_world_m45-2024.csv": {
+   "bytes": 1208961,
+   "sha256": "606097f1b5119a564431555d70de4291cb11e2476c3ab7b83c668942e78eb4fa",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2024-01-01&endtime=2025-01-01&minmagnitude=4.5&orderby=time-asc"
+  },
+  "usgs-quakes_world_m45-2025.csv": {
+   "bytes": 1630225,
+   "sha256": "cf53e71901191e5abf05d3d63d749d2c4580a14b1c0e1d1b1fabbf8478f7cd7b",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2025-01-01&endtime=2026-01-01&minmagnitude=4.5&orderby=time-asc"
+  },
+  "usgs-quakes_world_m45-2026.csv": {
+   "bytes": 1068618,
+   "sha256": "99ce86a78ade6fb6dbf31d512b515b18574433a98a5b7c81a1306d1542951e63",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2026-01-01&endtime=2026-09-27&minmagnitude=4.5&orderby=time-asc"
+  },
+  "wikimedia-wiki_bitcoin.json": {
+   "bytes": 196797,
+   "sha256": "2ac718925e7d62e9b26b61fe3d1c73c1b5732a32fb8276a36140330fe2891746",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Bitcoin/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_chess.json": {
+   "bytes": 193994,
+   "sha256": "dfd2e7fdbca559450475135a6b0f7b010c8aef6a58d1560c6ceda0037a3e5f09",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Chess/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_einstein.json": {
+   "bytes": 208917,
+   "sha256": "c819fbf6c50f265fc759870d8a4e2f1a3ab8aa159200ba485969c5e0108d5a02",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Albert_Einstein/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_moon.json": {
+   "bytes": 192683,
+   "sha256": "0e7b505ade308fadb1f26a80fb84c63a996ce2529d4dce41d34a7d051ad56cef",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Moon/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_python.json": {
+   "bytes": 226806,
+   "sha256": "96f2e6caddbf52802f3fc6fa804ae33d96d17678169c19da75cc30ed4e26a88f",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Python_(programming_language)/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_ww2.json": {
+   "bytes": 204911,
+   "sha256": "6bb8edbd2a84c52fa93d03339688170de493c737506527fa9cbdda62db6be6ff",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/World_War_II/daily/20230101/20260927"
+  }
+ },
+ "resolutions": {
+  "note": "outside the checkout; never written into a workspace; pinned in card 022",
+  "path": "~/harness-sealed/022/resolutions.json",
+  "sha256": "8ffdbb4d909e8e487c20a1819078d6d1cb9b7e8e41fd233e83c6bc807a9131ad"
+ },
+ "resolvers_sha256": "744b1d7b5c5fc734e28e8c45b5d78c84aa5b8400349adc9c9ac9ef5df23703a6",
+ "seed": 22,
+ "selection_rule": "Candidates: every (series, T, template, horizon) the series kind allows; T = the Mondays 2026-07-06..2026-08-24; horizons 7/14/28 (count: 7). Keep a candidate when the true resolver over the weekly past windows ending before T, on rows dated history_start..T-1 only, has >= 52 windows and a YES frequency in [0.2, 0.8], and its window lies within the fetched data. Draw with random.Random(22), splits in order calibration (July, 40), sealed (August, 120), reserve (August, 40): shuffle the pool, group by (source, template), shuffle the groups, take round-robin; at most one question per (series, T) in the bank and at most 2 per series in sealed + reserve.",
+ "series": 30,
+ "series_cap_sealed_and_reserve": 2,
+ "snapshots": {
+  "snapshots/2026-07-06/DEXJPUS.csv": "e966e2643261044c9e50cedac4d94c23a0ef2b45e78ac7cfff6390c779ed2934",
+  "snapshots/2026-07-06/DEXUSEU.csv": "c220e60386658306633bcf10353be264865f289a86aa5d5687a0e9c8ebb20025",
+  "snapshots/2026-07-06/quakes_california_m25.csv": "3bab23388cdc2463e1ef7c210861dd92aa0d6825c7bdc90479ba21e51dbe1966",
+  "snapshots/2026-07-06/quakes_world_m45.csv": "882a6b408ab2a4884c118b4a73fdee2946217be279c4b88ae4be1018d2907896",
+  "snapshots/2026-07-06/sao_paulo_precip.csv": "c831ce4e1fd422d41ee0fd3918623946970bf1ed8a181fa1fc0fb94056d5475c",
+  "snapshots/2026-07-06/sao_paulo_tmax.csv": "b2b7a228472a46659001e6111b1365a585d010ad421cc425a8a8a11f32607c89",
+  "snapshots/2026-07-06/tokyo_precip.csv": "91adaa15e9488b92f59577614c0e9b3211c40b43f5c4715b4455b1d550ceee67",
+  "snapshots/2026-07-06/tokyo_tmax.csv": "4097e57825a663b034bf6aacd1243e15bb6f752f5c190b5af22fdfbeba3b4e3e",
+  "snapshots/2026-07-06/wiki_bitcoin.csv": "8c2231c01ce93b337fea21856ac80a04134ccf92a51378b29908ddb4e16ca877",
+  "snapshots/2026-07-06/wiki_einstein.csv": "f311b2c1d5f2ec40f63bc350558576acf3a0ea224b2894ebc2351fd6498aba12",
+  "snapshots/2026-07-06/wiki_python.csv": "28431cd92ae506b555872b7e98cd555ab53cf64c11c1689b742ef5994fd03828",
+  "snapshots/2026-07-06/wiki_ww2.csv": "6bb25bb3e49d55c08caba2120203afd911a8ac7cd22dba138a50c50496dc6b9b",
+  "snapshots/2026-07-13/DCOILWTICO.csv": "11c60c8a899bbd6eaa87843c9a86c0367706f22026497fa0207a091574f2a617",
+  "snapshots/2026-07-13/DEXJPUS.csv": "8bebe7437461ab326487b44f4a441799237e58a5470af8494bdab39153b05dd8",
+  "snapshots/2026-07-13/DEXUSEU.csv": "e6498119114144d4d29828e74f428c16db15006960b72fe31d4415674ef8b9cc",
+  "snapshots/2026-07-13/DGS10.csv": "fec9a491db41961c36953cf27d7546eb36d6ee44e04a733e2d14f72945d9ac40",
+  "snapshots/2026-07-13/SP500.csv": "404aae45f18f0f5f0b2078ac8f59927a3b4ce6168ef5b640832bdba15cdd0f3f",
+  "snapshots/2026-07-13/VIXCLS.csv": "853d48179fc96740992a01cf05f1876538608e44573a6dcaf6e3985780fdbe0d",
+  "snapshots/2026-07-13/moscow_precip.csv": "06c518e5de586fc6ae014d8e91b479307b296a6b4c7e1dc4a5e8d9dd414c9c5c",
+  "snapshots/2026-07-13/moscow_tmax.csv": "2a5070e7ce6ff7d9744ec7efe8bbba63adce2312b7048c408e46a21c57109f2f",
+  "snapshots/2026-07-13/new_york_precip.csv": "a78f4d398d221d547982e4c78e314e58884a208f7fa9f09ca367fe440766374e",
+  "snapshots/2026-07-13/new_york_tmax.csv": "af27cc6f2d8516d8838d01daf5d09b1f99534fb879238f205120cee05314c577",
+  "snapshots/2026-07-13/quakes_california_m25.csv": "90c0dec0a6130e087199abdb27e5fd80ed01638dee95fc96bb754ecb360148f8",
+  "snapshots/2026-07-13/quakes_world_m45.csv": "c281d342a8ac1c73f057436bd2d7ef706449d567ca27f186666fb4bd32eafa06",
+  "snapshots/2026-07-13/tokyo_precip.csv": "d87b3c5c229166c43ae8c0664d8e36fe0c9454533539df81a0fd59a6338da8ef",
+  "snapshots/2026-07-13/tokyo_tmax.csv": "dff86092a91f73054481f0722cdf481a777e509425286d09d68c774a2caa0159",
+  "snapshots/2026-07-13/wiki_chess.csv": "40f4ec59ebc4e7c38e3f3c7d5c20b926df394fb2c0040661d8508ede37b9b0d9",
+  "snapshots/2026-07-13/wiki_einstein.csv": "89dcf030a33a4974a179b86c4a401eee8bfaac280215491f9e5ea3d39f7d639d",
+  "snapshots/2026-07-13/wiki_moon.csv": "1e1bcde11bc0351dd6c1ae446c0ec1507cfe631d90210ff8c41680169be2a116",
+  "snapshots/2026-07-13/wiki_ww2.csv": "ea3c86d2b6130860c36b0f57ccdcf2b066b05e3b0dc70378cfcd0ed1fea6b89c",
+  "snapshots/2026-07-20/DEXJPUS.csv": "4ea1846a9cd3c108ec0623a50aadace206a17326f8a5ab3f4894ad28e5eff7cb",
+  "snapshots/2026-07-20/DEXUSEU.csv": "891d807e6e24264b6eea8dfbe50e13bcd1a710afc23c01a57c965a172b099646",
+  "snapshots/2026-07-20/DGS10.csv": "c0f69ef8ac99d74f63bb43ffb372e535886bd7909c7799301078a591e32a349a",
+  "snapshots/2026-07-20/SP500.csv": "36fa855d9f79a4bb8e3f109e6ac704c4be02321d436b3d06ed33c7b0ba207ee6",
+  "snapshots/2026-07-20/VIXCLS.csv": "42165d17d70bc418f4a7374d36d7cec9ae6f9c6b73176d9cd4f890357f56a8c4",
+  "snapshots/2026-07-20/cairo_precip.csv": "f158fb520aa80ac3a458a8a6fa8581a905e6f93b79c0f4c7a89a6493dfa818ed",
+  "snapshots/2026-07-20/cairo_tmax.csv": "2fb52190fad8b96ace8501fe2b49fa2a4ed59a3cb03f56d3bf9c9815265c0f11",
+  "snapshots/2026-07-20/quakes_california_m25.csv": "a217dfe1751a0f048d8a982ff16f9de74d4174221c92ff2251af1c86665840d8",
+  "snapshots/2026-07-20/quakes_world_m45.csv": "a8b7ce3a3a522b1b27aa1f829ef95fbd9f913daf9da36de53cff008c1f9cac92",
+  "snapshots/2026-07-20/sydney_precip.csv": "16945636128f5ad3f65d43b3cedf94c5365d7ff29bb4619caf3b1efe771cfd65",
+  "snapshots/2026-07-20/sydney_tmax.csv": "1f6ebc201889e78c007f30770ea1f333c8214b01898aa77746abac9d45054c7e",
+  "snapshots/2026-07-20/wiki_bitcoin.csv": "8fabf45e9e21d0f36d76a55534006f4b267d3330811e9aa6ae7f4cebab4a1f87",
+  "snapshots/2026-07-20/wiki_chess.csv": "ea57d9068067798d337f166ffc5b54486f9fa05a61b45d26b795f6699a178deb",
+  "snapshots/2026-07-20/wiki_moon.csv": "bdfc1ef4b66734e9f5bc06e17cde8753495ab9d7ff70f607781ab9f585f1dd2d",
+  "snapshots/2026-07-20/wiki_python.csv": "d5abfbfc976039d8905a4969ab9b56d55de65f4fd17c44268b9e87d98faadbc9",
+  "snapshots/2026-07-27/DCOILWTICO.csv": "71b147d720dda8aabfe7562d5ce55136ae4e4dfece0221206bac1abbb6377b86",
+  "snapshots/2026-07-27/SP500.csv": "6288d82e15fa5e98acf1226c2d5eeb7cbc9fe6808c472002345c67a785f9543f",
+  "snapshots/2026-07-27/cairo_precip.csv": "8b4511b9db8dc422914c6e8c59a8ccafe1cb2b6940f2a69f467cc34db1056761",
+  "snapshots/2026-07-27/cairo_tmax.csv": "b73905bd4289500941a03c4e2542fa65b16b8c8bbd6645110f55892d9e972a74",
+  "snapshots/2026-07-27/moscow_precip.csv": "316acb1bde8165cc92ba4d746ba2e3e436762554a58841d35da6e0d48920b519",
+  "snapshots/2026-07-27/moscow_tmax.csv": "c6ce3ffeae3b1e7fb76452db574c61fb3dfd4ada108b67d5eabb261b3f6f2db8",
+  "snapshots/2026-07-27/new_york_precip.csv": "deb6b0bd8f21faddd56900013da2b7135e7154768837e82d256f09331883ae46",
+  "snapshots/2026-07-27/new_york_tmax.csv": "cb4aec23919859dab810583fb4f8f3268d935bfa9e7eb18c3f1412a96f81a294",
+  "snapshots/2026-07-27/quakes_california_m25.csv": "92808cb9dfd7401c2228ebd5abfcf959a70894dbc5d3b7178ac38c63c45abede",
+  "snapshots/2026-07-27/quakes_world_m45.csv": "1cb8a3a237eef8780b4e4036e09a5d88f6a338b94fff08c49eb87c4e5b4b86d0",
+  "snapshots/2026-07-27/tokyo_precip.csv": "00f0a6fe6759b4230821498267f1b2dc67b888e00684e646390fb20917f56de8",
+  "snapshots/2026-07-27/tokyo_tmax.csv": "4dff53687810be34d104e31b51cb24c5ed31fd1e10e9e8bf74657d4810e0b3a5",
+  "snapshots/2026-07-27/wiki_bitcoin.csv": "b8074a5b8c86bb84993cdce98de335d465cbe582b0a06b16db328980c91eb733",
+  "snapshots/2026-07-27/wiki_python.csv": "66cb78a665bdbbf3a519ca949d6eebd57fc2ff8f087d966742424cd9e4df28b8",
+  "snapshots/2026-08-03/DGS10.csv": "945741d085dbd39ff32fd0c48b01f9f22dbb75292321166069fbb00e88d400c5",
+  "snapshots/2026-08-03/SP500.csv": "912235ac4deab07e912214346e1688e6adb15e81f7b166b9c5e81fd8fb6e6b80",
+  "snapshots/2026-08-03/VIXCLS.csv": "9ad480ae71789f7e3ffb4f152a8a8105814380bf5a4a3ed0a4f69a87250085e0",
+  "snapshots/2026-08-03/cairo_precip.csv": "957ad18d4bc75ca04babde53f25c641711251628bff985d8b2d9fb04d539f7e7",
+  "snapshots/2026-08-03/cairo_tmax.csv": "49cac6d12304249b8f37b1616d9de8664b368dce27ac05839e1809eae3b009f6",
+  "snapshots/2026-08-03/london_precip.csv": "9abafa9fc3327b8b05b0ea1faf9c4e23ec4e53aa2137032592eb68eadd6b047d",
+  "snapshots/2026-08-03/london_tmax.csv": "30df097978d0cbb78f7046aed11c1fadc41cec8645f7ab7cd86ae45dc5f01a6d",
+  "snapshots/2026-08-03/moscow_precip.csv": "5617141578e4a86e77aef6cc14bd5668804457d703ae5dc951bc9e07b8d673e9",
+  "snapshots/2026-08-03/moscow_tmax.csv": "532617a82822192f9322ab1a949254e390cebba1eb45c2d50fa0a2d06ebd40e7",
+  "snapshots/2026-08-03/mumbai_precip.csv": "3b59cadd40da55c19074f95cea742b8b43bc77590505beff6e5812e113e66c22",
+  "snapshots/2026-08-03/mumbai_tmax.csv": "f7f910339d9e8ff03d1de5df9b924ddf4dd21dacd8a596d5328d70283050af65",
+  "snapshots/2026-08-03/quakes_california_m25.csv": "eac556f78e8ca29f3b62641faf8d2551ac4ac79ed3a8788693abde42b55ab72a",
+  "snapshots/2026-08-03/quakes_world_m45.csv": "a90b00b7e79b44cbd0ea438271c0cd3362ee8be6dfb4324dbc7e790042a082b2",
+  "snapshots/2026-08-03/sao_paulo_precip.csv": "67f5c2e8d7e9684192a921fde9b28b281c6dfc95d770c3a814a432344694be2d",
+  "snapshots/2026-08-03/sao_paulo_tmax.csv": "a2503adb219269d28cd650df02f19fdd13e87f5bc49ce94b7f24025562316564",
+  "snapshots/2026-08-03/sydney_precip.csv": "5aef59946d4eaa812643dc1c07801efe8940b806438b1eb854427a58588e0acd",
+  "snapshots/2026-08-03/sydney_tmax.csv": "3095f1aa3eb65e98ebb08ce614da04ccc737bb837fbff150bacdd572392bda30",
+  "snapshots/2026-08-03/wiki_bitcoin.csv": "ddc12a41233eda13f1eb892b7aee44a6b53903422dd5a3da6cabb0607ebeb0bf",
+  "snapshots/2026-08-03/wiki_chess.csv": "d61610f135843758278fd6b87c32eb42f4af3f69c4b29fdf6358dc0e14370017",
+  "snapshots/2026-08-03/wiki_moon.csv": "f54ae75c364e9f95ad8e9d81310bd3ec1edad353ef0dfa326742d166cb39b503",
+  "snapshots/2026-08-03/wiki_python.csv": "d94fd8042ba299aba191dbacb4df0629930c766c64e331341d66bb69e9e94f0a",
+  "snapshots/2026-08-10/DCOILWTICO.csv": "48fb48125459cac49d8925ba0bcc06f938d87903ddd657d414ff5e573aa27c15",
+  "snapshots/2026-08-10/DEXJPUS.csv": "5179653053221647b8d0d5e25a753e845ab1c5185e8cd964774f3e5cf789fa3c",
+  "snapshots/2026-08-10/DEXUSEU.csv": "6b6470caeec2be264a8dd4d1fea682a2b2bffb7272a2e1e9ab8e0afc628fc7e6",
+  "snapshots/2026-08-10/SP500.csv": "69bb8d1791b3802506b0ff6814a695e8cdc481d08f61b93dc6b8e722e53fca81",
+  "snapshots/2026-08-10/cairo_precip.csv": "0ce877d25aa54302a7032f42581adb19908a2ba652a47b72cdf17f2b8322a142",
+  "snapshots/2026-08-10/cairo_tmax.csv": "1cb406010c8f43091701617407ec611e1b1826effebf07fda84297abc8cf532d",
+  "snapshots/2026-08-10/london_precip.csv": "d6a389f85399ef1c7eed53c28cd90bce80c86a2eac9527465cd6f2610b6fd6c1",
+  "snapshots/2026-08-10/london_tmax.csv": "28d8273c5218b43e9f683dc0db6f976c0b8edd13b0f8658b4deea21e972335b7",
+  "snapshots/2026-08-10/moscow_precip.csv": "c9c73a5bbf35caec35a75ab872187bb0e035bfb73191376284bc20aa9559e1d6",
+  "snapshots/2026-08-10/moscow_tmax.csv": "d1a6f3a917cc18b3e2287b63c10b8cf7f6272c182775944a138014ec07c2e84f",
+  "snapshots/2026-08-10/mumbai_precip.csv": "a3771275c90d7db912603f6a332dee4bc6d990f1085cdb1d2a99746877d51944",
+  "snapshots/2026-08-10/mumbai_tmax.csv": "c1fbd7344f634f4e147f967616e2992bbeba1eb5bae6d0e129aafd9fb9883e5b",
+  "snapshots/2026-08-10/new_york_precip.csv": "a5920811c7e1d959a6ea386ecb273bf752e7a2639eae930e79dddaef78b9a5a6",
+  "snapshots/2026-08-10/new_york_tmax.csv": "550bf859a74de20cf682f2b518943e6e4c718e7c75517217015ed83455a88b25",
+  "snapshots/2026-08-10/quakes_california_m25.csv": "625bf5f5bfefad87b59cdf1bb36a1c66ac9af4e63045a4177d1efbe9c546cc50",
+  "snapshots/2026-08-10/quakes_world_m45.csv": "ececf6879b1289565ee100094cdd63277c10b2c7bf805454ba91ae6c4e2bdfa1",
+  "snapshots/2026-08-10/sydney_precip.csv": "cca1338d013cca2a30f96b68a4a9be5662fce290aad9f49df7f5037b71b4bedc",
+  "snapshots/2026-08-10/sydney_tmax.csv": "407a75d1a97ddb081c800d1ecf8bf2c0b66a49ee3c7533201dc992335060cf05",
+  "snapshots/2026-08-10/tokyo_precip.csv": "3aeea9cb715655eff92034d828b84c4345143fa8e690da04302969a930ef91cc",
+  "snapshots/2026-08-10/tokyo_tmax.csv": "523abc29c6d6c087aa84c12ace75aa150e33d1cc19a0c7592a848ca815dc3032",
+  "snapshots/2026-08-10/wiki_bitcoin.csv": "a7ba939fcd4fc3ad5ca85bc3734c5a25456ce5645be30cee03728204d639c413",
+  "snapshots/2026-08-10/wiki_chess.csv": "7e9fb6f095d2b24a637a8cffe93c4db9c9480acdf2a985d10cac0036a6c3a980",
+  "snapshots/2026-08-10/wiki_einstein.csv": "4852571d34884e1cb20da41e129fdc37d24da9015d095aed4264b16cd02658cb",
+  "snapshots/2026-08-10/wiki_moon.csv": "59595a25f7d37dcc91bd22704f1f881278a12dac359f85b8bd1bde3669ad7e1c",
+  "snapshots/2026-08-10/wiki_python.csv": "8756e9e7e5fc415b79067fe632b2a90672e331fd2d832da39abadb14a524b1b8",
+  "snapshots/2026-08-10/wiki_ww2.csv": "cf42db8cfcc0b9858221301c2c07339227ada9aba0824b5a34402b1ecece46c6",
+  "snapshots/2026-08-17/DCOILWTICO.csv": "7b9fab8ee5f2a8eccbbade65c851a2f55c385f0fdb580d00fe5e6d68437e6d70",
+  "snapshots/2026-08-17/DEXJPUS.csv": "b669e86173cc5e04e6be11b40688cfb336471e2d79c78a2045d46040b365083a",
+  "snapshots/2026-08-17/DEXUSEU.csv": "93fac3e1a715dc07e3327f63182c50b58921ed3178d55edc5bf8636f8393bbcb",
+  "snapshots/2026-08-17/SP500.csv": "756300c610dcc99451f0706fb84b1b2efd96860d549725a36bcc3235e921520d",
+  "snapshots/2026-08-17/london_precip.csv": "f89ceed946b20ddd05e70d40395c9e67aa460702924983ed8416a04fe6d047bc",
+  "snapshots/2026-08-17/london_tmax.csv": "cf1cb271e15514feaa2d17db8d2904f4a0534bcbf115b42b76dd535eaaca736c",
+  "snapshots/2026-08-17/mumbai_precip.csv": "52881c1231f13ff2711eec366ac6f0c4c26f4b28c90437a1ebc694e023d12aa7",
+  "snapshots/2026-08-17/mumbai_tmax.csv": "2739633d32f5bda3c0644943c8a31bf7b03277dd44019c48f5ae9cccd7188507",
+  "snapshots/2026-08-17/new_york_precip.csv": "f60496ae24cf2f4a23a8b8d6a8f1ec338aefb9ff558c28901dfa89fe0e28af97",
+  "snapshots/2026-08-17/new_york_tmax.csv": "ae6a2b61ccbc8d0f2be35dd795926381da7b564c9ce2cbe8e75143cc81762c9f",
+  "snapshots/2026-08-17/quakes_california_m25.csv": "1a61a3d4bcc1cd3f016214aa2051826caecdae1d33fbf42696ce1d164725c33c",
+  "snapshots/2026-08-17/quakes_world_m45.csv": "d176abfadff4c045ded9b7c26348a3ace91b8fd9e955d03c080ba78ecd6fa81c",
+  "snapshots/2026-08-17/sao_paulo_precip.csv": "c4c4a1a402f6965929fa8b63f167d1c96c1dfc34a04b8e8bd45013a937b2f588",
+  "snapshots/2026-08-17/sao_paulo_tmax.csv": "42891836d2f773f7b6d3b1d0d0ad5aa5f95eb39f073b680c43e8344b960fd60c",
+  "snapshots/2026-08-17/sydney_precip.csv": "abc6a1cd5537aa1feb55c8f0a2326037869ecdff432c0ed2e403f7fc8fe2a334",
+  "snapshots/2026-08-17/sydney_tmax.csv": "3dad9cfb3b38a3c77dabe253c38c2ad0d9eda1316bd2360bffd82f714927d198",
+  "snapshots/2026-08-24/DEXJPUS.csv": "316d1c2c284bda491624dcc7d3044b6a2a536fdc413a6ffcb4179fd1dbbc1798",
+  "snapshots/2026-08-24/DEXUSEU.csv": "7e5d87b339782b6c67777e4bbaad8ab76c8d3f83da4653a459b7381265bd35b3",
+  "snapshots/2026-08-24/DGS10.csv": "7f7cb2b0219610f5b6a213d957e9562b5f913bca8871e341ac28cd2cd94ce026",
+  "snapshots/2026-08-24/SP500.csv": "6ef876e63b7196b7c19155d5abba28c865a90971138837543a61ef177c8b9659",
+  "snapshots/2026-08-24/VIXCLS.csv": "0b7a066aa6fee4938f7d48aa6917a7adbf2b30b892169763d9cf6900e1849898",
+  "snapshots/2026-08-24/moscow_precip.csv": "be545f25c0b4e03c3953f967c19382100540da3e6785ba0e44711b7423246c68",
+  "snapshots/2026-08-24/moscow_tmax.csv": "e7ee55ce7d876c0a4acb959344e8b9ec7ddfbcffa8e1e2b91636c90e05706895",
+  "snapshots/2026-08-24/new_york_precip.csv": "ea7c3455d37928114e7d100bcd26301e75b6383496adfdf4e06d8b776f6e7a4a",
+  "snapshots/2026-08-24/new_york_tmax.csv": "a376564716fea7ddff5eda0ca9ffb4fe3dae977b2f15522f77e4941dc07ce922",
+  "snapshots/2026-08-24/quakes_california_m25.csv": "f87261eaac2c072e40ec755e276ed7743cd814b6eb6371b9411501ebd17a653c",
+  "snapshots/2026-08-24/quakes_world_m45.csv": "f36ba28be4d76b38088b2ec47127c7af05140816de3d5491b3c40b5063bd41e5",
+  "snapshots/2026-08-24/sao_paulo_precip.csv": "87ca2ce719a9f9d09697520124b0c348a9fdfe6c0c34a8897a3599213832c92d",
+  "snapshots/2026-08-24/sao_paulo_tmax.csv": "cb46634e7d1148b304bc8337bfb2a192cc51bdac1043bcf74cf102603cfc2058",
+  "snapshots/2026-08-24/tokyo_precip.csv": "b111c6d95aeaa219fcfb3a4e9f11cb923b90ac0d3e14ffdf215971cdedc4dff6",
+  "snapshots/2026-08-24/tokyo_tmax.csv": "9935d1c0deb07c067138212224194280d15482371aeac55f18e58a7fb682cd18",
+  "snapshots/2026-08-24/wiki_bitcoin.csv": "825a3c519280f4a9656e23bd37bbf8c9f059e3e0463421c3630aff675bb896ad",
+  "snapshots/2026-08-24/wiki_chess.csv": "7a38180d39aed997bdd5ef83e65448b58c4ad001c3bb12296085b74a06f76220",
+  "snapshots/2026-08-24/wiki_einstein.csv": "685986264e5684d4ffbf0b1e07bbb31f57c3e9954f287c525b792c15c1b0f6b2",
+  "snapshots/2026-08-24/wiki_moon.csv": "d5ceff7c762ffbd86b1e0ca3ecd08e9e00f1ede134eb0d8351b29bf2d0c46972",
+  "snapshots/2026-08-24/wiki_python.csv": "1464b0d8407f20af41c658493408b87d30326843c7ca36680de49569d3809c6d",
+  "snapshots/2026-08-24/wiki_ww2.csv": "0f9c0c26c6b1d04d388c8af6f147d7c3ab2f5b0edd57ed729c303569ddf442c5"
+ },
+ "sources_sha256": "e926c90f3ce6f7653f47f7e106498e9b623ff715b620622b4365b95e4c278b15",
+ "split_by_source": {
+  "calibration": {
+   "fred": 10,
+   "open-meteo": 13,
+   "usgs": 8,
+   "wikimedia": 9
+  },
+  "reserve": {},
+  "sealed": {
+   "fred": 12,
+   "open-meteo": 32,
+   "usgs": 4,
+   "wikimedia": 12
+  }
+ },
+ "split_by_template": {
+  "calibration": {
+   "count": 7,
+   "direction": 10,
+   "touch": 9,
+   "window_mean": 14
+  },
+  "reserve": {},
+  "sealed": {
+   "count": 12,
+   "direction": 14,
+   "touch": 14,
+   "window_mean": 20
+  }
+ },
+ "split_counts": {
+  "calibration": 40,
+  "reserve": 0,
+  "sealed": 60
+ },
+ "split_targets": {
+  "calibration": 40,
+  "reserve": 40,
+  "sealed": 120
+ },
+ "splits_file": {
+  "path": "splits.json",
+  "sha256": "8b0c301ffc6b6934b3766a8573b5efd87c94b60e1ebe37a811651e89b8c90ce6"
+ },
+ "tasks_file": {
+  "path": "tasks.forecast.json",
+  "sha256": "00dda0c66ef8413cec2645b0060b183a162372804bf54912c5b7b82ae73eb848"
+ }
+}

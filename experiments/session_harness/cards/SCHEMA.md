@@ -19,6 +19,7 @@ Structure: [`card.schema.json`](card.schema.json) (JSON Schema keywords, checked
 | `015.json` | [E4-check-oracle-015](../E4-check-oracle-015.md) | `proposed`; incumbent vs `--oracle hidden-tests:3` (task-changing arm), same tasks; blocked only on approval |
 | `019.json` | [E3-cloud-replication-019](../E3-cloud-replication-019.md) | `proposed`; card 007's design on a cloud VM: trusted-local (`isolation: vm-sandbox`), model pinned to `claude-sonnet-5`, list-price cap $40; blocked only on approval |
 | `020.json` | [E4-cloud-check-oracle-020](../E4-cloud-check-oracle-020.md) | `proposed`; card 015's arms on the cloud backend of card 019; blocked on approval and on card 019's result |
+| `022.json` | [E5-transfer-forecasting-022-design](../E5-transfer-forecasting-022-design.md), phase A | `proposed`; forecast tasks (`experiments/forecast_tasks/`, kind `forecast`): incumbent on 40 calibration questions plus 20 repeats, controls gold/constant/noop/gamer/peeker; cloud first (trusted-local `vm-sandbox`); blocked on approval, the cloud isolation wrapper, the recall probe and one-shot call, and the leakage audit |
 
 ## Commands
 
@@ -47,7 +48,7 @@ cap). Exit codes: 0 done, 2 invalid/blocked/refused, 3 checkpoint stop, 4 integr
 | `environment.claude_cli_version` | the `claude --version` string the protocol hash is computed with; `null` only when no arm uses `claude-cli` |
 | `prerequisites` | `{text, done}`; any `done: false` blocks execution |
 | `arms[]` | see below |
-| `controls[]` | scripted-client runs before the arms: `{name, client: gold/noop/breaker/gamer/tester, task_set, like_arm, expect: accepted/rejected, run_name}`; one invocation over the whole set, with the named arm's policy, backend and guards. A control whose outcome differs from `expect` is an integrity stop |
+| `controls[]` | scripted-client runs before the arms: `{name, client: gold/noop/breaker/gamer/tester (constant/peeker: forecast tasks only), task_set, like_arm, expect: accepted/rejected, run_name}`; one invocation over the whole set, with the named arm's policy, backend and guards. A control whose outcome differs from `expect` is an integrity stop |
 | `tasks` | `file` (task JSON), `file_sha256` (sha256 with CRLF folded to LF, the bytes git stores), `sets` (named task sets, below) |
 | `blocks[]` | `{name, task_set, arms, rollouts, arm_order: {rule: fixed or seeded, seed}}` |
 | `schedule` | `rollout-major` (default: rollout 1 of every task before rollout 2, so an early stop leaves balanced evidence) or `task-major` |

@@ -1,8 +1,10 @@
-# E5 transfer to forecasting 022: design for review (no build, no run)
+# E5 transfer to forecasting 022: design (approved; slice 1 built, nothing run)
 
 Date: 2026-09-28  
-Status: design proposed for owner review. Nothing is built. No model call was made for it. Card number 022 is
-tentative.  
+Status: the owner approved the five recommendations on 2026-09-29, with cloud first for Q3 (section 10). Slice 1 is
+built (section 11): the question bank, the workspace materializer, the evaluator and scorer, the scripted controls,
+the draft phase A card (`cards/022.json`, proposed) and the cloud isolation probe. No model call has been made for
+this card.  
 Stage: E5 (plan 5.2). S6's acceptance rule asks for held-out tasks. This card asks the harder question:
 **do harness changes selected on code repair transfer to a graded domain the selection never saw?**
 
@@ -24,8 +26,9 @@ Stage: E5 (plan 5.2). S6's acceptance rule asks for held-out tasks. This card as
    3. data-analysis questions with computable answers;
    4. Metaculus text questions, which are only useful for the memorisation probe (section 3).
 4. **Leakage control.**
-   - The time cutoff is the model's release, not a guessed training cutoff. `claude-sonnet-5` was already
-     listed on 2026-06-24, so every forecast date is on or after 2026-07-06.
+   - The time cutoff is the model's release, not a guessed training cutoff. Anthropic's model page gives
+     `claude-sonnet-5` as released on 2026-06-30 (training data cutoff January 2026), so every forecast date is on
+     or after 2026-07-06 (section 3).
    - The live network is removed. The runs go on the host's OCI backend (`--network none`, only the
      workspace mounted).
    - The resolutions are not on disk during the runs. Scoring happens afterwards against a file whose sha256
@@ -129,11 +132,15 @@ That is 6-10 replies. The per-run budget is 12 responses, so failure (b) remains
 
 ## 3. Leakage control
 
-**Model cutoff.** The local references record no training cutoff for `claude-sonnet-5`. (Opus 5.5 records June
-2026.) The model table cached on 2026-06-24 already lists Sonnet 5 as active, so its training data ends before
-then. Every forecast date `T` is therefore on or after 2026-07-06, and every resolution date is on or before
-2026-09-25. This relies on the fact that a model cannot be trained on data that did not exist when it was
-released, so no cutoff has to be guessed. Residual risk: the unversioned id `claude-sonnet-5` could be
+**Model cutoff.** Verified on 2026-09-28 from primary Anthropic sources: the Claude Platform model page for Claude
+Sonnet 5 (platform.claude.com/docs/en/models/sonnet-5/overview) says "Released June 30, 2026", model ID
+`claude-sonnet-5`, "Training data cutoff: Jan 2026" and "Reliable knowledge cutoff: Jan 2026"; the announcement
+(anthropic.com/news/claude-sonnet-5) is dated Jun 30, 2026. (This design first relied on a model table cached on
+2026-06-24; the release date replaces it.) Every forecast date `T` is on or after 2026-07-06, six days after the
+release and five months after the stated training cutoff, and every resolution date is on or before 2026-09-20. The
+bound therefore stands unchanged. It relies on the fact that a model cannot be trained on data that did not exist
+when it was released, so the stated cutoff is not needed; it would allow earlier forecast dates (section 10, Q6,
+option C). Residual risk: the unversioned id `claude-sonnet-5` could be
 re-snapshotted later. The adapter's model pin checks the id, not the snapshot, so the card records
 `reported_model` and the CLI version, and runs the recall probe again if either changes.
 
@@ -474,11 +481,13 @@ restricted variant:
 
 - It made no model or API call of any kind.
 - It did not verify Sonnet 5's training cutoff from a primary source; the date bound rests on the skill's model
-  table being cached on 2026-06-24.
+  table being cached on 2026-06-24. (Done in slice 1: section 3.)
 - It did not confirm that the OCI image's Python standard library is all a forecast needs, or that `unshare`
-  works on the cloud VM.
+  works on the cloud VM. (Slice 1: the gold, noop and peeker controls ran in the OCI image on the standard library
+  only; `unshare -rn` works in a local container, not yet tested on the VM. Section 11.)
 - It did not fetch any time series or build any question, so the claim that the [0.2, 0.8] filter leaves 200
-  questions is unverified.
+  questions is unverified. (Slice 1: the filter is not the constraint, but the frozen rule gives 100 questions, not
+  200: section 10, Q6.)
 - It did not estimate per-response cost on a forecast context: $0.03 is extrapolated from code-repair calls.
 - It did not get Metaculus outcomes: the API hides them from the bot token.
 - It did not examine card 020's partial results (10 of 32 runs on `cloud-results-020`) beyond their existence.
@@ -486,6 +495,13 @@ restricted variant:
   it to another repository in the P6 task list is a separate slice.
 
 ## 10. Open questions for the owner (recommended answer first)
+
+**Decision, 2026-09-29.** The owner's reply to the five recommendations below: "Yes I do". All five are approved,
+with one amendment to Q3: **cloud first**. Runs go to the Claude Code cloud VM (trusted-local backend, no container
+engine, through `experiments/cloud/campaign.py`) if network isolation can be enforced there; the host OCI backend is
+the fallback. Slice 1 therefore adds the probe that decides it (`experiments/cloud/probe_isolation.sh`, pasted by the
+owner through `experiments/cloud/RUN_PROBE_ISOLATION.md`), and the draft card makes the isolation a prerequisite that
+the peeker control enforces (section 11). Q6 is new, from the slice 1 build.
 
 1. **Replace Metaculus text questions with workspace time-series questions as 022's bank?** *Yes.* Text
    questions cannot trigger any process change. Keep Metaculus only for the recall probe, and only if you can
@@ -502,3 +518,105 @@ restricted variant:
 5. **Order for the intuition instrument: retrospective step 0 now, explicit instrument on code next, arm C in
    022 only if step 1 passes?** *Yes.* Step 0 needs no agent runs and falsifies the idea quickly, and arm C adds
    about $34 only once the instrument has shown it is usable.
+6. **(New, open.) The frozen bank rule gives 100 questions, not 200: calibration 40 of 40, sealed 60 of 120,
+   reserve 0 of 40. Add series until there are 80, keeping every rule?** *Yes.* The base-rate filter is not the
+   constraint: it kept 1,528 of 1,760 candidates, and every one of the 240 (series, `T`) cells (30 series x 8 dates)
+   has at least one. The design's own limits are: at most one question per (series, `T`), so at most 4 August
+   questions per series, and at most 2 per series in the sealed set (which the build applies to sealed and reserve
+   together, because the reserve is drawn into the sealed set). With `S` series, sealed is min(120, 2`S`) and the
+   reserve min(40, 2`S` - sealed), so the design's 120 + 40 needs `S` >= 80. Section 4's arithmetic missed this:
+   with its ~25 series the sealed set could never exceed 50. At N = 60 the power for Δ = 0.02 is 72% at σ_d = 0.07
+   and 46% at 0.10 (93% and 71% at 120). Options:
+   - **A (recommended): 50 more series from the same four keyless sources**, for example 25 more Wikimedia articles,
+     10 more cities (20 series) and 5 more USGS regions; about 50 more small requests. No rule changes, and the
+     cluster bootstrap gets 80 clusters instead of 30. Phase A's calibration set is unaffected except for the
+     stratified draw over the larger July pool, so the 40 questions would be redrawn under the same seed; nothing
+     has run on them.
+   - B: raise the per-series cap to 4 and add 10 series (40 x 4 = 160 August cells). Fewer clusters, and a series'
+     questions at consecutive Mondays overlap (a 28-day window spans four forecast dates), so they are correlated;
+     the bootstrap accounts for that but the effective N falls.
+   - C: earlier forecast dates, using the stated training cutoff (January 2026) instead of the release date. It
+     multiplies the cells per series but gives up section 3's rule that no cutoff is trusted, and the recall probe
+     would have to cover those months.
+
+   Until this is decided, phase B cannot run; the draft card is phase A only.
+
+## 11. Slice 1 as built (2026-09-28; no model call)
+
+**Files.**
+
+| File | What it is |
+|---|---|
+| `experiments/forecast_tasks/sources.json` | 30 series: 6 FRED, 16 Open-Meteo (8 cities x daily max temperature and precipitation), 2 USGS, 6 Wikimedia |
+| `experiments/forecast_tasks/resolvers.py` | the true resolvers (direction, touch, window_mean, count), past windows, history-only base rate; standard library only |
+| `experiments/forecast_tasks/build_bank.py` | fetch (`--fetch`, sequential, 2 s apart, cached with sha256), parse, candidates, the frozen seeded draw, outputs |
+| `experiments/forecast_tasks/tasks.forecast.json`, `splits.json`, `snapshots/`, `bank_manifest.json` | the bank (100 tasks, 143 snapshot files, 3.0 MB) and its manifest: rule text, seed, counts, raw-response and output sha256s |
+| `~/harness-sealed/022/resolutions.json` | outcomes and window values, outside the checkout; sha256 `8ffdbb4d909e8e487c20a1819078d6d1cb9b7e8e41fd233e83c6bc807a9131ad`, pinned in `cards/022.json` |
+| `experiments/forecast_tasks/evaluate_forecast.py` | in-run evaluator: `committed` only, plus reading agreement on 52 past windows as a diagnostic |
+| `experiments/forecast_tasks/score_forecasts.py` | post-hoc scorer: Brier/log, pairing, cluster and two-way bootstraps, section 6's verdict and vacuity rule, calibration |
+| `experiments/forecast_tasks/oneshot_forecast.py` | phase A's one-shot comparator prompt: pastcast's `build_prompt` vendored with its sha256; the live call is not built |
+| `experiments/p6_pilot/run_pilot.py` | `kind: forecast` (materializer, evaluator bundle, instructions, contract in the hash) and the scripted clients `gold`, `constant`, `noop`, `gamer`, `peeker` |
+| `experiments/session_harness/cards/022.json` | phase A card, `proposed`; `--plan` blockers are approval and the prerequisites only |
+| `experiments/cloud/probe_isolation.sh`, `RUN_PROBE_ISOLATION.md` | the cloud isolation probe and the owner's paste-able prompt |
+| `tests/test_forecast_bank.py`, `test_forecast_runner.py`, `test_forecast_scoring.py`, `tests/fixtures/forecast/` | 51 offline tests on trimmed copies of the real responses and the pastcast ledgers |
+
+**Data sources (fetched 2026-09-28, 28 requests, 7.6 MB, all HTTP 200).** FRED's no-key `fredgraph.csv` serves the
+five market series through 2026-09-25, but the design's gold series (`GOLDAMGBD228NLBM`) returns 404: FRED dropped the
+LBMA prices, so the yen rate `DEXJPUS` stands in for it. Open-Meteo's archive returned data through 2026-09-27 (the
+most recent days are preliminary reanalysis and may be revised; snapshots are frozen at build time). USGS's FDSN CSV
+needed one request per year and series (the world M4.5+ files are 1.1-1.6 MB); non-earthquake events (2 quarry
+blasts, 3 landslides, 8 volcanic eruptions) are excluded from the counts. Wikimedia's per-article API served every
+article through 2026-09-27.
+
+**Build choices the design left open or got wrong, all recorded in the builder and the task text.**
+- A question's window is the `h` dates `T` to `T+h-1` (`[T, T+h)`), and the snapshot holds rows dated before `T`.
+  Section 4's `(T, T+h]` together with "the last value on or before `T`" would leave the date `T` in neither or make
+  the reference value invisible to the forecaster.
+- Every resolver is generic in `T`: touch's level is the maximum over the 90 dates before `T` (the round-number
+  alternative is not used), count's `k` is the median, rounded up, of the 52 seven-day blocks before `T`. The
+  statement gives the rule and its value at `T`, and the instructions ask for a `resolve.py` that applies the
+  criteria to any `T`, so reading agreement on past windows is a fair check.
+- Templates by kind: level series (markets, temperature, pageviews) take direction, touch and window mean; wet days
+  (precipitation: days with at least 1 mm) and daily earthquake counts take count (7 days) and window mean.
+- History starts on 2023-01-01 (3.5 to 3.6 years before `T`); a candidate needs at least 52 past windows (the drawn
+  questions have 131-189).
+- The sealed cap of 2 per series covers sealed and reserve together, because the reserve is drawn into the sealed
+  set.
+- `forecast.json` may hold strings besides the probability, but no second number. `resolve.py` must return a real
+  bool (not 0/1), and runs in a child process with a 60 s limit, so the agent's code never runs inside the evaluator.
+- Hash inputs: a forecast run's protocol hash carries the forecast instructions and the forecast evaluator's files
+  (sha256 with LF line endings, so a Windows and a Linux checkout agree) instead of the code instructions and
+  `evaluate_task.py`. A code task's hash inputs are unchanged, and the plans of cards 006-replay, 007-009, 011-015,
+  017, 019 and 020 are byte-identical to before (card 007 still plans `b0fda8c921ad`).
+
+**Bank.** 1,760 candidates, 232 outside [0.2, 0.8], none short of windows or unresolvable, 1,528 kept. The draw
+gives calibration 40 (July; 10 FRED, 13 Open-Meteo, 8 USGS, 9 Wikimedia; 10 direction, 9 touch, 14 window mean,
+7 count), sealed 60 (August; the cap binds at 2 x 30 series) and reserve 0. Rebuilding from the cache reproduces
+every byte. Section 10, Q6 asks how to reach 120 + 40.
+
+**Scripted controls (no model).** On `fc-0706-dexuseu-touch-h28`, through `run_pilot.py`:
+
+| Client | Host, trusted-local | Host OCI image (`--network none`, workspace mount only) |
+|---|---|---|
+| `gold` (base rate 0.317, true resolver) | accepted; reading agreement 52/52 | accepted; 52/52 |
+| `constant` (0.5, true resolver) | accepted | not run |
+| `noop` | rejected (no forecast.json, no resolve.py) | rejected |
+| `gamer` (probability 1.7) | rejected | not run |
+| `peeker` (writes a forecast only if every peek is blocked) | rejected: HTTPS, socket, DNS, the checkout, the evaluator bundle and the sealed file were all reached | accepted: all six blocked |
+
+The peeker's host result is the reason the cloud variant needs isolation before any run; card 022 expects it
+accepted, so an unisolated backend is an integrity stop.
+
+**Isolation probe, run locally** (podman, `python:3.11-slim-bookworm`, `--cpus 1`; util-linux 2.38.1, kernel
+6.18 WSL2). As root, and as uid 1000 with `--cap-drop ALL --security-opt no-new-privileges`: `unshare -rn` blocked
+HTTPS, socket and DNS with only `lo` inside; `unshare -rnm` hid a stand-in checkout and home under tmpfs while a
+bind-mounted workspace stayed readable and writable; the harness's `TrustedLocalBackend` reached the network plainly
+and was blocked with the `unshare -rn` prefix. Result `ISOLATION: NETWORK+FILES`, exit 0. With `--network none` the
+baseline check failed and the probe reported `NONE`, so it cannot pass vacuously. Whether the cloud VM allows user
+namespaces is still unknown: that is what `RUN_PROBE_ISOLATION.md` asks the owner to run.
+
+**Not done in slice 1.** No model or API call, no card run. The recall probe (`probe_recall.py`), the one-shot
+comparator's live call, the post-run leakage audit, and the runner's `unshare` wrapper for the cloud are not built;
+each is a prerequisite in `cards/022.json`. Nothing of slices 2 or 3 (the verifier counterpart, the intuition
+instrument). The bank's shortfall is reported, not fixed. The OCI controls ran through the harness's own OCI command,
+which sets memory and process limits but no CPU limit. `constant` and `gamer` ran on the host only.
