@@ -32,3 +32,6 @@ preflight check-oracle: protocol c5180bb7f178 matches
 [31/34] c020-sqlparse-mut-034-r2-check-oracle: ok (finish_requested -> accepted)
 [32/34] c020-sqlparse-mut-034-r2-incumbent: ok (finish_requested -> accepted)
 [33/34] c020-sqlparse-mut-040-r2-incumbent: ok (finish_requested -> accepted)
+[34/34] c020-sqlparse-mut-040-r2-check-oracle: ok (finish_requested -> accepted)
+campaign complete: 34 invocations
+report skeleton: experiments/session_harness/E4-cloud-check-oracle-020-report.md

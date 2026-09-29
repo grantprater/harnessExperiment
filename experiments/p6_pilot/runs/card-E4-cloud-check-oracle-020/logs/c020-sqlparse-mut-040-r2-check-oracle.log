@@ -5,3 +5,4 @@ per-run guards: {"stop_on_repeats": false, "resume_after_provider_stop": 0, "res
 task budgets per run: {"claude-sonnet-5": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
 treatments (in the protocol hash): oracle hidden-tests hidden-test-oracle-v1
 claude-cli reply recovery lenient-json+second-turn-on-retry (adapter claude-cli-adapter-v3: --max-turns 1, 2 on retries after a rejected StructuredOutput call; in the protocol hash)
+sqlparse-mut-040__claude-sonnet-5: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}
