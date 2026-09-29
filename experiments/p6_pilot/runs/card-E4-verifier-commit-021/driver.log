@@ -1,0 +1,13 @@
+# 2026-09-29T07:13:25.773960+00:00 /home/user/harnessExperiment/.runtime/test-venv/bin/python /home/user/harnessExperiment/experiments/session_harness/run_card.py /home/user/harnessExperiment/experiments/session_harness/cards/021.json --execute --resume --python /home/user/harnessExperiment/.runtime/test-venv/bin/python
+preflight verifier-commit: protocol b30c56554bda matches
+preflight incumbent: protocol cfdd320ecfbd matches
+[3/38] c021-sqlparse-mut-001-r1-verifier-commit: ok (model_call_limit -> accepted)
+[4/38] c021-sqlparse-mut-001-r1-incumbent: ok (model_call_limit -> rejected)
+[5/38] c021-sqlparse-mut-022-r1-incumbent: ok (model_call_limit -> rejected)
+[6/38] c021-sqlparse-mut-022-r1-verifier-commit: ok (model_call_limit -> accepted)
+[7/38] c021-sqlparse-mut-032-r1-verifier-commit: ok (model_call_limit -> rejected)
+[8/38] c021-sqlparse-mut-032-r1-incumbent: ok (model_call_limit -> rejected)
+[9/38] c021-sqlparse-mut-057-r1-incumbent: ok (model_call_limit -> rejected)
+[10/38] c021-sqlparse-mut-057-r1-verifier-commit: ok (model_call_limit -> rejected)
+[11/38] c021-sqlparse-mut-061-r1-incumbent: ok (finish_requested -> rejected)
+[12/38] c021-sqlparse-mut-061-r1-verifier-commit: ok (model_call_limit -> accepted)
