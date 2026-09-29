@@ -34,3 +34,16 @@ preflight incumbent: protocol 03633ef73ff0 matches
 [30/42] c019-sqlparse-mut-033-r2: ok (finish_requested -> accepted)
 [31/42] c019-sqlparse-mut-034-r2: ok (finish_requested -> accepted)
 [32/42] c019-sqlparse-mut-040-r2: ok (finish_requested -> accepted)
+[33/42] c019-sqlparse-mut-042-r2: ok (finish_requested -> accepted)
+[34/42] c019-sqlparse-mut-043-r2: ok (finish_requested -> accepted)
+[35/42] c019-sqlparse-mut-044-r2: ok (finish_requested -> accepted)
+[36/42] c019-sqlparse-mut-046-r2: ok (finish_requested -> accepted)
+[37/42] c019-sqlparse-mut-057-r2: failure (model_error: failed after 3 attempts: structured output is not {content, tool_calls}: {"__unparsedToolInput": {"raw": "{\"content\": \"Investigated the group_functions() logic in sqlparse/engine/grouping.py, which)
+[37/42] c019-sqlparse-mut-057-r2-a2: ok (model_call_limit -> rejected)
+[38/42] c019-sqlparse-mut-060-r2: ok (finish_requested -> accepted)
+[39/42] c019-sqlparse-mut-061-r2: ok (model_call_limit -> rejected)
+[40/42] c019-sqlparse-mut-073-r2: ok (finish_requested -> accepted)
+[41/42] c019-sqlparse-mut-075-r2: ok (finish_requested -> accepted)
+[42/42] c019-sqlparse-mut-076-r2: ok (finish_requested -> accepted)
+campaign complete: 42 invocations
+report skeleton: experiments/session_harness/E3-cloud-replication-019-report.md

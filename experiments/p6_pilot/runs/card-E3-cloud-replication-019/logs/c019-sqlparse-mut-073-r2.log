@@ -1,0 +1,6 @@
+# 2026-09-29T00:46:46+00:00 /home/user/harnessExperiment/.runtime/test-venv/bin/python /home/user/harnessExperiment/experiments/p6_pilot/run_pilot.py --client claude-cli --models claude-sonnet-5 --arm pressure-recent-v3 --backend trusted-local --tasks experiments/mutation_tasks/tasks.mutations.json sqlparse-mut-073 --run-name c019-sqlparse-mut-073-r2 --max-calls-per-run 20 --max-context-bytes 80000 --max-tokens 4096 --pytest-timeout 600 --max-attempts-per-run 24 --max-total-calls 24 --elapsed-cap-seconds 1200
+1 runs (1 tasks x 1 models), arm pressure-recent-v3, protocol 8770f0e72595
+claude-cli 2.1.284 (Claude Code): at most 20 responses per run; every CLI attempt counts toward --max-total-calls=24; billing unknown (local subscription login, no API key)
+per-run guards: {"stop_on_repeats": false, "resume_after_provider_stop": 0, "resume_wait_seconds": null}; backend trusted-local
+task budgets per run: {"claude-sonnet-5": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
+sqlparse-mut-073__claude-sonnet-5: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}
