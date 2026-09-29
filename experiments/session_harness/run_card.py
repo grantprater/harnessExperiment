@@ -911,7 +911,7 @@ def build_plan(card: dict, card_path: Path) -> Plan:
             if kind == "run" and arm["name"] not in line_ending_hashes:
                 variant = adapter.other_line_ending_hash(arm["policy"], parts["routing"], parts["execution"],
                                                          parts["guards"], contracts, parts["treatments"])
-                if variant:
+                if variant and variant[1] != protocol:  # equal when the runner does not hash that file (forecast tasks)
                     line_ending_hashes[arm["name"]] = variant
             live = client in LIVE_CLIENTS
             model = run_model(client, arm)
