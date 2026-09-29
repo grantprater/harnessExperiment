@@ -3,3 +3,4 @@
 claude-cli 2.1.284 (Claude Code): at most 20 responses per run; every CLI attempt counts toward --max-total-calls=24; billing unknown (local subscription login, no API key)
 per-run guards: {"stop_on_repeats": false, "resume_after_provider_stop": 0, "resume_wait_seconds": null}; backend trusted-local
 task budgets per run: {"claude-sonnet-5": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
+sqlparse-mut-001__claude-sonnet-5: finish_requested -> rejected {'fail-to-pass': 'fail', 'pass-to-pass': 'pass'}
