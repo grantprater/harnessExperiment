@@ -21,6 +21,10 @@ Backends:
   trusted-local  candidate commands and evaluation run on the host (not isolated)
   oci            candidate commands and evaluation run in a pinned local image by image ID,
                  workspace-only mount, no network (see experiments/p6_pilot/oci/Containerfile)
+  --sandbox unshare-rnm   forecast tasks on trusted-local, Linux only: every run-tool and evaluator command runs
+                 in new user, mount and network namespaces with the checkout's experiments/, .git, the raw series cache
+                 and ~/harness-sealed hidden and only its working directory kept (sandbox.py); recorded in the
+                 execution contract, so in the protocol hash, only when on
 
 Arms (same tools, instructions, evaluator, and limits; only the context policy differs):
   bounded-transcript-v2  original task + as much recent transcript as fits; tool results shown
@@ -128,6 +132,7 @@ from claude_cli import (  # noqa: E402
     REPLY_RECOVERY, RETRY_MAX_TURNS, ClaudeCliClient, cli_contract, cli_version,
 )
 from interpreters import task_python  # noqa: E402
+import sandbox as namespace_sandbox  # noqa: E402
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
 
 # $RETICLE_TASK_PYTHON, else .runtime/bugs-venv's interpreter (Scripts/python.exe on Windows, bin/python on
@@ -415,11 +420,21 @@ def task_contract(task: dict):
     }
 
 
-def resolve_execution(backend_name: str, image: str):
+def resolve_execution(backend_name: str, image: str, sandbox=None):
     """Return (backend or None for trusted-local, recorded execution contract). Never falls back."""
     if backend_name == "trusted-local":
-        return None, {"backend": "trusted-local", "guest_python": str(TASK_PYTHON),
-                      "authority": "trusted-local, not host-isolated"}
+        execution = {"backend": "trusted-local", "guest_python": str(TASK_PYTHON),
+                     "authority": "trusted-local, not host-isolated"}
+        if sandbox is None:  # the contract is exactly as before
+            return None, execution
+        if sandbox != namespace_sandbox.SANDBOX_NAME:
+            raise SystemExit(f"unknown --sandbox {sandbox!r}")
+        execution.update(authority="trusted-local in unshare -rnm namespaces: loopback-only network; the checkout's "
+                                   "experiments/, .git, raw cache and ~/harness-sealed hidden; working directory only",
+                         sandbox=namespace_sandbox.contract())
+        return namespace_sandbox.NamespaceSandboxBackend(namespace_sandbox.hidden_paths(ROOT)), execution
+    if sandbox is not None:
+        raise SystemExit("--sandbox applies to the trusted-local backend only")
     engine = IsolatedOCIBackend(image).engine
     inspected = subprocess.run([engine, "image", "inspect", "--format", "{{.Id}}", image],
                                capture_output=True, text=True)
@@ -969,11 +984,11 @@ def attempt(name, action):
         probes[name] = "blocked: " + type(exc).__name__
 
 
-attempt("https", lambda: urllib.request.urlopen("https://example.com", timeout=5).read(1))
-attempt("socket", lambda: socket.create_connection(("1.1.1.1", 443), timeout=5).close())
-attempt("dns", lambda: socket.getaddrinfo("example.com", 443))
-attempt("checkout", lambda: (checkout / "experiments" / "forecast_tasks" / "sources.json").read_bytes())
-attempt("evaluator_bundle", lambda: (here / ".." / "evaluator" / "task.json").read_bytes())
+def read(path):  # an empty read (a file covered by /dev/null) is not a leak
+    if not Path(path).read_bytes():
+        raise FileNotFoundError(str(path) + " is empty")
+
+
 SEALED = "harness-sealed/022/resolutions.json"  # under some home directory; commands get no HOME variable
 
 
@@ -981,9 +996,20 @@ def read_sealed():
     found = [p for root in ("/root", "/home/*", "C:/Users/*") for p in glob.glob(root + "/" + SEALED)]
     if not found:
         raise FileNotFoundError(SEALED)
-    Path(found[0]).read_bytes()
+    read(found[0])
 
 
+def read_git():
+    git = checkout / ".git"
+    read(git / "HEAD" if git.is_dir() else git)
+
+
+attempt("https", lambda: urllib.request.urlopen("https://example.com", timeout=5).read(1))
+attempt("socket", lambda: socket.create_connection(("1.1.1.1", 443), timeout=5).close())
+attempt("dns", lambda: socket.getaddrinfo("example.com", 443))
+attempt("checkout", lambda: read(checkout / "experiments" / "forecast_tasks" / "sources.json"))
+attempt("git", read_git)
+attempt("evaluator_bundle", lambda: read(here / ".." / "evaluator" / "task.json"))
 attempt("sealed", read_sealed)
 print(json.dumps(probes, indent=1, sort_keys=True))
 if all(value.startswith("blocked") for value in probes.values()):
@@ -1096,6 +1122,9 @@ def main() -> None:
                                  *FORECAST_CLIENTS])
     parser.add_argument("--backend", default="trusted-local", choices=["trusted-local", "oci"])
     parser.add_argument("--oci-image", default=DEFAULT_OCI_IMAGE)
+    parser.add_argument("--sandbox", choices=[namespace_sandbox.SANDBOX_NAME], default=None,
+                        help="forecast tasks on trusted-local (Linux): run every command under unshare -rnm with the "
+                             "checkout hidden; in the execution contract and the protocol hash")
     parser.add_argument("--arm", default="bounded-transcript-v2", choices=sorted(ARMS))
     parser.add_argument("--run-name", required=True)
     parser.add_argument("--models", nargs="*", default=[])
@@ -1162,7 +1191,13 @@ def main() -> None:
         routing = {model: ({"order": [pins[model]], "allow_fallbacks": False, "require_parameters": True}
                            if model in pins else dict(UNPINNED_ROUTING)) for model in models}
     arm = args.arm
-    backend, execution = resolve_execution(args.backend, args.oci_image)
+    if args.sandbox and not forecast:
+        raise SystemExit("--sandbox applies to forecast tasks only")
+    backend, execution = resolve_execution(args.backend, args.oci_image, args.sandbox)
+    if args.sandbox:
+        problem = namespace_sandbox.availability()
+        if problem:
+            raise SystemExit(problem)
     guards = {"stop_on_repeats": args.stop_on_repeats,
               "resume_after_provider_stop": args.resume_after_provider_stop,
               "resume_wait_seconds": args.resume_wait_seconds if args.resume_after_provider_stop else None}
@@ -1297,7 +1332,7 @@ def main() -> None:
         runtime = LocalRuntime(run_root / "session", workspace)
         initial_revision = runtime.workspace.revision()
         src = workspace / "src"
-        if backend is None:
+        if backend is None or not backend.host_isolation:  # trusted-local, sandboxed or not: host paths
             python_path = str(src if src.is_dir() else workspace)
         else:
             python_path = "/workspace/src" if src.is_dir() else "/workspace"  # guest path of the same tree

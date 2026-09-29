@@ -224,6 +224,57 @@ class EvaluatorTests(ForecastRunnerTestCase):
         self.assertLess(agreement["agree"], agreement["windows"])
         self.assertGreater(agreement["agree"], 0)
 
+    def test_a_malicious_resolver_cannot_fake_commitment(self):
+        """None of these defines a working outcome(); each tries to make the checker report one anyway."""
+        forged = 'json.dumps({"results": [True] * 60})'
+        attacks = {
+            "writes results files": "import json, os, glob\n"
+                                    "for d in ['.', '..', '../..', '../resolver-check'] + glob.glob('/tmp/*'):\n"
+                                    "    try:\n"
+                                    f"        open(os.path.join(d, 'results.json'), 'w').write({forged})\n"
+                                    "    except OSError:\n        pass\n",
+            "prints a forged report": f"import json\nprint({forged})\nprint('0' * 32 + ' ' + {forged})\n",
+            "atexit forgery": f"import atexit, json, sys\natexit.register(lambda: sys.__stdout__.write({forged}))\n",
+            "os._exit after printing": f"import json, os, sys\nsys.__stdout__.write({forged} + '\\n')\n"
+                                       "sys.__stdout__.flush()\nos._exit(0)\n",
+            "raises SystemExit": "raise SystemExit(0)\n",
+        }
+        for name, source in attacks.items():
+            with self.subTest(name):
+                shutil.rmtree(self.root / "run", ignore_errors=True)
+                status, forecast = self.evaluate({"forecast.json": '{"probability": 0.4}', "resolve.py": source})
+                self.assertEqual(status, "rejected", forecast)
+                self.assertFalse(forecast["committed"])
+                self.assertIsNone(forecast["reading_agreement"])
+
+    def test_a_malicious_resolver_cannot_change_the_truth_it_is_compared_with(self):
+        """outcome() always says True (an honest misreading scores some agreement); an attacker that also rewrites
+        every resolvers.py and data file it can find, so that the truth would be True everywhere, scores the same."""
+        honest = {"forecast.json": '{"probability": 0.4}',
+                  "resolve.py": "def outcome(rows, T, horizon):\n    return True\n"}
+        _, baseline = self.evaluate(honest)
+        # The strongest attacker: it knows where the run lives, finds the evaluation root's bundle copy (resolvers.py and
+        # the snapshot) and rewrites both so that the truth would be True everywhere.
+        tamper = ("import glob\n"
+                  f"RUN = {str(self.root / 'run')!r}\n"
+                  "for path in glob.glob(RUN + '/**/resolvers.py', recursive=True):\n"
+                  "    open(path, 'a').write('\\ndef resolve(*a, **k):\\n    return True\\n')\n"
+                  "for path in glob.glob(RUN + '/**/evaluator/data/*.csv', recursive=True):\n"
+                  "    open(path, 'w').write('date,value\\n')\n"
+                  "def outcome(rows, T, horizon):\n    return True\n")
+        shutil.rmtree(self.root / "run", ignore_errors=True)
+        _, attacked = self.evaluate({"forecast.json": '{"probability": 0.4}', "resolve.py": tamper})
+        # the attack ran and reached the bundle it could see (the run's own bundle source, beside the evaluation copy)
+        self.assertIn("return True", (self.root / "run" / "evaluator" / "resolvers.py").read_text(encoding="utf-8"))
+        self.assertEqual(attacked["reading_agreement"], baseline["reading_agreement"])
+        self.assertLess(attacked["reading_agreement"]["agree"], attacked["reading_agreement"]["windows"])
+
+    def test_a_helper_module_next_to_resolve_py_still_imports(self):
+        files = {"forecast.json": '{"probability": 0.4}', "helper.py": "def answer():\n    return False\n",
+                 "resolve.py": "from helper import answer\n\ndef outcome(rows, T, horizon):\n    return answer()\n"}
+        status, forecast = self.evaluate(files)
+        self.assertEqual(status, "accepted", forecast)
+
     def test_check_forecast(self):
         cases = {'{"probability": 0.25}': 0.25, '{"probability": 0}': 0.0, '{"probability": 1}': 1.0,
                  '{"probability": true}': None, '{"probability": "0.3"}': None, "0.3": None, "[0.3]": None,
@@ -275,7 +326,7 @@ class ScriptedControlTests(ForecastRunnerTestCase):
 
     def test_peek_script_blocks_are_all_required(self):
         self.assertIn('if all(value.startswith("blocked")', run_pilot.PEEK_SCRIPT)
-        for probe in ("https", "socket", "dns", "checkout", "evaluator_bundle", "sealed"):
+        for probe in ("https", "socket", "dns", "checkout", "git", "evaluator_bundle", "sealed"):
             self.assertIn(f'attempt("{probe}"', run_pilot.PEEK_SCRIPT)
 
 

@@ -145,7 +145,8 @@
           "type": "object",
           "additionalProperties": false,
           "required": ["kind"],
-          "properties": {"kind": {"const": "trusted-local"}, "isolation": {"enum": ["host", "vm-sandbox"]}}
+          "properties": {"kind": {"const": "trusted-local"}, "isolation": {"enum": ["host", "vm-sandbox"]},
+                         "sandbox": {"enum": ["unshare-rnm"]}}
         },
         {
           "type": "object",

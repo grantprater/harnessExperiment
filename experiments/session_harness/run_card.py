@@ -68,7 +68,7 @@ RESERVED_FLAGS = frozenset({
     "--max-calls-per-run", "--max-context-bytes", "--max-tokens", "--max-total-calls", "--pytest-timeout",
     "--max-attempts-per-run", "--max-tool-actions-per-run", "--elapsed-cap-seconds", "--cost-ceiling-usd",
     "--attempt-cost-reservation-usd", "--resume-after-provider-stop", "--resume-wait-seconds",
-    "--stop-on-repeats", "--dry-run",
+    "--stop-on-repeats", "--dry-run", "--sandbox",
 })
 # Measurement vocabulary. RESULT_MEASUREMENTS come from results.jsonl; JOURNAL_MEASUREMENTS need the
 # session journal (S6b) and are listed as pending in the report skeleton.
@@ -527,6 +527,9 @@ class RunnerAdapter:
         """The runner's own resolve_execution, with the card's image ID and engine standing in for probes."""
         module = self.module
         if backend["kind"] == "trusted-local":
+            if backend.get("sandbox"):  # only runners that offer --sandbox; the contract is then the runner's own
+                return module.resolve_execution("trusted-local", getattr(module, "DEFAULT_OCI_IMAGE", ""),
+                                                backend["sandbox"])[1]
             return module.resolve_execution("trusted-local", getattr(module, "DEFAULT_OCI_IMAGE", ""))[1]
         image_id, engine = backend["image_id"], backend["engine"]
         real_backend = module.IsolatedOCIBackend
@@ -738,6 +741,8 @@ def runner_args(card: dict, default_task_file: Optional[Path], client: str, arm:
     args += ["--arm", arm["policy"], "--backend", "oci" if arm["backend"]["kind"] == "oci" else "trusted-local"]
     if arm["backend"]["kind"] == "oci":
         args += ["--oci-image", arm["backend"]["image"]]
+    if arm["backend"].get("sandbox"):
+        args += ["--sandbox", arm["backend"]["sandbox"]]
     args.append("--tasks")
     if default_task_file is None or resolve_path(card["tasks"]["file"]) != default_task_file:
         args.append(card["tasks"]["file"])
@@ -1005,7 +1010,8 @@ def describe_hashes(hashes: Optional[List[str]]) -> str:
 
 def describe_backend(backend: dict) -> str:
     if backend["kind"] == "trusted-local":
-        return f"trusted-local ({isolation_of(backend)})"
+        sandbox = f", sandbox {backend['sandbox']}" if backend.get("sandbox") else ""
+        return f"trusted-local ({isolation_of(backend)}{sandbox})"
     image_id = backend["image_id"]
     short = "unresolved" if is_unresolved(image_id) else image_id.split(":")[-1][:12]
     return f"oci {backend['image']}@{short} ({backend['engine']})"

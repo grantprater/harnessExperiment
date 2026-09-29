@@ -141,18 +141,30 @@ class BuilderTests(unittest.TestCase):
     def test_frozen_rule(self):
         out, sealed, manifest = self.build()
         tasks = json.loads((out / "tasks.forecast.json").read_text(encoding="utf-8"))["tasks"]
-        self.assertEqual(manifest["split_counts"], {"calibration": 20, "sealed": 10, "reserve": 0})
-        cells = [(t["series"], t["forecast_date"]) for t in tasks]
-        self.assertEqual(len(cells), len(set(cells)))  # at most one question per (series, T)
-        capped = [t["series"] for t in tasks if t["split"] in ("sealed", "reserve")]
-        self.assertTrue(all(capped.count(s) <= build_bank.SERIES_CAP for s in capped))
-        for task in tasks:
-            self.assertTrue(0.2 <= task["base_rate"] <= 0.8 and task["base_rate_windows"] >= 52)
-            month = D.fromisoformat(task["forecast_date"]).month
-            self.assertEqual(month, 7 if task["split"] == "calibration" else 8)
-            self.assertIn(D.fromisoformat(task["forecast_date"]), build_bank.FORECAST_DATES)
-        splits = json.loads((out / "splits.json").read_text(encoding="utf-8"))
-        self.assertEqual(sum(len(v) for v in splits.values()), len(tasks))
+        self.assertEqual(manifest["split_counts"], {"calibration": 4, "sealed": 12, "reserve": 4})
+        check_rule(self, tasks, json.loads((out / "splits.json").read_text(encoding="utf-8")))
+        control = json.loads((out / "recall_control.json").read_text(encoding="utf-8"))["questions"]
+        self.assertEqual(len(control), 5)  # one per series, and the fixture has 5
+        self.assertEqual(len({q["series"] for q in control}), len(control))
+        self.assertTrue(all(q["forecast_date"] < "2026-01-01" for q in control))
+
+    def test_split_assignment_keeps_groups_together_and_is_seeded(self):
+        config = json.loads((ROOT / "experiments" / "forecast_tasks" / "sources.json").read_text(encoding="utf-8"))
+        first = build_bank.assign_splits(config, build_bank.random.Random(22))
+        self.assertEqual(first, build_bank.assign_splits(config, build_bank.random.Random(22)))
+        for series in config["series"]:
+            if series["source"] == "open-meteo":
+                self.assertEqual(first[f"{series['city']}_tmax"], first[f"{series['city']}_precip"])
+        counts = {split: sum(1 for owner in first.values() if owner == split) for split, _ in build_bank.SPLITS}
+        self.assertEqual(sum(counts.values()), 60)
+        self.assertTrue(abs(counts["sealed"] - 36) <= 2 and abs(counts["calibration"] - 12) <= 2)
+
+    def test_overlap(self):
+        make = lambda day, h: build_bank.Candidate("s", "x", "level", "direction", h, day, {}, 0.5, 60)  # noqa: E731
+        taken = [make(D(2026, 7, 6), 14)]  # 07-06 .. 07-19
+        self.assertTrue(build_bank.overlaps(make(D(2026, 7, 13), 7), taken))
+        self.assertFalse(build_bank.overlaps(make(D(2026, 7, 20), 28), taken))
+        self.assertTrue(build_bank.overlaps(make(D(2026, 7, 6), 7), taken))
 
     def test_no_outcome_in_the_checkout_outputs(self):
         out, sealed, manifest = self.build()
@@ -168,15 +180,15 @@ class BuilderTests(unittest.TestCase):
                 self.assertLess(last, task["forecast_date"])
 
     def test_selection_never_reads_data_on_or_after_T(self):
-        """Changing every value dated on or after 2026-07-27 (the last July T) leaves the calibration draw and its
-        statements unchanged; only outcomes may differ."""
-        cut = D(2026, 7, 27)
+        """Changing every value dated on or after 2026-08-24 (the last forecast date) leaves the whole bank, its
+        statements and the recall control unchanged; only outcomes may differ."""
+        cut = max(build_bank.FORECAST_DATES)
         changed = {name: [(d, v if d < cut else v * 3 + 7) for d, v in rows] for name, rows in self.series.items()}
-        out_a, _, _ = self.build()
-        out_b, _, _ = self.build(changed)
-        load = lambda out: [t for t in json.loads((out / "tasks.forecast.json").read_text(encoding="utf-8"))["tasks"]
-                            if t["split"] == "calibration"]  # noqa: E731
-        self.assertEqual(load(out_a), load(out_b))
+        out_a, sealed_a, _ = self.build()
+        out_b, sealed_b, _ = self.build(changed)
+        for name in ("tasks.forecast.json", "splits.json", "recall_control.json"):
+            self.assertEqual((out_a / name).read_bytes(), (out_b / name).read_bytes(), name)
+        self.assertNotEqual((sealed_a / "resolutions.json").read_bytes(), (sealed_b / "resolutions.json").read_bytes())
 
     def test_fetch_is_sequential_polite_and_cached(self):
         requests, sleeps = [], []
@@ -225,6 +237,7 @@ class CommittedBankTests(unittest.TestCase):
     def test_manifest_pins_the_committed_files(self):
         self.assertEqual(lf_sha(FORECAST / "tasks.forecast.json"), self.manifest["tasks_file"]["sha256"])
         self.assertEqual(lf_sha(FORECAST / "splits.json"), self.manifest["splits_file"]["sha256"])
+        self.assertEqual(lf_sha(FORECAST / "recall_control.json"), self.manifest["recall_control_file"]["sha256"])
         self.assertEqual(lf_sha(FORECAST / "resolvers.py"), self.manifest["resolvers_sha256"])
         self.assertEqual(lf_sha(FORECAST / "sources.json"), self.manifest["sources_sha256"])
         for relative, digest in self.manifest["snapshots"].items():
@@ -246,9 +259,35 @@ class CommittedBankTests(unittest.TestCase):
         self.assertGreater(checked, 100)
 
     def test_counts_are_what_the_frozen_rule_gives(self):
-        self.assertEqual(self.manifest["split_counts"], {"calibration": 40, "sealed": 60, "reserve": 0})
-        self.assertEqual(self.manifest["cells_with_a_kept_candidate"], {"july": 120, "august": 120})
-        self.assertEqual(len(self.tasks), 100)
+        self.assertEqual(self.manifest["split_counts"], {"calibration": 40, "sealed": 120, "reserve": 40})
+        self.assertEqual(self.manifest["split_series"], {"calibration": 13, "sealed": 36, "reserve": 11})
+        self.assertEqual(self.manifest["cells_with_a_kept_candidate"], {"july": 240, "august": 240})
+        self.assertEqual(len(self.tasks), 200)
+        check_rule(self, self.tasks, json.loads((FORECAST / "splits.json").read_text(encoding="utf-8")))
+        control = json.loads((FORECAST / "recall_control.json").read_text(encoding="utf-8"))["questions"]
+        self.assertEqual(len(control), 20)
+
+
+def check_rule(case, tasks, splits):
+    """The v2 rule on a built bank: series-disjoint splits, at most 4 questions per series with non-overlapping
+    windows, the base-rate filter, the forecast dates."""
+    owner = {}
+    for split in ("calibration", "sealed", "reserve"):
+        for name in splits["series"][split]:
+            case.assertNotIn(name, owner)
+            owner[name] = split
+    by_series = {}
+    for task in tasks:
+        case.assertEqual(owner[task["series"]], task["split"])
+        case.assertTrue(0.2 <= task["base_rate"] <= 0.8 and task["base_rate_windows"] >= 52)
+        case.assertIn(D.fromisoformat(task["forecast_date"]), build_bank.FORECAST_DATES)
+        by_series.setdefault(task["series"], []).append(task)
+    for name, mine in by_series.items():
+        case.assertLessEqual(len(mine), build_bank.SERIES_CAP)
+        windows = sorted((D.fromisoformat(t["forecast_date"]), t["horizon_days"]) for t in mine)
+        for (start, horizon), (following, _) in zip(windows, windows[1:]):
+            case.assertLessEqual(start + datetime.timedelta(days=horizon), following, name)
+    case.assertEqual(sum(len(splits[s]) for s in ("calibration", "sealed", "reserve")), len(tasks))
 
 
 if __name__ == "__main__":

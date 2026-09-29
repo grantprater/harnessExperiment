@@ -22,6 +22,7 @@
   },
   {
    "city": "london",
+   "group": "london",
    "kind": "level",
    "name": "london_tmax",
    "related": [
@@ -34,6 +35,7 @@
   },
   {
    "city": "london",
+   "group": "london",
    "kind": "wet_days",
    "name": "london_precip",
    "related": [
