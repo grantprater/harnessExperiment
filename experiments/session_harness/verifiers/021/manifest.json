@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "generator": {
+    "version": "repro-test-generator-v1",
+    "model": "claude-sonnet-5",
+    "cli_version": "2.1.284 (Claude Code)",
+    "tools": [
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "permission_mode": "dontAsk",
+    "max_attempts": 3,
+    "max_turns": 30,
+    "attempt_budget_usd": 0.6,
+    "system_prompt_sha256": "85b542cf5ef8dc29f69abf990fb47afba93f621a721b40e054faf934d4c96633",
+    "prompt_template_sha256": "6df59e40d93dcbce99a4a4bb868882369081d81f92ea8121057e74347100cf3b",
+    "feedback_template_sha256": "44e98910f4cd822755a326c69950fa76a35d8c4edbacc68ca2eb4a22c541338a",
+    "acceptance": "compiles; collects >= 1 case without a collection error; >= 1 case fails on the pre-edit tree"
+  },
+  "tasks": {
+    "sqlparse-mut-001": {
+      "status": "available",
+      "attempts": 2,
+      "cost_usd": 1.238165,
+      "statement_sha256": "8c82588cd4653d1b5cf90b37461801b6064632e5ed26cfdd2c7b288eda46f109",
+      "generated_at": "2026-09-29T06:38:41.047472+00:00",
+      "file": "sqlparse-mut-001/test_reticle_repro.py",
+      "sha256_lf": "31a8b8b839cedca1450eac7826e4bb72498fe97a8bbcc6f307c9602ba539fa85",
+      "collected": 2,
+      "pre_edit": {
+        "collected": 2,
+        "passed": 0,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      }
+    },
+    "sqlparse-mut-022": {
+      "status": "available",
+      "attempts": 1,
+      "cost_usd": 0.611792,
+      "statement_sha256": "8b5a927646bf0abc765732fe6588bccc6fb00a57091d327fc6384e375a733102",
+      "generated_at": "2026-09-29T06:50:10.438259+00:00",
+      "file": "sqlparse-mut-022/test_reticle_repro.py",
+      "sha256_lf": "21d8a2c969c10e41e904ec429613fd23df1f38e370058356c63c46a18cd32aa9",
+      "collected": 3,
+      "pre_edit": {
+        "collected": 3,
+        "passed": 0,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      }
+    },
+    "sqlparse-mut-025": {
+      "status": "available",
+      "attempts": 1,
+      "cost_usd": 0.159998,
+      "statement_sha256": "59e9a0fc285584ed92f806660083dacbf71ff025fc2b6973389b38c76474d8b3",
+      "generated_at": "2026-09-29T06:51:26.859295+00:00",
+      "file": "sqlparse-mut-025/test_reticle_repro.py",
+      "sha256_lf": "1304ebae9ae06affff988226ff039ce290f0740503d7a9c0d36176e030de6aeb",
+      "collected": 3,
+      "pre_edit": {
+        "collected": 3,
+        "passed": 0,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      }
+    },
+    "sqlparse-mut-032": {
+      "status": "available",
+      "attempts": 3,
+      "cost_usd": 1.818434,
+      "statement_sha256": "1935a30ee1fa607c1f6d154e1c83ec933c2cec4d99e519bb996b0b16abd6b8df",
+      "generated_at": "2026-09-29T07:05:35.078078+00:00",
+      "file": "sqlparse-mut-032/test_reticle_repro.py",
+      "sha256_lf": "47ab140bd3700aeef700a414f0043703661aa5f912e394cab1528b7e4209c956",
+      "collected": 3,
+      "pre_edit": {
+        "collected": 3,
+        "passed": 1,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      }
+    },
+    "sqlparse-mut-034": {
+      "status": "available",
+      "attempts": 1,
+      "cost_usd": 0.159713,
+      "statement_sha256": "ca9c7948ad176f6e4d7be11e8fd38e97a8db2912c1dbeee9572ca52494df5c19",
+      "generated_at": "2026-09-29T07:06:51.500504+00:00",
+      "file": "sqlparse-mut-034/test_reticle_repro.py",
+      "sha256_lf": "e38d60c9b78102a57eb1a03c35ee06d3726623244cddaf16efe35bad85f137a7",
+      "collected": 3,
+      "pre_edit": {
+        "collected": 3,
+        "passed": 1,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      }
+    },
+    "sqlparse-mut-040": {
+      "status": "available",
+      "attempts": 1,
+      "cost_usd": 0.044763,
+      "statement_sha256": "96612bda5493117bbfde2df4d765bfedf77dc12ccea65773bdd8e697f245dcd7",
+      "generated_at": "2026-09-29T07:07:06.838447+00:00",
+      "file": "sqlparse-mut-040/test_reticle_repro.py",
+      "sha256_lf": "c23e378bd02afd5282b64ff84f31c4437d24fbc1ed910fb0ad8258a54547ef6a",
+      "collected": 2,
+      "pre_edit": {
+        "collected": 2,
+        "passed": 0,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      }
+    },
+    "sqlparse-mut-057": {
+      "status": "available",
+      "attempts": 1,
+      "cost_usd": 0.218938,
+      "statement_sha256": "96084c0e13f37db9d8fa567a3591900055660bc9fa8882290a35e7a8ce03a19e",
+      "generated_at": "2026-09-29T07:08:21.950937+00:00",
+      "file": "sqlparse-mut-057/test_reticle_repro.py",
+      "sha256_lf": "2d13625cbc05e4731ca3f2832fdefa275e2589a15c863a9a88b8998d1be04332",
+      "collected": 4,
+      "pre_edit": {
+        "collected": 4,
+        "passed": 2,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      }
+    },
+    "sqlparse-mut-061": {
+      "status": "available",
+      "attempts": 1,
+      "cost_usd": 0.579359,
+      "statement_sha256": "32c063b142c3c8c198b69d2bf2b38289d3a69640e06c6e448743901164002626",
+      "generated_at": "2026-09-29T07:12:42.065540+00:00",
+      "file": "sqlparse-mut-061/test_reticle_repro.py",
+      "sha256_lf": "a8dc0e2a516334db6e02f1055bd2a0910f1eb458d21254b3eb9e325471cf5d21",
+      "collected": 2,
+      "pre_edit": {
+        "collected": 2,
+        "passed": 0,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      }
+    }
+  }
+}

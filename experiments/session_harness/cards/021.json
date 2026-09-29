@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "E4-verifier-commit-021",
   "title": "Realistic verifier (a pre-written reproduction test behind check()) plus a mid-budget commitment prompt, paired with the incumbent on the cloud VM backend",
-  "status": "proposed",
+  "status": "running",
   "markdown": "experiments/session_harness/E4-verifier-commit-021.md",
   "hypothesis": "On card 007's five hard tasks, where two thirds of incumbent rejections end at the response budget without a committed fix and most rejected runs saw the mutated line (observation audit: 17 of 22), asking the model at mid-budget to commit to a hypothesis and test a stated prediction, and giving it a check() backed by a reproduction test written in advance from the problem statement only (no hidden tests), raises acceptance above the incumbent's. Card 020's hidden-test oracle is the ceiling for the verifier half; each frozen reproduction test's validity (fails on the mutated tree, passes on the gold tree) is scored offline to say how much of that ceiling a realistic verifier can reach.",
   "run_prefix": "c021",
@@ -17,11 +17,11 @@
   "prerequisites": [
     {
       "text": "owner approval recorded in the markdown card (then set status to running)",
-      "done": false
+      "done": true
     },
     {
       "text": "smoke on the VM (experiments/cloud/RUN_IN_CLOUD-021.md steps 5-6): the one-response probe with the pinned model passed, and the reproduction tests were generated with experiments/p6_pilot/repro_verifiers.py generate into experiments/session_harness/verifiers/021 (manifest committed; no test regenerated or edited after generation)",
-      "done": false
+      "done": true
     }
   ],
   "arms": [

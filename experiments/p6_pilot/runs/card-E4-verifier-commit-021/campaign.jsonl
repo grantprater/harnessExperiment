@@ -1,0 +1,5 @@
+{"time": "2026-09-29T07:12:55+00:00", "event": "host", "isolation": {"incumbent": "vm-sandbox", "verifier-commit": "vm-sandbox"}, "os": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39", "system": "Linux", "machine": "x86_64", "cpu_count": 4, "driver_python": "3.13.12", "runner_python": "/home/user/harnessExperiment/.runtime/test-venv/bin/python", "task_python": "/home/user/harnessExperiment/.runtime/bugs-venv/bin/python", "claude_cli_version": "2.1.284 (Claude Code)"}
+{"time": "2026-09-29T07:12:55+00:00", "event": "control_precheck_start", "base": "c021-control-gold", "run": "c021-control-gold"}
+{"time": "2026-09-29T07:12:59+00:00", "event": "control_precheck_end", "base": "c021-control-gold", "run": "c021-control-gold", "exit_code": 0, "outcome": "ok", "detail": "control gold: all 1 accepted", "reused": false}
+{"time": "2026-09-29T07:12:59+00:00", "event": "control_precheck_start", "base": "c021-control-noop", "run": "c021-control-noop"}
+{"time": "2026-09-29T07:13:02+00:00", "event": "control_precheck_end", "base": "c021-control-noop", "run": "c021-control-noop", "exit_code": 0, "outcome": "ok", "detail": "control noop: all 1 rejected", "reused": false}
