@@ -2,3 +2,4 @@
 {"time": "2026-09-29T02:59:24.933159+00:00", "event": "commit", "runs_finished": 10, "result": "committed and pushed"}
 {"time": "2026-09-29T03:49:39.709457+00:00", "event": "commit", "runs_finished": 20, "result": "committed and pushed"}
 {"time": "2026-09-29T04:01:46.639326+00:00", "event": "commit", "runs_finished": 31, "result": "committed and pushed"}
+{"time": "2026-09-29T04:02:15.000869+00:00", "event": "end", "exit_code": 0, "detail": "run_card exited 0", "finished_at": "2026-09-29T04:02:12.599076+00:00", "commit": "committed and pushed", "status": {"card": "E4-cloud-check-oracle-020", "runs_planned": 32, "runs_finished": 32, "runs_accepted": 19, "failed_attempts": 0, "controls": {"gold": "ok", "noop": "ok"}, "nested_cost_usd": 26.844412, "nested_calls": 481, "wall_seconds": 6832.0, "last_stop": {"time": "2026-09-29T04:02:11+00:00", "event": "campaign_end", "reason": "campaign complete: 34 invocations"}, "spend_cap_usd": 50}}
