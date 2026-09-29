@@ -33,6 +33,22 @@ working directory is an empty temporary folder.
 `--output-format stream-json --verbose` is used instead of `json`: its final `result` event is the
 same object `json` prints, and it also carries the init event that lists the tools actually exposed.
 
+REPLY RECOVERY (opt-in, `reply_recovery="lenient-json+second-turn"`, adapter v3; off, every request and record
+is exactly v2's). Sometimes the CLI cannot parse the model's StructuredOutput input as JSON; it then reports the
+input as {"__unparsedToolInput": {"raw": ...}} and rejects the call, and at --max-turns 1 the reply is lost
+(card 019: 27 such attempts, 5 runs restarted). With recovery on, the CLI runs at --max-turns 2 and the reply is:
+  1. the first message, exactly as in v2, whenever v2 would use it;
+  2. else, when the first message's StructuredOutput input was unparsed, that raw text if
+     json.loads(raw, strict=False) accepts it (control characters inside strings; nothing looser, no guessing at
+     truncated JSON), recorded as structured_output_repair "lenient-json";
+  3. else the StructuredOutput call of the second message, which the model writes after the CLI's own rejection
+     of the first (structured_output_retries 1). A second message is never a source of direct tool calls.
+Every rejected StructuredOutput call is recorded with its full raw text. The second turn cannot run anything: the
+init check still requires the tools to be exactly [StructuredOutput], and every other tool_use in the stream must
+have been refused by the CLI (an error tool_result) or the attempt fails as tool_isolation_violation. Cost: a
+first message that calls the harness tools directly is still the reply, but the CLI now answers its rejection
+with a second model turn that is discarded (recorded as cli_model_messages).
+
 Tool probe (asks the nested CLI, with the adapter's exact flags and no Reticle tools, what it can call; one
 response, one attempt, every adapter check applied, including the model pin for a full id):
   python experiments/p6_pilot/claude_cli.py --probe-tools OUT_DIR [MODEL]
@@ -67,6 +83,14 @@ except ImportError:  # run as a script from the repository root
 #     StructuredOutput call (the --json-schema channel) or, when it calls the harness tools directly,
 #     from those direct calls. Tools are listed as a text catalog (name, description, argument schema).
 ADAPTER_VERSION = "claude-cli-adapter-v2"
+# v3 (opt-in, only with reply recovery; v2 requests and hashes are unchanged): --max-turns 2; a StructuredOutput
+#     call the CLI could not parse is repaired with json.loads(raw, strict=False) or replaced by the second
+#     message's StructuredOutput call (module docstring, REPLY RECOVERY). Card 019 (CLI 2.1.284) lost 5 runs to
+#     three unparsed StructuredOutput inputs in a row; card 007 (CLI 2.1.283) had 9 unparsed inputs, all retried.
+RECOVERY_ADAPTER_VERSION = "claude-cli-adapter-v3"
+REPLY_RECOVERY = "lenient-json+second-turn"
+RECOVERY_MAX_TURNS = 2
+UNPARSED_INPUT_KEY = "__unparsedToolInput"  # how the CLI reports tool input it could not parse as JSON
 REPLY_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
@@ -346,8 +370,132 @@ def first_message_reply(blocks: List[dict], call_index: int) -> Tuple[Dict[str, 
     return message, ids, "direct_tool_use" if uses else "text", []
 
 
-def cli_contract(model: str, *, max_turns: int, timeout: int, version: str) -> Dict[str, Any]:
-    """The invocation contract recorded in the run protocol (the analogue of provider routing)."""
+def stream_messages(stdout: str) -> Tuple[List[List[dict]], Dict[str, dict]]:
+    """(each model message's content blocks, in order; the CLI's tool results by tool_use_id). Reply recovery only."""
+    messages: List[List[dict]] = []
+    positions: Dict[Any, int] = {}  # message id -> index in messages
+    results: Dict[str, dict] = {}
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line) if line.strip() else None
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(event, dict) or event.get("type") not in ("assistant", "user"):
+            continue
+        message = event.get("message") or {}
+        blocks = [b for b in message.get("content") or [] if isinstance(b, dict)]
+        if event["type"] == "assistant":
+            # One model message can arrive as several events sharing its id (thinking, text, each tool_use),
+            # with the CLI's tool results in between; grouped by id as parse_stream_models groups the first.
+            if message.get("id") not in positions:
+                positions[message.get("id")] = len(messages)
+                messages.append([])
+            messages[positions[message.get("id")]].extend(blocks)
+        else:
+            for block in blocks:
+                if block.get("type") == "tool_result":
+                    results[str(block.get("tool_use_id"))] = {"is_error": bool(block.get("is_error")),
+                                                              "content": str(block.get("content"))}
+    return messages, results
+
+
+def unexecuted_tool_problem(messages: List[List[dict]], results: Dict[str, dict]) -> Optional[str]:
+    """Why the stream shows a tool other than StructuredOutput being run (a non-error result), or None."""
+    for blocks in messages:
+        for block in blocks:
+            if block.get("type") == "tool_use" and block.get("name") not in REPLY_CHANNEL_TOOLS:
+                outcome = results.get(str(block.get("id")))
+                if outcome is not None and not outcome["is_error"]:
+                    return f"nested CLI ran tool {block.get('name')!r} (non-error tool_result)"
+    return None
+
+
+class ReplyRejected(ValueError):
+    """No usable reply; .rejections describes every StructuredOutput call that was refused."""
+
+    def __init__(self, message: str, rejections: List[dict]):
+        super().__init__(message)
+        self.rejections = rejections
+
+
+def unparsed_raw(value: Any) -> Optional[str]:
+    """The raw text of a StructuredOutput input the CLI could not parse ({"__unparsedToolInput": {"raw": ...}})."""
+    if isinstance(value, dict) and set(value) == {UNPARSED_INPUT_KEY} and isinstance(value[UNPARSED_INPUT_KEY], dict):
+        raw = value[UNPARSED_INPUT_KEY].get("raw")
+        return raw if isinstance(raw, str) else None
+    return None
+
+
+def cli_reported_bytes(result: Optional[dict]) -> Optional[int]:
+    """The input size the CLI's InputValidationError states ("You sent (first 200 of N bytes)"), if any."""
+    text = (result or {}).get("content") or ""
+    marker = text.find(" bytes)")
+    start = text.rfind(" of ", 0, marker) if marker > 0 else -1
+    digits = text[start + 4:marker] if start >= 0 else ""
+    return int(digits) if digits.isdigit() else None
+
+
+def recovered_reply(messages: List[List[dict]], results: Dict[str, dict], call_index: int):
+    """(message, model call ids, channel, ignored direct calls, recovery record) under reply recovery.
+
+    The first message is the reply exactly as in v2 when v2 could use it. When its StructuredOutput call is
+    unusable, the raw input the CLI could not parse is tried with json.loads(raw, strict=False), then the next
+    message's StructuredOutput call (written after the CLI's rejection), under the same two rules. Raises
+    ReplyRejected when no StructuredOutput call is usable.
+    """
+    first = messages[0]
+    if not any(b.get("type") == "tool_use" and b.get("name") in REPLY_CHANNEL_TOOLS for b in first):
+        message, ids, channel, ignored = first_message_reply(first, call_index)  # v2: direct calls or text
+        return message, ids, channel, ignored, {"repair": None, "retries": 0, "rejections": []}
+    rejections: List[dict] = []
+    for position, blocks in enumerate(messages, 1):
+        uses = [b for b in blocks if b.get("type") == "tool_use"]
+        structured = [b for b in uses if b.get("name") in REPLY_CHANNEL_TOOLS]
+        if not structured:  # a later message is used only through its StructuredOutput call
+            continue
+        block, repair = structured[0], None
+        value = block.get("input")
+        raw = unparsed_raw(value)
+        rejection: Dict[str, Any] = {"message": position}
+        if raw is not None:
+            rejection.update(raw=raw, raw_bytes=len(raw.encode("utf-8")),
+                             cli_reported_bytes=cli_reported_bytes(results.get(str(block.get("id")))))
+            try:
+                json.loads(raw)
+                rejection["strict_json"] = True  # the CLI failed on text that is valid JSON
+            except ValueError:
+                rejection["strict_json"] = False
+            try:
+                value, repair = json.loads(raw, strict=False), "lenient-json"
+            except ValueError as exc:
+                rejections.append(dict(rejection, kind="unparsed", error=f"lenient JSON: {exc}"))
+                continue
+        try:
+            message, ids = reply_message(value, call_index)
+        except ValueError as exc:
+            rejections.append(dict(rejection, kind="unparsed" if raw is not None else "invalid", error=str(exc)))
+            continue
+        if repair:
+            rejection.update(kind="unparsed", repaired="lenient-json")
+            rejections.append(rejection)
+        ignored = [str(b.get("name")) for b in uses if b not in structured]
+        return message, ids, "structured_output", ignored, {
+            "repair": repair, "retries": position - 1, "rejections": rejections}
+    raise ReplyRejected(rejections[-1]["error"] if rejections else "no usable StructuredOutput call", rejections)
+
+
+def check_recovery(reply_recovery: Optional[str], max_turns: int) -> None:
+    if reply_recovery is not None and reply_recovery != REPLY_RECOVERY:
+        raise ValueError(f"unknown reply recovery {reply_recovery!r}; the adapter offers {REPLY_RECOVERY!r}")
+    if reply_recovery is not None and max_turns != RECOVERY_MAX_TURNS:
+        raise ValueError(f"reply recovery runs the CLI at --max-turns {RECOVERY_MAX_TURNS}, not {max_turns}")
+
+
+def cli_contract(model: str, *, max_turns: int, timeout: int, version: str,
+                 reply_recovery: Optional[str] = None) -> Dict[str, Any]:
+    """The invocation contract recorded in the run protocol (the analogue of provider routing).
+    Without reply_recovery it is exactly v2's contract, so every recorded hash still replays."""
+    check_recovery(reply_recovery, max_turns)
     contract = {
         "client": "claude-cli", "cli_version": version, "model": model,
         "arguments": ["-p", "--model", model, "--output-format", "stream-json", "--verbose",
@@ -364,6 +512,21 @@ def cli_contract(model: str, *, max_turns: int, timeout: int, version: str) -> D
             "requested": model, "failure": "model_pin_violation, not retried; the reply is never used",
             "rule": "the init event, every assistant message and the result's modelUsage report exactly this id",
         }
+    if reply_recovery is not None:  # only with the option on; an incumbent contract is exactly as before
+        contract["adapter_version"] = RECOVERY_ADAPTER_VERSION
+        contract["reply"] = ("the model's first message: a StructuredOutput call, else its direct tool calls; when "
+                             "the CLI could not parse that StructuredOutput call, its raw input if lenient JSON "
+                             "accepts it, else the second message's StructuredOutput call")
+        contract["reply_recovery"] = {
+            "name": REPLY_RECOVERY, "max_turns": RECOVERY_MAX_TURNS,
+            "lenient_json": f"json.loads(raw, strict=False) of the input the CLI reports as {UNPARSED_INPUT_KEY}; "
+                            "nothing looser, no completion of truncated JSON",
+            "second_turn": "the StructuredOutput call of the second model message, after the CLI rejected the "
+                           "first message's; never its direct tool calls",
+            "tool_guard": "init tools exactly [StructuredOutput]; every other tool_use must get an error tool_result",
+            "recorded": ["structured_output_repair", "structured_output_retries", "structured_output_rejections",
+                         "cli_model_messages"],
+        }
     return contract
 
 
@@ -378,12 +541,22 @@ class ClaudeCliClient:
 
     def __init__(self, model: str, calls_path: Path, run_id: str, budget, *, max_attempts: int = 3,
                  timeout: int = 300, backoff_seconds: float = 5.0, max_turns: int = 1,
-                 executable: str = "claude", workdir: Optional[Path] = None):
+                 executable: str = "claude", workdir: Optional[Path] = None, reply_recovery: Optional[str] = None):
+        check_recovery(reply_recovery, max_turns)
         self.model, self.calls_path, self.run_id, self.budget = model, Path(calls_path), run_id, budget
         self.max_attempts, self.timeout, self.backoff_seconds = max_attempts, timeout, backoff_seconds
         self.max_turns, self.executable = max_turns, executable
         self.workdir = Path(workdir) if workdir else None
         self.call_index = 0
+        self.reply_recovery = reply_recovery
+        self.adapter_version = RECOVERY_ADAPTER_VERSION if reply_recovery else ADAPTER_VERSION
+        # Per-client (per-run) counts of what recovery did; see recovery_summary().
+        self.recovery_counts = {"replies": 0, "lenient_json": 0, "second_turn": 0, "unrecovered_attempts": 0,
+                                "rejected_structured_output": 0, "discarded_model_messages": 0}
+
+    def recovery_summary(self) -> Optional[Dict[str, int]]:
+        """What reply recovery did in this client's attempts, or None when it is off."""
+        return dict(self.recovery_counts) if self.reply_recovery else None
 
     def _workdir(self) -> Path:
         if self.workdir is None:
@@ -403,7 +576,7 @@ class ClaudeCliClient:
         system_sha = hashlib.sha256(system_prompt.encode("utf-8")).hexdigest()
         prompt_bytes = prompt.encode("utf-8")
         request_sha256 = hashlib.sha256(json.dumps(
-            {"model": self.model, "system": system_prompt, "prompt": prompt, "adapter": ADAPTER_VERSION},
+            {"model": self.model, "system": system_prompt, "prompt": prompt, "adapter": self.adapter_version},
             ensure_ascii=False).encode("utf-8")).hexdigest()
         workdir = self._workdir()
         system_file = workdir / f"system-{system_sha[:16]}.txt"
@@ -423,7 +596,7 @@ class ClaudeCliClient:
             entry = {"time": utc_now(), "run_id": self.run_id, "model": self.model, "call_index": self.call_index,
                      "attempt": attempt, "provider_attempt_id": attempt_id, "request_sha256": request_sha256,
                      "request": {"messages": messages, "tools": tools, "arguments": arguments,
-                                 "adapter_version": ADAPTER_VERSION, "system_prompt_sha256": system_sha,
+                                 "adapter_version": self.adapter_version, "system_prompt_sha256": system_sha,
                                  "prompt_sha256": hashlib.sha256(prompt_bytes).hexdigest(),
                                  "prompt_bytes": len(prompt_bytes), "removed_environment": removed,
                                  "kept_environment": kept},
@@ -452,6 +625,10 @@ class ClaudeCliClient:
                 if result is not None:
                     entry["cli_result"] = result
                 problem = isolation_problem(init) if init is not None else None
+                if self.reply_recovery:  # v3 only: the stream by message, and no tool other than the reply ran
+                    stream, tool_results = stream_messages(stdout)
+                    entry["cli_model_messages"] = len(stream)
+                    problem = problem or unexecuted_tool_problem(stream, tool_results)
                 pin = model_problem(self.model, reported) if init is not None else None
                 if problem:  # checked first: a reply from a non-isolated CLI is never used
                     last_error, retry, failure = problem, False, "tool_isolation_violation"
@@ -466,13 +643,32 @@ class ClaudeCliClient:
                     last_error = f"CLI error ({result.get('subtype')}, {result.get('terminal_reason')}): {detail[:300]}"
                     auth = "log in" in detail.lower() or "login" in detail.lower()
                     retry, failure = not auth, ("cli_auth_error" if auth else "cli_error")
-                else:  # the reply is the first message, whatever the CLI did after it
+                else:  # the reply is the first message, whatever the CLI did after it (v3: unless recovered)
                     try:
-                        message, model_ids, channel, ignored = first_message_reply(first_blocks, self.call_index)
+                        if self.reply_recovery:
+                            message, model_ids, channel, ignored, recovery = recovered_reply(
+                                stream, tool_results, self.call_index)
+                        else:
+                            message, model_ids, channel, ignored = first_message_reply(first_blocks, self.call_index)
                     except ValueError as exc:
                         last_error, retry, failure = str(exc), True, "invalid_reply"
+                        if self.reply_recovery:
+                            rejections = getattr(exc, "rejections", [])
+                            entry["structured_output_rejections"] = rejections
+                            self.recovery_counts["unrecovered_attempts"] += 1
+                            self.recovery_counts["rejected_structured_output"] += len(rejections)
                     else:
                         entry.update(reply_channel=channel, ignored_direct_calls=ignored)
+                        if self.reply_recovery:
+                            entry.update(structured_output_repair=recovery["repair"],
+                                         structured_output_retries=recovery["retries"],
+                                         structured_output_rejections=recovery["rejections"])
+                            counts = self.recovery_counts
+                            counts["replies"] += 1
+                            counts["lenient_json"] += recovery["repair"] == "lenient-json"
+                            counts["second_turn"] += recovery["retries"]
+                            counts["rejected_structured_output"] += len(recovery["rejections"])
+                            counts["discarded_model_messages"] += max(0, len(stream) - recovery["retries"] - 1)
                         entry["response"] = {"id": (result or {}).get("session_id"), "model": init.get("model"),
                                              "provider": "claude-cli", "choices": [{
                                                  "message": message, "finish_reason": (result or {}).get("stop_reason")}]}
@@ -504,7 +700,7 @@ class ClaudeCliClient:
                     "input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")),
                 "completion_tokens": int(usage.get("output_tokens") or 0),
             }
-            return ModelResponse(message, reported_usage, {
+            metadata = {
                 "provider": "claude-cli", "model": init.get("model"), "generation_id": result.get("session_id"),
                 "reported_model": reported, "api_key_source": init.get("apiKeySource"),
                 "finish_reason": result.get("stop_reason"), "attempts": attempt, "request_sha256": request_sha256,
@@ -512,7 +708,12 @@ class ClaudeCliClient:
                 "billing": "unknown", "cli_list_price_estimate_usd": result.get("total_cost_usd"),
                 "reply_channel": channel, "ignored_direct_calls": ignored, "cli_subtype": result.get("subtype"),
                 "cli_usage": usage, "model_call_ids": model_ids,
-            })
+            }
+            if self.reply_recovery:  # v2 metadata is unchanged
+                metadata.update(structured_output_repair=entry["structured_output_repair"],
+                                structured_output_retries=entry["structured_output_retries"],
+                                cli_model_messages=entry["cli_model_messages"])
+            return ModelResponse(message, reported_usage, metadata)
         raise ModelClientError(f"failed after {self.max_attempts} attempts: {last_error}")
 
 

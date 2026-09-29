@@ -45,6 +45,16 @@ protocol hash (name, version, fixed texts, parameters), and reported under "trea
                              hidden fail_to_pass tests failing and passing, at most K calls per run (default 3),
                              run on a snapshot outside the workspace (reticle/tools/check_oracle.py)
 
+claude-cli client options (off by default; not treatments, since they change how a reply is obtained, not what the
+model is offered; one that is on is recorded in the CLI contract under provider_routing and so in the protocol hash;
+other clients ignore them):
+  --cli-reply-recovery lenient-json+second-turn
+                             adapter v3: a StructuredOutput input the CLI could not parse is used when
+                             json.loads(raw, strict=False) accepts it, else the CLI runs one more model turn
+                             (--max-turns 2) and the second message's StructuredOutput call is the reply. What it
+                             did is recorded per attempt in calls.jsonl and per run in results.jsonl
+                             ("cli_reply_recovery"); see claude_cli.py
+
 Usage (from the repo root):
   python experiments/p6_pilot/run_pilot.py --client gold --run-name gold-check
   python experiments/p6_pilot/run_pilot.py --client openrouter --models qwen/qwen3.5-9b \\
@@ -102,7 +112,9 @@ from reticle.tools.finish_guard import (  # noqa: E402
 HERE = Path(__file__).resolve().parent
 DEFAULT_TASK_FILE = HERE / "tasks.json"
 sys.path.insert(0, str(HERE))
-from claude_cli import ClaudeCliClient, cli_contract, cli_version  # noqa: E402
+from claude_cli import (  # noqa: E402
+    RECOVERY_MAX_TURNS, REPLY_RECOVERY, ClaudeCliClient, cli_contract, cli_version,
+)
 from interpreters import task_python  # noqa: E402
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
 
@@ -128,6 +140,9 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    (card 007's recorded hashes still replay); on, each one's record enters the protocol hash under
 #    "treatments". A bump would change every incumbent hash and block the cards pinned to v8 without any
 #    change in what an incumbent runs.
+#    Later in v8, without a bump, for the same reason: the claude-cli client option --cli-reply-recovery. Off,
+#    the CLI contract and every hash are exactly as before; on, the contract (adapter v3, --max-turns 2, the
+#    recovery rules) changes the protocol hash through provider_routing.
 RUNNER_VERSION = 8
 CLI_TIMEOUT_SECONDS = 300  # per attempt, as the OpenRouter client's HTTP timeout
 CLI_MAX_TURNS = 1  # the reply is the model's first message; the CLI stops before a second model turn
@@ -224,6 +239,38 @@ def treatments_from_args(argv) -> dict:
     add_treatment_arguments(parser)
     known, _ = parser.parse_known_args(list(argv))
     return treatments_record(known)
+
+
+# claude-cli client options: not treatments (they change how a reply is obtained, not what the model is offered),
+# off by default; one that is on changes the CLI contract recorded as the model's routing, so it enters the
+# protocol hash there. Other clients accept and ignore them (a card's scripted controls take its arm's extra_args).
+CLIENT_FLAGS = ("--cli-reply-recovery",)
+
+
+def add_client_arguments(parser) -> None:
+    group = parser.add_argument_group("claude-cli client options (off by default; one that is on enters the "
+                                      "protocol hash through the CLI contract)")
+    group.add_argument("--cli-reply-recovery", choices=[REPLY_RECOVERY], default=None,
+                       help=f"{REPLY_RECOVERY}: when the CLI cannot parse the model's StructuredOutput input, use "
+                            "it if json.loads(raw, strict=False) accepts it, else let the CLI return its rejection "
+                            f"for one more model turn (--max-turns {RECOVERY_MAX_TURNS}); adapter v3 (claude_cli.py)")
+
+
+def client_options_from_args(argv) -> dict:
+    """The claude-cli client options a list of runner arguments turns on ({} when none); for run_card.py."""
+    parser = argparse.ArgumentParser(add_help=False)
+    add_client_arguments(parser)
+    known, _ = parser.parse_known_args(list(argv))
+    return {"reply_recovery": known.cli_reply_recovery} if known.cli_reply_recovery else {}
+
+
+def cli_routing_contract(model: str, version: str, client_options=None) -> dict:
+    """The CLI contract recorded as a claude-cli model's routing; exactly v2's with no client option on."""
+    recovery = (client_options or {}).get("reply_recovery")
+    if recovery is None:
+        return cli_contract(model, max_turns=CLI_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version)
+    return cli_contract(model, max_turns=RECOVERY_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version,
+                        reply_recovery=recovery)
 
 
 def model_tool_schemas(treatments: dict) -> list:
@@ -855,8 +902,11 @@ def main() -> None:
                         help="stop a run after three identical observation calls without a workspace change")
     parser.add_argument("--dry-run", action="store_true")
     add_treatment_arguments(parser)
+    add_client_arguments(parser)
     args = parser.parse_args()
     treatments = treatments_record(args)
+    client_options = ({"reply_recovery": args.cli_reply_recovery}
+                      if args.cli_reply_recovery and args.client == "claude-cli" else {})
 
     task_file, tasks = load_tasks(args.tasks)
     contracts = [c for c in (task_contract(t) for t in tasks) if c is not None]
@@ -877,8 +927,7 @@ def main() -> None:
         pins[model] = provider_slug.lower()
     if args.client == "claude-cli":
         version = cli_version()
-        routing = {model: cli_contract(model, max_turns=CLI_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version)
-                   for model in models}
+        routing = {model: cli_routing_contract(model, version, client_options) for model in models}
     else:
         routing = {model: ({"order": [pins[model]], "allow_fallbacks": False, "require_parameters": True}
                            if model in pins else dict(UNPINNED_ROUTING)) for model in models}
@@ -967,6 +1016,11 @@ def main() -> None:
     if treatments:
         print("treatments (in the protocol hash): " + "; ".join(
             f"{surface} {value['name']} {value['version']}" for surface, value in sorted(treatments.items())))
+    if client_options:
+        print(f"claude-cli reply recovery {client_options['reply_recovery']} (adapter "
+              f"{routing[models[0]]['adapter_version']}, --max-turns {RECOVERY_MAX_TURNS}; in the protocol hash)")
+    elif args.cli_reply_recovery:
+        print(f"--cli-reply-recovery applies to the claude-cli client only; the {args.client} client ignores it")
     if args.dry_run:
         return
 
@@ -1022,8 +1076,13 @@ def main() -> None:
         if args.client == "openrouter":
             inner = OpenRouterClient(api_key, model, calls_path, run_id, budget, args.max_tokens, routing[model])
         elif args.client == "claude-cli":
-            inner = ClaudeCliClient(model, calls_path, run_id, budget, max_attempts=MAX_ATTEMPTS,
-                                    timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS)
+            if client_options:
+                inner = ClaudeCliClient(model, calls_path, run_id, budget, max_attempts=MAX_ATTEMPTS,
+                                        timeout=CLI_TIMEOUT_SECONDS, max_turns=RECOVERY_MAX_TURNS,
+                                        reply_recovery=client_options["reply_recovery"])
+            else:
+                inner = ClaudeCliClient(model, calls_path, run_id, budget, max_attempts=MAX_ATTEMPTS,
+                                        timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS)
         else:
             inner = scripted_client(args.client, task, repo)
         client = GuardedClient(inner, tools, args.stop_on_repeats)
@@ -1056,6 +1115,8 @@ def main() -> None:
         record["reported_cost_usd"] = round(sum(costs), 8) if costs else None
         if treatments:  # absent for an incumbent run, whose record is unchanged
             record["treatments"] = {surface: state.record() for surface, state in treatment_state.items()}
+        if client_options:  # absent unless reply recovery is on: what it did in this run's attempts
+            record["cli_reply_recovery"] = inner.recovery_summary()
         record["http_attempts"] = len(read_jsonl(calls_path)) - attempts_before
         record["tool_results"] = [
             {"call_id": m.get("tool_call_id"), "head": m["content"][:300], "tail": m["content"][-300:]}

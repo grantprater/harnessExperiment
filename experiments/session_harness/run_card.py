@@ -50,7 +50,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = Path(__file__).resolve().parent / "cards" / "card.schema.json"
@@ -555,9 +555,13 @@ class RunnerAdapter:
         finally:
             module.IsolatedOCIBackend, module.subprocess = saved
 
-    def routing(self, client: str, model: Optional[str], provider: Optional[str], cli_version: Optional[str]) -> dict:
+    def routing(self, client: str, model: Optional[str], provider: Optional[str], cli_version: Optional[str],
+                extra_args: Sequence[str] = ()) -> dict:
         module = self.module
         if client == "claude-cli":
+            options = self.client_options(extra_args)
+            if options:  # only runners that declare client options; the contract is then the runner's own
+                return {model: module.cli_routing_contract(model, cli_version, options)}
             return {model: module.cli_contract(model, max_turns=module.CLI_MAX_TURNS,
                                                timeout=module.CLI_TIMEOUT_SECONDS, version=cli_version)}
         if client == "openrouter":
@@ -570,10 +574,16 @@ class RunnerAdapter:
         """(the treatments an arm's extra_args turn on, as the runner records and hashes them; the extra_args
         flags that are not treatment flags). Runners without treatments see every flag as other."""
         flags = [a.split("=", 1)[0] for a in extra_args if a.startswith("--")]
-        known = set(getattr(self.module, "TREATMENT_FLAGS", ()))
+        known = set(getattr(self.module, "TREATMENT_FLAGS", ())) | set(getattr(self.module, "CLIENT_FLAGS", ()))
         function = getattr(self.module, "treatments_from_args", None)
         treatments = function(extra_args) if function is not None and extra_args else {}
         return treatments, [flag for flag in flags if flag not in known]
+
+    def client_options(self, extra_args: Sequence[str]) -> dict:
+        """The claude-cli client options an arm's extra_args turn on, as the runner records them in the CLI
+        contract ({} for none, or for a runner without client options)."""
+        function = getattr(self.module, "client_options_from_args", None)
+        return function(list(extra_args)) if function is not None and extra_args else {}
 
     def protocol_hash(self, policy: str, routing: dict, execution: dict, guards: dict, contracts=(),
                       treatments=None) -> str:
@@ -833,13 +843,15 @@ def build_plan(card: dict, card_path: Path) -> Plan:
                 pending.append("hash needs the OCI image ID pinned")
             try:
                 treatments, _ = adapter.treatments(list(arm.get("extra_args", [])))
+                adapter.client_options(list(arm.get("extra_args", [])))
             except SystemExit as exc:  # the runner refuses a treatment value; --execute would fail the same way
                 problems.append(f"extra_args: {exc}")
             blockers.extend(f"{owner}: {problem}" for problem in problems)
             if problems or pending:
                 arm_notes[owner] = "; ".join(problems + pending)
             else:
-                parts = {"routing": adapter.routing(client, arm.get("model"), arm.get("provider"), cli_version),
+                parts = {"routing": adapter.routing(client, arm.get("model"), arm.get("provider"), cli_version,
+                                                    list(arm.get("extra_args", []))),
                          "execution": adapter.execution(arm["backend"]), "guards": guards_record(arm),
                          "treatments": treatments}
                 result = (adapter, parts)
@@ -850,12 +862,18 @@ def build_plan(card: dict, card_path: Path) -> Plan:
     for arm in card["arms"]:
         adapter, parts = protocol_for(arm, arm["client"], f"arm {arm['name']}")
         if arm.get("extra_args"):
-            # Treatment flags the runner declares (TREATMENT_FLAGS) are hashed here as the runner hashes them;
-            # any other flag is seen only by the --execute preflight.
+            # Treatment flags (TREATMENT_FLAGS) and claude-cli client options (CLIENT_FLAGS, in the CLI contract)
+            # the runner declares are hashed here as the runner hashes them; any other flag is seen only by the
+            # --execute preflight.
             treatments = parts["treatments"] if parts is not None else {}
             other = adapter.treatments(list(arm["extra_args"]))[1] if parts is not None else ["?"]
             notes = [f"treatments in the planned hash: " + ", ".join(
                 f"{value['name']} {value['version']}" for _, value in sorted(treatments.items()))] if treatments else []
+            options = adapter.client_options(list(arm["extra_args"])) if parts is not None else {}
+            if options and arm["client"] == "claude-cli":
+                contract = next(iter(parts["routing"].values()))
+                notes.append(f"client options in the planned hash (CLI contract {contract['adapter_version']}): "
+                             + ", ".join(f"{name} {value}" for name, value in sorted(options.items())))
             if other:
                 notes.append("extra_args may change the hash; verified only at --execute")
             arm_notes[f"arm {arm['name']}"] = "; ".join(notes)
