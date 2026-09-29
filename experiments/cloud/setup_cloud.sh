@@ -14,7 +14,9 @@
 #    Linux), exactly experiments/cloud/bugs-venv.requirements.txt (the host's pip freeze).
 # 4. .runtime/test-venv: the unit-test interpreter, exactly experiments/cloud/test-venv.requirements.txt, or on a
 #    Python older than 3.12 exactly test-venv.requirements-py311.txt (numpy 2.5 needs 3.12; a NOTE says so).
-# 5. .runtime/bug-mining/repos/sqlparse: the clone run_pilot.ensure_commits expects, with the tasks' base commit.
+# 5. .runtime/bug-mining/repos/<name>: the clones run_pilot.ensure_commits expects, one per mutation-task bank
+#    (TASK_REPOS below: sqlparse for tasks.mutations.json, boltons for tasks.boltons.json), each with its bank's
+#    pinned commit (experiments/mutation_tasks/repos.json; tests/test_mutation_repos.py checks the two agree).
 # 6. A readiness summary; the last line is READY or NOT READY (exit 0 or 1).
 #
 # Environment: OMP/MKL/OPENBLAS_NUM_THREADS=1; installs run at idle priority (nice 19).
@@ -27,9 +29,12 @@ RUNTIME="$ROOT/.runtime"
 HERE="$ROOT/experiments/cloud"
 PYTHON_VERSION="3.13.15"
 UV_VERSION="0.12.5"  # the host's uv
-SQLPARSE_URL="https://github.com/andialbrecht/sqlparse"
-SQLPARSE_COMMIT="f66d12c245412f28c58f045b646eb53c0e691b8b"  # base_commit and fix_commit of every mutation task
-REPO="$RUNTIME/bug-mining/repos/sqlparse"
+# name url commit (base_commit and fix_commit of every task in that repository's bank); the name is also the package
+# the task interpreter must not import outside a workspace
+TASK_REPOS=(
+  "sqlparse https://github.com/andialbrecht/sqlparse f66d12c245412f28c58f045b646eb53c0e691b8b"
+  "boltons https://github.com/mahmoud/boltons 45a251181fba4c5a4ecc05e838da1c394e1ed0e4"
+)
 NICE="nice -n 19"
 
 FAILURES=()
@@ -168,14 +173,18 @@ make_venv() {  # make_venv NAME REQUIREMENTS
 make_venv bugs-venv "$HERE/bugs-venv.requirements.txt"
 make_venv test-venv "$TEST_REQUIREMENTS"
 
-# ---- 5. the sqlparse clone -------------------------------------------------------------------------------------
-if [ ! -d "$REPO/.git" ]; then
-  say "cloning $SQLPARSE_URL into $REPO"
-  git clone -q "$SQLPARSE_URL" "$REPO" || fail "sqlparse clone failed"
-fi
-if [ -d "$REPO/.git" ] && ! git -C "$REPO" cat-file -e "$SQLPARSE_COMMIT^{commit}" 2>/dev/null; then
-  git -C "$REPO" fetch -q origin '+refs/heads/*:refs/remotes/origin/*' || true
-fi
+# ---- 5. the task repositories' clones --------------------------------------------------------------------------
+for entry in "${TASK_REPOS[@]}"; do
+  read -r name url commit <<< "$entry"
+  repo="$RUNTIME/bug-mining/repos/$name"
+  if [ ! -d "$repo/.git" ]; then
+    say "cloning $url into $repo"
+    git clone -q "$url" "$repo" || fail "$name clone failed"
+  fi
+  if [ -d "$repo/.git" ] && ! git -C "$repo" cat-file -e "$commit^{commit}" 2>/dev/null; then
+    git -C "$repo" fetch -q origin '+refs/heads/*:refs/remotes/origin/*' || true
+  fi
+done
 
 # ---- 6. readiness ----------------------------------------------------------------------------------------------
 say "---- readiness"
@@ -186,9 +195,12 @@ if [ -x "$TASK_PY" ] && "$TASK_PY" -c 'import pytest, freezegun, hypothesis' 2>/
 else
   fail "task interpreter $TASK_PY cannot import pytest, freezegun and hypothesis"
 fi
-if [ -x "$TASK_PY" ] && (cd /tmp && "$TASK_PY" -c 'import sqlparse' 2>/dev/null); then
-  fail "the task interpreter imports sqlparse outside a workspace (a healthy copy is installed)"
-fi
+for entry in "${TASK_REPOS[@]}"; do
+  read -r name url commit <<< "$entry"
+  if [ -x "$TASK_PY" ] && (cd /tmp && "$TASK_PY" -c "import $name" 2>/dev/null); then
+    fail "the task interpreter imports $name outside a workspace (a healthy copy is installed)"
+  fi
+done
 if [ -x "$TEST_PY" ] && "$TEST_PY" -c 'import reticle, yaml, numpy, PIL' 2>/dev/null; then
   say "test interpreter: $TEST_PY ($("$TEST_PY" -c 'import platform; print(platform.python_version())'))"
 else
@@ -199,11 +211,15 @@ if [ -x "$TEST_PY" ] && ! "$TEST_PY" -c 'import cv2' 2>/dev/null; then
 fi
 RESOLVED="$("$TEST_PY" -c 'import sys; sys.path.insert(0, "experiments/p6_pilot"); from interpreters import task_python; print(task_python(sys.argv[1]))' "$ROOT" 2>/dev/null)"
 if [ "$RESOLVED" = "$TASK_PY" ]; then say "run_pilot.TASK_PYTHON resolves to $RESOLVED"; else fail "TASK_PYTHON resolves to '$RESOLVED', not $TASK_PY"; fi
-if git -C "$REPO" cat-file -e "$SQLPARSE_COMMIT^{commit}" 2>/dev/null; then
-  say "sqlparse clone: $REPO has $SQLPARSE_COMMIT"
-else
-  fail "sqlparse clone at $REPO lacks $SQLPARSE_COMMIT"
-fi
+for entry in "${TASK_REPOS[@]}"; do
+  read -r name url commit <<< "$entry"
+  repo="$RUNTIME/bug-mining/repos/$name"
+  if git -C "$repo" cat-file -e "$commit^{commit}" 2>/dev/null; then
+    say "$name clone: $repo has $commit"
+  else
+    fail "$name clone at $repo lacks $commit"
+  fi
+done
 if command -v claude >/dev/null 2>&1; then
   say "claude CLI: $(claude --version 2>/dev/null) (cards 019/020 pin 2.1.284 (Claude Code))"
 else

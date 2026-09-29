@@ -194,9 +194,10 @@ The evaluator needs no change: `build_evaluator` already restores the whole `tes
 10. **Timeouts are expensive.** Three looping mutants took a third of the loop time. Installing
     pytest-timeout or lowering the cap to 30 s would recover most of it. The 90% threshold and
     the timeout were chosen by rule, not tuned.
-11. **One source state.** The generator hard-codes `sqlparse`, `tests` and the source task id.
-    Other P6 repositories need those as parameters, plus `PYTHONPATH=src` for src layouts, as
-    `verify_bugs.py` does.
+11. **One source state (resolved 2026-09-28).** The generator hard-coded `sqlparse`, `tests` and
+    the source task id. They are now parameters of a [repos.json](repos.json) entry (`--repo`,
+    default `sqlparse`), with `pythonpath` for src layouts; the sqlparse bank regenerates byte for
+    byte from its entry. The second bank, boltons ([tasks.boltons.json](tasks.boltons.json)), is described in [card 023](../session_harness/E3-calibration-023.md).
 
 ## Not done
 

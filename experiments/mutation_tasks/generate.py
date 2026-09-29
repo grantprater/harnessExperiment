@@ -1,8 +1,10 @@
-"""Generate hidden-test repair tasks by mutating a healthy sqlparse checkout.
+"""Generate hidden-test repair tasks by mutating a healthy checkout of a repository.
 
-Source state: the fix commit of task sqlparse-865 in experiments/p6_pilot/tasks.json, where
-the whole suite passes. Candidates are semantic mutations of library code only
-(sqlparse/**/*.py, never tests), located with ast and applied as one text edit each:
+The repository is a parameter (--repo NAME, an entry of repos.json; default sqlparse): its URL, the
+pinned healthy commit (the fix commit of a P6 task, where the whole suite passes), the library and
+test roots, the seed, and baseline tests excluded as platform-dependent. Candidates are semantic
+mutations of library code only (<library_root>/**/*.py, never tests), located with ast and applied
+as one text edit each:
 
   compare_flip      == <-> !=, < <-> <=, > <-> >=
   negate_condition  `if c:` / `while c:` -> `if not (c):`
@@ -13,23 +15,28 @@ the whole suite passes. Candidates are semantic mutations of library code only
 
 Each candidate is exported to a fresh workspace, created by `git apply` of its unified diff
 (so the recorded patch is itself checked), and the whole suite runs once at idle priority.
-It becomes a task only when at least one baseline-passing test fails, at least 90% still
-pass, and pytest reports no collection errors or missing tests. The gold patch is the
-reverse diff. The statement is a template over the humanized failing-test names and the first
-failure message; it never names the file, the line, or a test id (checked, see
-statement_leaks).
+A repo entry may set prefilter_unexecuted: before scheduling, a candidate is dropped when the
+smallest statement containing it never executed in one probed run of the healthy suite
+(sys.monitoring LINE events, Python 3.12+). Such a mutant cannot change any test outcome, so this
+changes which candidates the cap samples, never which are kept. A candidate becomes a task only when
+at least one baseline-passing test fails, at least 90% still pass, and pytest reports no collection
+errors or missing tests (excluded tests take no part). The gold patch is the reverse diff.
+The statement is a template over the humanized failing-test names and the first failure message; it
+never names the file, the line, or a test id (checked, see statement_leaks).
 
-A task workspace is: export base_commit, apply mutation_patch, remove hidden_paths. The P6
-runner (experiments/p6_pilot/run_pilot.py) does neither of the last two steps yet.
+A task workspace is: export base_commit, apply mutation_patch, remove hidden_paths (the P6 runner's
+materializer, experiments/p6_pilot/run_pilot.py, mutation-workspace-v2).
 
 Usage (the interpreter only needs the standard library; pytest runs in the task venv):
-  python experiments/mutation_tasks/generate.py --work-dir <scratch> [--max-candidates 100]
-      [--budget-seconds 660] [--gold-check 2]
+  python experiments/mutation_tasks/generate.py [--repo sqlparse] --work-dir <scratch>
+      [--max-candidates 100] [--budget-seconds 660] [--gold-check 2]
+The default output paths are the repo entry's tasks_file and log_file next to this script.
 """
 
 import argparse
 import ast
 import difflib
+import hashlib
 import io
 import json
 import os
@@ -52,11 +59,9 @@ from evaluate_task import load_outcomes  # noqa: E402  (the fixed evaluator's JU
 from interpreters import venv_interpreter  # noqa: E402
 
 GENERATOR_VERSION = 1
-SOURCE_TASK = "sqlparse-865"
-LIBRARY_ROOT = "sqlparse"
-TEST_ROOT = "tests"
+REPOS_FILE = HERE / "repos.json"
+DEFAULT_REPO = "sqlparse"
 MIN_PASS_FRACTION = 0.90
-SEED = 865
 KINDS = ("compare_flip", "negate_condition", "drop_not", "off_by_one", "remove_guard", "swap_branches")
 FLIPS = {ast.Eq: ("==", "!="), ast.NotEq: ("!=", "=="), ast.Lt: ("<", "<="), ast.LtE: ("<=", "<"),
          ast.Gt: (">", ">="), ast.GtE: (">=", ">")}
@@ -67,22 +72,56 @@ def git(repo: Path, *args: str) -> bytes:
                           capture_output=True, check=True).stdout
 
 
-def runtime_dir() -> Path:
-    """.runtime of this checkout, else of the main checkout that owns this git worktree."""
+def load_repo_config(name: str, path: Path = REPOS_FILE) -> dict:
+    """The repos.json entry for NAME, checked against its P6 source task (repo, repo_url, fix commit)."""
+    repos = json.loads(path.read_text(encoding="utf-8"))["repos"]
+    if name not in repos:
+        raise SystemExit(f"unknown repo {name!r}; repos.json has {sorted(repos)}")
+    config = dict(repos[name], name=name)
+    if config["pythonpath"] not in (".", "src"):
+        raise SystemExit(f"{name}: pythonpath must be '.' or 'src' (the evaluator's rule), not {config['pythonpath']!r}")
+    source = next((t for t in json.loads((ROOT / "experiments" / "p6_pilot" / "tasks.json").read_text(
+        encoding="utf-8"))["tasks"] if t["task_id"] == config["source_task"]), None)
+    if source is None:
+        raise SystemExit(f"{name}: source task {config['source_task']} is not in experiments/p6_pilot/tasks.json")
+    for key, value in (("repo", config["repo"]), ("repo_url", config["repo_url"]), ("fix_commit", config["commit"])):
+        if source[key] != value:
+            raise SystemExit(f"{name}: repos.json says {key} {value!r}, source task {source['task_id']} says {source[key]!r}")
+    return config
+
+
+def runtime_dirs() -> list:
+    """.runtime of this checkout, then of the main checkout that owns this git worktree (if different)."""
     local = ROOT / ".runtime"
-    if (local / "bug-mining" / "repos").is_dir():
-        return local
     common = git(ROOT, "rev-parse", "--path-format=absolute", "--git-common-dir").decode().strip()
-    return Path(common).parent / ".runtime"
+    main = Path(common).parent / ".runtime"
+    return [local] if main.resolve() == local.resolve() else [local, main]
 
 
-def ensure_repo(task: dict, repos: Path) -> Path:
+def repo_clone_dir(name: str) -> Path:
+    """The first existing .runtime/bug-mining/repos/NAME (this checkout's, then the main checkout's); when there is
+    none, this checkout's if its .runtime/bug-mining/repos exists, else the main checkout's."""
+    dirs = runtime_dirs()
+    for runtime in dirs:
+        if (runtime / "bug-mining" / "repos" / name).exists():
+            return runtime / "bug-mining" / "repos" / name
+    home = dirs[0] if (dirs[0] / "bug-mining" / "repos").is_dir() else dirs[-1]
+    return home / "bug-mining" / "repos" / name
+
+
+def default_task_python() -> Path:
+    """The first existing bugs-venv interpreter (this checkout's, then the main checkout's)."""
+    candidates = [venv_interpreter(runtime / "bugs-venv") for runtime in runtime_dirs()]
+    return next((c for c in candidates if c.exists()), candidates[-1])
+
+
+def ensure_repo(config: dict) -> Path:
     """Reuse the P6 bug-mining clone; clone or fetch only when it is missing or lacks the commit."""
-    repo = repos / task["repo"]
+    repo = repo_clone_dir(config["repo"])
     if not repo.exists():
-        repos.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["git", "clone", "-q", task["repo_url"], str(repo)], check=True)
-    if subprocess.run(["git", "-C", str(repo), "cat-file", "-e", f"{task['fix_commit']}^{{commit}}"],
+        repo.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["git", "clone", "-q", config["repo_url"], str(repo)], check=True)
+    if subprocess.run(["git", "-C", str(repo), "cat-file", "-e", f"{config['commit']}^{{commit}}"],
                       capture_output=True).returncode:
         subprocess.run(["git", "-C", str(repo), "fetch", "-q", "origin", "+refs/heads/*:refs/remotes/origin/*"],
                        check=True)
@@ -296,9 +335,9 @@ class Finder(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def find_candidates(tree: Path):
+def find_candidates(tree: Path, library_root: str):
     found, invalid, seen = [], 0, set()
-    for path in sorted((tree / LIBRARY_ROOT).rglob("*.py")):
+    for path in sorted((tree / library_root).rglob("*.py")):
         rel = path.relative_to(tree).as_posix()
         finder = Finder(rel, path.read_bytes().decode("utf-8"))
         for cand in finder.run():
@@ -309,9 +348,92 @@ def find_candidates(tree: Path):
     return found, invalid
 
 
-def schedule(candidates: list) -> list:
+LINE_PROBE_MODULE = "mutation_line_probe"
+LINE_PROBE_SOURCE = '''"""pytest plugin (generate.py prefilter_unexecuted): record the library lines the suite executes."""
+import json
+import os
+import sys
+
+_ROOT = os.path.normcase(os.path.abspath(os.environ["MUTATION_LINE_PROBE_ROOT"]))
+_OUT = os.environ["MUTATION_LINE_PROBE_OUT"]
+_TOOL = 3
+_seen = {}
+
+
+def _line(code, line):
+    name = os.path.normcase(os.path.abspath(code.co_filename))
+    if name.startswith(_ROOT):
+        _seen.setdefault(os.path.relpath(name, _ROOT).replace(os.sep, "/"), set()).add(line)
+    return sys.monitoring.DISABLE
+
+
+sys.monitoring.use_tool_id(_TOOL, "mutation-line-probe")
+sys.monitoring.register_callback(_TOOL, sys.monitoring.events.LINE, _line)
+sys.monitoring.set_events(_TOOL, sys.monitoring.events.LINE)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    sys.monitoring.set_events(_TOOL, 0)
+    with open(_OUT, "w", encoding="utf-8") as handle:
+        json.dump({name: sorted(lines) for name, lines in _seen.items()}, handle)
+'''
+
+
+def executed_lines(python: str, pristine: Path, work: Path, targets: list, library_root: str, pythonpath: str,
+                   timeout: float) -> tuple:
+    """(lines executed per library file relative to the tree, suite outcomes) from one probed healthy run."""
+    probe_dir, workspace = work / "line-probe", work / "probe-ws"
+    shutil.rmtree(probe_dir, ignore_errors=True)
+    probe_dir.mkdir(parents=True)
+    (probe_dir / f"{LINE_PROBE_MODULE}.py").write_text(LINE_PROBE_SOURCE, encoding="utf-8")
+    materialize(pristine, workspace, "")
+    out, xml_path = probe_dir / "lines.json", probe_dir / "probe.xml"
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1",
+               PYTHONPATH=os.pathsep.join([str(workspace / pythonpath), str(probe_dir)]),
+               MUTATION_LINE_PROBE_ROOT=str(workspace), MUTATION_LINE_PROBE_OUT=str(out),
+               OMP_NUM_THREADS="1", MKL_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1")
+    priority = ({"creationflags": subprocess.IDLE_PRIORITY_CLASS} if os.name == "nt"
+                else {"preexec_fn": lambda: os.nice(19)})
+    subprocess.run([python, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-p", LINE_PROBE_MODULE,
+                    f"--junitxml={xml_path}", *targets], cwd=workspace, env=env, capture_output=True,
+                   timeout=timeout, **priority)
+    outcomes, _ = load_outcomes(xml_path)
+    shutil.rmtree(workspace, ignore_errors=True)
+    if not out.exists():
+        raise SystemExit("line probe wrote no data (prefilter_unexecuted needs Python 3.12+ in the task venv)")
+    lines = {name: set(found) for name, found in json.loads(out.read_text(encoding="utf-8")).items()
+             if name.startswith(library_root.rstrip("/") + "/")}
+    return lines, outcomes
+
+
+def statement_span(tree: ast.AST, line: int, end_line: int):
+    """(first, last) line of the smallest statement containing lines line..end_line, or None."""
+    best = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.stmt) and node.lineno <= line and end_line <= node.end_lineno:
+            if best is None or node.end_lineno - node.lineno < best[1] - best[0]:
+                best = (node.lineno, node.end_lineno)
+    return best
+
+
+def prefilter_unexecuted(candidates: list, tree: Path, lines: dict) -> tuple:
+    """(candidates whose smallest enclosing statement executed at least one line, dropped candidates)."""
+    trees, kept, dropped = {}, [], []
+    for cand in candidates:
+        if cand.file not in trees:
+            trees[cand.file] = ast.parse((tree / cand.file).read_bytes().decode("utf-8"))
+        span = statement_span(trees[cand.file], cand.line, cand.end_line)
+        executed = lines.get(cand.file, set())
+        if span is not None and not any(span[0] <= n <= span[1] for n in executed):
+            dropped.append(cand)
+        else:
+            kept.append(cand)
+    return kept, dropped
+
+
+def schedule(candidates: list, seed: int) -> list:
     """Seeded shuffle within each kind, then round-robin across kinds, so a cap samples all kinds."""
-    rng = random.Random(SEED)
+    rng = random.Random(seed)
     pools = {kind: [c for c in candidates if c.kind == kind] for kind in KINDS}
     for pool in pools.values():
         rng.shuffle(pool)
@@ -351,11 +473,11 @@ def failure_messages(xml_path: Path) -> list:
 
 
 def run_suite(python: str, workspace: Path, targets: list, xml_path: Path, timeout: float,
-              timeout_plugin: bool) -> SuiteRun:
-    """One single-process pytest run at idle priority (trusted-local)."""
+              timeout_plugin: bool, pythonpath: str = ".") -> SuiteRun:
+    """One single-process pytest run at idle priority (trusted-local); PYTHONPATH as the evaluator sets it."""
     if xml_path.exists():
         xml_path.unlink()
-    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", PYTHONPATH=str(workspace),
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", PYTHONPATH=str(workspace / pythonpath),
                OMP_NUM_THREADS="1", MKL_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1")
     cmd = [python, "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--junitxml={xml_path}"]
     if timeout_plugin:
@@ -418,7 +540,8 @@ def clean_message(message: str) -> str:
     return first if len(first) <= 240 else first[:237] + "..."
 
 
-def build_statement(failing_in_order: list, messages: dict, with_message: bool = True) -> str:
+def build_statement(failing_in_order: list, messages: dict, with_message: bool = True,
+                    name: str = "sqlparse") -> str:
     counts = {}
     for test_id in failing_in_order:
         label = humanize(test_id)
@@ -427,7 +550,7 @@ def build_statement(failing_in_order: list, messages: dict, with_message: bool =
     shown = "; ".join(f"'{label}'" + (f" ({n} cases)" if n > 1 else "") for label, n in labels[:3])
     more = f"; and {len(labels) - 3} more" if len(labels) > 3 else ""
     n = len(failing_in_order)
-    text = (f"sqlparse has a regression: {n} previously passing check{'s' if n != 1 else ''} of its behaviour "
+    text = (f"{name} has a regression: {n} previously passing check{'s' if n != 1 else ''} of its behaviour "
             f"now fail{'s' if n == 1 else ''}. Affected behaviour: {shown}{more}.")
     if with_message:
         text += f" The first failing check reports: `{clean_message(messages[failing_in_order[0]])}`."
@@ -435,10 +558,11 @@ def build_statement(failing_in_order: list, messages: dict, with_message: bool =
                    "working.")
 
 
-def statement_leaks(statement: str, cand: Candidate, failing: list) -> list:
+def statement_leaks(statement: str, cand: Candidate, failing: list, package: str = "sqlparse") -> list:
     leaks = []
     stem = Path(cand.file).stem
-    if cand.file in statement or Path(cand.file).name in statement or re.search(rf"\bsqlparse[./]{stem}\b", statement):
+    if (cand.file in statement or Path(cand.file).name in statement
+            or re.search(rf"\b{re.escape(package)}[./]{stem}\b", statement)):
         leaks.append("file")
     if re.search(rf"(\bline {cand.line}\b|:{cand.line}\b)", statement):
         leaks.append("line")
@@ -460,7 +584,7 @@ def names_mutated_function(statement: str, cand: Candidate) -> bool:
 # ---------------------------------------------------------------- main
 
 
-def classify(baseline_pass: list, run: SuiteRun):
+def classify(baseline_pass: list, run: SuiteRun):  # baseline_pass never holds an excluded test
     if run.timed_out:
         return "timeout", [], [], []
     if run.collection_errors:
@@ -481,14 +605,14 @@ def classify(baseline_pass: list, run: SuiteRun):
 
 
 def gold_check(task: dict, pristine: Path, work: Path, python: str, targets: list, timeout: float,
-               timeout_plugin: bool) -> dict:
+               timeout_plugin: bool, pythonpath: str = ".", excluded=()) -> dict:
     workspace = work / f"gold-{task['task_id']}"
     materialize(pristine, workspace, task["mutation_patch"])
-    mutated = run_suite(python, workspace, targets, work / "gold-mutated.xml", timeout, timeout_plugin)
-    mutated_failing = sorted(t for t, s in mutated.outcomes.items() if s == "fail")
+    mutated = run_suite(python, workspace, targets, work / "gold-mutated.xml", timeout, timeout_plugin, pythonpath)
+    mutated_failing = sorted(t for t, s in mutated.outcomes.items() if s == "fail" and t not in excluded)
     apply_patch(workspace, task["gold_patch"])
     restored = (workspace / task["mutation_file"]).read_bytes() == (pristine / task["mutation_file"]).read_bytes()
-    fixed = run_suite(python, workspace, targets, work / "gold-fixed.xml", timeout, timeout_plugin)
+    fixed = run_suite(python, workspace, targets, work / "gold-fixed.xml", timeout, timeout_plugin, pythonpath)
     f2p = {t: fixed.outcomes.get(t, "missing") for t in task["fail_to_pass"]}
     p2p_bad = sorted(t for t in task["pass_to_pass"] if fixed.outcomes.get(t) != "pass")
     shutil.rmtree(workspace, ignore_errors=True)
@@ -500,7 +624,8 @@ def gold_check(task: dict, pristine: Path, work: Path, python: str, targets: lis
         "fail_to_pass_after_gold": {"pass": sum(s == "pass" for s in f2p.values()), "total": len(f2p),
                                     "not_passing": sorted(t for t, s in f2p.items() if s != "pass")},
         "pass_to_pass_not_passing_after_gold": p2p_bad,
-        "suite_after_gold": {s: sum(v == s for v in fixed.outcomes.values()) for s in ("pass", "fail", "skip")},
+        "suite_after_gold": {s: sum(v == s for t, v in fixed.outcomes.items() if t not in excluded)
+                             for s in ("pass", "fail", "skip")},
         "ok": (mutated_failing == sorted(task["fail_to_pass"]) and restored
                and all(s == "pass" for s in f2p.values()) and not p2p_bad),
     }
@@ -508,48 +633,83 @@ def gold_check(task: dict, pristine: Path, work: Path, python: str, targets: lis
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--repo", default=DEFAULT_REPO, help="repos.json entry (default: sqlparse)")
     parser.add_argument("--work-dir", default=None, help="scratch directory (default: a new temp directory)")
     parser.add_argument("--python", default=None, help="task interpreter with pytest (default: the P6 bugs-venv)")
     parser.add_argument("--max-candidates", type=int, default=100)
     parser.add_argument("--budget-seconds", type=float, default=660.0, help="wall cap for the candidate loop")
     parser.add_argument("--gold-check", type=int, default=2, help="kept tasks to gold-check after generation")
-    parser.add_argument("--out", default=str(HERE / "tasks.mutations.json"))
-    parser.add_argument("--log", default=str(HERE / "generation_log.json"))
+    parser.add_argument("--out", default=None, help="tasks file (default: the repo entry's tasks_file)")
+    parser.add_argument("--log", default=None, help="generation log (default: the repo entry's log_file)")
+    parser.add_argument("--candidates-only", action="store_true",
+                        help="print the candidate pool and the scheduled order's digest, then stop (no suite runs)")
     args = parser.parse_args()
     started = time.monotonic()
 
-    source = next(t for t in json.loads((ROOT / "experiments" / "p6_pilot" / "tasks.json").read_text(
-        encoding="utf-8"))["tasks"] if t["task_id"] == SOURCE_TASK)
-    runtime = runtime_dir()
-    repo = ensure_repo(source, runtime / "bug-mining" / "repos")
-    python = args.python or str(venv_interpreter(runtime / "bugs-venv"))
+    config = load_repo_config(args.repo)
+    args.out = args.out or str(HERE / config["tasks_file"])
+    args.log = args.log or str(HERE / config["log_file"])
+    library_root, test_root, pythonpath = config["library_root"], config["test_root"], config["pythonpath"]
+    excluded = set(config["excluded_tests"])
+    repo = ensure_repo(config)
+    python = args.python or str(default_task_python())
     timeout_plugin = subprocess.run([python, "-c", "import pytest_timeout"], capture_output=True).returncode == 0
     work = Path(args.work_dir) if args.work_dir else Path(tempfile.mkdtemp(prefix="mutation-tasks-"))
     work.mkdir(parents=True, exist_ok=True)
     pristine = work / "pristine"
     shutil.rmtree(pristine, ignore_errors=True)
-    export(repo, source["fix_commit"], pristine)
-    test_files = sorted(p.relative_to(pristine).as_posix() for p in (pristine / TEST_ROOT).rglob("test_*.py"))
+    export(repo, config["commit"], pristine)
+    if (pythonpath == "src") != (pristine / "src").is_dir():
+        raise SystemExit(f"pythonpath {pythonpath!r} disagrees with the tree (the evaluator uses src/ when it exists)")
+    test_files = sorted(p.relative_to(pristine).as_posix() for p in (pristine / test_root).glob(config["test_glob"]))
+
+    if args.candidates_only:
+        candidates, invalid = find_candidates(pristine, library_root)
+        order = schedule(candidates, config["seed"])
+        digest = hashlib.sha256(json.dumps([[c.file, c.line, c.kind, c.patch()] for c in order]).encode()).hexdigest()
+        print(json.dumps({"repo": args.repo, "pool": {k: sum(c.kind == k for c in candidates) for k in KINDS},
+                          "total": len(candidates), "invalid_after_edit": invalid, "order_sha256": digest,
+                          "test_files": len(test_files)}, indent=2))
+        return
 
     base_ws = work / "baseline"
     materialize(pristine, base_ws, "")
-    baseline = run_suite(python, base_ws, test_files, work / "baseline.xml", 600, timeout_plugin)
+    baseline = run_suite(python, base_ws, test_files, work / "baseline.xml", 600, timeout_plugin, pythonpath)
     shutil.rmtree(base_ws, ignore_errors=True)
-    baseline_pass = sorted(t for t, s in baseline.outcomes.items() if s == "pass")
-    baseline_skip = sorted(t for t, s in baseline.outcomes.items() if s == "skip")
-    if baseline.timed_out or baseline.collection_errors or any(s == "fail" for s in baseline.outcomes.values()):
+    unknown_exclusions = sorted(excluded - set(baseline.outcomes))
+    if unknown_exclusions:
+        raise SystemExit(f"excluded tests not in the baseline run: {unknown_exclusions}")
+    baseline_excluded = {t: baseline.outcomes[t] for t in sorted(excluded)}
+    baseline_pass = sorted(t for t, s in baseline.outcomes.items() if s == "pass" and t not in excluded)
+    baseline_skip = sorted(t for t, s in baseline.outcomes.items() if s == "skip" and t not in excluded)
+    if baseline.timed_out or baseline.collection_errors or any(
+            s == "fail" for t, s in baseline.outcomes.items() if t not in excluded):
         raise SystemExit(f"baseline suite is not healthy: {baseline.tail}")
     timeout = max(60.0, 10 * baseline.seconds)
     print(f"baseline: {len(baseline_pass)} pass, {len(baseline_skip)} skip, {baseline.seconds:.1f}s; "
-          f"pytest-timeout plugin: {timeout_plugin}; per-run timeout {timeout:.0f}s", flush=True)
+          f"pytest-timeout plugin: {timeout_plugin}; per-run timeout {timeout:.0f}s"
+          + (f"; excluded {baseline_excluded}" if excluded else ""), flush=True)
 
-    candidates, invalid = find_candidates(pristine)
+    candidates, invalid = find_candidates(pristine, library_root)
     pool = {kind: sum(c.kind == kind for c in candidates) for kind in KINDS}
     print(f"candidate pool: {len(candidates)} {pool}; invalid after edit: {invalid}", flush=True)
+    prefilter = None
+    if config.get("prefilter_unexecuted"):
+        lines, probe_outcomes = executed_lines(python, pristine, work, test_files, library_root, pythonpath, 600)
+        probe_pass = sorted(t for t, s in probe_outcomes.items() if s == "pass" and t not in excluded)
+        if probe_pass != baseline_pass:
+            raise SystemExit("the line-probe run's passing tests differ from the baseline's")
+        candidates, dropped = prefilter_unexecuted(candidates, pristine, lines)
+        prefilter = {"dropped": len(dropped), "dropped_by_kind": {k: sum(c.kind == k for c in dropped) for k in KINDS},
+                     "remaining": len(candidates),
+                     "remaining_by_kind": {k: sum(c.kind == k for c in candidates) for k in KINDS},
+                     "library_files_with_executed_lines": len(lines)}
+        print(f"prefilter_unexecuted: dropped {len(dropped)} {prefilter['dropped_by_kind']}; "
+              f"{len(candidates)} remain", flush=True)
 
     log, tasks = [], []
     loop_started = time.monotonic()
-    for cand in schedule(candidates):
+    for cand in schedule(candidates, config["seed"]):
         if len(log) >= args.max_candidates or time.monotonic() - loop_started > args.budget_seconds:
             break
         t0 = time.monotonic()
@@ -558,7 +718,7 @@ def main() -> None:
         materialize(pristine, workspace, patch)
         if (workspace / cand.file).read_bytes().decode("utf-8") != cand.mutated:
             raise SystemExit(f"git apply did not reproduce the mutation of {cand.file}:{cand.line}")
-        run = run_suite(python, workspace, test_files, work / "candidate.xml", timeout, timeout_plugin)
+        run = run_suite(python, workspace, test_files, work / "candidate.xml", timeout, timeout_plugin, pythonpath)
         verdict, failing, passing, skipped = classify(baseline_pass, run)
         entry = {"n": len(log) + 1, "file": cand.file, "line": cand.line, "kind": cand.kind, "detail": cand.detail,
                  "function": cand.function, "verdict": verdict, "failing": len(failing),
@@ -568,22 +728,23 @@ def main() -> None:
         if verdict == "kept":
             messages = dict(run.failures)
             failing_in_order = [t for t, _ in run.failures if t in set(failing)]
-            statement, fallback = build_statement(failing_in_order, messages), False
-            leaks = statement_leaks(statement, cand, failing)
+            statement, fallback = build_statement(failing_in_order, messages, name=config["package"]), False
+            leaks = statement_leaks(statement, cand, failing, config["package"])
             if leaks:  # the message named something it must not; state the behaviour only
-                statement, fallback = build_statement(failing_in_order, messages, with_message=False), True
-                if statement_leaks(statement, cand, failing):
+                statement, fallback = build_statement(failing_in_order, messages, with_message=False,
+                                                      name=config["package"]), True
+                if statement_leaks(statement, cand, failing, config["package"]):
                     entry["verdict"] = verdict = "statement_leak"
         if verdict == "kept":
-            task_id = f"sqlparse-mut-{len(tasks) + 1:03d}"
+            task_id = f"{config['task_prefix']}-{len(tasks) + 1:03d}"
             entry["task_id"] = task_id
             tasks.append({
                 "task_id": task_id,
-                "repo": source["repo"],
-                "repo_url": source["repo_url"],
+                "repo": config["repo"],
+                "repo_url": config["repo_url"],
                 "upstream_pr": None,
-                "base_commit": source["fix_commit"],
-                "fix_commit": source["fix_commit"],
+                "base_commit": config["commit"],
+                "fix_commit": config["commit"],
                 "statement": statement,
                 "evaluator_test_files": test_files,
                 "fail_to_pass": sorted(failing),
@@ -593,8 +754,8 @@ def main() -> None:
                 "skipped_after_fix": baseline_skip,
                 "gold_source_files": [cand.file],
                 "hidden_tests": True,
-                "hidden_paths": [TEST_ROOT],
-                "source_task": SOURCE_TASK,
+                "hidden_paths": [test_root],
+                "source_task": config["source_task"],
                 "generator_version": GENERATOR_VERSION,
                 "mutation_file": cand.file,
                 "mutation_line": cand.line,
@@ -616,7 +777,7 @@ def main() -> None:
     loop_seconds = time.monotonic() - loop_started
     shutil.rmtree(work / "ws", ignore_errors=True)
 
-    checks = [gold_check(task, pristine, work, python, test_files, timeout, timeout_plugin)
+    checks = [gold_check(task, pristine, work, python, test_files, timeout, timeout_plugin, pythonpath, excluded)
               for task in tasks[:args.gold_check]]
     for check in checks:
         print(f"gold check {check['task_id']}: ok={check['ok']} f2p after gold "
@@ -630,10 +791,13 @@ def main() -> None:
     by_kind = {kind: {"tried": sum(e["kind"] == kind for e in log),
                       "kept": sum(e["kind"] == kind and e["verdict"] == "kept" for e in log)} for kind in KINDS}
     summary = {
-        "generator_version": GENERATOR_VERSION, "source_task": SOURCE_TASK, "commit": source["fix_commit"],
+        "generator_version": GENERATOR_VERSION, "repo": args.repo, "repo_url": config["repo_url"],
+        "source_task": config["source_task"], "commit": config["commit"], "seed": config["seed"],
+        "excluded_tests": config["excluded_tests"], "excluded_tests_baseline_outcomes": baseline_excluded,
         "task_python": python, "pytest_timeout_plugin": timeout_plugin, "per_run_timeout_seconds": timeout,
         "baseline": {"pass": len(baseline_pass), "skip": len(baseline_skip), "seconds": round(baseline.seconds, 2)},
-        "candidate_pool": pool, "candidate_pool_total": len(candidates), "invalid_after_edit": invalid,
+        "candidate_pool": pool, "candidate_pool_total": sum(pool.values()), "invalid_after_edit": invalid,
+        "prefilter_unexecuted": prefilter,
         "max_candidates": args.max_candidates, "budget_seconds": args.budget_seconds,
         "tried": len(log), "verdicts": verdicts, "by_kind": by_kind, "kept": len(tasks),
         "loop_seconds": round(loop_seconds, 1),

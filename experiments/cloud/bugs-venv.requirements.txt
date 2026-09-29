@@ -1,6 +1,7 @@
 # The host's .runtime/bugs-venv (uv pip freeze, Python 3.13.15, 2026-09-28): pytest and the task repositories' test
-# dependencies for the sqlparse mutation tasks. Installed exactly by experiments/cloud/setup_cloud.sh. No sqlparse:
-# the task interpreter must not import a healthy copy of the task package (native_control leak check 5).
+# dependencies for the mutation-task banks (sqlparse, tasks.mutations.json; boltons, tasks.boltons.json, whose suite needs
+# only pytest). Installed exactly by experiments/cloud/setup_cloud.sh. No sqlparse or boltons: the task interpreter must
+# not import a healthy copy of the task package (native_control leak check 5; setup_cloud.sh checks both).
 colorama==0.4.6
 freezegun==1.5.5
 hypothesis==6.168.0
