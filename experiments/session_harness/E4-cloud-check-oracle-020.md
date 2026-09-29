@@ -2,7 +2,10 @@
 
 Date: 2026-09-28  
 Status: proposed; awaiting owner approval, which follows card 019's report  
-Stage: S6 (tool-use module) on cloud compute. Machine-readable card: [`cards/020.json`](cards/020.json).
+Stage: S6 (tool-use module) on cloud compute. Machine-readable card: [`cards/020.json`](cards/020.json).  
+Card 019 finding (the prerequisite): the cloud VM reproduced card 007 at 31/40 against 32/40, with identical per-task
+outcomes except `sqlparse-mut-001` (0/2 against 1/2); results on branch `cloud-results-019`. The environment is treated
+as equivalent for paired treatment work; seconds are not comparable with host runs.  
 
 ## Purpose
 
