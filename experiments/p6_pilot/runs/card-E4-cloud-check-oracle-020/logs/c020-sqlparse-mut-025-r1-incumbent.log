@@ -4,3 +4,4 @@ claude-cli 2.1.284 (Claude Code): at most 20 responses per run; every CLI attemp
 per-run guards: {"stop_on_repeats": false, "resume_after_provider_stop": 0, "resume_wait_seconds": null}; backend trusted-local
 task budgets per run: {"claude-sonnet-5": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
 claude-cli reply recovery lenient-json+second-turn-on-retry (adapter claude-cli-adapter-v3: --max-turns 1, 2 on retries after a rejected StructuredOutput call; in the protocol hash)
+sqlparse-mut-025__claude-sonnet-5: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}
