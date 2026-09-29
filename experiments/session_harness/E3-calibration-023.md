@@ -2,6 +2,9 @@
 
 Date: 2026-09-28  
 Status: proposed; awaiting owner approval (then set `cards/023.json` status to running). Not run.  
+Departures approved by the owner in session on 2026-09-29 ("yes, approved"): the boltons `prefilter_unexecuted`
+coverage prefilter and the `--shortfall redistribute` amendment to card 007's selection rule. Launch is by pasting
+[`experiments/cloud/RUN_IN_CLOUD-023.md`](../cloud/RUN_IN_CLOUD-023.md).  
 Stage: S6 near-transfer. Machine-readable card: [`cards/023.json`](cards/023.json). Bank:
 [`tasks.boltons.json`](../mutation_tasks/tasks.boltons.json) (63 tasks), with its
 [generation log](../mutation_tasks/generation_log.boltons.json) and
