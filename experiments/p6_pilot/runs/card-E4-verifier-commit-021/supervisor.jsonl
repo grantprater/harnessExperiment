@@ -2,3 +2,4 @@
 {"time": "2026-09-29T08:30:37.360758+00:00", "event": "commit", "runs_finished": 10, "result": "committed and pushed"}
 {"time": "2026-09-29T09:15:53.992397+00:00", "event": "commit", "runs_finished": 20, "result": "committed and pushed"}
 {"time": "2026-09-29T10:22:30.404163+00:00", "event": "commit", "runs_finished": 30, "result": "committed and pushed"}
+{"time": "2026-09-29T10:36:48.432061+00:00", "event": "end", "exit_code": 0, "detail": "run_card exited 0", "finished_at": "2026-09-29T10:36:45.329733+00:00", "commit": "committed and pushed", "status": {"card": "E4-verifier-commit-021", "runs_planned": 36, "runs_finished": 36, "runs_accepted": 10, "failed_attempts": 0, "controls": {"gold": "ok", "noop": "ok"}, "nested_cost_usd": 41.963154, "nested_calls": 698, "wall_seconds": 12198.0, "last_stop": {"time": "2026-09-29T10:36:44+00:00", "event": "campaign_end", "reason": "campaign complete: 38 invocations"}, "spend_cap_usd": 52}}
