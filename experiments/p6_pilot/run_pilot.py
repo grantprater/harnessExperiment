@@ -44,6 +44,14 @@ protocol hash (name, version, fixed texts, parameters), and reported under "trea
   --oracle hidden-tests[:K]  tool use (changes the task): a check() tool returning only the counts of the task's
                              hidden fail_to_pass tests failing and passing, at most K calls per run (default 3),
                              run on a snapshot outside the workspace (reticle/tools/check_oracle.py)
+  --verifier repro-test[:K] --verifier-manifest MANIFEST.json
+                             tool use (card 021): the same check() interface over a reproduction test a separate
+                             model call wrote before the campaign from the statement and the pre-edit tree, frozen
+                             in the manifest (reticle/tools/repro_verifier.py, repro_verifiers.py); not with --oracle
+  --nudge commit             agent loop (card 021): once per run at --nudge-fraction of the response budget, edits or
+                             not, a harness message asking for a committed hypothesis and a tested prediction, with
+                             the commit_hypothesis and record_observation tools offered from the first request
+                             (reticle/runtime/nudges.py, reticle/tools/commitment.py)
 
 claude-cli client options (off by default; not treatments, since they change how a reply is obtained, not what the
 model is offered; one that is on is recorded in the CLI contract under provider_routing and so in the protocol hash;
@@ -99,7 +107,8 @@ from reticle.runtime import LocalRuntime  # noqa: E402
 from reticle.runtime.contracts import TaskEnvelope  # noqa: E402
 from reticle.runtime.controller import AgentController, AgentLimits, ModelClientError, ModelResponse  # noqa: E402
 from reticle.runtime.nudges import (  # noqa: E402
-    MIDPOINT_NUDGE_TEMPLATE, MIDPOINT_NUDGE_VERSION, MidpointNudge, midpoint_nudge_text,
+    COMMIT_NUDGE_TEMPLATE, COMMIT_NUDGE_VERSION, MIDPOINT_NUDGE_TEMPLATE, MIDPOINT_NUDGE_VERSION, CommitmentNudge,
+    MidpointNudge, commit_nudge_text, midpoint_nudge_text,
 )
 from reticle.runtime.source_edits import SOURCE_RULE_VERSION, SourceEditTracker  # noqa: E402
 from reticle.tools import TOOL_SCHEMAS, ToolSuite  # noqa: E402
@@ -108,6 +117,13 @@ from reticle.tools.check_oracle import (  # noqa: E402
 )
 from reticle.tools.finish_guard import (  # noqa: E402
     FINISH_GUARD_MESSAGE, FINISH_GUARD_VERSION, REASONS, FinishGuard, FinishGuardTools,
+)
+from reticle.tools.commitment import (  # noqa: E402
+    COMMITMENT_TOOLS_VERSION, CommitmentLog, CommitmentTools, commitment_schemas,
+)
+from reticle.tools.repro_verifier import (  # noqa: E402
+    DEFAULT_MAX_CALLS as VERIFIER_DEFAULT_MAX_CALLS, VERIFIER_VERSION, ReproTestVerifier, verifier_schema,
+    write_bundle as write_verifier_bundle,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -184,7 +200,8 @@ INSTRUCTIONS = (
 )
 
 
-TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction", "--oracle")
+TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction", "--oracle", "--verifier", "--verifier-manifest")
+VERIFIER_RUNNER = HERE / "run_repro_test.py"
 
 
 def add_treatment_arguments(parser) -> None:
@@ -192,14 +209,21 @@ def add_treatment_arguments(parser) -> None:
     group.add_argument("--completion", choices=["finish-guard"], default=None,
                        help="finish-guard: reject the first finish after a source edit, once, unless a "
                             "command that failed before the edit passes after it")
-    group.add_argument("--nudge", choices=["midpoint"], default=None,
+    group.add_argument("--nudge", choices=["midpoint", "commit"], default=None,
                        help="midpoint: one harness message when --nudge-fraction of the responses are spent "
-                            "without a source edit")
+                            "without a source edit; commit: one harness message at --nudge-fraction, edits or not, "
+                            "asking for a committed hypothesis and a tested prediction (adds two recording tools)")
     group.add_argument("--nudge-fraction", type=float, default=None, metavar="F",
-                       help="share of the response budget after which --nudge midpoint is due (default 0.5)")
+                       help="share of the response budget after which the --nudge message is due (default 0.5)")
     group.add_argument("--oracle", default=None, metavar="hidden-tests[:K]",
                        help="a check() tool: hidden fail_to_pass counts only, at most K calls per run "
                             f"(default {DEFAULT_MAX_CALLS})")
+    group.add_argument("--verifier", default=None, metavar="repro-test[:K]",
+                       help="a check() tool over the task's frozen reproduction test (--verifier-manifest): counts "
+                            f"only, at most K calls per run (default {VERIFIER_DEFAULT_MAX_CALLS}); not with --oracle")
+    group.add_argument("--verifier-manifest", default=None, metavar="MANIFEST.json",
+                       help="the manifest of frozen reproduction tests (repro_verifiers.py generate); its sha256 "
+                            "enters the protocol hash")
 
 
 def treatments_record(args) -> dict:
@@ -211,7 +235,7 @@ def treatments_record(args) -> dict:
             "rule": "fail-then-pass", "rejection": FINISH_GUARD_MESSAGE, "reasons": REASONS,
         }
     if args.nudge_fraction is not None and args.nudge is None:
-        raise SystemExit("--nudge-fraction needs --nudge midpoint")
+        raise SystemExit("--nudge-fraction needs --nudge midpoint or --nudge commit")
     if args.nudge == "midpoint":
         fraction = 0.5 if args.nudge_fraction is None else args.nudge_fraction
         if not 0 < fraction < 1:
@@ -220,6 +244,17 @@ def treatments_record(args) -> dict:
             "name": "midpoint", "version": MIDPOINT_NUDGE_VERSION, "source_rule": SOURCE_RULE_VERSION,
             "fraction": fraction, "template": MIDPOINT_NUDGE_TEMPLATE, "text": midpoint_nudge_text(fraction),
             "role": "system", "placement": "after the latest tool results, once per run",
+        }
+    if args.nudge == "commit":
+        fraction = 0.5 if args.nudge_fraction is None else args.nudge_fraction
+        if not 0 < fraction < 1:
+            raise SystemExit(f"--nudge-fraction must be between 0 and 1, not {fraction}")
+        record["nudge"] = {
+            "name": "commit", "version": COMMIT_NUDGE_VERSION, "fraction": fraction,
+            "template": COMMIT_NUDGE_TEMPLATE, "text": commit_nudge_text(fraction), "role": "system",
+            "placement": "after the latest tool results, once per run, whether or not a source file was edited",
+            "tools": {"version": COMMITMENT_TOOLS_VERSION,
+                      "names": [schema["function"]["name"] for schema in commitment_schemas()]},
         }
     if args.oracle is not None:
         match = re.fullmatch(r"hidden-tests(?::(\d+))?", args.oracle)
@@ -230,7 +265,75 @@ def treatments_record(args) -> dict:
             "name": "hidden-tests", "version": ORACLE_VERSION, "max_calls": calls,
             "returns": ["failing", "passing", "calls_left"], "scope": "fail_to_pass",
         }
+    if args.verifier_manifest is not None and args.verifier is None:
+        raise SystemExit("--verifier-manifest needs --verifier repro-test[:K]")
+    if args.verifier is not None:
+        if args.oracle is not None:
+            raise SystemExit("--verifier and --oracle both offer check(); use one")
+        match = re.fullmatch(r"repro-test(?::(\d+))?", args.verifier)
+        calls = int(match.group(1) or VERIFIER_DEFAULT_MAX_CALLS) if match else 0
+        if calls < 1:
+            raise SystemExit(f"--verifier must be repro-test or repro-test:K with K >= 1, not {args.verifier!r}")
+        if args.verifier_manifest is None:
+            raise SystemExit("--verifier needs --verifier-manifest")
+        manifest = resolve_repo_path(args.verifier_manifest)
+        record["verifier"] = {
+            "name": "repro-test", "version": VERIFIER_VERSION, "max_calls": calls,
+            "returns": ["failing", "passing", "calls_left"],
+            "scope": "one reproduction test per task, written before the campaign from the statement and the "
+                     "pre-edit workspace, frozen in the manifest",
+            "runner_sha256_lf": sha256_lf(VERIFIER_RUNNER),
+            "manifest": shown_path(manifest),
+            "manifest_sha256_lf": sha256_lf(manifest) if manifest.is_file() else None,
+        }
     return record
+
+
+def resolve_repo_path(value) -> Path:
+    """A path as given, or relative to the repository root when it is relative and absent from the working dir."""
+    path = Path(value)
+    if not path.is_absolute() and not path.exists():
+        path = ROOT / path
+    return path.resolve()
+
+
+def shown_path(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def sha256_lf(path: Path) -> str:
+    """sha256 of a text file's content with LF line endings (the same on every checkout, whatever core.autocrlf
+    wrote to the working copy)."""
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def load_verifier_manifest(treatments: dict) -> dict:
+    """The verifier manifest a run uses; it must still have the sha256 recorded in the treatment (and the hash)."""
+    verifier = treatments["verifier"]
+    path = resolve_repo_path(verifier["manifest"])
+    if verifier["manifest_sha256_lf"] is None or not path.is_file():
+        raise SystemExit(f"verifier manifest {verifier['manifest']} does not exist; generate it first "
+                         "(experiments/p6_pilot/repro_verifiers.py generate)")
+    if sha256_lf(path) != verifier["manifest_sha256_lf"]:
+        raise SystemExit(f"verifier manifest {verifier['manifest']} changed since the protocol was hashed")
+    return {"path": path, **json.loads(path.read_text(encoding="utf-8"))}
+
+
+def build_task_verifier(manifest: dict, task_id: str, bundle: Path, python: str, timeout_seconds: float) -> Path:
+    """The run's verifier bundle for one task from the manifest; the test's sha256 is checked against it."""
+    entry = (manifest.get("tasks") or {}).get(task_id)
+    if entry is None:
+        raise SystemExit(f"verifier manifest {shown_path(manifest['path'])} has no entry for {task_id}")
+    test_file = None
+    if entry.get("status") == "available":
+        test_file = (Path(manifest["path"]).parent / entry["file"]).resolve()
+        if sha256_lf(test_file) != entry["sha256_lf"]:
+            raise SystemExit(f"verifier test {entry['file']} does not match its manifest sha256")
+    return write_verifier_bundle(bundle, test_file=test_file, python=python, timeout_seconds=timeout_seconds,
+                                 runner=VERIFIER_RUNNER, collected=entry.get("collected"))
 
 
 def treatments_from_args(argv) -> dict:
@@ -276,10 +379,16 @@ def cli_routing_contract(model: str, version: str, client_options=None) -> dict:
 
 
 def model_tool_schemas(treatments: dict) -> list:
-    """The tool schemas the model is offered: the toolset's, plus check() when the oracle is on."""
+    """The tool schemas the model is offered: the toolset's, plus check() when the oracle or the verifier is on,
+    then the commitment tools when the commitment nudge is on."""
+    extra = []
     if "oracle" in treatments:
-        return [*TOOL_SCHEMAS, check_schema(treatments["oracle"]["max_calls"])]
-    return TOOL_SCHEMAS
+        extra.append(check_schema(treatments["oracle"]["max_calls"]))
+    if "verifier" in treatments:
+        extra.append(verifier_schema(treatments["verifier"]["max_calls"]))
+    if (treatments.get("nudge") or {}).get("name") == "commit":
+        extra.extend(commitment_schemas())
+    return [*TOOL_SCHEMAS, *extra] if extra else TOOL_SCHEMAS
 
 
 def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict, task_contracts=(), treatments=None) -> str:
@@ -638,10 +747,12 @@ def is_provider_stop(agent: dict) -> bool:
 
 
 def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, oracle_timeout_seconds=None,
-                **suite_arguments):
+                verifier_root=None, **suite_arguments):
     """The run's tool suite with each tool-level treatment that is on composed in as a mixin, and the per-run
     state object of every treatment (each has record()). With no treatment it is base_class itself. The oracle
-    runs the evaluator bundle at evaluator_root through the suite's backend."""
+    runs the evaluator bundle at evaluator_root, the verifier the bundle at verifier_root, through the suite's
+    backend. Each mixin appends its schemas after those of the classes after it in the MRO, so the commitment
+    tools (first in the list) come last, as model_tool_schemas lists them."""
     mixins, extra, state = [], {}, {}
     if "completion" in treatments:
         state["completion"] = extra["finish_guard"] = FinishGuard(runtime, SourceEditTracker(runtime.workspace))
@@ -652,6 +763,15 @@ def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, o
             runtime, suite_arguments.get("backend"), evaluator_root, max_calls=treatments["oracle"]["max_calls"],
             **timeout)
         mixins.append(CheckOracleTools)
+    if "verifier" in treatments:
+        timeout = {} if oracle_timeout_seconds is None else {"timeout_seconds": oracle_timeout_seconds}
+        state["verifier"] = extra["oracle"] = ReproTestVerifier(
+            runtime, suite_arguments.get("backend"), verifier_root, max_calls=treatments["verifier"]["max_calls"],
+            **timeout)
+        mixins.append(CheckOracleTools)
+    if (treatments.get("nudge") or {}).get("name") == "commit":
+        state["commitment"] = extra["commitment"] = CommitmentLog(runtime)
+        mixins.insert(0, CommitmentTools)
     tool_class = type(f"Treated{base_class.__name__}", (*mixins, base_class), {}) if mixins else base_class
     return tool_class(runtime, **suite_arguments, **extra), state
 
@@ -659,8 +779,11 @@ def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, o
 def build_interventions(runtime, treatments: dict, state: dict) -> list:
     """The agent-loop treatments that are on, for the controller; each one's state is added to state."""
     interventions = []
-    if "nudge" in treatments:
+    if (treatments.get("nudge") or {}).get("name") == "midpoint":
         state["nudge"] = MidpointNudge(SourceEditTracker(runtime.workspace), treatments["nudge"]["fraction"])
+        interventions.append(state["nudge"])
+    elif (treatments.get("nudge") or {}).get("name") == "commit":
+        state["nudge"] = CommitmentNudge(treatments["nudge"]["fraction"])
         interventions.append(state["nudge"])
     return interventions
 
@@ -912,6 +1035,7 @@ def main() -> None:
 
     task_file, tasks = load_tasks(args.tasks)
     contracts = [c for c in (task_contract(t) for t in tasks) if c is not None]
+    verifier_manifest = load_verifier_manifest(treatments) if "verifier" in treatments and not args.dry_run else None
     live = args.client in ("openrouter", "claude-cli")
     if live:
         if not args.models:
@@ -1055,6 +1179,10 @@ def main() -> None:
         workspace, bundle = run_root / "workspace", run_root / "evaluator"
         materialize_workspace(task, repo, workspace)
         version = build_evaluator(task, repo, bundle, args.pytest_timeout, execution["guest_python"])
+        verifier_root = None
+        if verifier_manifest is not None:
+            verifier_root = build_task_verifier(verifier_manifest, task["task_id"], run_root / "verifier",
+                                                execution["guest_python"], args.pytest_timeout)
         runtime = LocalRuntime(run_root / "session", workspace)
         initial_revision = runtime.workspace.revision()
         src = workspace / "src"
@@ -1065,6 +1193,7 @@ def main() -> None:
         tools, treatment_state = build_tools(
             runtime, treatments, RepeatGuardTools if args.stop_on_repeats else ToolSuite,
             evaluator_root=bundle, oracle_timeout_seconds=args.pytest_timeout + 120,  # as final acceptance
+            verifier_root=verifier_root,
             interpreter=execution["guest_python"], backend=backend, environment={
                 "PYTHONPATH": python_path, "PYTHONIOENCODING": "utf-8"})
         interventions = build_interventions(runtime, treatments, treatment_state)
