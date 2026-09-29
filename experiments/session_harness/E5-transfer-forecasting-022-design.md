@@ -255,11 +255,52 @@ is not a useful gain at this cost.
 The sealed set's size follows from this: N = 120 gives 93% power at σ_d = 0.07 and 71% at 0.10. Two rollouts
 per arm would cut σ_d to 0.054 but double the cost, so one rollout per arm on more questions is better.
 
-**Re-estimation rule.** Phase A runs 20 calibration questions twice with the incumbent, which estimates σ̂_w.
-Then:
-- if (2.487·√(2σ̂_w² + 0.03²)/0.02)² > 120, draw the reserve up to that value, at most 160 in total;
+**Power with series as the unit (2026-09-29, Q6; `power_forecast.py`, `power_forecast.json`).** The verdict
+bootstraps over series, and questions of one series are not independent. With the v2 bank, the 120 sealed questions
+come from 36 series (20 with 4 questions, 8 with 3, 8 with 2), so the size-weighted cluster size is
+m_w = Σm_i²/N = 3.53. With ρ the within-series correlation of the paired differences d:
+- the design effect is DE = 1 + (m_w − 1)ρ and the effective N is 120/DE;
+- the power is Φ(Δ·√N_eff/σ_d − t₀.₉₅,₃₅), which uses t with 35 degrees of freedom (1.690), because only 36 clusters
+  carry the variance.
+
+ρ has not been measured for model arms, because nothing has run. The estimate is a proxy from data that no bank
+question uses:
+- 9,902 pseudo-questions at 26 Mondays of 2025, on all 60 series, with the bank's templates and filter;
+- each series drawn like the bank: up to 4 questions, windows not overlapping;
+- two non-model forecasters that differ only in method: the full-history base rate (`gold`) and the base rate of the
+  last 26 past windows;
+- ρ = the one-way ANOVA intraclass correlation of their paired Brier difference over series, taken over 200 seeded
+  draws.
+
+The median is **ρ̂ = 0.010**, with a 5-95% range of 0.000-0.102. The proxy's SD of d is 0.128, which is not a
+planning value. A harness change on a model arm may correlate more within a series, so the table goes to 0.3.
+
+| ρ | DE | N_eff | power, σ_d = 0.05 | σ_d = 0.07 | σ_d = 0.10 |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 1.00 | 120 | 99.6% | 92.5% | 69.2% |
+| 0.01 (proxy median) | 1.03 | 117 | 99.6% | 91.9% | 68.2% |
+| 0.1 (proxy 95th percentile) | 1.25 | 96 | 98.7% | 86.6% | 60.5% |
+| 0.2 | 1.51 | 80 | 97.0% | 80.5% | 53.8% |
+| 0.3 | 1.76 | 68 | 94.7% | 74.8% | 48.5% |
+
+Questions needed for 80% power at Δ = 0.02 (normal approximation, with the design effect):
+
+| σ_d | ρ = 0 | ρ = 0.01 | ρ = 0.2 |
+|---:|---:|---:|---:|
+| 0.05 | 39 | 40 | 59 |
+| 0.07 | 76 | 78 | 115 |
+| 0.10 | 155 | 159 | 233 |
+
+At the planning σ_d = 0.07, the sealed 120 keep at least 80% power up to ρ = 0.2. At σ_d = 0.10 no plausible ρ
+reaches 80% within the 160-question ceiling. That case is what phase A's noise measurement must rule out.
+
+**Re-estimation rule** (the design effect added, 2026-09-29). Phase A runs 20 calibration questions twice with the
+incumbent, which estimates σ̂_w. Phase A's measurement is what finally fixes the sealed size:
+- if (2.487·√(2σ̂_w² + 0.03²)/0.02)² · (1 + (3.53 − 1)·0.10) > 120, draw the reserve up to that value, at most 160 in
+  total. ρ = 0.10 is the proxy's 95th percentile, fixed now; phase A cannot estimate a treatment's ρ;
 - the rule uses only incumbent-versus-incumbent variance, so it is blind to the treatment effect;
-- the reserve is never used after phase B starts.
+- the reserve is never used after phase B starts. It is series-disjoint from the sealed set (11 series), so drawing
+  it adds clusters rather than questions to existing series.
 
 ## 5. Arms, schedule, budgets, cost
 
@@ -518,7 +559,7 @@ the peeker control enforces (section 11). Q6 is new, from the slice 1 build.
 5. **Order for the intuition instrument: retrospective step 0 now, explicit instrument on code next, arm C in
    022 only if step 1 passes?** *Yes.* Step 0 needs no agent runs and falsifies the idea quickly, and arm C adds
    about $34 only once the instrument has shown it is usable.
-6. **(New, open.) The frozen bank rule gives 100 questions, not 200: calibration 40 of 40, sealed 60 of 120,
+6. **(New; decided 2026-09-29, see below.) The frozen bank rule gives 100 questions, not 200: calibration 40 of 40, sealed 60 of 120,
    reserve 0 of 40. Add series until there are 80, keeping every rule?** *Yes.* The base-rate filter is not the
    constraint: it kept 1,528 of 1,760 candidates, and every one of the 240 (series, `T`) cells (30 series x 8 dates)
    has at least one. The design's own limits are: at most one question per (series, `T`), so at most 4 August
@@ -541,7 +582,25 @@ the peeker control enforces (section 11). Q6 is new, from the slice 1 build.
 
    Until this is decided, phase B cannot run; the draft card is phase A only.
 
+**Decision on Q6, 2026-09-29.** The build session proposed a plan combining option A with changes to the rule:
+- series-disjoint splits, the owner's suggestion (every series belongs wholly to calibration, sealed or reserve, so
+  nothing carries over from calibration to the sealed set);
+- a sealed cap of 4 questions per series, only on forecast dates whose windows `[T, T+h)` do not overlap within the
+  series, keeping one question per (series, `T`);
+- 25-30 more series from the same four sources, with the same filters, seeded, and their sources and sha256s recorded;
+- the power analysis redone with series as the unit;
+- the bank re-frozen and the sealed resolutions' hash re-pinned in card 022.
+
+The owner's reply: "Yep I agree with that, you can move ahead with it". Section 12 records the build.
+
+**Q3, confirmed.** The cloud probe passed on the VM on 2026-09-29 (`origin/cloud-probe-isolation`, commit 11dfc71: 5
+of 5, `ISOLATION: NETWORK+FILES`). The VM runs as root with passwordless sudo, so cloud first stands with the
+runner's `--sandbox unshare-rnm` (section 12). The host OCI backend remains the fallback.
+
 ## 11. Slice 1 as built (2026-09-28; no model call)
+
+The bank, the evaluator's resolver check and the card were rebuilt on 2026-09-29; section 12 supersedes the counts,
+hashes and prerequisites below.
 
 **Files.**
 
@@ -620,3 +679,105 @@ comparator's live call, the post-run leakage audit, and the runner's `unshare` w
 each is a prerequisite in `cards/022.json`. Nothing of slices 2 or 3 (the verifier counterpart, the intuition
 instrument). The bank's shortfall is reported, not fixed. The OCI controls ran through the harness's own OCI command,
 which sets memory and process limits but no CPU limit. `constant` and `gamer` ran on the host only.
+
+## 12. Q6 rework and the remaining prerequisites (2026-09-29; no model call)
+
+**Bank v2** (`build_bank.py`, `BUILDER_VERSION` forecast-bank-v2):
+- **Series.** 30 series were added, for 60 in total:
+  - 6 FRED: DEXUSUK, DEXCAUS, DEXMXUS, DGS2, NASDAQCOM, DHHNGSP;
+  - 6 cities × 2 (Beijing, Johannesburg, Buenos Aires, Toronto, Singapore, Delhi);
+  - 4 USGS regions: Japan M4+, Alaska M3+, Indonesia M4+, Peru-Chile M4+;
+  - 8 Wikimedia articles.
+- **Fetching.** 36 more requests, sequential and 2 s apart, all HTTP 200, cached with sha256 in the raw manifest. The
+  build reads 64 raw responses in all.
+- **Filter.** It kept 3,046 of 3,520 candidates, and all 480 (series, `T`) cells have at least one.
+- **The rule as built:**
+  - splits are series-disjoint by group (a city's two weather series are one group), assigned with the seed;
+  - at most 4 questions per series, whose windows do not overlap, in every split;
+  - all eight forecast dates are open to every split. The July/August time split existed to keep calibration apart
+    from the sealed set, which series-disjointness now does, and non-overlapping windows need the eight dates.
+  - The reserve follows the same rule because it is drawn into the sealed set; its series are disjoint from the sealed
+    series, so drawing it adds clusters.
+- **Result.** Calibration 40 (13 series), sealed 120 (36 series: 20 × 4, 8 × 3, 8 × 2), reserve 40 (11 series).
+  Horizons in the sealed set: 60 at 7 days, 28 at 14, 32 at 28.
+- **Imbalance.** Because weather groups hold two series, the reserve is 29/40 Open-Meteo and has no USGS series. The
+  cause is the group-level seeded assignment, and it is recorded rather than tuned.
+- **Frozen outputs.**
+  - `tasks.forecast.json` sha256 `885152c2…a051`, `splits.json` `26af68ce…c606`, `recall_control.json`
+    `289e326a…2e12`;
+  - 293 snapshot files, 6.1 MB;
+  - sealed resolutions sha256 `bc4a1221a4d7e56fad672f89e91a940ef1bcac561fb1f1da4e2e342529a55826`, re-pinned in card
+    022. The file now also holds the 20 positive-control outcomes.
+  - Rebuilding from the cache reproduces every byte.
+- **Positive control.** The recall probe gets 20 questions at the Mondays 2025-07-07..08-25 (before the stated
+  training cutoff), one per series, drawn round-robin over (source, template).
+
+**Power** with series as the unit: section 4.
+
+**Evaluator: the gap closed** (`evaluate_forecast.py`). Before, the checker child wrote its results to a file whose
+path it received in its arguments, so `resolve.py` could overwrite it. Now:
+- the true outcomes, rows and dates are computed before any agent code runs;
+- the child runs in a fresh temporary directory that holds only copies of the candidate's `.py` files, and it receives
+  no path to the bundle, the candidate or an output file;
+- it reads its inputs and a random nonce from stdin before it imports `resolve.py`, then sends stdout and stderr to
+  the null device;
+- it reports once, on a private descriptor, with the nonce, and ends with `os._exit`;
+- the evaluator accepts exactly one nonce line.
+
+Tests show these attacks cannot produce a commitment: result files written everywhere reachable, forged report lines
+(with and without a guessed nonce), an atexit forgery, `os._exit` after a forged print, and `SystemExit` at import.
+Rewriting every reachable `resolvers.py` and data file leaves the reading agreement exactly that of an honest
+always-True resolver. Residual risk: code that deliberately inspects the checker's frames or descriptors can still
+forge a result. The leakage audit flags such code as `checker_tampering`, which stops the campaign.
+
+**Cloud isolation, runner half** (`experiments/p6_pilot/sandbox.py`):
+- `run_pilot.py --sandbox unshare-rnm` runs every run-tool and evaluator command of a forecast task inside
+  `unshare -rnm`. There, a tmpfs covers the checkout's `experiments/`, `.runtime/forecast-022`, `.git`, the common git
+  directory and `~/harness-sealed` (a hidden file is covered by `/dev/null`). The command's working directory is
+  mounted back, and the network is loopback-only.
+- It is refused for code tasks, on the OCI backend, and where `unshare -rnm true` fails.
+- It is recorded in the execution contract (name, version, roles hidden, wrapper sha256), so it enters the protocol
+  hash only when on. Existing hashes are unchanged.
+- Card 022's arm sets `backend.sandbox: unshare-rnm`, a new card-schema field that run_card turns into the flag and
+  into the planned hash.
+- `container_sandbox_check.sh` ran on 2026-09-29 in podman `python:3.11-slim`, as root like the VM, `--cpus 1`:
+  - unwrapped, the peeker reached HTTPS, a raw socket, DNS, the checkout, `.git`, the evaluator bundle and a planted
+    `/root/harness-sealed/022/resolutions.json`, and was rejected;
+  - wrapped, all seven were blocked and it was accepted; gold committed with 52/52 reading agreement; noop was
+    rejected;
+  - the Linux-only unit test `SandboxEffectTests` passed there.
+- The peeker now counts an empty read (a file covered by `/dev/null`) as blocked and probes `.git` as well.
+- The sealed resolutions never go to the VM. The card's stop rules say so, and the sandbox hides `~/harness-sealed`
+  in any case.
+
+**Recall probe and one-shot call path** (built, not run):
+- `cli_ask.py` asks one question through `claude_cli.py`'s `ClaudeCliClient` with no harness tools. That gives the
+  same isolation flags, child environment and model pin, and every attempt is logged with its list-price estimate.
+- `probe_recall.py` holds the prompt (recall-v1: outcome only if known), the parser (the last `OUTCOME:` and
+  `PROBABILITY:` lines) and the scorer. The scorer applies the leak rule (named for more than 10% of bank questions
+  with a Brier below gold's on them) and the sensitivity rule (the positive control must show recall better than
+  chance and than gold, or the report says the probe is insensitive).
+- `oneshot_forecast.py --run --live` gives one reply per question, and `ledger_forecasts` feeds
+  `score_forecasts.paired_comparison`.
+- Both refuse aliases and refuse to run without `--live`. Against the repository's stub CLI, they pass the isolation
+  flags, strip the credential and resume from their ledgers.
+
+**Leakage audit** (`audit_forecast_runs.py`): for every run of a live client, it reads the session transcript and the
+final workspace and flags:
+- network words in run commands and in written files;
+- ISO dates on or after `T` in tool results, other than those the question states;
+- checker tampering in written code.
+
+One hit stops the campaign.
+
+**Card 022.** Its `--plan` blockers are now the approval and the pinned-model smoke of the recall probe and one-shot
+comparator. The probe half and the runner half of the isolation prerequisite, and the audit, are marked done with
+their evidence. The protocol hashes of cards 006-replay, 007-009, 011-015, 017, 019 and 020 are byte-identical to
+before (card 007 still plans `b0fda8c921ad`).
+
+**Not done.**
+- No model call.
+- The smoke of the recall probe and one-shot call.
+- Phase A itself.
+- The wrapped controls on the VM (they run there as the card's controls before any model run).
+- Slices 2 and 3.

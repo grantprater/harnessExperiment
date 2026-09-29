@@ -1,0 +1,118 @@
+{
+ "method": "The verdict resamples series (score_forecasts.py), so questions of one series count less than independent ones. With N questions in k series of sizes m_i, the variance of D is sigma_d^2 / N times the design effect DE = 1 + (m_w - 1) * rho, where m_w = sum(m_i^2) / N is the size-weighted mean cluster size and rho the within-series correlation of the paired per-question differences d. The effective N is N / DE, and the one-sided power at a true gain Delta is Phi(Delta * sqrt(N_eff) / sigma_d - t_{0.95, k-1}) (t with k-1 degrees of freedom, since only k clusters carry the variance).",
+ "sealed": {
+  "questions": 120,
+  "series": 36,
+  "sizes": [
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   3,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2,
+   2
+  ],
+  "m_weighted": 3.533
+ },
+ "rho_proxy": {
+  "median": 0.0101,
+  "p05": 0.0,
+  "p95": 0.1016,
+  "draws": 200,
+  "pseudo_questions": 9902,
+  "sd_d_proxy": 0.1283
+ },
+ "power_at_delta_0.02": [
+  {
+   "rho": 0.0,
+   "design_effect": 1.0,
+   "n_eff": 120.0,
+   "power": {
+    "0.05": 0.996,
+    "0.07": 0.925,
+    "0.10": 0.692
+   }
+  },
+  {
+   "rho": 0.0101,
+   "design_effect": 1.026,
+   "n_eff": 117.0,
+   "power": {
+    "0.05": 0.996,
+    "0.07": 0.919,
+    "0.10": 0.682
+   }
+  },
+  {
+   "rho": 0.1,
+   "design_effect": 1.253,
+   "n_eff": 95.7,
+   "power": {
+    "0.05": 0.987,
+    "0.07": 0.866,
+    "0.10": 0.605
+   }
+  },
+  {
+   "rho": 0.2,
+   "design_effect": 1.507,
+   "n_eff": 79.6,
+   "power": {
+    "0.05": 0.97,
+    "0.07": 0.805,
+    "0.10": 0.538
+   }
+  },
+  {
+   "rho": 0.3,
+   "design_effect": 1.76,
+   "n_eff": 68.2,
+   "power": {
+    "0.05": 0.947,
+    "0.07": 0.748,
+    "0.10": 0.485
+   }
+  }
+ ],
+ "required_n_80pct": {
+  "sigma 0.05, rho 0.0": 39,
+  "sigma 0.05, rho 0.0101": 40,
+  "sigma 0.05, rho 0.2": 59,
+  "sigma 0.07, rho 0.0": 76,
+  "sigma 0.07, rho 0.0101": 78,
+  "sigma 0.07, rho 0.2": 115,
+  "sigma 0.10, rho 0.0": 155,
+  "sigma 0.10, rho 0.0101": 159,
+  "sigma 0.10, rho 0.2": 233
+ },
+ "t_critical": 1.6896
+}

@@ -19,7 +19,7 @@ Structure: [`card.schema.json`](card.schema.json) (JSON Schema keywords, checked
 | `015.json` | [E4-check-oracle-015](../E4-check-oracle-015.md) | `proposed`; incumbent vs `--oracle hidden-tests:3` (task-changing arm), same tasks; blocked only on approval |
 | `019.json` | [E3-cloud-replication-019](../E3-cloud-replication-019.md) | `proposed`; card 007's design on a cloud VM: trusted-local (`isolation: vm-sandbox`), model pinned to `claude-sonnet-5`, list-price cap $40; blocked only on approval |
 | `020.json` | [E4-cloud-check-oracle-020](../E4-cloud-check-oracle-020.md) | `proposed`; card 015's arms on the cloud backend of card 019; blocked on approval and on card 019's result |
-| `022.json` | [E5-transfer-forecasting-022-design](../E5-transfer-forecasting-022-design.md), phase A | `proposed`; forecast tasks (`experiments/forecast_tasks/`, kind `forecast`): incumbent on 40 calibration questions plus 20 repeats, controls gold/constant/noop/gamer/peeker; cloud first (trusted-local `vm-sandbox`); blocked on approval, the cloud isolation wrapper, the recall probe and one-shot call, and the leakage audit |
+| `022.json` | [E5-transfer-forecasting-022-design](../E5-transfer-forecasting-022-design.md), phase A | `proposed`; forecast tasks (`experiments/forecast_tasks/`, kind `forecast`, bank v2: 40/120/40 series-disjoint): incumbent on 40 calibration questions plus 20 repeats, controls gold/constant/noop/gamer/peeker; cloud first (trusted-local `vm-sandbox`, `sandbox: unshare-rnm`); blocked on approval and the pinned-model smoke of the recall probe and one-shot comparator |
 
 ## Commands
 
@@ -70,7 +70,7 @@ cap). Exit codes: 0 done, 2 invalid/blocked/refused, 3 checkpoint stop, 4 integr
 | `provider` | `--provider MODEL=SLUG` | OpenRouter only |
 | `policy` | `--arm` | must be one of the runner's `ARMS` |
 | `toolset` | none | asserted equal to the runner's `TOOLSET_VERSION`; not selectable |
-| `backend` | `--backend`, `--oci-image` | `{kind: trusted-local, isolation?}` or `{kind: oci, image, image_id, engine}`; `image_id` and `engine` are hash inputs the card pins. `isolation` (`host`, the default, or `vm-sandbox` for a disposable VM such as a cloud session) is what isolates trusted-local commands; it is logged, not hashed |
+| `backend` | `--backend`, `--oci-image` | `{kind: trusted-local, isolation?}` or `{kind: oci, image, image_id, engine}`; `image_id` and `engine` are hash inputs the card pins. `isolation` (`host`, the default, or `vm-sandbox` for a disposable VM such as a cloud session) is what isolates trusted-local commands; it is logged, not hashed. `sandbox: unshare-rnm` (forecast tasks, Linux) passes `--sandbox unshare-rnm`: every command in user, mount and network namespaces with the checkout hidden (`experiments/p6_pilot/sandbox.py`); it is in the execution contract, so hashed |
 | `guards` | `--stop-on-repeats`, `--resume-after-provider-stop`, `--resume-wait-seconds` | the runner's `guards` record |
 | `extra_args` | appended verbatim | may not repeat a flag the card sets from structured fields. Treatment flags the runner declares in `TREATMENT_FLAGS` (the S6 treatments; see the runner's docstring) are parsed with the runner's own `treatments_from_args` and enter the planned hash and expected config as the runner records them; plan hashes do not see any other flag, the preflight does |
 | `runner` | the script this arm runs | overrides the card's runner, for a candidate bundle that lives in its own worktree |
