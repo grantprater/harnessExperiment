@@ -31,3 +31,11 @@ preflight incumbent: protocol cfdd320ecfbd matches
 [30/38] c021-sqlparse-mut-057-r3-verifier-commit: ok (task_budget_exhausted -> rejected)
 [31/38] c021-sqlparse-mut-061-r3-verifier-commit: ok (finish_requested -> rejected)
 [32/38] c021-sqlparse-mut-061-r3-incumbent: ok (finish_requested -> rejected)
+[33/38] c021-sqlparse-mut-025-r1-incumbent: ok (finish_requested -> accepted)
+[34/38] c021-sqlparse-mut-025-r1-verifier-commit: ok (finish_requested -> accepted)
+[35/38] c021-sqlparse-mut-034-r1-verifier-commit: ok (finish_requested -> accepted)
+[36/38] c021-sqlparse-mut-034-r1-incumbent: ok (finish_requested -> accepted)
+[37/38] c021-sqlparse-mut-040-r1-verifier-commit: ok (model_call_limit -> accepted)
+[38/38] c021-sqlparse-mut-040-r1-incumbent: ok (finish_requested -> accepted)
+campaign complete: 38 invocations
+report skeleton: experiments/session_harness/E4-verifier-commit-021-report.md
