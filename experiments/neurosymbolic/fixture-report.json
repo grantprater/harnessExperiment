@@ -1,0 +1,124 @@
+{
+  "model_calls": 0,
+  "interpretation": "mechanism controls only",
+  "results": [
+    {
+      "fixture": "stale_evidence",
+      "mode": "memory",
+      "passed": true,
+      "rules": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "memory",
+        "entities": 3,
+        "relations": 0,
+        "updates": 1,
+        "findings": 0
+      }
+    },
+    {
+      "fixture": "stale_evidence",
+      "mode": "symbolic",
+      "passed": true,
+      "rules": [
+        "stale_observation"
+      ],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "symbolic",
+        "entities": 3,
+        "relations": 0,
+        "updates": 1,
+        "findings": 1
+      }
+    },
+    {
+      "fixture": "misleading_reproduction",
+      "mode": "memory",
+      "passed": true,
+      "rules": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "memory",
+        "entities": 4,
+        "relations": 1,
+        "updates": 1,
+        "findings": 0
+      }
+    },
+    {
+      "fixture": "misleading_reproduction",
+      "mode": "symbolic",
+      "passed": true,
+      "rules": [
+        "narrow_coverage"
+      ],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "symbolic",
+        "entities": 4,
+        "relations": 1,
+        "updates": 1,
+        "findings": 1
+      }
+    },
+    {
+      "fixture": "competing_diagnoses",
+      "mode": "memory",
+      "passed": true,
+      "rules": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "memory",
+        "entities": 4,
+        "relations": 0,
+        "updates": 1,
+        "findings": 0
+      }
+    },
+    {
+      "fixture": "competing_diagnoses",
+      "mode": "symbolic",
+      "passed": true,
+      "rules": [
+        "non_discriminating_check"
+      ],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "symbolic",
+        "entities": 4,
+        "relations": 0,
+        "updates": 1,
+        "findings": 1
+      }
+    },
+    {
+      "fixture": "interrupted_investigation",
+      "mode": "memory",
+      "passed": true,
+      "rules": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "memory",
+        "entities": 3,
+        "relations": 1,
+        "updates": 1,
+        "findings": 0
+      }
+    },
+    {
+      "fixture": "interrupted_investigation",
+      "mode": "symbolic",
+      "passed": true,
+      "rules": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "symbolic",
+        "entities": 3,
+        "relations": 1,
+        "updates": 1,
+        "findings": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "derived": {
+    "card": "E3-diagnostic-011",
+    "generated_at": "2026-09-28T04:37:07+00:00",
+    "per_arm": {
+      "incumbent": {
+        "all_accepted": [],
+        "mixed": [],
+        "none_accepted": [
+          "sqlparse-mut-032",
+          "sqlparse-mut-057",
+          "sqlparse-mut-061"
+        ]
+      }
+    }
+  }
+}

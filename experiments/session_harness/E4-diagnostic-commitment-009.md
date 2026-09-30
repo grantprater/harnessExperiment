@@ -1,7 +1,7 @@
 # E4 diagnostic commitment 009: one manual round of the harness self-improvement loop
 
 Date: 2026-09-27  
-Status: proposed; blocked on card 007 (evolution set) and S6b (signatures)  
+Status: proposed; prerequisites 007 and S6b complete (2026-09-30); awaiting owner approval  
 Stage: S6c. This card is the loop of S6 executed once by hand, with the proposal written by a person from
 recorded evidence rather than by the proposer invocation.
 

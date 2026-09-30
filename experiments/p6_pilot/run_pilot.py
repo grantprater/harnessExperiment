@@ -44,6 +44,9 @@ protocol hash (name, version, fixed texts, parameters), and reported under "trea
   --oracle hidden-tests[:K]  tool use (changes the task): a check() tool returning only the counts of the task's
                              hidden fail_to_pass tests failing and passing, at most K calls per run (default 3),
                              run on a snapshot outside the workspace (reticle/tools/check_oracle.py)
+  --reasoning memory        durable evidence ontology with explicit model assertions and runtime observations
+  --reasoning symbolic      same memory/tools, with advisory rules for stale evidence, declared coverage,
+                             non-discriminating checks and contradictions; see experiments/neurosymbolic/README.md
 
 Usage (from the repo root):
   python experiments/p6_pilot/run_pilot.py --client gold --run-name gold-check
@@ -98,6 +101,8 @@ from reticle.tools.check_oracle import (  # noqa: E402
 from reticle.tools.finish_guard import (  # noqa: E402
     FINISH_GUARD_MESSAGE, FINISH_GUARD_VERSION, REASONS, FinishGuard, FinishGuardTools,
 )
+from reticle.runtime.reasoning import EvidenceOntology, reasoning_contract  # noqa: E402
+from reticle.tools.reasoning import ReasoningTools, REASONING_SCHEMAS, tool_contract  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_TASK_FILE = HERE / "tasks.json"
@@ -163,11 +168,13 @@ INSTRUCTIONS = (
 )
 
 
-TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction", "--oracle")
+TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction", "--oracle", "--reasoning")
 
 
 def add_treatment_arguments(parser) -> None:
     group = parser.add_argument_group("treatments (off by default; each one that is on enters the protocol hash)")
+    group.add_argument("--reasoning", choices=["memory", "symbolic"], default=None,
+                       help="durable evidence ontology; symbolic also offers advisory inference rules")
     group.add_argument("--completion", choices=["finish-guard"], default=None,
                        help="finish-guard: reject the first finish after a source edit, once, unless a "
                             "command that failed before the edit passes after it")
@@ -184,6 +191,8 @@ def add_treatment_arguments(parser) -> None:
 def treatments_record(args) -> dict:
     """The description of every treatment that is on, as hashed and recorded; {} when all are off."""
     record = {}
+    if getattr(args, "reasoning", None):
+        record["reasoning"] = {**reasoning_contract(args.reasoning), "tools": tool_contract()}
     if args.completion == "finish-guard":
         record["completion"] = {
             "name": "finish-guard", "version": FINISH_GUARD_VERSION, "source_rule": SOURCE_RULE_VERSION,
@@ -223,9 +232,12 @@ def treatments_from_args(argv) -> dict:
 
 def model_tool_schemas(treatments: dict) -> list:
     """The tool schemas the model is offered: the toolset's, plus check() when the oracle is on."""
+    schemas = TOOL_SCHEMAS
     if "oracle" in treatments:
-        return [*TOOL_SCHEMAS, check_schema(treatments["oracle"]["max_calls"])]
-    return TOOL_SCHEMAS
+        schemas = [*schemas, check_schema(treatments["oracle"]["max_calls"])]
+    if "reasoning" in treatments:
+        schemas = [*schemas, *REASONING_SCHEMAS]
+    return schemas
 
 
 def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict, task_contracts=(), treatments=None) -> str:
@@ -589,6 +601,9 @@ def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, o
     state object of every treatment (each has record()). With no treatment it is base_class itself. The oracle
     runs the evaluator bundle at evaluator_root through the suite's backend."""
     mixins, extra, state = [], {}, {}
+    if "reasoning" in treatments:
+        state["reasoning"] = extra["reasoning"] = EvidenceOntology(runtime, treatments["reasoning"]["mode"])
+        mixins.append(ReasoningTools)
     if "completion" in treatments:
         state["completion"] = extra["finish_guard"] = FinishGuard(runtime, SourceEditTracker(runtime.workspace))
         mixins.append(FinishGuardTools)

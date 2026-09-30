@@ -424,7 +424,7 @@ class ToolSuite:
         self.runtime.begin_action(operation_id, name, {"call_id": call_id, "arguments": arguments})
         effect_class = (
             "workspace_mutation" if name in {"replace_text", "write_file"}
-            else "session_mutation" if name in {"note", "finish"}
+            else "session_mutation" if name in {"note", "finish", "reasoning_update"}
             else "read_only"
         )
         try:
