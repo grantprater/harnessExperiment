@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "E3-difficulty-calibration-010",
   "title": "Difficulty calibration: a harder mutation bank with a dev/eval split",
-  "status": "proposed",
+  "status": "approved",
   "markdown": "experiments/session_harness/E3-difficulty-calibration-010.md",
   "hypothesis": "Fresh mutation tasks drawn by the card's rule (single-test failing sets, and multi-test tasks with or without the failure message in the statement) give the Reticle incumbent (Sonnet 5 via the CLI) a mix of solved, mixed and unsolved tasks from which the preregistered keep rule builds an eval split whose predicted acceptance is 30-60%, disjoint from the dev tasks used for tuning.",
   "run_prefix": "c010",
@@ -12,8 +12,8 @@
   "prerequisites": [
     {"text": "Stage-1 candidates built by experiments/mutation_tasks/build_bank_010.py (seed 10) and committed; --check reproduces them", "done": true},
     {"text": "No-model controls on all 30 candidates: gold accepted and noop rejected on the exact fail_to_pass set, twice each, OCI (c010-control-gold, -noop, -gold-rep2, -noop-rep2; check_controls_010.py: 30/30 pass)", "done": true},
-    {"text": "Model, provider and harness confirmed by the owner to equal the incumbent arm of the evidence-ontology experiment that will use the eval split (difficulty is model-specific)", "done": false},
-    {"text": "Owner approval of the calibration run's call count and cost recorded in the markdown card (then set status to approved)", "done": false}
+    {"text": "Model, provider and harness confirmed by the owner to equal the incumbent arm of the evidence-ontology experiment that will use the eval split (difficulty is model-specific). Owner, 2026-09-30: Sonnet 5 via the Claude CLI on the subscription; run from branch exp/ontology-pilot, the same code as the ontology pilot", "done": true},
+    {"text": "Owner approval of the calibration run's call count and cost recorded in the markdown card (then set status to approved). Owner, 2026-09-30, verbatim: \"Sure, I agree with your recommendations\"", "done": true}
   ],
   "arms": [
     {

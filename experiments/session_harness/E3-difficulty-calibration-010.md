@@ -1,9 +1,15 @@
 # E3 difficulty calibration 010: a harder mutation bank with a dev/eval split
 
 Date: 2026-09-30  
-Status: **proposed; calibration run awaiting owner approval.** Stage 1 is built offline: 30 candidates selected, gold/noop
+Status: **approved 2026-09-30; stage-1 calibration running from branch `exp/ontology-pilot`.** Stage 1 is built offline: 30 candidates selected, gold/noop
 controls passed on all 30, twice each. No model has been called for this card.  
 Owner decision (2026-09-30, verbatim): "1. Yes we can do that first."  
+Owner decision (2026-09-30, verbatim): "Sure, I agree with your recommendations". This approves, from the open
+decisions below: (1) the stage-1 calibration, 60 runs, at most 1,680 attempts, about $52 list on the CLI subscription;
+(2) Sonnet 5 via the Claude CLI as the model and provider for both this calibration and the ontology experiment;
+(3) the ontology run as a *pilot* on the stage-1 eval split (about 30 tasks x 2 rollouts x 3 arms), with stage 2a and a
+powered confirmation only if the pilot is promising; (5) no separate lesson-store eval split until lesson-store work
+starts. Decision (4) follows from (3): stage 2a is not run now.  
 Stage: S6a follow-up (proposed in the [card 007 report](E3-calibration-007-report.md)). Machine card:
 [`cards/010.json`](cards/010.json).
 
