@@ -47,6 +47,8 @@ protocol hash (name, version, fixed texts, parameters), and reported under "trea
   --reasoning memory        durable evidence ontology with explicit model assertions and runtime observations
   --reasoning symbolic      same memory/tools, with advisory rules for stale evidence, declared coverage,
                              non-discriminating checks and contradictions; see experiments/neurosymbolic/README.md
+  --reasoning injected      same as symbolic, plus a bounded advisory summary appended to the result of each
+                             replace_text/write_file/run action (never finish; nothing is rejected)
 
 Usage (from the repo root):
   python experiments/p6_pilot/run_pilot.py --client gold --run-name gold-check
@@ -173,8 +175,9 @@ TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction", "--oracle", "-
 
 def add_treatment_arguments(parser) -> None:
     group = parser.add_argument_group("treatments (off by default; each one that is on enters the protocol hash)")
-    group.add_argument("--reasoning", choices=["memory", "symbolic"], default=None,
-                       help="durable evidence ontology; symbolic also offers advisory inference rules")
+    group.add_argument("--reasoning", choices=["memory", "symbolic", "injected"], default=None,
+                       help="durable evidence ontology; symbolic also offers advisory inference rules; injected "
+                            "also appends a bounded advisory summary to edit and run results")
     group.add_argument("--completion", choices=["finish-guard"], default=None,
                        help="finish-guard: reject the first finish after a source edit, once, unless a "
                             "command that failed before the edit passes after it")
@@ -976,7 +979,8 @@ def main() -> None:
     print(f"task budgets per run: {json.dumps(run_budgets)}")
     if treatments:
         print("treatments (in the protocol hash): " + "; ".join(
-            f"{surface} {value['name']} {value['version']}" for surface, value in sorted(treatments.items())))
+            f"{surface} {value['name']} {value['version']}" + (f" mode={value['mode']}" if "mode" in value else "")
+            for surface, value in sorted(treatments.items())))
     if args.dry_run:
         return
 

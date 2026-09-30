@@ -17,6 +17,7 @@ uv pip install --python .runtime/test-venv/Scripts/python.exe '.[reasoning]'
 | Omit `--reasoning` | Existing incumbent |
 | `--reasoning memory` | Durable evidence ontology and model tools |
 | `--reasoning symbolic` | Same ontology/tools, plus advisory inference |
+| `--reasoning injected` | Same as symbolic, plus a bounded advisory summary appended to edit/run results (follow-up arm; see below) |
 
 The treatments enter config, results and protocol hashing. Hash inputs include
 ontology/tool source digests, SHACL shapes, schemas and installed dependency versions.
@@ -28,6 +29,9 @@ Example configuration inspection without model calls:
 ```powershell
 .runtime/test-venv/Scripts/python.exe experiments/p6_pilot/run_pilot.py --client gold --reasoning symbolic --tasks experiments/mutation_tasks/tasks.mutations.json sqlparse-mut-001 --run-name ontology-config --dry-run
 ```
+
+With `--reasoning injected` the same command prints
+`treatments (in the protocol hash): reasoning evidence-ontology evidence-ontology-v1 mode=injected`.
 
 ## Interface and provenance
 
@@ -100,11 +104,17 @@ currently a full journal scan, suitable for the short development experiments.
 .runtime/test-venv/Scripts/python.exe -m unittest discover -s tests -p test_reasoning.py -v
 ```
 
-Four executable fixtures run in both modes: stale evidence, misleading reproduction,
-competing diagnoses and interrupted investigation. They use actual file edits and
-commands on a small zero-boundary defect, and a fresh runtime for recovery. The
-checked-in report records all eight passing with zero model calls. These engineered
+Four executable fixtures run in all three modes (memory, symbolic, injected): stale evidence,
+misleading reproduction, competing diagnoses and interrupted investigation. They use actual file
+edits and commands on a small zero-boundary defect, and a fresh runtime for recovery. In injected
+mode they also check that the stale-evidence edit result and the misleading-reproduction run
+result carry the expected finding, and that no citable observation contains injected text. The
+checked-in report records all twelve passing with zero model calls (2026-09-30). These engineered
 controls establish mechanism behavior, not agent effectiveness.
+
+Validation of the injected arm on 2026-09-30: 24 focused ontology tests pass (7 new injected-arm
+tests); the finish-guard suite (22 tests) and check-oracle suite (10 tests) pass. The full suite
+was not rerun. No model calls were made.
 
 Validation on 2026-09-29: 17 focused ontology tests pass; the existing finish-guard
 suite passes (22 tests, one skipped) and check-oracle suite passes (10 tests).
@@ -129,7 +139,7 @@ tools: unused reasoning tools make this a usability failure rather than evidence
 against symbolic inference. Do not tune against hidden evaluation outputs or copy
 prior task graphs into confirmation runs. A new live campaign remains pending.
 
-### Proposed amendments (2026-09-30, owner-approved for drafting; `injected` and `notes` deferred; not implemented or run)
+### Proposed amendments (2026-09-30, owner-approved for drafting; `injected` implemented offline but not run; `notes` deferred and not implemented)
 
 **Owner decision (2026-09-30).** "2. Let's do 3 arms". The first live run uses the original
 3 arms: incumbent, `--reasoning memory` and `--reasoning symbolic`. The `notes` and `injected`
@@ -153,27 +163,44 @@ model-chosen reads, a prompt-only "restate a NOTES block" arm matching or beatin
 tools, and misses from duplicate saves crowding a bounded read. Its evaluation is weak;
 these amendments only add arms and metrics that would separate those explanations here.
 
-**Arm `injected`.** Same ontology, schema and rules as `symbolic`. The scaffold injects the
-`reasoning_state` summary plus advisory findings at two fixed points: before each edit
-action (`replace_text`, `write_file`) and before `finish`. The model need not call a tool.
-Findings stay advisory with no acceptance authority; injected tokens count against the
-same budgets. Not implemented. What would change:
+**Arm `injected`** (`--reasoning injected`). Implemented 2026-09-30 per the owner's option A;
+not part of the first 3-arm run; no live runs. Same ontology, schema, rules and model tools
+as `symbolic` (`reasoning_state`, `reasoning_update` and `assess_check` stay available).
+The earlier draft of injecting *before* edits and at `finish` was replaced by the owner's
+decision above. As built:
 
-- `reticle/runtime/reasoning.py`: a bounded, deterministic `summary(limit=...)` view over
-  `state()` (active hypotheses/checks, findings, high-water sequence), with a fixed token cap.
-- `reticle/tools/reasoning.py`: an `InjectedReasoningTools` mixin (or a flag on
-  `ReasoningTools`) that wraps the `replace_text`/`write_file`/`finish` handlers, the way
-  `FinishGuardTools` wraps `finish`. The existing controller hook
-  (`AgentController._intervene` → `message_after_response`) fires only after a response's
-  results, so it cannot run *before* an edit. The first version either prepends the summary
-  to that tool's result (the edit still executes) or rejects the first edit/finish once with
-  the summary and accepts the retry. Pick one before development and preregister it; the
-  first leaves the action sequence unchanged.
-- `experiments/p6_pilot/run_pilot.py`: add `injected` to the `--reasoning` choices, compose
-  the mixin in `build_tools`, add the injection template/version and cap to
-  `reasoning_contract` so it enters the protocol hash, and record injection counts/tokens.
-- Tests: injection at both points, cap respected, no authority fields, journal events
-  are controller-owned and are not citable as evidence.
+- Trigger: after every `replace_text`, `write_file` and `run` action (the harness's edit and
+  command tools), whatever the action's status. Never after `finish` or any other tool. The action
+  always executes; nothing is rejected, retried or blocked.
+- Placement: `ReasoningTools.dispatch` appends the block to that action's result as the model sees
+  it, after the raw result has been recorded as the tool output. Recorded observations, and so
+  citable evidence, never contain injected text. The mixin is outermost, so finish-guard and oracle
+  see the raw result.
+- Block (`reasoning-injection-v1`): a header labelling it an advisory, runtime-generated summary
+  conditional on model assertions; one line with the high-water sequence and counts of active
+  hypotheses, checks and findings; then one line per active finding: rule, entity IDs, message.
+  It has no instruction or acceptance wording.
+- Cap: `INJECTION_MAX_CHARS = 1200` characters for the appended text, separator included, and
+  `INJECTION_MAX_LINE_CHARS = 300` per finding line (cut lines end with `...`). Findings are kept in
+  state order until the next one would not fit. The rest are replaced by
+  `[truncated: K of N findings omitted; reasoning_state lists all]`.
+- No-change behaviour: if there are no active findings and the digest (active hypothesis/check
+  IDs and findings, excluding the ever-advancing sequence) equals that of the last injected block,
+  nothing is appended. Active findings are repeated after every edit/run, even when unchanged. The
+  first edit/run always injects, even with an empty graph.
+- Provenance: each decision is a controller-only `reasoning_injection` journal event (not a
+  model-visible history kind). It holds the text, character count, token estimate
+  (UTF-8 bytes / 4, rounded up, as the context policy estimates) and truncation. Citing it in
+  `reasoning_update` is rejected like any controller/evaluator event.
+- Budgets: injected text is part of the tool result, so it counts against the existing context and
+  response budgets. No new budget is added. A long head-heavy result view can cut the block like any
+  other result text.
+- Hashing: `reasoning_contract("injected")` adds the mode, template version, caps, trigger tools,
+  placement and no-change rule, so the arm has its own protocol hash.
+- Recording: the per-run reasoning record gains `tool_reads` (`reasoning_state`, `assess_check`
+  calls) and `tool_writes` (`reasoning_update` calls) in every mode. Injected mode adds
+  `injections`, `injections_skipped_no_change`, `injected_chars`, `injected_tokens_estimate`
+  and `injections_truncated`.
 
 **Arm `notes`.** Prompt-only control with no reasoning tools: one fixed instruction to keep
 and update a structured notes block (hypotheses, checks, observations, requirements) in

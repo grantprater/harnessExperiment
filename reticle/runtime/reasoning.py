@@ -18,6 +18,19 @@ from reticle.runtime.queries import SessionQueryService, _index_calls
 
 
 REASONING_VERSION = "evidence-ontology-v1"
+MODES = ("memory", "symbolic", "injected")
+INFERENCE_MODES = {"symbolic", "injected"}
+# Injected arm: after these tool actions the runtime appends an advisory summary to that action's result.
+INJECTION_VERSION = "reasoning-injection-v1"
+INJECTION_AFTER_TOOLS = ("replace_text", "write_file", "run")  # edit actions and command runs; never finish
+INJECTION_MAX_CHARS = 1200  # hard cap on the appended text, separator included
+INJECTION_MAX_LINE_CHARS = 300
+INJECTION_SEPARATOR = "\n\n"
+INJECTION_HEADER = ("[reasoning summary, advisory: runtime-generated from recorded assertions and tool results; "
+                    "findings are conditional on model assertions]")
+INJECTION_NO_CHANGE = "omit"  # no findings and no change since the last injection: nothing is appended
+READ_TOOLS = ("reasoning_state", "assess_check")
+WRITE_TOOLS = ("reasoning_update",)
 MAX_ENTITIES = 200
 MAX_BATCH = 20
 KINDS = ("requirement", "hypothesis", "check", "change", "code_entity")
@@ -44,20 +57,29 @@ e:EntityShape a sh:NodeShape ; sh:targetClass e:Entity ;
 
 
 def reasoning_contract(mode: str) -> Dict[str, Any]:
-    if mode not in {"memory", "symbolic"}:
-        raise ValueError("reasoning mode must be memory or symbolic")
+    if mode not in MODES:
+        raise ValueError("reasoning mode must be memory, symbolic or injected")
     from importlib.metadata import PackageNotFoundError, version
     try:
         dependencies = {name: version(name) for name in ("rdflib", "pyshacl")}
     except PackageNotFoundError as exc:
         raise RuntimeError("Install the optional reticle[reasoning] dependencies to enable --reasoning") from exc
-    return {"name": "evidence-ontology", "version": REASONING_VERSION, "mode": mode,
-            "schema_hash": hashlib.sha256(SHAPES.encode()).hexdigest(),
-            "source_hash": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-            "dependencies": dependencies,
-            "max_entities": MAX_ENTITIES, "max_batch": MAX_BATCH,
-            "rules": ["stale_observation", "narrow_coverage", "non_discriminating_check", "contradicted_hypothesis"],
-            "advisory": True, "extraction": "explicit model tool calls"}
+    contract = {"name": "evidence-ontology", "version": REASONING_VERSION, "mode": mode,
+                "schema_hash": hashlib.sha256(SHAPES.encode()).hexdigest(),
+                "source_hash": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                "dependencies": dependencies,
+                "max_entities": MAX_ENTITIES, "max_batch": MAX_BATCH,
+                "rules": ["stale_observation", "narrow_coverage", "non_discriminating_check", "contradicted_hypothesis"],
+                "advisory": True, "extraction": "explicit model tool calls"}
+    if mode == "injected":
+        contract["injection"] = {
+            "template_version": INJECTION_VERSION, "max_chars": INJECTION_MAX_CHARS,
+            "max_line_chars": INJECTION_MAX_LINE_CHARS, "after_tools": list(INJECTION_AFTER_TOOLS),
+            "placement": "appended to that tool action's result; the action always executes; none at finish",
+            "header": INJECTION_HEADER, "no_change": INJECTION_NO_CHANGE,
+            "provenance": "controller-owned reasoning_injection journal event; not citable as evidence",
+            "budgets": "existing budgets only"}
+    return contract
 
 
 def _string(value: Any, name: str, limit: int = 2000) -> str:
@@ -309,7 +331,7 @@ class EvidenceOntology:
         entities, relations, events = self._projection(as_of_sequence)
         if focus is not None and focus not in entities:
             raise ValueError("unknown focus entity")
-        findings = self._findings(entities, relations) if self.mode == "symbolic" else []
+        findings = self._findings(entities, relations) if self.mode in INFERENCE_MODES else []
         selected = entities
         if focus is not None:
             ids = {focus}
@@ -329,9 +351,81 @@ class EvidenceOntology:
                 "next_offset": offset + limit if offset + limit < max(len(values), len(selected_links), len(findings)) else None,
                 "unknown": "Missing evidence is unknown; command success is not acceptance."}
 
+    def summary(self):
+        """Deterministic compact view for the injected arm: active hypothesis/check counts, findings, high water."""
+        entities, relations, events = self._projection()
+        superseded = {link["target"] for link in relations if link["relation"] == "supersedes"}
+        active = [entity for key, entity in entities.items() if key not in superseded]
+        hypotheses = sorted(entity["id"] for entity in active if entity["kind"] == "hypothesis")
+        checks = sorted(entity["id"] for entity in active if entity["kind"] == "check")
+        findings = self._findings(entities, relations) if self.mode in INFERENCE_MODES else []
+        # The digest excludes the high-water sequence, which advances with every journal event.
+        digest = hashlib.sha256(json.dumps({
+            "hypotheses": hypotheses, "checks": checks,
+            "findings": [[item["rule"], item["entities"], item["message"]] for item in findings],
+        }, sort_keys=True).encode()).hexdigest()
+        return {"high_water_sequence": events[-1].sequence if events else 0, "hypotheses": len(hypotheses),
+                "checks": len(checks), "findings": findings, "digest": digest}
+
+    @staticmethod
+    def render_injection(summary, max_chars=INJECTION_MAX_CHARS):
+        """(appended text, findings shown). The text starts with the separator and never exceeds max_chars."""
+        findings = summary["findings"]
+        text = INJECTION_SEPARATOR + INJECTION_HEADER + "\n" + (
+            f"state: high_water_sequence={summary['high_water_sequence']}; active hypotheses={summary['hypotheses']}; "
+            f"active checks={summary['checks']}; findings={len(findings)}")
+
+        def marker(omitted):
+            return f"\n[truncated: {omitted} of {len(findings)} findings omitted; reasoning_state lists all]"
+
+        shown = 0
+        for index, finding in enumerate(findings):
+            line = f"- {finding['rule']} [{', '.join(finding['entities'])}]: {finding['message']}"
+            if len(line) > INJECTION_MAX_LINE_CHARS:
+                line = line[:INJECTION_MAX_LINE_CHARS - 3] + "..."
+            remaining = len(findings) - index - 1
+            candidate = text + "\n" + line
+            if len(candidate) + (len(marker(remaining)) if remaining else 0) > max_chars:
+                break
+            text, shown = candidate, shown + 1
+        if shown < len(findings):
+            text += marker(len(findings) - shown)
+        return text[:max_chars], shown
+
+    def inject(self, tool, call_id):
+        """Advisory text to append to an edit or command result in injected mode; '' otherwise. The decision is
+        journaled as a controller-only reasoning_injection event, which is never citable as evidence."""
+        if self.mode != "injected" or tool not in INJECTION_AFTER_TOOLS:
+            return ""
+        summary = self.summary()
+        previous = next((event.payload.get("digest") for event in reversed(self.runtime.journal.read_all())
+                         if event.kind == "reasoning_injection" and event.payload.get("injected")), None)
+        text, shown = "", 0
+        if summary["findings"] or summary["digest"] != previous:
+            text, shown = self.render_injection(summary)
+        self.runtime.journal.append("reasoning_injection", {
+            "version": INJECTION_VERSION, "call_id": call_id, "tool": tool, "injected": bool(text),
+            "digest": summary["digest"], "high_water_sequence": summary["high_water_sequence"],
+            "chars": len(text), "tokens_estimate": (len(text.encode("utf-8")) + 3) // 4 if text else 0,
+            "findings_total": len(summary["findings"]), "findings_shown": shown,
+            "truncated": shown < len(summary["findings"]), "text": text})
+        return text
+
     def record(self):
         entities, relations, events = self._projection()
-        return {"version": REASONING_VERSION, "mode": self.mode,
-                "entities": len(entities), "relations": len(relations),
-                "updates": sum(event.kind == "reasoning_update" for event in events),
-                "findings": len(self._findings(entities, relations)) if self.mode == "symbolic" else 0}
+        tools = [event.payload.get("tool") for event in events if event.kind == "tool_output"]
+        record = {"version": REASONING_VERSION, "mode": self.mode,
+                  "entities": len(entities), "relations": len(relations),
+                  "updates": sum(event.kind == "reasoning_update" for event in events),
+                  "findings": len(self._findings(entities, relations)) if self.mode in INFERENCE_MODES else 0,
+                  "tool_reads": sum(tool in READ_TOOLS for tool in tools),
+                  "tool_writes": sum(tool in WRITE_TOOLS for tool in tools)}
+        if self.mode == "injected":
+            decisions = [event.payload for event in events if event.kind == "reasoning_injection"]
+            fired = [item for item in decisions if item["injected"]]
+            record.update({
+                "injections": len(fired), "injections_skipped_no_change": len(decisions) - len(fired),
+                "injected_chars": sum(item["chars"] for item in fired),
+                "injected_tokens_estimate": sum(item["tokens_estimate"] for item in fired),
+                "injections_truncated": sum(item["truncated"] for item in fired)})
+        return record

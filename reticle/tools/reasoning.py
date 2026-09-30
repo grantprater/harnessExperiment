@@ -1,9 +1,11 @@
 """Opt-in model interface for durable evidence memory and advisory inference."""
 
+from dataclasses import replace
 import json
 from pathlib import Path
 import hashlib
 
+from reticle.runtime.reasoning import INJECTION_AFTER_TOOLS
 from reticle.tools.primitives import ToolOutcome, _function
 
 
@@ -63,6 +65,15 @@ class ReasoningTools:
 
     def schemas(self):
         return [*super().schemas(), *json.loads(json.dumps(REASONING_SCHEMAS))]
+
+    def dispatch(self, name, arguments, call_id):
+        # Injected mode only: the action has already executed and its raw result is recorded as the tool output
+        # (the citable observation). The advisory block is appended only to the result the model is shown.
+        outcome = super().dispatch(name, arguments, call_id)
+        if name not in INJECTION_AFTER_TOOLS:
+            return outcome
+        block = self.reasoning.inject(name, call_id)
+        return replace(outcome, content=outcome.content + block) if block else outcome
 
     def _dispatch(self, name, arguments, call_id):
         schema = next((item["function"] for item in REASONING_SCHEMAS if item["function"]["name"] == name), None)
