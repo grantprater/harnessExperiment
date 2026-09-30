@@ -1,0 +1,825 @@
+{
+  "runner_version": 8,
+  "protocol_hash": "036ba507d467",
+  "arm": "pressure-recent-v3",
+  "client": "noop",
+  "models": [
+    "noop-client"
+  ],
+  "provider_routing": {
+    "noop-client": {
+      "require_parameters": true
+    }
+  },
+  "tasks": [
+    "sqlparse-mut-064-nm",
+    "sqlparse-mut-015",
+    "sqlparse-mut-016-nm",
+    "sqlparse-mut-050",
+    "sqlparse-mut-012",
+    "sqlparse-mut-009",
+    "sqlparse-mut-074",
+    "sqlparse-mut-052-nm",
+    "sqlparse-mut-058",
+    "sqlparse-mut-041",
+    "sqlparse-mut-039-nm",
+    "sqlparse-mut-027",
+    "sqlparse-mut-045-nm",
+    "sqlparse-mut-059",
+    "sqlparse-mut-035-nm",
+    "sqlparse-mut-036-nm",
+    "sqlparse-mut-020",
+    "sqlparse-mut-038",
+    "sqlparse-mut-010",
+    "sqlparse-mut-062-nm",
+    "sqlparse-mut-069",
+    "sqlparse-mut-017",
+    "sqlparse-mut-030",
+    "sqlparse-mut-005",
+    "sqlparse-mut-048-nm",
+    "sqlparse-mut-037",
+    "sqlparse-mut-031",
+    "sqlparse-mut-053-nm",
+    "sqlparse-mut-004",
+    "sqlparse-mut-065-nm"
+  ],
+  "task_file": {
+    "path": "experiments/mutation_tasks/tasks.difficulty010.json",
+    "sha256_lf": "ccec2be28765ccb07b937df51a76b332c08ac2df09dd210c1f866216615bef4b"
+  },
+  "task_contracts": [
+    {
+      "task_id": "sqlparse-mut-064-nm",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "0975b794baf5c59c559570ac545c8368e0d2fb3ad0c460ff41b2f09aecec63b0",
+      "statement_sha256": "dc21d1f0435b0c63db939fba177e486f0b0a17f20e18dc4ad78e9e4bb21ac841"
+    },
+    {
+      "task_id": "sqlparse-mut-015",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "c8fa6bc342201e84d1af876980bce2522747e6185e040d3d30f05960be7d972c",
+      "statement_sha256": "b8e131e427422d47de01217481de535830506b54f1ce48d00fa4efc57b797a52"
+    },
+    {
+      "task_id": "sqlparse-mut-016-nm",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "off_by_one",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "d4e606695ff52788e43f2d1cbdb9040335bbea1655e0a9f123c01b3b639ffb28",
+      "statement_sha256": "a2c146e8b487b90d21b719fa05d5bea318a679e3bae5aa87e34216ba273b6578"
+    },
+    {
+      "task_id": "sqlparse-mut-050",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "8f823e25fa795b1474855243a132becdfa36bb781aae89a52fa3ce00f70f33c8",
+      "statement_sha256": "80fd21f52ea2efb2c5ecdebb65e84694f08e98eb0cfb673b466bdc9dc736ac40"
+    },
+    {
+      "task_id": "sqlparse-mut-012",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "remove_guard",
+      "mutation_file": "sqlparse/engine/grouping.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "0ab8ed62a277bb31a7bd8d62dc4f5c482897a97954220b96e5dca604a37269e4",
+      "statement_sha256": "1e94f5a66ec1165c28ca9546fdcad7d3d12ea4545275641f957a344fe8feae3a"
+    },
+    {
+      "task_id": "sqlparse-mut-009",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "sqlparse/filters/reindent.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "e88e21e0c1d68c945afdbd2cdf9d079756501a279d3f31b54557c1bfbd0a8afc",
+      "statement_sha256": "4d4fed02c95232fab4f85c11c7e8f8ad74ddddbc34f3163116815c72033c3697"
+    },
+    {
+      "task_id": "sqlparse-mut-074",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "compare_flip",
+      "mutation_file": "sqlparse/filters/tokens.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "46f632776b78f48e8f7949b121b8be1171cd1e023fa57f707121ebc46e1ff0e1",
+      "statement_sha256": "9b74767dbac3a66c1794ce50384e6f2b9c0a39aefb313d6e6837a656b3a01af0"
+    },
+    {
+      "task_id": "sqlparse-mut-052-nm",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "remove_guard",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "4de1b371f7d65d9ed1d39696cd61a096e9e3845ccd083b6b70e8b590f1ca7f56",
+      "statement_sha256": "d12d82c92b379ba8f250566c83db225bc213e114c9dcf4bd6b0e9cfdce328f69"
+    },
+    {
+      "task_id": "sqlparse-mut-058",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "remove_guard",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "2dbc1b4f68378e319b4440f755356fd1ce4e2897abc744744b1f18b0e0ed1eb8",
+      "statement_sha256": "0a428057d7c3a4ee5d59d9d14ab04581bac9b7c8c47955309087bad3e9577fd9"
+    },
+    {
+      "task_id": "sqlparse-mut-041",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "drop_not",
+      "mutation_file": "sqlparse/engine/grouping.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "ea86b5a4cd22b389e4d307a4032dce7e1eff4fedf9ad255f66185b66853312c1",
+      "statement_sha256": "97d986686f864249527f1248d22da04eca2934b2a5b4878e4e877d68fc21329b"
+    },
+    {
+      "task_id": "sqlparse-mut-039-nm",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "sqlparse/filters/output.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "3944985b101a623742dbd74415cf973e101e86b23eac3078536f4568eab45006",
+      "statement_sha256": "438e86a3a2e337c0e4c1c4362261e1ffe175be570944e02730ac37d3109039dc"
+    },
+    {
+      "task_id": "sqlparse-mut-027",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "compare_flip",
+      "mutation_file": "sqlparse/cli.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "94affd2311ef8a625d1ebc55492390e5df63f00d94d1cf47d8cad8f6cff099ae",
+      "statement_sha256": "dd08773ab303e39ccbd5df5c7094a01cc4e44c83efa9331e923f4156b566cfb2"
+    },
+    {
+      "task_id": "sqlparse-mut-045-nm",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "compare_flip",
+      "mutation_file": "sqlparse/filters/tokens.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "9e6278c19cb917de83649d2ed3bc9a8da59494ffa64c9fc5704a808c2c9fcc38",
+      "statement_sha256": "effdcfe1430d9ae68abd0fed2b8153afbb5683ca6e59e4af9a9dc778678345e2"
+    },
+    {
+      "task_id": "sqlparse-mut-059",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "sqlparse/filters/others.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "c0b7bb5b6d1ee56177d28a049749ee971c45d90df02972c9de34b204a9f03e21",
+      "statement_sha256": "81ed528f7be8296e5c34857048390e5448dea9c0b26211b511d38d46f87c9cee"
+    },
+    {
+      "task_id": "sqlparse-mut-035-nm",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "sqlparse/filters/others.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "ebe9a4c0f6312f21bdd11f30768cc293defbfdc3d2378e4ce65e060b952fe79f",
+      "statement_sha256": "c8541353bbc985a8989eed26b5d50973a7ec56d7de0eaabddf34f0340030fee8"
+    },
+    {
+      "task_id": "sqlparse-mut-036-nm",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "drop_not",
+      "mutation_file": "sqlparse/engine/statement_splitter.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "c8eb36b677dd3499ef7ae96d2984f8d7efe5f671713be560ef2b0cad6b36a437",
+      "statement_sha256": "45160f4c4627178e7db6bf4ecf96f78b106d913c77ba73b59cef06c214661602"
+    },
+    {
+      "task_id": "sqlparse-mut-020",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "remove_guard",
+      "mutation_file": "sqlparse/filters/reindent.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "b84b5744e305eef62ed458061474b928dc5c73a5c42ad09bd4a697bd3783812d",
+      "statement_sha256": "1ca6067a952446b934a27079d9f53b7d3d16e7929ea8aa25596ab05fa2b92d02"
+    },
+    {
+      "task_id": "sqlparse-mut-038",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "remove_guard",
+      "mutation_file": "sqlparse/cli.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "cfc9e0bb8de65a8e1a9f201c31b0d5e9b6cdb03b29662f509f9aa131bc798a85",
+      "statement_sha256": "0ca572c1e22d95e54ad838849d1d5506ab40ca6c8485d085a2b2c715ef0ade1c"
+    },
+    {
+      "task_id": "sqlparse-mut-010",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "drop_not",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "166c4240b474a51cdd018ae6811041a740a67a827c89c1ee0e6a860d5fe9b4c6",
+      "statement_sha256": "85915333aae1089364d901a1a3a1803847401437d1c22eec16702f99eef09e1c"
+    },
+    {
+      "task_id": "sqlparse-mut-062-nm",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "off_by_one",
+      "mutation_file": "sqlparse/filters/aligned_indent.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "f7be1e8e5295520476a71fef086fbcbbc5ecafe109a36f2cf16d6c43b066ef52",
+      "statement_sha256": "51ff03eec5af6aa67b48809e1db3c813ccac1dff0662bf2632eccedfaa358958"
+    },
+    {
+      "task_id": "sqlparse-mut-069",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "056db7e33529594cd92300941e087373468f449c8d2b97ade1b709b49a316b0b",
+      "statement_sha256": "795b0ae1221fe6e00538efebe509c5081c94a60517b0445722735a1f7bae026f"
+    },
+    {
+      "task_id": "sqlparse-mut-017",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "d1f485c24f022b2fe88680c521707383b6525de93aed55ca58afaf83428fb94f",
+      "statement_sha256": "7f79c995db3bda7cc40b0a7e1daa05a22d7832a9c90e77163f0cf98c11582cff"
+    },
+    {
+      "task_id": "sqlparse-mut-030",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "compare_flip",
+      "mutation_file": "sqlparse/engine/statement_splitter.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "0f979a444a9ed40fab4d1c49a8b69c5d274131f6cf2970bde5c0f28a73f7ce41",
+      "statement_sha256": "a8ecfd14af320cbdfa1c354a79245c3ece4222eb50f1a58f88f3cfa96980cd9b"
+    },
+    {
+      "task_id": "sqlparse-mut-005",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "4de422838d80f5dd3d1aec0178d85f261a5fc0799b367a1976ceb976d89ce181",
+      "statement_sha256": "083416bf942492ed14a647598449e4d5749a605dfefcca5666aa66116445f0e3"
+    },
+    {
+      "task_id": "sqlparse-mut-048-nm",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "off_by_one",
+      "mutation_file": "sqlparse/filters/others.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "feec979a9f9b2d45fc42cb6472cbbb95093ad88e166d2ed43b230c05001b2a17",
+      "statement_sha256": "6fddb2579896236a2eac1a02145deaf43bf76312f08496fac55089fedd60142a"
+    },
+    {
+      "task_id": "sqlparse-mut-037",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "off_by_one",
+      "mutation_file": "sqlparse/filters/reindent.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "288b67880cccde7baf97a9fe87485b5556953f4f870cb0435453ea6bbe13e7e6",
+      "statement_sha256": "0f307b45df990de6d4b359619ea63ca1528cb76ae4570eced093ae9491a5cc60"
+    },
+    {
+      "task_id": "sqlparse-mut-031",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "off_by_one",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "7bcc9b2626a328574d16ff345bd107921a0cccf608212de7a2f825aff45ebcff",
+      "statement_sha256": "bdd3f0e86d404c74c6f1988916d44b556ff2649cad5ea25f598b3d5d4d7218c1"
+    },
+    {
+      "task_id": "sqlparse-mut-053-nm",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "6ce01699c60c6e554a02e716b28d7e5a8739c78def14e94e83e1ebddae987091",
+      "statement_sha256": "6065d7da344bf7cc917c327ee2cf2f75ee0427244ff1b1928e65d87655d4ad62"
+    },
+    {
+      "task_id": "sqlparse-mut-004",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "remove_guard",
+      "mutation_file": "sqlparse/sql.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "2b6a2d22926565e170fc4c4de18469404d7a57b98203a9d18e26ae6c3ff0d147",
+      "statement_sha256": "784e1bc7cef8d0f70ba323e2a89dc2027c768bfc0a4911f36b7d4ef651bfe553"
+    },
+    {
+      "task_id": "sqlparse-mut-065-nm",
+      "materializer": "mutation-workspace-v2",
+      "mutation_kind": "drop_not",
+      "mutation_file": "sqlparse/filters/aligned_indent.py",
+      "hidden_tests": true,
+      "hidden_paths": [
+        "tests"
+      ],
+      "mutation_patch_sha256": "6d0c0d72ccdcfe950eab9951b921a2f4583b7e9ce4f81044330c66c09796bd03",
+      "statement_sha256": "80691bf417044dc930bfe12750213466daa07eee4b8fd362eafac80a5884cf8c"
+    }
+  ],
+  "max_calls_per_run": 20,
+  "max_context_bytes": 80000,
+  "max_tokens": 4096,
+  "pytest_timeout_seconds": 600,
+  "temperature": 0,
+  "max_attempts_per_call": 3,
+  "max_total_calls": null,
+  "instructions": "You are working in a source checkout of {repo} ({repo_url}) at an upstream commit. The following problem was reported:\n\n{statement}\n\nChange the library so the reported behavior is correct. Hidden upstream tests will be run on your final workspace; tests you add or edit are not used for acceptance, but you may write and run tests to check your work (for example `pytest tests/test_example.py -q` with the run tool). Call finish when you are done.",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "glob_files",
+        "description": "Recursively list workspace-relative file paths that match a glob, in sorted order. The glob is matched against each file's relative path and against its file name, using Python fnmatch rules, case-sensitive: '*' and '?' also match '/', and '[abc]' matches one listed character. It never matches file contents. Cache and VCS directories (.git, __pycache__, .pytest_cache, .mypy_cache, .ruff_cache, .tox, .venv, node_modules) are skipped.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "glob": {
+              "type": "string",
+              "description": "Required. For example '*.py', 'tests/*', or 'setup.cfg'."
+            },
+            "path": {
+              "type": "string",
+              "description": "Directory (or single file) to list under, relative to the workspace root. Default '.'."
+            }
+          },
+          "required": [
+            "glob"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_file",
+        "description": "Read a text file with 1-based line numbers. start_line and end_line are inclusive; omit start_line to begin at line 1 and end_line to read to the end. The header reports the range returned and the file's total lines. Long results are shown partially with an output id for paging.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "start_line": {
+              "type": "integer"
+            },
+            "end_line": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "path"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "outline",
+        "description": "List the classes and functions of a Python file with line numbers.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "search_text",
+        "description": "Search file contents for exact text (literal characters, case-sensitive; not a regex). Returns one line per match as path:line: text, with 1-based line numbers, and states the scope searched. file_glob only selects which files are searched.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Required. The exact text to find, e.g. 'def get_real_name('."
+            },
+            "path": {
+              "type": "string",
+              "description": "File or directory to search, relative to the workspace root. Default '.'."
+            },
+            "file_glob": {
+              "type": "string",
+              "description": "Optional glob selecting files by relative path or file name (same rules as glob_files), e.g. '*.py'. It never matches file contents. Default '*'."
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "replace_text",
+        "description": "Replace exact text in a file. Fails without changing the file if old_text is absent, or if it occurs more than once while replace_all is false; set replace_all to replace every occurrence. Reports how many occurrences were replaced and shows the edited lines.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "old_text": {
+              "type": "string"
+            },
+            "new_text": {
+              "type": "string"
+            },
+            "replace_all": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "path",
+            "old_text",
+            "new_text"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "write_file",
+        "description": "Create a file, or overwrite it completely if it already exists, with the given content. Missing parent directories are created. Paths are relative to the workspace root.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "content"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "run",
+        "description": "Run one command in the workspace root without a shell: no pipes, redirection, chaining (&&, ;), cd, or variable expansion; use workspace-relative paths with forward slashes. 'python' and 'pytest' use the task's Python environment. Shows the command, status (including timeout), exit code, stdout, and stderr; long output is shown partially with an output id for paging. A successful exit does not mean the task is accepted.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "For example: pytest tests/test_example.py -q"
+            },
+            "timeout_seconds": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "command"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_output",
+        "description": "Read part of an earlier tool result by its output id (for example out_12). Results that were shown partially say which id and range to request. Give start_line/end_line, or start_byte/end_byte for very long lines.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "start_line": {
+              "type": "integer"
+            },
+            "end_line": {
+              "type": "integer"
+            },
+            "start_byte": {
+              "type": "integer"
+            },
+            "end_byte": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "search_output",
+        "description": "Find lines containing a literal string (plain text, not a regex) in an earlier tool result by its output id.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "query": {
+              "type": "string",
+              "description": "Required. The literal text to find."
+            }
+          },
+          "required": [
+            "id",
+            "query"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "history",
+        "description": "Page through authorized durable session history. The response includes a stable next_cursor.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "after_sequence": {
+              "type": "integer"
+            },
+            "before_sequence": {
+              "type": "integer"
+            },
+            "as_of_sequence": {
+              "type": "integer"
+            },
+            "kinds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "limit": {
+              "type": "integer"
+            },
+            "cursor": {
+              "type": "string"
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "search_history",
+        "description": "Find literal text in authorized prior actions and observations without knowing an output ID.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string"
+            },
+            "kinds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "source": {
+              "type": "string"
+            },
+            "as_of_sequence": {
+              "type": "integer"
+            },
+            "limit": {
+              "type": "integer"
+            },
+            "cursor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_artifact",
+        "description": "Read an authorized session artifact by ID, optionally using an exact byte range.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "start_byte": {
+              "type": "integer"
+            },
+            "end_byte": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "note",
+        "description": "Save a named plain-text note that persists across turns. Pinned notes are placed in context when space allows.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "pin": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name",
+            "content"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "read_note",
+        "description": "Read a saved note by name.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "finish",
+        "description": "Declare the work complete. The final workspace is then checked independently.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "summary": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "summary"
+          ]
+        }
+      }
+    }
+  ],
+  "toolset_version": "reticle-tools-v3",
+  "execution": {
+    "backend": "isolated-oci",
+    "image": "localhost/reticle-p6-task:py313-v1",
+    "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+    "guest_python": "python",
+    "container_user_arguments": [
+      "--userns",
+      "keep-id"
+    ],
+    "authority": "isolated OCI: task workspace mount only, no network, unprivileged user"
+  },
+  "guards": {
+    "stop_on_repeats": false,
+    "resume_after_provider_stop": 0,
+    "resume_wait_seconds": null
+  },
+  "budgets_per_run": {
+    "noop-client": {
+      "model_responses": 20,
+      "context_bytes": 80000,
+      "model_attempts": 24,
+      "active_seconds": 1200.0
+    }
+  },
+  "created_at": "2026-09-30T23:13:21.860565+00:00",
+  "source_revision": {
+    "commit": "2fbc71436e456eb7fcd0e79b25273e09d4f2df9c",
+    "tracked_changes": false
+  }
+}

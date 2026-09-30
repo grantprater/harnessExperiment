@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "id": "E3-difficulty-calibration-010",
+  "title": "Difficulty calibration: a harder mutation bank with a dev/eval split",
+  "status": "proposed",
+  "markdown": "experiments/session_harness/E3-difficulty-calibration-010.md",
+  "hypothesis": "Fresh mutation tasks drawn by the card's rule (single-test failing sets, and multi-test tasks with or without the failure message in the statement) give the Reticle incumbent (Sonnet 5 via the CLI) a mix of solved, mixed and unsolved tasks from which the preregistered keep rule builds an eval split whose predicted acceptance is 30-60%, disjoint from the dev tasks used for tuning.",
+  "run_prefix": "c010",
+  "run_name_template": "{prefix}-{task}-r{rollout}",
+  "runner": {"script": "experiments/p6_pilot/run_pilot.py", "runner_version": 8},
+  "environment": {"claude_cli_version": "2.1.286 (Claude Code)"},
+  "prerequisites": [
+    {"text": "Stage-1 candidates built by experiments/mutation_tasks/build_bank_010.py (seed 10) and committed; --check reproduces them", "done": true},
+    {"text": "No-model controls on all 30 candidates: gold accepted and noop rejected on the exact fail_to_pass set, twice each, OCI (c010-control-gold, -noop, -gold-rep2, -noop-rep2; check_controls_010.py: 30/30 pass)", "done": true},
+    {"text": "Model, provider and harness confirmed by the owner to equal the incumbent arm of the evidence-ontology experiment that will use the eval split (difficulty is model-specific)", "done": false},
+    {"text": "Owner approval of the calibration run's call count and cost recorded in the markdown card (then set status to approved)", "done": false}
+  ],
+  "arms": [
+    {
+      "name": "incumbent",
+      "client": "claude-cli",
+      "model": "sonnet",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {"stop_on_repeats": false, "resume_after_provider_stop": 0, "resume_wait_seconds": null},
+      "extra_args": [],
+      "expected_protocol_hash": null,
+      "note": "Card 007's incumbent arm unchanged (runner v8, claude-cli adapter v2, repeat guard off, no treatment). The CLI version is a hash input: it was 2.1.283 for c007/c013/c018 and 2.1.286 on 2026-09-30; pin whatever is current at launch and keep it for the ontology experiment."
+    }
+  ],
+  "controls": [
+    {"name": "gold", "client": "gold", "task_set": "calibration", "like_arm": "incumbent", "expect": "accepted",
+     "run_name": "c010-control-gold"},
+    {"name": "noop", "client": "noop", "task_set": "calibration", "like_arm": "incumbent", "expect": "rejected",
+     "run_name": "c010-control-noop"}
+  ],
+  "tasks": {
+    "file": "experiments/mutation_tasks/tasks.difficulty010.json",
+    "file_sha256": "ccec2be28765ccb07b937df51a76b332c08ac2df09dd210c1f866216615bef4b",
+    "sets": {
+      "calibration": {
+        "ref": {
+          "path": "experiments/session_harness/E3-difficulty-calibration-010.sets.json",
+          "key": "calibration",
+          "sha256": "ab81215601fd0df2a502f70fc34ecad64f8746659dfde316dee476d62c37c032"
+        },
+        "note": "Stage 1: 30 candidates from build_bank_010.py (seed 10), recorded before any calibration run: 8 single-test, 11 multi-test with the generated statement, 11 multi-test with the failure-message sentence removed (ids ending -nm)."
+      }
+    }
+  },
+  "blocks": [
+    {"name": "calibration", "task_set": "calibration", "arms": ["incumbent"], "rollouts": 2, "arm_order": {"rule": "fixed"}}
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 20,
+      "model_attempts": 24,
+      "active_seconds": 1200,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {"default": 120, "max": 600},
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {
+      "max_runs": 60,
+      "max_model_attempts": 1680,
+      "monetary_cap_usd": null,
+      "note": "60 runs x 24 attempts = 1,440 planned, plus room for 10 retried runs. CLI on the subscription: no monetary cap, billing recorded as unknown. List-price estimate from c013 incumbent runs: about $0.57 per accepted and $1.31 per rejected run (prompt-token scaling of $0.94 mean), so $34-79 for 60 runs, about $60 at 45% acceptance."
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [60, 300],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "As card 007: the repeat guard is off; repeat flags are derived from the journals afterwards.",
+    "manual": [
+      "Evaluator leakage, evidence loss, or authority escape stops the campaign (trajectory review).",
+      "A run ended by a usage limit, an adapter failure or a machine sleep is voided (renamed *.void-<reason>) and rerun, as in card 018; it is not a calibration outcome.",
+      "No statement, task or budget is changed after the first calibration run; the keep/drop rule in the markdown card is applied mechanically and its output written to E3-difficulty-calibration-010.split.json.",
+      "Calibration outcomes select tasks only. They are never reused as the incumbent arm of a later comparison."
+    ]
+  },
+  "measurements": {
+    "per_run": ["accepted", "stop_reason", "responses_used", "provider_attempts", "tool_calls", "active_seconds", "wall_seconds", "tokens", "first_edit_response", "edit_in_gold_files", "verification_before_finish"],
+    "campaign": ["acceptance_rate_ci", "outcome_distribution", "per_task_outcomes", "acceptance_by:statement_message_dropped", "acceptance_by:mutation_kind", "acceptance_by_size:fail_to_pass"]
+  },
+  "decision_rule": "Per task after 2 valid rollouts: solved 2/2, mixed 1/2, hard 0/2. Eval starts as every mixed and hard task. Predicted acceptance of a composition = task-weighted mean of the preregistered category predictors (solved 0.94, mixed 0.25, hard 0.08; card-007 tasks' later incumbent-style runs, c013 incumbent + c018). Add solved tasks in calibration-list order (the sets file) while predicted acceptance < 0.40; if still < 0.30 with no solved task left, move hard tasks to dev from the end of the list until it reaches 0.30. Every other task goes to dev. Nothing about the tasks, statements or budgets changes after the first run; calibration outcomes are never reused as incumbent data. Report the eval size against the power table; if it is below the owner's chosen design's n, propose the next stage under an amended card.",
+  "report": {
+    "path": "experiments/session_harness/E3-difficulty-calibration-010-report.md",
+    "sets_path": "experiments/session_harness/E3-difficulty-calibration-010.split.json"
+  },
+  "notes": [
+    "One runner invocation per task and rollout (c010-<task>-r<k>), as card 007.",
+    "Controls: the recorded c010-control-gold and c010-control-noop runs over all 30 candidates, named so that a resume finds them complete. The repeats (-rep2) and the 3-task samples (-sample) are extra evidence for the determinism filter; run_card.py does not plan them.",
+    "The markdown card's stage 2 (more tasks) and the dev/eval split are outside run_card.py: stage 2 needs its own candidate file and an amended card; the split is written by hand from the rule above.",
+    "Per-run choices copy card 007 (20 responses, 24 attempts, 1,200 s, max_tokens 4096) so that calibration difficulty is measured under the same budgets as every earlier Sonnet campaign."
+  ]
+}

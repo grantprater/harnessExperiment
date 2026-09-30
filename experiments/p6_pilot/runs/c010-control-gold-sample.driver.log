@@ -1,0 +1,4 @@
+task budgets per run: {"gold-client": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
+sqlparse-mut-064-nm__gold-client: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}
+sqlparse-mut-012__gold-client: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}
+sqlparse-mut-041__gold-client: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}
