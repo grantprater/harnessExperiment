@@ -1,7 +1,7 @@
 # E4 midpoint nudge 014: one harness message at half the response budget when nothing is edited
 
 Date: 2026-09-28  
-Status: proposed; awaiting owner approval  
+Status: approved; owner approved 2026-09-28 (cards/014.json, commit 52e6685); confirmed 2026-09-30: "I approved them"  
 Stage: S6 (agent-loop module, continuation-rule surface). Machine-readable card: [`cards/014.json`](cards/014.json).
 Relation to [card 009](E4-diagnostic-commitment-009.md): the same "diagnostic commitment" weakness, addressed by a
 triggered message instead of opening-instruction text.

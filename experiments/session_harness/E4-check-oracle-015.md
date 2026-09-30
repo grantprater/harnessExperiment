@@ -1,7 +1,7 @@
 # E4 bounded check oracle 015: a `check` tool with three hidden-test counts per run
 
 Date: 2026-09-28  
-Status: proposed; awaiting owner approval  
+Status: approved; owner approved 2026-09-28 (cards/015.json, commit 52e6685); confirmed 2026-09-30: "I approved them"  
 Stage: S6 (tool-use module). This treatment changes the task (the model gets a bounded acceptance signal), so it is
 an arm of its own and its result is not a harness improvement on the same task; it measures how much of the
 incumbent's failure is verification it cannot do. Machine-readable card: [`cards/015.json`](cards/015.json).
