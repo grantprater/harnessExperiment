@@ -112,9 +112,10 @@ result carry the expected finding, and that no citable observation contains inje
 checked-in report records all twelve passing with zero model calls (2026-09-30). These engineered
 controls establish mechanism behavior, not agent effectiveness.
 
-Validation of the injected arm on 2026-09-30: 24 focused ontology tests pass (7 new injected-arm
-tests); the finish-guard suite (22 tests) and check-oracle suite (10 tests) pass. The full suite
-was not rerun. No model calls were made.
+Validation of the injected arm on 2026-09-30: 25 focused ontology tests pass (8 new injected-arm
+tests). These suites also pass: finish-guard (22 tests), check-oracle (10), output-paging (6),
+pressure-context (12) and pressure-context-v4 (11). The full suite was not rerun. No model calls
+were made.
 
 Validation on 2026-09-29: 17 focused ontology tests pass; the existing finish-guard
 suite passes (22 tests, one skipped) and check-oracle suite passes (10 tests).
@@ -193,8 +194,23 @@ decision above. As built:
   (UTF-8 bytes / 4, rounded up, as the context policy estimates) and truncation. Citing it in
   `reasoning_update` is rejected like any controller/evaluator event.
 - Budgets: injected text is part of the tool result, so it counts against the existing context and
-  response budgets. No new budget is added. A long head-heavy result view can cut the block like any
-  other result text.
+  response budgets. No new budget is added.
+- Views: the block is exempt from view truncation on the newest result. The outcome carries
+  `advisory_chars`, and the controller copies it into the message's private output metadata. When
+  a context policy must cut that result (`bounded-transcript-v2`'s 4 KB newest view, or
+  `pressure-recent-*` shrinking the newest exchange under pressure), the view is taken over the
+  recorded output alone, with budget reduced by the block size. Its line counts therefore match
+  `read_output`. The whole block follows the view. On older, cut results the block is dropped
+  rather than shown as an unlabelled fragment. Older results kept whole (pressure policies) keep
+  it. Before this fix, the tightest `pressure-recent-v3` budgets cut the header or the whole block
+  from the newest `run` result, and older baseline previews showed a finding line without its
+  header. `test_newest_long_run_result_always_shows_the_whole_block` renders ~25 KB failing-test
+  output through the controller under both policies. Because the block is kept whole, the newest
+  exchange at the very tightest budgets can exceed the context limit sooner. The controller then
+  stops over budget, as it does for any oversize result.
+- Tool text: the `reasoning_state` and `assess_check` descriptions now say findings are returned
+  "in symbolic and injected modes". This changes the tool text the model sees in every reasoning
+  arm, including memory and symbolic, and therefore their protocol hashes.
 - Hashing: `reasoning_contract("injected")` adds the mode, template version, caps, trigger tools,
   placement and no-change rule, so the arm has its own protocol hash.
 - Recording: the per-run reasoning record gains `tool_reads` (`reasoning_state`, `assess_check`

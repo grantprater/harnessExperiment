@@ -103,6 +103,34 @@ def render_output_view(text: str, handle: str, budget: int, tail_heavy: bool) ->
     }
 
 
+def render_result_view(
+    content: str, output: Dict[str, Any], budget: int, keep_advisory: bool = True
+) -> tuple[str, Dict[str, Any]]:
+    """render_output_view for a tool result message, honoring a runtime-appended advisory suffix.
+
+    The injected reasoning arm appends a bounded advisory block (``advisory_chars`` in the output
+    metadata) to edit/run results; it is not part of the recorded output. When the result must be cut,
+    the view is taken over the recorded output alone, so its line numbers match read_output, and the
+    suffix is kept whole after it (keep_advisory) or dropped (older results). Without a suffix this is
+    exactly render_output_view.
+    """
+    handle, tail_heavy = output["handle"], output.get("tool") == "run"
+    suffix_chars = output.get("advisory_chars")
+    if type(suffix_chars) is not int or not 0 < suffix_chars <= len(content):
+        return render_output_view(content, handle, budget, tail_heavy=tail_heavy)
+    if len(content.encode("utf-8")) <= budget:
+        return content, {"rendering": "full", "source_bytes": len(content.encode("utf-8"))}
+    body, suffix = content[:-suffix_chars], content[-suffix_chars:]
+    if not keep_advisory:
+        text, rendering = render_output_view(body, handle, budget, tail_heavy=tail_heavy)
+        return text, {**rendering, "advisory": "dropped"}
+    suffix_bytes = len(suffix.encode("utf-8"))
+    text, rendering = render_output_view(
+        body, handle, max(VIEW_NOTE_RESERVE_BYTES, budget - suffix_bytes), tail_heavy=tail_heavy
+    )
+    return text + suffix, {**rendering, "advisory": "kept", "advisory_bytes": suffix_bytes}
+
+
 def _mark_harness_message(item: Dict[str, Any], message: Dict[str, Any]) -> None:
     """A harness message injected by an agent-loop treatment (reticle.runtime.nudges) is named in the manifest.
     Messages without the private marker (every message of an untreated run) leave the item unchanged."""
@@ -281,7 +309,7 @@ class BaselineContextPolicy:
             # Messages without a retrievable output handle keep the artifact spill behavior.
             return self._spill_tool_message(runtime, message)
         budget = self.newest_tool_view_bytes if newest else self.tool_preview_bytes
-        text, rendering = render_output_view(content, output["handle"], budget, tail_heavy=output.get("tool") == "run")
+        text, rendering = render_result_view(content, output, budget, keep_advisory=newest)
         if rendering["rendering"] == "full":
             return message, None
         rendered = dict(message)
@@ -529,12 +557,8 @@ class PressureRecentContextPolicy(BaselineContextPolicy):
                 "source_bytes": len(content.encode("utf-8")),
             })
             if view_budget is not None:
-                rendered, rendering = render_output_view(
-                    content,
-                    handle,
-                    view_budget,
-                    tail_heavy=output.get("tool") == "run",
-                )
+                # Only the newest exchange is ever reduced; older units are whole or omitted.
+                rendered, rendering = render_result_view(content, output, view_budget)
                 value["content"] = prefix + rendered
                 if rendering["rendering"] != "full":
                     item.update(rendering)

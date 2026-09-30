@@ -34,6 +34,9 @@ class ToolOutcome:
     status: str  # a ToolResultEnvelope status
     finished: bool = False
     handle: Optional[str] = None  # output handle for read_output / search_output
+    # Length of a runtime-appended advisory suffix of content (the injected reasoning arm); it is not part of the
+    # recorded tool output, and bounded views keep it whole on the newest result.
+    advisory_chars: int = 0
 
 
 class ToolArgumentError(ValueError):

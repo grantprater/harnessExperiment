@@ -35,8 +35,8 @@ REASONING_SCHEMAS = [
               "Recover durable hypotheses, checks, the authorized task description and runtime tool observations. Use "
               "evidence event IDs from observations or task requirements when adding assertions. Model scopes and "
               "semantic links are unverified claims. "
-              "In symbolic mode, also returns advisory findings; missing evidence is unknown. Page with next_offset "
-              "and as_of_sequence=high_water_sequence to keep the graph fixed. Staleness uses the current workspace.",
+              "In symbolic and injected modes, also returns advisory findings; missing evidence is unknown. "
+              "Page with next_offset and as_of_sequence=high_water_sequence to keep the graph fixed. Staleness uses the current workspace.",
               {"offset": {"type": "integer"}, "limit": {"type": "integer"}, "focus": {"type": "string"},
                "as_of_sequence": {"type": "integer"}}, []),
     _function("reasoning_update",
@@ -49,7 +49,7 @@ REASONING_SCHEMAS = [
               {"entities": {"type": "array", "items": ENTITY},
                "relations": {"type": "array", "items": RELATION}}, []),
     _function("assess_check", "Return the reasoning state focused on an existing check, with advisory findings in "
-              "symbolic mode. This tool does not execute a command or certify the check's coverage.",
+              "symbolic and injected modes. This tool does not execute a command or certify the check's coverage.",
               {"id": {"type": "string"}}, ["id"]),
 ]
 
@@ -73,7 +73,9 @@ class ReasoningTools:
         if name not in INJECTION_AFTER_TOOLS:
             return outcome
         block = self.reasoning.inject(name, call_id)
-        return replace(outcome, content=outcome.content + block) if block else outcome
+        if not block:
+            return outcome
+        return replace(outcome, content=outcome.content + block, advisory_chars=len(block))
 
     def _dispatch(self, name, arguments, call_id):
         schema = next((item["function"] for item in REASONING_SCHEMAS if item["function"]["name"] == name), None)

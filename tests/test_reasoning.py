@@ -333,6 +333,88 @@ class InjectedReasoningTests(unittest.TestCase):
         self.assertEqual(len(observations), 2)  # read_file and write_file tool outputs only
         self.assertFalse(any(INJECTION_HEADER in item["text"] for item in observations))
 
+    def drive(self, policy, max_context_bytes, root):
+        """Run the controller in injected mode: two ~25 KB failing-test runs, then finish. Returns the
+        requests exactly as the model client received them."""
+        from reticle.runtime.contracts import TaskEnvelope
+        from reticle.runtime.controller import AgentController, AgentLimits, ModelResponse
+        workspace = root / "workspace"
+        workspace.mkdir(parents=True)
+        (workspace / "mod.py").write_text("x = 1\n", encoding="utf-8")
+        runtime = LocalRuntime(root / "session", workspace)
+        ontology = EvidenceOntology(runtime, "injected")
+        tools = Suite(runtime, interpreter=sys.executable, reasoning=ontology)
+        tools.dispatch("read_file", {"path": "mod.py"}, "read")
+        observation = ontology.state()["entities"][0]
+        ontology.update([{"id": "h", "kind": "hypothesis", "text": "t", "evidence": observation["evidence"]}],
+                        [{"source": observation["id"], "relation": "contradicts", "target": "h"}])
+        command = ('python -c "import sys; [print(\'FAILED tests/test_mod.py::test_case_%d - AssertionError: '
+                   'expected 1\' % i) for i in range(350)]; sys.exit(1)"')
+        script = [("run1", "run", {"command": command}), ("run2", "run", {"command": command}),
+                  ("fin", "finish", {"summary": "done"})]
+
+        class Client:
+            def __init__(self):
+                self.requests = []
+
+            def complete(self, messages, tools):
+                self.requests.append((messages, tools))
+                call_id, name, args = script[len(self.requests) - 1]
+                return ModelResponse({"role": "assistant", "content": None, "tool_calls": [
+                    {"id": call_id, "type": "function", "function": {"name": name, "arguments": json.dumps(args)}}]})
+
+        client = Client()
+        AgentController(runtime, TaskEnvelope("t", "Fix the failing tests"), tools, client,
+                        AgentLimits(5, max_context_bytes), policy=policy).run()
+        raw = [runtime.artifacts.read(event.payload["artifact_id"]).decode("utf-8")
+               for event in runtime.journal.read_all() if event.kind == "tool_output" and event.payload["tool"] == "run"]
+        return client.requests, raw
+
+    def test_newest_long_run_result_always_shows_the_whole_block(self):
+        """A failing suite's long output is the typical last observation before finish. Whatever view the
+        context policy renders, the newest result carries the whole labelled block; older reduced results
+        drop it rather than show an unlabelled fragment."""
+        from reticle.context import BaselineContextPolicy, PressureRecentContextPolicyV3
+        from reticle.runtime.reasoning import INJECTION_HEADER
+
+        def result(messages, call_id):
+            return next((m["content"] for m in messages if m.get("tool_call_id") == call_id), None)
+
+        def assert_whole_block(content, raw, label):
+            self.assertIsNotNone(content, label)
+            self.assertIn(INJECTION_HEADER, content, label)
+            block = content.split(INJECTION_HEADER, 1)[1]
+            self.assertIn("\n- contradicted_hypothesis [", block, label)
+            self.assertTrue(block.rstrip().endswith("reassess it before proceeding."), label)
+            note = re.search(r"of (\d+) \(", content)
+            if note:  # a reduced view counts the recorded output's lines, as read_output pages them
+                self.assertEqual(int(note.group(1)), len(raw.splitlines()), label)
+
+        import re
+        requests, raw = self.drive(BaselineContextPolicy(), 80_000, self.root / "baseline")
+        self.assertTrue(all(INJECTION_HEADER not in text for text in raw))  # tool_output stays raw
+        self.assertGreater(len(raw[0]), 20_000)
+        for index, call_id in ((1, "run1"), (2, "run2")):
+            content = result(requests[index][0], call_id)
+            self.assertIn("[output out_", content)  # the view really was cut
+            assert_whole_block(content, raw[0], f"baseline newest {call_id}")
+        older = result(requests[2][0], "run1")
+        self.assertNotIn("contradicted_hypothesis", older)  # dropped whole, not a fragment
+
+        # pressure-recent-v3 (the pilot campaigns' arm), from ample context down to the tightest budgets
+        base = len(json.dumps({"messages": requests[0][0], "tools": requests[0][1]}))
+        reduced = 0
+        for margin in (70_000, 3_000, 1_500, 1_000, 800, 600, 400):
+            with self.subTest(margin=margin):
+                requests, raw = self.drive(PressureRecentContextPolicyV3(), base + margin,
+                                           self.root / f"pressure-{margin}")
+                for index, call_id in ((1, "run1"), (2, "run2")):
+                    if index < len(requests):  # otherwise the controller stopped over budget without a request
+                        content = result(requests[index][0], call_id)
+                        reduced += "[output out_" in content
+                        assert_whole_block(content, raw[0], f"pressure +{margin} {call_id}")
+        self.assertGreater(reduced, 4)
+
     def test_contract_records_mode_template_and_cap(self):
         from reticle.runtime.reasoning import INJECTION_MAX_CHARS, INJECTION_VERSION, reasoning_contract
         contract = reasoning_contract("injected")
