@@ -283,7 +283,9 @@ def read_escapes(tool_uses: List[dict], errors: Dict[str, bool], workspace: Path
         if use.get("name") not in READ_TOOLS:
             continue
         arguments = use.get("input") if isinstance(use.get("input"), dict) else {}
-        named = [arguments.get(key) for key in ("file_path", "path", "pattern", "glob")]
+        # Grep's pattern is a regex, not a path: on Windows a regex like r"\.value\b" parses as a rooted path
+        keys = ("file_path", "path", "glob") if use.get("name") == "Grep" else ("file_path", "path", "pattern", "glob")
+        named = [arguments.get(key) for key in keys]
         if any(_outside(value, workspace) for value in named) and not errors.get(use.get("id"), False):
             escapes.append({"name": use.get("name"), "input": arguments})
     return escapes

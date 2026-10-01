@@ -645,6 +645,15 @@ class GenerationTests(VerifierFixture):
         escapes = repro_verifiers.read_escapes(uses, {"a": True, "b": False, "c": False}, workspace)
         self.assertEqual([e["name"] for e in escapes], ["Glob"])
 
+    def test_a_grep_regex_is_not_a_path(self):
+        workspace = (self.root / "ws").resolve()
+        workspace.mkdir()
+        uses = [{"id": "a", "name": "Grep", "input": {"pattern": "\\.value\\b", "path": str(workspace / "sub")}},
+                {"id": "b", "name": "Grep", "input": {"pattern": "x", "path": str(self.root / "outside")}},
+                {"id": "c", "name": "Grep", "input": {"pattern": "x", "glob": "../*.py"}}]
+        escapes = repro_verifiers.read_escapes(uses, {}, workspace)
+        self.assertEqual([e["input"]["pattern"] for e in escapes], ["x", "x"])
+
 
 @unittest.skipUnless(os.environ.get("RETICLE_OCI_TEST_IMAGE"),
                      "set RETICLE_OCI_TEST_IMAGE (an image with python and pytest, e.g. card 024's "
