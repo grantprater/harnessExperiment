@@ -30,3 +30,15 @@ preflight incumbent: protocol 3245c91d816e matches
 [30/42] c023-boltons-mut-029-r2: ok (finish_requested -> accepted)
 [31/42] c023-boltons-mut-031-r2: ok (finish_requested -> accepted)
 [32/42] c023-boltons-mut-033-r2: ok (finish_requested -> accepted)
+[33/42] c023-boltons-mut-034-r2: ok (finish_requested -> accepted)
+[34/42] c023-boltons-mut-044-r2: ok (finish_requested -> accepted)
+[35/42] c023-boltons-mut-045-r2: ok (finish_requested -> accepted)
+[36/42] c023-boltons-mut-047-r2: ok (finish_requested -> accepted)
+[37/42] c023-boltons-mut-048-r2: ok (finish_requested -> accepted)
+[38/42] c023-boltons-mut-049-r2: ok (finish_requested -> accepted)
+[39/42] c023-boltons-mut-056-r2: ok (model_call_limit -> rejected)
+[40/42] c023-boltons-mut-057-r2: ok (finish_requested -> accepted)
+[41/42] c023-boltons-mut-060-r2: ok (finish_requested -> accepted)
+[42/42] c023-boltons-mut-062-r2: ok (finish_requested -> accepted)
+campaign complete: 42 invocations
+report skeleton: experiments/session_harness/E3-calibration-023-report.md

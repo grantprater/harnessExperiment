@@ -1,0 +1,36 @@
+{
+  "derived": {
+    "card": "E3-calibration-023",
+    "generated_at": "2026-10-01T03:27:53+00:00",
+    "per_arm": {
+      "incumbent": {
+        "all_accepted": [
+          "boltons-mut-010",
+          "boltons-mut-011",
+          "boltons-mut-016",
+          "boltons-mut-021",
+          "boltons-mut-027",
+          "boltons-mut-029",
+          "boltons-mut-031",
+          "boltons-mut-033",
+          "boltons-mut-034",
+          "boltons-mut-044",
+          "boltons-mut-045",
+          "boltons-mut-047",
+          "boltons-mut-048",
+          "boltons-mut-049",
+          "boltons-mut-057",
+          "boltons-mut-060",
+          "boltons-mut-062"
+        ],
+        "mixed": [
+          "boltons-mut-015",
+          "boltons-mut-023"
+        ],
+        "none_accepted": [
+          "boltons-mut-056"
+        ]
+      }
+    }
+  }
+}
