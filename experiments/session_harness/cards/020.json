@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "E4-cloud-check-oracle-020",
   "title": "Bounded check oracle (card 015's arms) paired with the incumbent on the cloud VM backend",
-  "status": "proposed",
+  "status": "running",
   "markdown": "experiments/session_harness/E4-cloud-check-oracle-020.md",
   "hypothesis": "Giving the model three counts-only checks of the hidden fail_to_pass tests raises acceptance on card 007's evolution set, whose failures include wrong fixes finished without verification; how much it raises it separates a verification limit from a diagnosis limit. This arm changes the task, so its result is not a harness improvement on the same task. Run on card 019's cloud backend, with both arms in the same card, so the comparison is paired within one environment.",
   "run_prefix": "c020",
@@ -17,7 +17,7 @@
   "prerequisites": [
     {
       "text": "owner approval recorded in the markdown card (then set status to running), given after card 019's report states whether the cloud environment is equivalent to the host for treatment work",
-      "done": false
+      "done": true
     }
   ],
   "arms": [
