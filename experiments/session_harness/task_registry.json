@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "generated_by": "experiments/session_harness/build_task_registry.py",
- "note": "Pooled task registry, cards 007, 023, 010 stage 1 + 2a. overlaps_eval is a tag only; no task was moved or excluded because of it.",
+ "note": "Pooled task registry, cards 007, 023, 010 stage 1 + 2a. Every non-eval task that overlaps eval (overlaps_eval or same_mutation_as an eval id) has role quarantined-eval-twin (owner, 2026-10-01; role_notes); its earlier role is the tag was:<role>. The eval split is unchanged.",
  "boltons_ref": "57161e64ff28c9600c856cf5393701f755299754",
  "sources": {
   "experiments/mutation_tasks/tasks.boltons.json": {
@@ -63,6 +63,7 @@
  },
  "roles": [
   "eval-010-combined",
+  "quarantined-eval-twin",
   "boltons-evolution-excluded",
   "near-transfer-boltons",
   "evolution-contrastive",
@@ -71,6 +72,16 @@
   "excluded-statement-names-function",
   "uncalibrated-pool"
  ],
+ "role_notes": {
+  "quarantined-eval-twin": {
+   "date": "2026-10-01",
+   "question": "31 eval tasks share a mutated function (38 pairs) or an exact failing-test set (26 pairs) with dev tasks. None of those dev tasks has ever been run. The card says eval must be 'disjoint from every dev task'. How should the overlap be handled?",
+   "answer": "Quarantine dev twins (Recommended)",
+   "option_text": "Tag the overlapping dev tasks so no arm, lesson or evolution step ever uses them. Eval stays at 31, it costs nothing, and the pilot can't learn on a near-copy of an eval bug.",
+   "rule": "every non-eval task whose overlaps_eval is non-empty (same mutated function or same exact fail-to-pass set as an eval task, within the bank), or whose same_mutation_as names an eval task; the previous role is kept as the tag was:<role>",
+   "use": "never: no arm, lesson, memory or evolution step may read or run a quarantined task"
+  }
+ },
  "counts": {
   "boltons": {
    "boltons-evolution-excluded": 3,
@@ -80,11 +91,12 @@
   },
   "sqlparse": {
    "eval-010-combined": 31,
+   "quarantined-eval-twin": 64,
    "evolution-contrastive": 2,
    "evolution-negative": 3,
-   "dev": 296,
+   "dev": 247,
    "excluded-statement-names-function": 19,
-   "uncalibrated-pool": 28
+   "uncalibrated-pool": 13
   }
  },
  "overlap_totals": {
@@ -3521,10 +3533,11 @@
    "same_mutation_as": [
     "sqlparse-mut-016-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -3951,9 +3964,11 @@
    "fail_to_pass_count": 20,
    "fail_to_pass_sha256": "42e096b6bac0b12a9038ac2c752edf529cf2f1f3c7b799d8443408ffde56e683",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-012"
@@ -4608,10 +4623,11 @@
    "same_mutation_as": [
     "sqlparse-mut-045-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -4820,9 +4836,11 @@
    "fail_to_pass_count": 5,
    "fail_to_pass_sha256": "6a8de426c696394bca4a16049ff4227ef65abf54ae5c1589a0d99942b7635e47",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-062-nm"
@@ -4850,10 +4868,11 @@
    "same_mutation_as": [
     "sqlparse-mut-052-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -5206,10 +5225,11 @@
    "same_mutation_as": [
     "sqlparse-mut-062-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -5275,10 +5295,11 @@
    "same_mutation_as": [
     "sqlparse-mut-064-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -5795,9 +5816,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [],
     "same_failing_set": [
@@ -5973,10 +5996,11 @@
    "same_mutation_as": [
     "sqlparse-mut-084-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.full.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.full.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -6095,10 +6119,11 @@
    "same_mutation_as": [
     "sqlparse-mut-089-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.full.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.full.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -6131,9 +6156,11 @@
    "fail_to_pass_count": 4,
    "fail_to_pass_sha256": "40435dec0cc1cbffae5f3db205921977ef4e499c0ca94012f1aa2748fad6c12b",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-152"
@@ -6193,9 +6220,11 @@
    "fail_to_pass_count": 2,
    "fail_to_pass_sha256": "02fb5a389e57ba30fde220cd1d0170e052e41ad3716fcf3ff38fe4de04f188f0",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-005"
@@ -6351,9 +6380,11 @@
    "fail_to_pass_count": 2,
    "fail_to_pass_sha256": "2a95a8c2ec5590f7456587a962a8e8918910f62b8479284c553f7bec7f085a15",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-012"
@@ -6449,9 +6480,11 @@
    "fail_to_pass_count": 1,
    "fail_to_pass_sha256": "850eff17c7cd1c7744e07487a56f18ae7639512bdee8098765cb1247ac2a35df",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-151"
@@ -6573,9 +6606,11 @@
    "fail_to_pass_count": 1,
    "fail_to_pass_sha256": "c331676e575b742ffad935ef0f89a7bb5c8400766b9f886151dbba15a9b8f405",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [],
     "same_failing_set": [
@@ -7001,9 +7036,11 @@
    "fail_to_pass_count": 43,
    "fail_to_pass_sha256": "20e437cfafd2d79c2961af69d497bd9de5f3f1539386fd1004c743aad9dd0760",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-125-nm"
@@ -7185,10 +7222,11 @@
    "same_mutation_as": [
     "sqlparse-mut-125-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.full.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.full.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -7221,9 +7259,11 @@
    "fail_to_pass_count": 23,
    "fail_to_pass_sha256": "84f96fdd28af398608460a7f8c85ff7dec56e49cecdc51cfa199fb45dcc03c3f",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-012"
@@ -7343,9 +7383,11 @@
    "fail_to_pass_count": 3,
    "fail_to_pass_sha256": "b636ce97a5c2badf9e505dc6583ce66b8fc0d12af2450ce8364ea78b048976bf",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-020"
@@ -7441,9 +7483,11 @@
    "fail_to_pass_count": 15,
    "fail_to_pass_sha256": "0d415595b2a69ff549b742d86916cf27ad68b1b696ba8a3f346b986a32f777c5",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-020"
@@ -7623,9 +7667,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-186-nm"
@@ -7657,9 +7703,11 @@
    "fail_to_pass_count": 4,
    "fail_to_pass_sha256": "8b662f47a4c2fd25fb908496fa03c7236765bd8e689aabbf6adc390051439c0a",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-020"
@@ -7775,10 +7823,11 @@
    "same_mutation_as": [
     "sqlparse-mut-143-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.full.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.full.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -7811,9 +7860,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-186-nm"
@@ -7845,9 +7896,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-186-nm"
@@ -7879,9 +7932,11 @@
    "fail_to_pass_count": 2,
    "fail_to_pass_sha256": "20855ff121ea0b4b67ee5bfe5159d142b258af1230919d3db9b382dfb2c5b95a",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-062-nm"
@@ -7973,9 +8028,11 @@
    "fail_to_pass_count": 3,
    "fail_to_pass_sha256": "a03e3089cc62ca655baccdc19d407b813f00ee81be1380a1aea8bd9545003c03",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-064-nm"
@@ -8281,9 +8338,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [],
     "same_failing_set": [
@@ -8339,10 +8398,11 @@
    "same_mutation_as": [
     "sqlparse-mut-164-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.full.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.full.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -8555,9 +8615,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [],
     "same_failing_set": [
@@ -8583,10 +8645,11 @@
    "same_mutation_as": [
     "sqlparse-mut-172-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.full.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.full.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -8649,9 +8712,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-186-nm"
@@ -8779,9 +8844,11 @@
    "fail_to_pass_count": 1,
    "fail_to_pass_sha256": "e6ce21e866cd1b0ab73e955a45c27476ed95b8fb2c0c059d04de05875aa6d729",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-045-nm"
@@ -8871,9 +8938,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "ed24a574f6cce242b0516cb4e44c1ed25ef897c529a02e21606b7f7a2c7b7c31",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-020"
@@ -8989,10 +9058,11 @@
    "same_mutation_as": [
     "sqlparse-mut-186-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.full.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.full.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -9055,9 +9125,11 @@
    "fail_to_pass_count": 1,
    "fail_to_pass_sha256": "850eff17c7cd1c7744e07487a56f18ae7639512bdee8098765cb1247ac2a35df",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-151"
@@ -9269,9 +9341,11 @@
    "fail_to_pass_count": 1,
    "fail_to_pass_sha256": "bed25483e40ce8329bccbe887d7f66a9ec0dd4ef1a8fb59d44a31165890e41b5",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-012"
@@ -9333,9 +9407,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [],
     "same_failing_set": [
@@ -9431,9 +9507,11 @@
    "fail_to_pass_count": 3,
    "fail_to_pass_sha256": "a03e3089cc62ca655baccdc19d407b813f00ee81be1380a1aea8bd9545003c03",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-064-nm"
@@ -9463,9 +9541,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [],
     "same_failing_set": [
@@ -9555,9 +9635,11 @@
    "fail_to_pass_count": 10,
    "fail_to_pass_sha256": "fe2244470a32c2bcb233a5cdf1e23ce21f6fa100ba400cd4097e7ab975338fdb",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-016-nm"
@@ -9647,9 +9729,11 @@
    "fail_to_pass_count": 3,
    "fail_to_pass_sha256": "0cca7aa86231f3d2d65cedbac46c956693de4160cca72c0c4e63ebabe95e6db5",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-045-nm"
@@ -9993,9 +10077,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [],
     "same_failing_set": [
@@ -10211,9 +10297,11 @@
    "fail_to_pass_count": 26,
    "fail_to_pass_sha256": "876e9ad2698a2934766451a546f12b2d207fe5660c44c85418b825a26cf0f60f",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-143-nm"
@@ -10455,10 +10543,11 @@
    "same_mutation_as": [
     "sqlparse-mut-232-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.full.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.full.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -10791,9 +10880,11 @@
    "fail_to_pass_count": 1,
    "fail_to_pass_sha256": "75604019ff295ef502c9dcdacf6ac273621bbc1fa55e32c85c364f4d14f7ff69",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-012"
@@ -10853,9 +10944,11 @@
    "fail_to_pass_count": 5,
    "fail_to_pass_sha256": "623837d5a0eac133cccba88c4187e296156a4e49db064fba492f6b91ae7af78c",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-111"
@@ -10923,9 +11016,11 @@
    "fail_to_pass_count": 1,
    "fail_to_pass_sha256": "850eff17c7cd1c7744e07487a56f18ae7639512bdee8098765cb1247ac2a35df",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-151"
@@ -10987,9 +11082,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [],
     "same_failing_set": [
@@ -11109,9 +11206,11 @@
    "fail_to_pass_count": 7,
    "fail_to_pass_sha256": "e9001cc5f7a48dc839a4a1fd9f026d42bdbedf2479d5f6ae29a609c93eeddaf2",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-232-nm"
@@ -11291,9 +11390,11 @@
    "fail_to_pass_count": 20,
    "fail_to_pass_sha256": "42e096b6bac0b12a9038ac2c752edf529cf2f1f3c7b799d8443408ffde56e683",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-012"
@@ -11353,9 +11454,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [],
     "same_failing_set": [
@@ -11775,9 +11878,11 @@
    "fail_to_pass_count": 1,
    "fail_to_pass_sha256": "3f4699778884af27721e485082fa97e004e6bd6e09808c0c8e437c2ddd5b96e1",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-186-nm"
@@ -11897,9 +12002,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [],
     "same_failing_set": [
@@ -12271,9 +12378,11 @@
    "fail_to_pass_count": 1,
    "fail_to_pass_sha256": "75604019ff295ef502c9dcdacf6ac273621bbc1fa55e32c85c364f4d14f7ff69",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-012"
@@ -12363,9 +12472,11 @@
    "fail_to_pass_count": 7,
    "fail_to_pass_sha256": "e9001cc5f7a48dc839a4a1fd9f026d42bdbedf2479d5f6ae29a609c93eeddaf2",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-152"
@@ -12491,9 +12602,11 @@
    "fail_to_pass_count": 7,
    "fail_to_pass_sha256": "e9001cc5f7a48dc839a4a1fd9f026d42bdbedf2479d5f6ae29a609c93eeddaf2",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-232-nm"
@@ -12709,9 +12822,11 @@
    "fail_to_pass_count": 46,
    "fail_to_pass_sha256": "86c36d66c152b56c0cb92d1ba1fd2ad92a8f3ceb99f499226f5797578e0be99b",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-050"
@@ -12859,10 +12974,11 @@
    "same_mutation_as": [
     "sqlparse-mut-310-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.full.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.full.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -12925,9 +13041,11 @@
    "fail_to_pass_count": 1,
    "fail_to_pass_sha256": "850eff17c7cd1c7744e07487a56f18ae7639512bdee8098765cb1247ac2a35df",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-151"
@@ -13291,10 +13409,11 @@
    "same_mutation_as": [
     "sqlparse-mut-323-nm"
    ],
-   "role": "uncalibrated-pool",
-   "role_source": "experiments/mutation_tasks/tasks.mutations.full.json",
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/mutation_tasks/tasks.mutations.full.json",
    "tags": [
-    "same-mutation-as-other-id"
+    "same-mutation-as-other-id",
+    "was:uncalibrated-pool"
    ],
    "overlaps_eval": {
     "same_function": [
@@ -13849,9 +13968,11 @@
    "fail_to_pass_count": 9,
    "fail_to_pass_sha256": "e83ab72fefbb7822900345ab6cf41d92686a7ce36b719ca86bc80a38ca50af61",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [],
     "same_failing_set": [
@@ -13941,9 +14062,11 @@
    "fail_to_pass_count": 1,
    "fail_to_pass_sha256": "bed25483e40ce8329bccbe887d7f66a9ec0dd4ef1a8fb59d44a31165890e41b5",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-012"
@@ -14035,9 +14158,11 @@
    "fail_to_pass_count": 3,
    "fail_to_pass_sha256": "50a3f9626dbc86dff33b05593218e602b822fcab684162494442106c304a5d9b",
    "same_mutation_as": [],
-   "role": "dev",
-   "role_source": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
-   "tags": [],
+   "role": "quarantined-eval-twin",
+   "role_source": "owner decision 2026-10-01 (\"Quarantine dev twins (Recommended)\"); previous role_source: experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json",
+   "tags": [
+    "was:dev"
+   ],
    "overlaps_eval": {
     "same_function": [
      "sqlparse-mut-232-nm"

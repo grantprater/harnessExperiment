@@ -632,6 +632,24 @@ Answer (verbatim): "Private 2.1.286 copy (Recommended)" (option text: "Install C
   checkpoint stop; `--resume` logs it `void` and reruns it as the next attempt), and before every claude-cli attempt
   checks that `claude --version` on PATH still equals the pin.
 
+### A1.7 Owner decisions for the ontology pilot (2026-10-01)
+
+1. Eval twins. Question (verbatim): "31 eval tasks share a mutated function (38 pairs) or an exact failing-test set (26 pairs) with dev tasks. None of those dev tasks has ever been run. The card says eval must be 'disjoint from every dev task'. How should the overlap be handled?"
+Answer (verbatim): "Quarantine dev twins (Recommended)" (option text: "Tag the overlapping dev tasks so no arm, lesson or evolution step ever uses them. Eval stays at 31, it costs nothing, and the pilot can't learn on a near-copy of an eval bug.")
+2. Pilot rollouts. Question (verbatim): "How many rollouts per task should the 4-arm pilot use (incumbent, memory, symbolic, verifier-commit on 31 tasks)? Costs are list price at about $1.20/run on these harder tasks; it is billed to the subscription for now. The earlier plan was an r=2 screen."
+Answer (verbatim): "r=2 screen (Recommended)" (option text: "248 runs, about $300 list, about 29 hours sequential. A screen only: it detects roughly 23-point effects. A powered follow-up runs only if an arm looks promising. Matches the earlier pilot plan.")
+
+Earlier decisions carried forward: verifier-commit stays the pilot's 4th arm; its reproduction tests need 1-3 generation calls per task, and that count is confirmed with the owner at launch; card 021 is invalidated (cloud trusted-local `run` without a path guard), but the arm is kept.
+
+**What was done** (no model call):
+- Quarantine: `build_task_registry.py` gives every non-eval task whose `overlaps_eval` is non-empty, or whose
+  `same_mutation_as` names an eval task, the role `quarantined-eval-twin` (previous role kept as the tag
+  `was:<role>`): 64 tasks, 49 `was:dev` and 15 `was:uncalibrated-pool` (the base ids of the 15 `-nm` eval tasks).
+  `--check` passes. This card's split, sets and card files are not edited; eval stays at 31.
+- The pilot is drafted as card 024 ([E3-ontology-pilot-024.md](E3-ontology-pilot-024.md), `cards/024.json`,
+  status `proposed`), 31 tasks x 2 rollouts x 4 arms = 248 runs; its incumbent arm plans, for each of the 31 eval
+  tasks, the protocol hash this card or 010-stage2a recorded for that task (31/31).
+
 ## Not done (as of approval, before the calibration run; results are in the report)
 
 - No model calls, and no calibration run.

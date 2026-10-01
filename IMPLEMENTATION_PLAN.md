@@ -880,6 +880,19 @@ Done 2026-10-01: private CLI 2.1.286 under `.runtime/claude-cli-2.1.286` (runner
 both runs voided as `*.void-cli-2.1.287`, per-call CLI-version check (`cli_version_mismatch`), no protocol hash change;
 record in card 010 amendment 1, A1.6.
 
+**Owner decisions (2026-10-01, ontology pilot after card 010).**
+1. Question (verbatim): "31 eval tasks share a mutated function (38 pairs) or an exact failing-test set (26 pairs) with dev tasks. None of those dev tasks has ever been run. The card says eval must be 'disjoint from every dev task'. How should the overlap be handled?"
+Answer (verbatim): "Quarantine dev twins (Recommended)" (option text: "Tag the overlapping dev tasks so no arm, lesson or evolution step ever uses them. Eval stays at 31, it costs nothing, and the pilot can't learn on a near-copy of an eval bug.")
+2. Question (verbatim): "How many rollouts per task should the 4-arm pilot use (incumbent, memory, symbolic, verifier-commit on 31 tasks)? Costs are list price at about $1.20/run on these harder tasks; it is billed to the subscription for now. The earlier plan was an r=2 screen."
+Answer (verbatim): "r=2 screen (Recommended)" (option text: "248 runs, about $300 list, about 29 hours sequential. A screen only: it detects roughly 23-point effects. A powered follow-up runs only if an arm looks promising. Matches the earlier pilot plan.")
+
+Earlier decisions carried forward: verifier-commit stays the pilot's 4th arm; its reproduction tests need 1-3 generation calls per task, and that count is confirmed with the owner at launch; card 021 is invalidated (cloud trusted-local `run` without a path guard), but the arm is kept. Recorded in
+[card 010 amendment 1, A1.7](experiments/session_harness/E3-difficulty-calibration-010.md#a17-owner-decisions-for-the-ontology-pilot-2026-10-01).
+Done: 64 eval twins quarantined in the pooled registry (`quarantined-eval-twin`: 49 `was:dev`, 15
+`was:uncalibrated-pool`; [TASK_REGISTRY.md](experiments/session_harness/TASK_REGISTRY.md)); pilot drafted as
+[card 024](experiments/session_harness/E3-ontology-pilot-024.md) (`proposed`, 248 runs; not launched; the owner approves
+the launch separately).
+
 **Implementation choices before any E3 model run in OCI** (from
 `experiments/session_harness/S2b-oci-boundaries-controls.md`):
 

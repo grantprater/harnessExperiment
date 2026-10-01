@@ -26,8 +26,14 @@ Secondary tags (`tags`): evolution-contrastive / evolution-negative for eval tas
 evolution lists, `dev` for role-4 tasks, `same-mutation-as-other-id` when another id carries the
 identical mutation patch.
 
-`overlaps_eval` is a tag only: for each non-eval task, the eval ids with the same mutated function
-and the eval ids with the same exact fail-to-pass set (within the same bank). Nothing is moved.
+`overlaps_eval`: for each non-eval task, the eval ids with the same mutated function and the eval
+ids with the same exact fail-to-pass set (within the same bank).
+
+Quarantine (owner, 2026-10-01, "Quarantine dev twins (Recommended)"): after roles 2-7 are assigned,
+every non-eval task with a non-empty `overlaps_eval` (by function or by failing set), or whose
+`same_mutation_as` names an eval task, gets role `quarantined-eval-twin`; its previous role is kept
+as the tag `was:<role>`. No arm, lesson or evolution step may use a quarantined task. The eval
+split and card 010's files are unchanged. The decision text is in the registry's `role_notes`.
 """
 from __future__ import annotations
 
@@ -70,7 +76,26 @@ C023 = "E3-calibration-023"
 EVO007_CONTRASTIVE = ["sqlparse-mut-001", "sqlparse-mut-022"]
 EVO007_NEGATIVE = ["sqlparse-mut-032", "sqlparse-mut-057", "sqlparse-mut-061"]
 
-ROLE_ORDER = ["eval-010-combined", "boltons-evolution-excluded", "near-transfer-boltons", "evolution-contrastive",
+QUARANTINE = "quarantined-eval-twin"
+# Owner decision, 2026-10-01, quoted verbatim (question, chosen answer, and the option's text).
+QUARANTINE_DECISION = {
+    "date": "2026-10-01",
+    "question": ("31 eval tasks share a mutated function (38 pairs) or an exact failing-test set (26 pairs) with dev "
+                 "tasks. None of those dev tasks has ever been run. The card says eval must be 'disjoint from every "
+                 "dev task'. How should the overlap be handled?"),
+    "answer": "Quarantine dev twins (Recommended)",
+    "option_text": ("Tag the overlapping dev tasks so no arm, lesson or evolution step ever uses them. Eval stays at "
+                    "31, it costs nothing, and the pilot can't learn on a near-copy of an eval bug."),
+    "rule": ("every non-eval task whose overlaps_eval is non-empty (same mutated function or same exact fail-to-pass "
+             "set as an eval task, within the bank), or whose same_mutation_as names an eval task; the previous "
+             "role is kept as the tag was:<role>"),
+}
+ROLE_NOTES = {
+    QUARANTINE: {**QUARANTINE_DECISION,
+                 "use": "never: no arm, lesson, memory or evolution step may read or run a quarantined task"},
+}
+
+ROLE_ORDER = ["eval-010-combined", QUARANTINE, "boltons-evolution-excluded", "near-transfer-boltons", "evolution-contrastive",
               "evolution-negative", "dev", "excluded-statement-names-function", "uncalibrated-pool"]
 STRATUM_LONG = {"single test": "single", "multi-test, message": "multi-msg", "multi-test, no message": "multi-nm"}
 
@@ -302,7 +327,18 @@ def build():
               and records[e]["fail_to_pass_sha256"] == r["fail_to_pass_sha256"]]
         r["overlaps_eval"] = {"same_function": fn, "same_failing_set": fs}
 
-    rest = sorted((t for t in records if t not in eval_set), key=lambda t: (records[t]["bank"], natural(t)))
+    # ---- quarantine (owner, 2026-10-01): eval twins are never used by any arm, lesson or evolution step
+    for tid, r in records.items():
+        if r["role"] == "eval-010-combined":
+            continue
+        twin = any(e in eval_set for e in r["same_mutation_as"])
+        if r["overlaps_eval"]["same_function"] or r["overlaps_eval"]["same_failing_set"] or twin:
+            r["tags"].append(f"was:{r['role']}")
+            r["role"] = QUARANTINE
+            r["role_source"] = (f"owner decision 2026-10-01 (\"{QUARANTINE_DECISION['answer']}\"); "
+                                f"previous role_source: {r['role_source']}")
+
+    rest =sorted((t for t in records if t not in eval_set), key=lambda t: (records[t]["bank"], natural(t)))
     ordered = [records[t] for t in eval_ids] + [records[t] for t in rest]
 
     counts = defaultdict(Counter)
@@ -318,11 +354,13 @@ def build():
     reg = {
         "schema_version": 1,
         "generated_by": f"{SH}/build_task_registry.py",
-        "note": ("Pooled task registry, cards 007, 023, 010 stage 1 + 2a. overlaps_eval is a tag only; "
-                 "no task was moved or excluded because of it."),
+        "note": ("Pooled task registry, cards 007, 023, 010 stage 1 + 2a. Every non-eval task that overlaps eval "
+                 "(overlaps_eval or same_mutation_as an eval id) has role quarantined-eval-twin (owner, "
+                 "2026-10-01; role_notes); its earlier role is the tag was:<role>. The eval split is unchanged."),
         "boltons_ref": BOLTONS_REF,
         "sources": dict(sorted(SOURCES.items())),
         "roles": ROLE_ORDER,
+        "role_notes": ROLE_NOTES,
         "counts": {b: {r: counts[b][r] for r in ROLE_ORDER if counts[b][r]} for b in sorted(counts)},
         "overlap_totals": ov,
         "eval_order": eval_ids,
@@ -348,8 +386,8 @@ def report(reg, issues, ctx) -> int:
     if not ok_order:
         bad.append("eval order mismatch")
 
-    def has_dev(t):
-        return by[t]["role"] == "dev" or "dev" in by[t]["tags"]
+    def has_dev(t):  # a quarantined dev task still counts as listed in dev (its tag was:dev)
+        return by[t]["role"] == "dev" or "dev" in by[t]["tags"] or "was:dev" in by[t]["tags"]
 
     rows = []
     for name, split in (("010 stage 1", split1), ("010 stage 2a", split2)):
@@ -388,8 +426,18 @@ def report(reg, issues, ctx) -> int:
     by_role = Counter()
     for r in reg["tasks"]:
         if r["overlaps_eval"] and (r["overlaps_eval"]["same_function"] or r["overlaps_eval"]["same_failing_set"]):
-            by_role[r["role"]] += 1
-    print("  non-eval tasks with any overlap, by role: " + ", ".join(f"{k} {v}" for k, v in sorted(by_role.items())))
+            by_role[next((t[4:] for t in r["tags"] if t.startswith("was:")), r["role"])] += 1
+    print("  non-eval tasks with any overlap, by previous role: "
+          + ", ".join(f"{k} {v}" for k, v in sorted(by_role.items())))
+    quarantined = [r for r in reg["tasks"] if r["role"] == QUARANTINE]
+    was = Counter(next(t[4:] for t in r["tags"] if t.startswith("was:")) for r in quarantined)
+    print(f"{QUARANTINE}: {len(quarantined)} tasks (previous role: "
+          + ", ".join(f"{k} {v}" for k, v in sorted(was.items())) + ")")
+    leaks = [r["id"] for r in reg["tasks"] if r["role"] not in ("eval-010-combined", QUARANTINE)
+             and r["overlaps_eval"] and (r["overlaps_eval"]["same_function"] or r["overlaps_eval"]["same_failing_set"]
+                                         or set(r["same_mutation_as"]) & set(reg["eval_order"]))]
+    if leaks:
+        bad.append(f"overlapping tasks outside the quarantine: {leaks}")
     ids = [r["id"] for r in reg["tasks"]]
     dup = [t for t, n in Counter(ids).items() if n > 1]
     print(f"duplicate ids: {dup or 'none'} ({len(ids)} records)")
