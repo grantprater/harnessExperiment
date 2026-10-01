@@ -1,7 +1,13 @@
 # E3 difficulty calibration 010: a harder mutation bank with a dev/eval split
 
 Date: 2026-09-30  
-Status: **completed 2026-10-01 (stage 1).** 60 valid runs on `claude-sonnet-5` (CLI 2.1.286), 48/60 accepted
+Status: **completed 2026-10-01 (stage 1 and stage 2a).** Stage 2a: 78 valid runs on `claude-sonnet-5` (CLI 2.1.286
+in every call), 60/78 accepted (0.77); 2 attempts voided for touching CLI 2.1.287 (A1.6) and rerun. The keep/drop rule
+on the 39 stage-2a tasks keeps 19 for eval (predicted 0.42) and moves 20 to dev; the combined eval is **31 tasks**
+(stage 1's 12 + 19), which meets the power-table designs delta 0.15 optimistic at r = 3 or 4 and delta 0.20 central at
+r = 4. [Stage-2a report](E3-difficulty-calibration-010-stage2a-report.md),
+[stage-2a split](E3-difficulty-calibration-010-stage2a.split.json),
+[combined eval](E3-difficulty-calibration-010.eval-combined.json). Stage 1: 60 valid runs on `claude-sonnet-5` (CLI 2.1.286), 48/60 accepted
 (0.80); 2 adapter-failure attempts voided and rerun. The keep/drop rule gives an eval split of 12 tasks (predicted
 acceptance 0.42) and moves 18 to dev. Twelve is below every power-table design, so per the bank stopping rule the next
 stage (2a) needs an amended card and approval. [Report](E3-difficulty-calibration-010-report.md),
@@ -19,7 +25,7 @@ Model: pinned by full ID `claude-sonnet-5` after alias drift (2026-09-30): CLI 2
 Amendment 1 (2026-10-01): stage 2a generation approved by the owner ("Stage 2a first (Recommended)") and run in the
 cloud (DETERMINISM: PASS-ADDRESS-ONLY). After generation the owner accepted the address-only exception and the
 selection rule, and approved the stage-2a calibration, 78 runs (2026-10-01; [A1.5](#a15-owner-decisions-and-stage-2a-build-2026-10-01)).
-Machine card [`cards/010-stage2a.json`](cards/010-stage2a.json); not yet launched.  
+Machine card [`cards/010-stage2a.json`](cards/010-stage2a.json); completed 2026-10-01 (see Status).  
 Stage: S6a follow-up (proposed in the [card 007 report](E3-calibration-007-report.md)). Machine card:
 [`cards/010.json`](cards/010.json).
 

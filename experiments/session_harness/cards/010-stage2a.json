@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "E3-difficulty-calibration-010-stage2a",
   "title": "Difficulty calibration 010, stage 2a: calibrate the 39 new generator tasks (amendment 1)",
-  "status": "approved",
+  "status": "completed",
   "markdown": "experiments/session_harness/E3-difficulty-calibration-010.md",
   "hypothesis": "The 39 function-distinct stage-2a tasks (generator continuation past sqlparse-mut-076; amendment 1, A1.3) give the Reticle incumbent (Sonnet 5 via the CLI) a mix of solved, mixed and unsolved tasks from which the stage-1 keep/drop rule, applied to these 39 alone, adds eval tasks to stage 1's 12, disjoint from every dev task.",
   "run_prefix": "c010b",
