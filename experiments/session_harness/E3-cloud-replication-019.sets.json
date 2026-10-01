@@ -1,0 +1,36 @@
+{
+  "derived": {
+    "card": "E3-cloud-replication-019",
+    "generated_at": "2026-09-29T00:50:48+00:00",
+    "per_arm": {
+      "incumbent": {
+        "all_accepted": [
+          "sqlparse-mut-002",
+          "sqlparse-mut-023",
+          "sqlparse-mut-024",
+          "sqlparse-mut-025",
+          "sqlparse-mut-033",
+          "sqlparse-mut-034",
+          "sqlparse-mut-040",
+          "sqlparse-mut-042",
+          "sqlparse-mut-043",
+          "sqlparse-mut-044",
+          "sqlparse-mut-046",
+          "sqlparse-mut-060",
+          "sqlparse-mut-073",
+          "sqlparse-mut-075",
+          "sqlparse-mut-076"
+        ],
+        "mixed": [
+          "sqlparse-mut-022"
+        ],
+        "none_accepted": [
+          "sqlparse-mut-001",
+          "sqlparse-mut-032",
+          "sqlparse-mut-057",
+          "sqlparse-mut-061"
+        ]
+      }
+    }
+  }
+}

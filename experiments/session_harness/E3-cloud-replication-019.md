@@ -1,8 +1,7 @@
 # E3 cloud replication 019: card 007 on a Claude Code cloud VM
 
 Date: 2026-09-28  
-Status: proposed; awaiting owner approval (pasting [`experiments/cloud/RUN_IN_CLOUD.md`](../cloud/RUN_IN_CLOUD.md) into
-a cloud session approves it, conditional on that prompt's checks passing on the VM)  
+Status: running; approved by the owner through experiments/cloud/RUN_IN_CLOUD.md, launched in a cloud session 2026-09-28 22:37 UTC  
 Stage: S6 infrastructure. Machine-readable card: [`cards/019.json`](cards/019.json).
 
 ## Purpose

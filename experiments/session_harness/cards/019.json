@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "E3-cloud-replication-019",
   "title": "Card 007 replicated on a cloud VM (trusted-local, model pinned) to measure the environment effect",
-  "status": "proposed",
+  "status": "running",
   "markdown": "experiments/session_harness/E3-cloud-replication-019.md",
   "hypothesis": "Card 007's incumbent protocol, run in a Claude Code cloud VM (trusted-local backend in a disposable VM, CLI 2.1.284, model pinned to claude-sonnet-5) instead of the Windows host's OCI container, gives per-task acceptance within sampling noise of card 007 (32/40, 2 contrastive, 3 negative tasks). A difference larger than that is an environment effect that must be understood before any treatment card runs in the cloud.",
   "run_prefix": "c019",
@@ -17,7 +17,7 @@
   "prerequisites": [
     {
       "text": "owner approval recorded in the markdown card (then set status to running). The owner approves by pasting experiments/cloud/RUN_IN_CLOUD.md into a cloud session, conditional on its steps 1-5 passing on the VM (setup READY, core tests, gold/noop controls, pinned-model smoke)",
-      "done": false
+      "done": true
     }
   ],
   "arms": [
