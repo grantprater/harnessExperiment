@@ -1,4 +1,5 @@
-"""Opt-in network and file isolation for trusted-local commands on Linux: `--sandbox unshare-rnm` (card 022, cloud first).
+"""Opt-in network and file isolation for trusted-local commands on Linux: `--sandbox unshare-rnm` (card 022, cloud first)
+and `--sandbox unshare-confined` (any task; the cloud integrity fix; see CONFINED_NAME below).
 
 Every command the backend runs (the run tool's commands and the evaluator's) starts inside new user, mount and network
 namespaces (`unshare -rnm`, which needs no root: the cloud VM passed experiments/cloud/probe_isolation.sh on
@@ -26,7 +27,11 @@ import shutil
 import subprocess
 from typing import List, Optional
 
-from reticle.execution import TrustedLocalBackend
+from reticle.execution import ConfinedLocalBackend, TrustedLocalBackend
+from reticle.execution.backends import (
+    CONFINEMENT_NAME, CONFINEMENT_SCRIPT, CONFINEMENT_SETPRIV, CONFINEMENT_SYSTEM_PATHS, CONFINEMENT_UNSHARE,
+    CONFINEMENT_VERSION,
+)
 
 SANDBOX_NAME = "unshare-rnm"
 SANDBOX_VERSION = "unshare-rnm-v1"
@@ -83,6 +88,38 @@ def availability() -> Optional[str]:
     if completed.returncode:
         return f"unshare -rnm is refused here: {completed.stderr.strip()[:200]}"
     return None
+
+
+# ---- --sandbox unshare-confined: OCI-equivalent confinement for code and forecast tasks (cloud integrity fix) ----
+# The 019-021 integrity audit (experiments/cloud/INTEGRITY_AUDIT_019-021.md) found that trusted-local `run` commands
+# could read the healthy clone, the task bank, other runs and the harness history, and download upstream sources.
+# unshare-rnm hides a list of known places; unshare-confined shows a list instead: the command's working directory,
+# read-only system directories and the task interpreter, nothing else (reticle.execution.ConfinedLocalBackend).
+
+CONFINED_NAME = CONFINEMENT_NAME
+CONFINED_AUTHORITY = ("trusted-local, confined: each command sees only the task workspace (writable), read-only "
+                      "system directories and the task interpreter, with no network and a private /tmp per command; "
+                      "nothing outside the workspace is available")
+
+
+def confined_contract() -> dict:
+    """What the execution contract records for unshare-confined (machine-independent: roles, not host paths)."""
+    return {"name": CONFINED_NAME, "version": CONFINEMENT_VERSION,
+            "namespaces": list(CONFINEMENT_UNSHARE[1:]),
+            "visible": ["the command's working directory (read-write unless the request is read-only)",
+                        "read-only: " + " ".join(CONFINEMENT_SYSTEM_PATHS) + " where present",
+                        "read-only: the task interpreter's venv and base installation",
+                        "/dev: null zero full random urandom shm; /proc: the private PID namespace's"],
+            "network": "new network namespace: loopback only",
+            "tmp": "private tmpfs per command",
+            "git": "no repository above the working directory; GIT_CEILING_DIRECTORIES at its parent",
+            "privileges": " ".join(CONFINEMENT_SETPRIV),
+            "script_sha256": hashlib.sha256(CONFINEMENT_SCRIPT.encode("utf-8")).hexdigest()}
+
+
+def confined_backend(interpreter) -> ConfinedLocalBackend:
+    """The confined backend for this task interpreter (its binds are computed on first use, not here)."""
+    return ConfinedLocalBackend(interpreter=str(interpreter))
 
 
 class NamespaceSandboxBackend(TrustedLocalBackend):

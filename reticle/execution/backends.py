@@ -1,20 +1,22 @@
-"""Trusted local supervision and an explicitly isolated OCI backend."""
+"""Trusted local supervision, its Linux namespace confinement, and an explicitly isolated OCI backend."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace as dataclass_replace
 import ctypes
 from ctypes import wintypes
 import json
 import os
+import posixpath
 from pathlib import Path
 import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import threading
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from uuid import uuid4
 
 
@@ -285,6 +287,241 @@ class TrustedLocalBackend:
                     stream.close()
             if tree is not None:
                 tree.close()
+
+
+CONFINEMENT_NAME = "unshare-confined"
+CONFINEMENT_VERSION = "unshare-confined-v1"
+# Read-only system directories bound into the confined root, where they exist (merged-/usr symlinks such as
+# /bin -> usr/bin are recreated as symlinks). /etc is bound for the loader cache, passwd and certificate lookups.
+CONFINEMENT_SYSTEM_PATHS = ("/usr", "/bin", "/sbin", "/lib", "/lib32", "/lib64", "/libx32", "/etc")
+CONFINEMENT_UNSHARE = ("unshare", "--user", "--map-root-user", "--net", "--mount", "--pid", "--fork",
+                       "--kill-child")
+CONFINEMENT_SETPRIV = ("setpriv", "--no-new-privs", "--inh-caps=-all", "--ambient-caps=-all", "--bounding-set=-all")
+# Where the new root is staged: the first of these that exists on the host and is not an ancestor of the working
+# directory or of a bind source (the tmpfs mounted there hides that host directory, in the private namespace only).
+CONFINEMENT_STAGES = ("/mnt", "/media", "/srv", "/opt", "/var/empty", "/run", "/tmp")
+# The new root's own /dev, /proc and /tmp: no read-only bind may target them.
+CONFINEMENT_RESERVED = ("/dev", "/proc", "/tmp")
+# sh -c script run inside the new user, mount, PID and network namespaces. Arguments: $1 the working directory,
+# $2 1 if it is writable, $3 the staging directory, then SOURCE TARGET pairs to bind read-only, "--", then the
+# command. It builds a new root on a tmpfs that holds only a minimal /dev, a fresh /proc of the private PID namespace,
+# a fresh /tmp, those read-only binds and the working directory; pivots into it and detaches the host root; then
+# drops every capability and runs the command. `set -e`: any failed step aborts before the command runs, so nothing
+# ever runs half-confined.
+CONFINEMENT_SCRIPT = r'''set -eu
+wd=$1; writable=$2; R=$3; shift 3
+outer_path=$PATH
+PATH=$PATH:/usr/sbin:/sbin:/usr/bin:/bin
+ro() {
+  mount -o remount,bind,ro "$1" 2>/dev/null || mount -o remount,bind,ro,nosuid,nodev "$1" 2>/dev/null \
+    || mount -o remount,bind,ro,nosuid,nodev,noexec "$1"
+}
+rro() {
+  ro "$1"
+  for sub in $(awk -v p="$1/" 'index($5, p) == 1 {print $5}' /proc/self/mountinfo); do ro "$sub"; done
+}
+mount -t tmpfs -o mode=755 reticle-root "$R"
+mkdir "$R/dev" "$R/proc" "$R/tmp" "$R/.reticle-old-root"
+mount -t tmpfs -o mode=755,nosuid reticle-dev "$R/dev"
+for node in null zero full random urandom; do
+  if [ -e "/dev/$node" ]; then : > "$R/dev/$node"; mount --bind "/dev/$node" "$R/dev/$node"; fi
+done
+ln -s /proc/self/fd "$R/dev/fd"
+ln -s /proc/self/fd/0 "$R/dev/stdin"
+ln -s /proc/self/fd/1 "$R/dev/stdout"
+ln -s /proc/self/fd/2 "$R/dev/stderr"
+mkdir "$R/dev/shm"
+mount -t tmpfs -o mode=1777,nosuid,nodev,size=64m reticle-shm "$R/dev/shm"
+mount -t proc -o nosuid,nodev,noexec proc "$R/proc" 2>/dev/null || true
+mount -t tmpfs -o mode=1777,nosuid,nodev,size=256m reticle-tmp "$R/tmp"
+while [ "$1" != "--" ]; do
+  src=$1; dst=$2; shift 2
+  if [ -L "$src" ] && [ "$src" = "$dst" ]; then
+    mkdir -p "$R$(dirname "$dst")"; ln -s "$(readlink "$src")" "$R$dst"
+  elif [ -d "$src" ]; then
+    mkdir -p "$R$dst"; mount --rbind "$src" "$R$dst"; rro "$R$dst"
+  elif [ -e "$src" ]; then
+    mkdir -p "$R$(dirname "$dst")"; : > "$R$dst"; mount --bind "$src" "$R$dst"; ro "$R$dst"
+  fi
+done
+shift
+mkdir -p "$R$wd"
+mount --bind "$wd" "$R$wd"
+if [ "$writable" != 1 ]; then ro "$R$wd"; fi
+cd "$R"
+pivot_root . .reticle-old-root
+cd /
+umount -l /.reticle-old-root
+rmdir /.reticle-old-root
+cd "$wd"
+PATH=$outer_path HOME=/tmp TMPDIR=/tmp TMP=/tmp TEMP=/tmp GIT_CEILING_DIRECTORIES=$(dirname "$wd")
+export PATH HOME TMPDIR TMP TEMP GIT_CEILING_DIRECTORIES
+exec ''' + " ".join(CONFINEMENT_SETPRIV) + ''' -- "$@"
+'''
+
+
+
+
+def _inside(path: str, parent: str) -> bool:
+    """True if the POSIX path is parent or below it."""
+    return path == parent or parent == "/" or path.startswith(parent.rstrip("/") + "/")
+
+
+def _posix_directory(path: str | Path) -> str:
+    """The working directory as the confined root names it: resolved on POSIX. Elsewhere (only argument-construction
+    tests: confinement never runs there) a POSIX-style path is normalised as given."""
+    if os.name == "posix":
+        return str(Path(path).resolve())
+    return posixpath.normpath(str(path).replace("\\", "/"))
+
+
+def interpreter_roots(interpreter: str | Path) -> List[str]:
+    """The directories a Python interpreter needs: its venv (sys.prefix), its base installation (sys.base_prefix
+    and the exec prefixes) and the directory of the executable it resolves to. Asked of the interpreter itself, so
+    a uv- or pyenv-managed base outside /usr is found."""
+    completed = subprocess.run(
+        [str(interpreter), "-I", "-c",
+         "import json, sys; print(json.dumps([sys.prefix, sys.exec_prefix, sys.base_prefix, sys.base_exec_prefix]))"],
+        capture_output=True, text=True, timeout=60, check=False,
+    )
+    if completed.returncode != 0:
+        raise BackendUnavailableError(
+            f"task interpreter {interpreter} did not report its prefixes: {completed.stderr.strip()[:200]}"
+        )
+    roots = list(json.loads(completed.stdout))
+    roots.append(posixpath.dirname(os.path.realpath(str(interpreter))))
+    return roots
+
+
+def confinement_binds(extra_roots: List[str], system_paths=CONFINEMENT_SYSTEM_PATHS,
+                      exists=os.path.lexists, realpath=os.path.realpath) -> List[Tuple[str, str]]:
+    """(source, target) pairs to bind read-only, in order. System paths that exist are bound at their own path (the
+    script recreates a symlink such as /bin -> usr/bin instead of following it). Each extra root is bound from its
+    real path, at the real path and, when it differs, at the path as given. A target at or below a target already
+    kept is dropped (that bind already shows it); a kept target below a new one is replaced by it."""
+    pairs: List[Tuple[str, str]] = [(path, path) for path in system_paths if exists(path)]
+    for root in extra_roots:
+        given = posixpath.normpath(str(root))
+        real = posixpath.normpath(realpath(given))
+        for target in dict.fromkeys((real, given)):
+            pairs.append((real, target))
+    kept: List[Tuple[str, str]] = []
+    for source, target in pairs:
+        if any(_inside(target, other) for _, other in kept):
+            continue
+        kept = [(s, t) for s, t in kept if not _inside(t, target)]
+        kept.append((source, target))
+    return kept
+
+
+def confinement_stage(directory: str, binds: List[Tuple[str, str]], isdir=os.path.isdir) -> str:
+    """The staging directory: the first CONFINEMENT_STAGES entry that exists and is not an ancestor of the working
+    directory or of a bind source (its host contents are hidden while the new root is built)."""
+    for stage in CONFINEMENT_STAGES:
+        if not isdir(stage):
+            continue
+        if _inside(directory, stage) or any(_inside(source, stage) for source, _ in binds):
+            continue
+        return stage
+    raise BackendUnavailableError(f"no staging directory for the confined root among {', '.join(CONFINEMENT_STAGES)}")
+
+
+class ConfinedLocalBackend(TrustedLocalBackend):
+    """Trusted-local execution confined like the OCI backend, on Linux, without an engine or host root.
+
+    Every command runs in new user, mount, PID and network namespaces (util-linux unshare; the cloud VM passed
+    experiments/cloud/probe_isolation.sh with unshare -rnm). Inside, a tmpfs root holds only the working directory
+    (writable unless the request is read-only), read-only system directories (CONFINEMENT_SYSTEM_PATHS), the task
+    interpreter's venv and base installation (read-only), a minimal /dev, a fresh /proc of the private PID namespace
+    and a private /tmp per command. pivot_root moves into it and the host root is detached, so nothing else on the
+    host is reachable by any path. The only network interface is an unconfigured loopback. git cannot climb above the
+    working directory (nothing above it exists, and GIT_CEILING_DIRECTORIES says so). setpriv drops every capability
+    and sets no_new_privs before the command runs, so it cannot remount, mount or chroot its way back.
+
+    Fails closed: availability() runs one full confined command; if that fails on this host, run() raises
+    BackendUnavailableError and nothing runs.
+    """
+
+    name = "trusted-local-confined"
+    host_isolation = False  # paths keep their host names (the workspace path, the interpreter path)
+    confinement = CONFINEMENT_NAME
+
+    def __init__(self, interpreter: Optional[str | Path] = None,
+                 readonly_binds: Optional[List[Tuple[str, str]]] = None, stage: Optional[str] = None):
+        self.interpreter = interpreter
+        self._binds = list(readonly_binds) if readonly_binds is not None else None
+        self._stage = stage
+        self._problem: Optional[str] = None
+        self._checked = False
+
+    def binds(self) -> List[Tuple[str, str]]:
+        """Read-only (source, target) binds, computed on first use (asking the task interpreter for its prefixes)."""
+        if self._binds is None:
+            roots = interpreter_roots(self.interpreter) if self.interpreter is not None else []
+            self._binds = confinement_binds(roots)
+        return self._binds
+
+    def build_command(self, request: ExecutionRequest) -> List[str]:
+        """The host argv: unshare, then the confinement script with its arguments, then the request's command."""
+        directory = _posix_directory(request.working_directory)
+        if not directory.startswith("/"):
+            raise ValueError(f"confinement needs a POSIX working directory, not {directory}")
+        writable = request.mutates_workspace if request.writable_mount is None else request.writable_mount
+        binds = self.binds()
+        for _, target in binds:
+            if target in CONFINEMENT_RESERVED or _inside(target, "/proc"):
+                raise ValueError(f"read-only bind {target} would cover the confined root's own /dev, /proc or /tmp")
+            if _inside(directory, target) or _inside(target, directory):
+                raise ValueError(f"working directory {directory} overlaps the read-only bind {target}")
+        if directory in CONFINEMENT_RESERVED or _inside(directory, "/proc"):
+            raise ValueError(f"working directory {directory} is reserved in the confined root")
+        stage = self._stage or confinement_stage(directory, binds)
+        flat = [part for pair in binds for part in pair]
+        return [*CONFINEMENT_UNSHARE, "--", "sh", "-c", CONFINEMENT_SCRIPT, "reticle-confine",
+                directory, "1" if writable else "0", stage, *flat, "--", *request.command]
+
+    def availability(self) -> Optional[str]:
+        """Why confinement cannot run on this host, or None. Checked once per backend: the tools must exist and one
+        full confined `true` (every mount, the pivot and the capability drop) must succeed."""
+        if self._checked:
+            return self._problem
+        self._checked = True
+        self._problem = self._probe()
+        return self._problem
+
+    @staticmethod
+    def _platform_problem() -> Optional[str]:
+        if os.name != "posix" or not sys.platform.startswith("linux"):
+            return f"--sandbox {CONFINEMENT_NAME} needs Linux namespaces; this host is {sys.platform}"
+        return None
+
+    def _probe(self) -> Optional[str]:
+        problem = self._platform_problem()
+        if problem:
+            return problem
+        for tool in ("unshare", "setpriv", "pivot_root", "mount", "umount"):
+            if shutil.which(tool) is None and not any(
+                    os.path.exists(posixpath.join(d, tool)) for d in ("/usr/sbin", "/sbin", "/usr/bin", "/bin")):
+                return f"--sandbox {CONFINEMENT_NAME} needs util-linux {tool}"
+        try:
+            with tempfile.TemporaryDirectory(prefix="reticle-confine-check-") as scratch:
+                probe = ExecutionRequest(command=["true"], working_directory=scratch, timeout_seconds=60)
+                result = TrustedLocalBackend.run(self, dataclass_replace(probe, command=self.build_command(probe)))
+        except (OSError, ValueError, BackendUnavailableError, subprocess.SubprocessError) as exc:
+            return f"--sandbox {CONFINEMENT_NAME} self-test could not start: {exc}"
+        if result.status != "success":
+            detail = (result.stderr or result.stdout).decode("utf-8", errors="replace").strip()[-300:]
+            return f"--sandbox {CONFINEMENT_NAME} self-test failed (exit {result.exit_code}): {detail}"
+        return None
+
+    def run(self, request: ExecutionRequest, cancellation_event: Optional[threading.Event] = None) -> ExecutionResult:
+        problem = self.availability()
+        if problem:
+            raise BackendUnavailableError(problem)
+        wrapped = dataclass_replace(request, command=self.build_command(request))
+        return super().run(wrapped, cancellation_event)
+
+
 
 
 class IsolatedOCIBackend:

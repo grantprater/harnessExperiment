@@ -295,6 +295,28 @@ later runs:
    and `find /` in `run` arguments, and the gold patch's added lines in tool results before the first fixing edit.
    This is what this audit did by hand.
 
+## Fix
+
+**Branch `fix/cloud-run-confinement`.** Status: built, unit-tested, and passed a container probe on the host. The VM
+probe (`experiments/cloud/RUN_IN_CLOUD-confinement-probe.md`) is pending, and cloud cards stay paused until it passes.
+No card uses the new mode yet.
+
+- **`"sandbox": "unshare-confined"`** is a new card field (and `run_pilot.py --sandbox` value) for trusted-local runs
+  on Linux. It covers fixes 1 and 3.
+  - Each command runs in new user, network, mount and PID namespaces.
+  - Its root is a fresh tmpfs. It sees only the workspace (writable), read-only system directories and the task
+    interpreter's prefixes, and a private `/tmp`. Everything else is unmounted after `pivot_root`: the checkout, the
+    clones, the evaluator, the verifier copy, `.git` and the host `/tmp`.
+  - The command then runs without capabilities and with `no_new_privs`, and `GIT_CEILING_DIRECTORIES` is set.
+  - The model is told it is confined.
+  - The mode is part of the protocol hash, so it starts new runs and replays none of the old ones.
+  - It fails closed: if the host cannot confine (not Linux, a missing tool, or a failed self-test), the runner refuses,
+    dry runs included. `run_card.py --execute` then refuses the whole invocation before any run starts.
+- **`experiments/session_harness/run_integrity.py`** covers fix 4. It is called by `run_card.py` after each
+  invocation and as `--integrity`, and it only reports. On the evidence above it flags exactly the 105 commands of
+  `integrity-019-021-outside-commands.csv`, in the same 27 runs, and none in the other 92 runs.
+- Fix 2 (moving the workspace out of the checkout) was not done: under the new root the parent directories are empty.
+
 ## What this audit did not do
 
 - **No hidden tests were rerun.** Acceptance is taken from `results.jsonl`. The false-acceptance check is a rebuild and

@@ -2,6 +2,7 @@
 
 from reticle.execution.backends import (
     BackendUnavailableError,
+    ConfinedLocalBackend,
     ExecutionRequest,
     ExecutionResult,
     IsolatedOCIBackend,
@@ -12,6 +13,7 @@ from reticle.execution.controller import ExecutionController, ExecutionRecord
 
 __all__ = [
     "BackendUnavailableError",
+    "ConfinedLocalBackend",
     "ExecutionRequest",
     "ExecutionController",
     "ExecutionRecord",
