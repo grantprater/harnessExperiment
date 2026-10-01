@@ -1,0 +1,12 @@
+# 2026-10-01T01:36:21.570542+00:00 /home/user/harnessExperiment/.runtime/test-venv/bin/python /home/user/harnessExperiment/experiments/session_harness/run_card.py /home/user/harnessExperiment/experiments/session_harness/cards/023.json --execute --resume --python /home/user/harnessExperiment/.runtime/test-venv/bin/python
+preflight incumbent: protocol 3245c91d816e matches
+[3/42] c023-boltons-mut-010-r1: ok (finish_requested -> accepted)
+[4/42] c023-boltons-mut-011-r1: ok (finish_requested -> accepted)
+[5/42] c023-boltons-mut-015-r1: ok (model_call_limit -> rejected)
+[6/42] c023-boltons-mut-016-r1: ok (finish_requested -> accepted)
+[7/42] c023-boltons-mut-021-r1: ok (finish_requested -> accepted)
+[8/42] c023-boltons-mut-023-r1: ok (finish_requested -> rejected)
+[9/42] c023-boltons-mut-027-r1: ok (finish_requested -> accepted)
+[10/42] c023-boltons-mut-029-r1: ok (finish_requested -> accepted)
+[11/42] c023-boltons-mut-031-r1: ok (finish_requested -> accepted)
+[12/42] c023-boltons-mut-033-r1: ok (finish_requested -> accepted)
