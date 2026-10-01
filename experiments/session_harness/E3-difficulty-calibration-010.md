@@ -16,6 +16,8 @@ powered confirmation only if the pilot is promising; (5) no separate lesson-stor
 starts. Decision (4) follows from (3): stage 2a is not run now.  
 Owner decision (2026-09-30, verbatim): "Yeah we can pin sonnet 5 for now, though I think we pivot after this initial test run that we've gotten the comparison for to harder tasks and see if they extend/generalize".  
 Model: pinned by full ID `claude-sonnet-5` after alias drift (2026-09-30): CLI 2.1.286 resolved the alias `sonnet` to `claude-sonnet-5-5`.  
+Amendment 1 (2026-10-01): stage 2a generation approved by the owner ("Stage 2a first (Recommended)"); not yet run.
+Its calibration runs and cost are not approved. See [Amendment 1](#amendment-1-2026-10-01-stage-2a).  
 Stage: S6a follow-up (proposed in the [card 007 report](E3-calibration-007-report.md)). Machine card:
 [`cards/010.json`](cards/010.json).
 
@@ -372,6 +374,174 @@ The reasoning tools may add tokens per run: the finish guard added 14% attempts.
 4. Whether to run stage 2a now (no model; about 47 min CPU plus about 1-2 h of OCI controls) and calibrate stages 1 and
    2a in a single approval.
 5. Whether the lesson store gets its own untouched eval tasks.
+
+## Amendment 1 (2026-10-01): stage 2a
+
+Owner question (2026-10-01, verbatim): "Card 010's keep/drop rule left only 12 eval tasks, not the ~30 the 4-arm pilot
+was sized for. How should the pilot proceed?"
+
+Owner answer (verbatim): "Stage 2a first (Recommended)". That option read: "Generate ~45-55 new sqlparse mutation tasks
+(CPU only, ~47 min, as a one-shot cloud routine, no model calls), then calibrate them: ~90-110 runs on Sonnet 5 (roughly
+$95-115 at list). At the 12/30 yield that adds ~18-22 eval tasks, ~30-34 in total. Then the 4-arm pilot as approved:
+~240 runs. Each step's calls and cost are confirmed with you before it runs."
+
+What this approves now: the generation step (A1.1) and its determinism check (A1.2), which make no model call. The
+selection (A1.3) and the calibration protocol (A1.4) are fixed here before any output exists, but no calibration run is
+approved: its run count and cost are set after generation and go to the owner first.
+
+Stage 1 is not changed: `cards/010.json`, `tasks.difficulty010.json`, the sets file and the split file stay as they
+are. Rechecked 2026-10-01 with `apply_split_010.py` (offline): every stage-1 run's hash still equals the hash
+`run_card.py --plan` computes for it.
+
+### A1.1 Generation (approved; no model calls)
+
+- **Where.** A one-shot cloud routine (4-core Linux VM, no GPU), prompt
+  [`experiments/cloud/RUN_IN_CLOUD-010-stage2a.md`](../cloud/RUN_IN_CLOUD-010-stage2a.md). Results go to branch
+  `cloud-results-010-stage2a`.
+- **Code.** Branch `exp/ontology-pilot` at the amendment commit. The generator,
+  [`generate.py`](../mutation_tasks/generate.py), is unchanged: `GENERATOR_VERSION` 1, seed 865, source task
+  `sqlparse-865`, upstream sqlparse `f66d12c245412f28c58f045b646eb53c0e691b8b`.
+- **Command.** The card's stage-2a command, run from the repository root:
+
+  ```
+  OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 nice -n 19 .runtime/bugs-venv/bin/python \
+    experiments/mutation_tasks/generate.py --python .runtime/bugs-venv/bin/python --work-dir /tmp/c010-2a-work \
+    --max-candidates 531 --budget-seconds 3600 \
+    --out experiments/mutation_tasks/tasks.mutations.full.json \
+    --log experiments/mutation_tasks/generation_log.full.json
+  ```
+
+  It differs from the card's literal command in three ways, none of which changes what is generated:
+  - `--python`: the generator's default task interpreter is the Windows venv path;
+  - `--work-dir`: an explicit scratch directory;
+  - output paths: the card gave bare file names; these put the outputs beside the bank.
+
+  `--gold-check` stays at its default of 2.
+- **Budget.** A 3600 s wall cap on the candidate loop, as in the card. At the host's recorded 5.35 s per candidate,
+  531 candidates take about 47 min. If the VM is slower, the cap stops the loop early, and the result file records how
+  many were tried. A rerun or a larger budget needs a new approval.
+- **Platform.** The recorded bank was generated on the Windows host. This run is on Linux:
+  - task Python 3.13.15 from `setup_cloud.sh`, the host's version;
+  - `bugs-venv` installed exactly from the host's freeze, without pytest-timeout, as in the recorded run.
+
+  The stage-1 controls ran on Linux (OCI) and reproduced every recorded `fail_to_pass` set. The determinism check in
+  A1.2 is the test that applies here.
+
+### A1.2 Determinism check
+
+The card's requirement is: "the first 76 kept tasks should reappear with the same ids. Verify this by comparing
+`mutation_patch` and `statement` before using any new id."
+
+**Before launch (done 2026-10-01, on the host, no suites).** Command:
+`python experiments/mutation_tasks/check_stage2a_010.py --schedule`, with `--repo-dir` pointing at the main checkout's
+sqlparse clone.
+- Result: `SCHEDULE: SAME`.
+- Candidate pool 531, of which 431 untried.
+- The first 100 scheduled candidates equal `generation_log.json` in file, line, kind, detail and function.
+- All 76 kept patches equal the recorded `mutation_patch`.
+
+**After generation (in the cloud run).** Command:
+`python experiments/mutation_tasks/check_stage2a_010.py --compare --result experiments/mutation_tasks/stage2a-010-result.txt`.
+
+The check passes when both of these hold:
+- (a) at least 100 candidates were tried, and the first 100 log entries equal the recorded ones in file, line, kind,
+  detail, function and verdict;
+- (b) the full output's first 76 tasks are `sqlparse-mut-001` to `-076`, in order, with byte-identical
+  `mutation_patch` and `statement`.
+
+**Known exception (PROPOSED, pending owner approval).** `sqlparse-mut-072`'s statement quotes an object repr with a
+CPython memory address: `<DML 'select' at 0x24ED3E03B80>`. The address changes in every process. A full regeneration
+on 2026-09-28 saw exactly this difference ([REPORT.md](../mutation_tasks/REPORT.md) weakness 11, on branch
+`integration/2026-10`). The script therefore reports `PASS-ADDRESS-ONLY` when every statement difference disappears
+after replacing `0x[0-9A-Fa-f]+`. Proposal: treat `PASS-ADDRESS-ONLY` as a pass. `mut-072` is excluded from every
+split, because its statement names the mutated function. Until the owner accepts this, `PASS-ADDRESS-ONLY` is handled
+like a failure for the purpose of using new ids.
+
+That regeneration also lost `sqlparse-mut-044` to the 60 s timeout, on a heavily loaded host (75.9 s against 3.2 s).
+On the VM, the generator is the only job.
+
+**If the check fails:** stop and report.
+- No new id (`sqlparse-mut-077` onward) is used, nothing is calibrated, and `tasks.mutations.json` stays the reference.
+- The cloud run still commits its outputs and the result file to `cloud-results-010-stage2a`, for diagnosis only.
+- A rerun or fix needs a further amendment.
+
+### A1.3 Selection of new candidates for calibration (PROPOSED, pending owner approval)
+
+The card has no selection rule for stage 2a. It only expects "about 45-55 new function-distinct candidates", from the
+"62 [functions] no bank task uses". The rule it does have is stage 1's (section "Stage 1 rule";
+[`build_bank_010.py`](../mutation_tasks/build_bank_010.py) docstring), quoted:
+
+> 2. Excluded: tasks whose statement names the mutated function (statement_names_mutated_function).
+> 3. Dev pool (untried, but correlated with the dev core): tasks whose mutated_function or whose exact fail_to_pass
+>    set equals a dev-core task's.
+> 4. The remaining fresh tasks are shuffled with random.Random(SEED) from task-id order and walked; a task is a
+>    calibration candidate when both its mutated_function and its sorted fail_to_pass set are new among candidates;
+>    otherwise it joins the dev pool as a duplicate.
+> 5. Statement form: candidates with one failing test keep the generated statement. Candidates with two or more are
+>    sorted by id, shuffled with random.Random(f"{SEED}:statement-form"), and the first half (rounded down) become
+>    weak-signal variants `<id>-nm` [...]
+
+Proposed minimal adaptation, the same rule with three substitutions:
+1. **Pool.** The kept tasks of `tasks.mutations.full.json` after `sqlparse-mut-076`, and only after the determinism
+   check passes.
+2. **Excluded.** Step 2, unchanged.
+3. **Dev pool.** Step 3, with "a dev-core task" read as **any of the 76 recorded bank tasks**: dev core, dev pool,
+   excluded and stage-1 candidates alike. After stage 1, every recorded task is in dev or eval, so a new task that
+   shares a function or failing set with any of them is not new.
+4. **Walk.** Step 4 with seed `"10:stage-2a"` in place of `10`.
+5. **Statement form.** Step 5 with seed `"10:stage-2a:statement-form"`.
+6. **No cap.** Every candidate that passes is calibrated.
+7. **Controls first.** Before calibration, every candidate goes through the card's "Offline filters": gold and noop in
+   OCI, twice each, checked against the `check_controls_010.py` criteria. A candidate that fails is dropped and
+   reported. This needs no model, but about 1-2 h of local OCI time.
+
+`check_stage2a_010.py --compare` applies steps 1-4 and reports counts only. The stage-2a bank and sets files are
+written by a builder made after approval; it is not built yet.
+
+### A1.4 Calibration of the new candidates (protocol fixed; runs and cost NOT approved)
+
+**Protocol.** Identical to "Preregistered calibration run (stage 1)":
+- runner v8, `--client claude-cli --models claude-sonnet-5`, Claude CLI 2.1.286;
+- `pressure-recent-v3`, `reticle-tools-v3`, OCI image `8b74015e5079`, repeat guard off, no treatment;
+- 20 responses, 24 attempts, 1,200 active seconds, `max_tokens` 4096;
+- 2 rollouts, rollout-major, runs named `c010-<task>-r<k>`;
+- the same void-and-rerun rule.
+
+If the CLI version changes before launch, stop and ask; do not re-pin it silently.
+
+**Keep/drop rule.** The card's rule, as quoted in the report's "Decision rule (from the card)":
+
+> Per task after 2 valid rollouts: solved 2/2, mixed 1/2, hard 0/2. Eval starts as every mixed and hard task.
+> Predicted acceptance of a composition = task-weighted mean of the preregistered category predictors (solved 0.94,
+> mixed 0.25, hard 0.08 [...]). Add solved tasks in calibration-list order (the sets file) while predicted acceptance
+> < 0.40; if still < 0.30 with no solved task left, move hard tasks to dev from the end of the list until it reaches
+> 0.30. Every other task goes to dev. Nothing about the tasks, statements or budgets changes after the first run;
+> calibration outcomes are never reused as incumbent data.
+
+The card gives no rule for applying this to a later stage. **PROPOSED, pending owner approval:**
+- Apply the rule unchanged to the stage-2a tasks alone, in the order of the stage-2a calibration list.
+- Add the resulting eval tasks to stage 1's 12. Stage 1's split file stays as written.
+- Report the predicted acceptance per stage and for the union.
+
+Why not the pooled alternative (one rule over stage 1 + 2a, with stage 1 first in list order)? It would first pull
+stage-1 solved tasks that are already in dev (`mut-009`, `-074`, `-058`, ... in that order) back into eval, before any
+stage-2a solved task. That would change a split the pilot's development already uses. The owner can choose pooling
+instead.
+
+**Run count and cost: NOT approved.**
+- They are fixed after generation and controls: runs = 2 x the number of candidates that pass controls; attempt cap
+  28 per run, as in stage 1 (1,680 / 60).
+- Cost basis: stage 1, $0.57 per accepted run and $1.31 per rejected run at list. At about 50 candidates (100 runs),
+  that is about $65-80 at stage 1's observed 0.80 acceptance, and $57-131 from all accepted to all rejected. The
+  owner's option text estimated about $95-115.
+- The figure goes to the owner for approval before any run.
+
+**Machine card.** `cards/010.json` is not edited. The stage-2a calibration gets a new machine card,
+`cards/010-stage2a.json` (named like `006-replay.json`). It is drafted after generation, once its task and sets files
+exist to be hash-pinned, and checked with `run_card.py --validate` only. Nothing is executed until approval.
+
+**Stopping.** The card's stopping rules apply unchanged. Under the program rule, the design is declared infeasible if
+two consecutive stages each add fewer than 5 eval tasks; stage 1 added 12.
 
 ## Not done (as of approval, before the calibration run; results are in the report)
 

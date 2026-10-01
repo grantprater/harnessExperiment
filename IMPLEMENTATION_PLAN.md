@@ -843,6 +843,22 @@ records and decisions exist.
 
 **Owner decisions (2026-10-01):** "1. $144. 2. Yes. 3. Yes. 4. Yes", answering: (1) cloud credit balance is $144 (expires 2026-11-05); (2) launch card 023 (boltons calibration, $40 nested cap) in the cloud (launched 2026-10-01 as one-shot routine `trig_015orL1bg5GH8rm6TpZuaZz7` with the prompt in `experiments/cloud/RUN_IN_CLOUD-023.md`, results to branch `cloud-results-023`); (3) build an integration branch merging the cloud-card branches with the 2026-09-30 branches (not master); (4) add card 021's verifier-commit as a 4th arm of the evidence-ontology pilot (`experiments/neurosymbolic/README.md`).
 
+**Owner decision (2026-10-01, card 010 stage 2a).** The owner was asked: "Card 010's keep/drop rule left only 12 eval
+tasks, not the ~30 the 4-arm pilot was sized for. How should the pilot proceed?" The answer, verbatim: "Stage 2a first
+(Recommended)". That option generates about 45-55 new sqlparse mutation tasks (CPU only, about 47 min, a one-shot
+cloud routine, no model calls), then calibrates them in about 90-110 Sonnet 5 runs (roughly $95-115 at list), then runs
+the 4-arm pilot as approved (about 240 runs). Each step's calls and cost are confirmed with the owner before it runs.
+
+The decision is recorded as
+[card 010 amendment 1](experiments/session_harness/E3-difficulty-calibration-010.md#amendment-1-2026-10-01-stage-2a).
+Generation is specified there and ready to launch, with the prompt in
+`experiments/cloud/RUN_IN_CLOUD-010-stage2a.md`. Three things are proposed and pending owner approval:
+- the determinism check's memory-address exception;
+- the stage-2a selection rule;
+- applying the keep/drop rule per stage.
+
+The calibration's run count and cost are not approved yet. They are set after generation.
+
 **Implementation choices before any E3 model run in OCI** (from
 `experiments/session_harness/S2b-oci-boundaries-controls.md`):
 
