@@ -7,6 +7,8 @@ Card 019 finding (the prerequisite): the cloud VM reproduced card 007 at 31/40 a
 outcomes except `sqlparse-mut-001` (0/2 against 1/2); results on branch `cloud-results-019`. The environment is treated
 as equivalent for paired treatment work; seconds are not comparable with host runs.  
 
+Integrity audit (2026-10-01): needs a caveat; exclude `c020-sqlparse-mut-001-r2-incumbent` (copied the gold line from the healthy clone) and `c020-sqlparse-mut-057-r1-check-oracle` (read the hidden test), giving 8/15 vs 9/15 and evolution set 2/9 vs 3/9 ([audit](../cloud/INTEGRITY_AUDIT_019-021.md)).
+
 ## Purpose
 
 Run [card 015](E4-check-oracle-015.md)'s comparison (incumbent versus incumbent plus `--oracle hidden-tests:3`) in a
