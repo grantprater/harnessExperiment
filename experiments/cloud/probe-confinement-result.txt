@@ -1,0 +1,61 @@
+Linux vm 6.18.44-fc-v50 #1 SMP PREEMPT_DYNAMIC @0 x86_64 x86_64 x86_64 GNU/Linux
+uid=0(root) gid=0(root) groups=0(root)
+CapInh:	0000000000000000
+CapPrm:	000001fffeffffff
+CapEff:	000001fffeffffff
+CapBnd:	000001fffeffffff
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+Seccomp:	0
+Seccomp_filters:	0
+INFO checkout /home/user/harnessExperiment; driver /home/user/harnessExperiment/.runtime/test-venv/bin/python; uid 0; kernel 6.18.44-fc-v50; unshare from util-linux 2.39.3
+INFO tools: setpriv=/usr/bin/setpriv pivot_root=/usr/sbin/pivot_root git=/usr/bin/git curl=/usr/bin/curl pip=/usr/bin/pip
+INFO task interpreter /home/user/harnessExperiment/.runtime/bugs-venv/bin/python; contract unshare-confined-v1; authority: trusted-local, confined: each command sees only the task workspace (writable), read-only system directories and the task interpreter, with no network and a private /tmp per command; nothing outside the workspace is available
+PASS 0 confined backend self-test
+INFO read-only binds: /usr /bin /sbin /lib /lib64 /etc /home/user/harnessExperiment/.runtime/bugs-venv
+INFO host sees /home/user/harnessExperiment/.runtime/bug-mining/repos/boltons/pyproject.toml: True
+INFO host sees /home/user/harnessExperiment/experiments/mutation_tasks/tasks.mutations.json: True
+INFO host sees /tmp/reticle-probe-host-888.txt: True
+PASS 1 positive: task interpreter runs (python -c 1)
+PASS 2 positive: pytest on a tiny test in the workspace (.                                                                        [100%]
+1 passed in 0.71s)
+PASS 3 positive: write in the workspace, seen on the host
+PASS 4 positive: an evaluation root (writable_mount) is writable
+PASS 5 a read-only request cannot write its directory
+FAIL 6 find / lists only the workspace, system and interpreter paths (91161 paths; outside 0 []; markers ['/.git'])
+PASS 7 cat the healthy clone is blocked (exit 1; 'cat: /home/user/harnessExperiment/.runtime/bug-mining/repos/boltons/pyproject.toml: No such file or directory')
+PASS 8 cat the task bank is blocked (exit 1; 'cat: /home/user/harnessExperiment/experiments/mutation_tasks/tasks.mutations.json: No such file or directory')
+PASS 9 ls the verifiers directory is blocked (exit 2; "ls: cannot access '/home/user/harnessExperiment/experiments/session_harness/verifiers': No such file or directory")
+PASS 10 cat the sibling evaluator's hidden test is blocked (exit 1; 'cat: ../evaluator/files/tests/test_hidden.py: No such file or directory')
+PASS 11 cat the run's verifier copy is blocked (exit 1; 'cat: /home/user/harnessExperiment/experiments/p6_pilot/runs/probe-confinement-888/sessions/probe-task__probe-model/verif')
+PASS 12 cat the host /tmp is blocked (exit 1; 'cat: /tmp/reticle-probe-host-888.txt: No such file or directory')
+PASS 13 cat the task bank through /proc/1/root is blocked (exit 1; 'cat: /proc/1/root/home/user/harnessExperiment/experiments/mutation_tasks/tasks.mutations.json: No such file or directory')
+PASS 14 cat the clone through /proc/1/root is blocked (exit 1; 'cat: /proc/1/root/home/user/harnessExperiment/.runtime/bug-mining/repos/boltons/pyproject.toml: No such file or director')
+PASS 13b ls the checkout root shows only the path to this run and the venv (exit 0; ['.runtime', 'experiments'])
+PASS 13c ls .runtime shows only the task venv (no bug-mining) (exit 0; ['bugs-venv'])
+PASS 15 ls .. shows only the workspace (exit 0; ['workspace'])
+PASS 16 the checkout's experiments/ holds only the path to this run (['p6_pilot'])
+PASS 17 git log in the workspace finds no repository (fatal: not a git repository (or any of the parent directories): .git)
+PASS 18 git -C <checkout> log fails (fatal: not a git repository (or any of the parent directories): .git)
+PASS 19 git rev-parse --show-toplevel fails (fatal: not a git repository (or any of the parent directories): .git)
+PASS 20 baseline: the host itself reaches pypi.org (so the denials below mean something) (https=reached socket=reached dns=reached)
+PASS 21 python https, socket and DNS are blocked (https=blocked socket=blocked dns=blocked)
+PASS 22 only the loopback interface exists (lo)
+PASS 23.0 pip download sqlparse fails (exit 1; files 0)
+PASS 23.1 pip3 download sqlparse fails (exit 1; files 0)
+PASS 23.2 /usr/bin/python3 -m pip download sqlparse fails (exit 1; files 0)
+PASS 23.3 /usr/local/bin/python3 -m pip download sqlparse fails (exit 1; files 0)
+PASS 24 curl https://pypi.org fails (curl: (6) Could not resolve host: pypi.org)
+PASS 25 positive: /tmp is writable and readable within a command
+PASS 26 a second command cannot see the first one's /tmp file (exit 1)
+PASS 27 the confined /tmp write never reached the host /tmp
+PASS 28 remount /usr read-write is refused (exit 32; 'mount: /usr: permission denied.\n       dmesg(1) may have more information after failed mount system ')
+PASS 29 write into /usr is refused (exit 1; "touch: cannot touch '/usr/reticle-probe': Read-only file system")
+PASS 30 write into the task venv is refused (exit 1; "touch: cannot touch '/home/user/harnessExperiment/.runtime/bugs-venv/reticle-probe': Read-only file ")
+PASS 31 chroot is refused (exit 1; 'Traceback (most recent call last):\n  File "<string>", line 1, in <module>\n    import os; os.chroot(\'')
+PASS 32 nested user namespace unlocking /usr is refused (exit 1; 'unshare: write failed /proc/self/uid_map: Operation not permitted')
+PASS 33 nothing was written to the host's /usr or venv
+PASS 34 /proc shows only the private PID namespace (1 pids: ['1'])
+SUMMARY 39 passed, 1 failed
+CONFINEMENT: FAIL
+exit 1
