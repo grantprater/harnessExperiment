@@ -5,6 +5,11 @@ Status: proposed; awaiting owner approval (then set `cards/023.json` status to r
 Departures approved by the owner in session on 2026-09-29 ("yes, approved"): the boltons `prefilter_unexecuted`
 coverage prefilter and the `--shortfall redistribute` amendment to card 007's selection rule. Launch is by pasting
 [`experiments/cloud/RUN_IN_CLOUD-023.md`](../cloud/RUN_IN_CLOUD-023.md).  
+CLI re-pin (2026-10-01): the first cloud launch stopped at step 3 before any model call because the VM now ships
+Claude CLI 2.1.286, not the pinned 2.1.284. Asked "Should I re-pin card 023 to 2.1.286 and relaunch it?", the owner
+answered "Yes". The card now pins 2.1.286, the same CLI as card 010 and the evidence-ontology pilot; comparisons with
+cards 007, 019 and 020 (2.1.284) carry that CLI difference. That launch also reported Python 3.13.14 on the VM
+(3.13.15 unavailable from uv).  
 Stage: S6 near-transfer. Machine-readable card: [`cards/023.json`](cards/023.json). Bank:
 [`tasks.boltons.json`](../mutation_tasks/tasks.boltons.json) (63 tasks), with its
 [generation log](../mutation_tasks/generation_log.boltons.json) and
@@ -36,7 +41,7 @@ tasks land in the 30-70% zone. The acceptance rate may differ from card 007's 0.
   `c023-<task>-r<n>`.
 - **Arm.** Runner v8, `--client claude-cli` with model `claude-sonnet-5` (pinned), `pressure-recent-v3`,
   `reticle-tools-v3`, repeat guard off.
-- **Backend.** Trusted-local in the cloud VM (`isolation: vm-sandbox`), CLI 2.1.284, as in card 019.
+- **Backend.** Trusted-local in the cloud VM (`isolation: vm-sandbox`), CLI 2.1.286 (card 019 used 2.1.284; see the re-pin note at the top).
 - **Reply recovery.** `--cli-reply-recovery lenient-json+second-turn-on-retry`, as in card 020.
 - **Per-run budgets (card 007's).** 20 responses, 24 attempts, 1,200 active seconds, 80,000 context bytes, 4,096
   max tokens, 600 s pytest timeout, 3,600 s invocation wall limit.
