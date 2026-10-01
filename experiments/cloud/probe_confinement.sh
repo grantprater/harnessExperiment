@@ -115,10 +115,36 @@ try:
     code, out, err = run(["find", "/"], timeout=600)
     lines = [l for l in out.splitlines() if l]
     outside = [l for l in lines if not allowed_path(l)]
-    markers = [m for m in ("bug-mining", "tasks.mutations", "verifiers", "evaluator", "test_hidden", "/.git",
-                           f"reticle-probe-host-{pid}", "harness-sealed") if m in out]
+    # Marker paths: anything that names the answers, a git repository, or a healthy copy of a task package, wherever
+    # it sits (inside the allowed binds too). Git markers match path components, not substrings: a component named
+    # `.git` (a repository or worktree link) always counts. The only exempt names are GIT_METADATA_OK, files that hold
+    # neither history nor source. They are there because `uv venv` and Python 3.13's `venv` write `<venv>/.gitignore`
+    # (content `*`) into the task venv, which the run must see. That file was the VM's 2026-10-01 marker (the
+    # VM's venvs are made by uv; the host container's 3.11 `venv` writes none). Packages under /usr also ship such
+    # files. Nothing else that starts with `.git` is exempt.
+    GIT_METADATA_OK = {".gitignore", ".gitattributes", ".gitkeep"}
+    TASK_PACKAGES = {"sqlparse", "boltons"}
+    def marker(line):
+        if line == str(ws) or line.startswith(str(ws) + "/"):
+            return None  # the workspace is the task repository's own copy
+        parts = line.split("/")
+        for m in ("bug-mining", "tasks.mutations", "verifiers", "evaluator", "test_hidden",
+                  f"reticle-probe-host-{pid}", "harness-sealed"):
+            if m in line:
+                return m
+        if ".git" in parts:
+            return ".git"
+        if any(p.startswith(".git") for p in parts) and parts[-1] not in GIT_METADATA_OK:
+            return ".git*"
+        if any(p in TASK_PACKAGES or p.split("-")[0] in TASK_PACKAGES for p in parts):
+            return "task package"
+        return None
+    markers = [(l, m) for l in lines for m in [marker(l)] if m]
+    exempt = [l for l in lines if l.rsplit("/", 1)[-1] in GIT_METADATA_OK]
     check(lines and not outside and not markers, "6 find / lists only the workspace, system and interpreter paths",
-          f"{len(lines)} paths; outside {len(outside)} {outside[:5]}; markers {markers}")
+          f"{len(lines)} paths; outside {len(outside)} {outside[:5]}; markers {len(markers)} "
+          f"{[f'{l} ({m})' for l, m in markers[:10]]}")
+    info(f"6: exempt git metadata files ({', '.join(sorted(GIT_METADATA_OK))}): {len(exempt)} {exempt[:10]}")
     for label, argv in (("7 cat the healthy clone", ["cat", str(clone_file)]),
                         ("8 cat the task bank", ["cat", str(tasks_json)]),
                         ("9 ls the verifiers directory", ["ls", str(verifiers_dir)]),
