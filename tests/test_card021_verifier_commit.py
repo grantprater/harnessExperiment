@@ -16,7 +16,7 @@ import unittest
 from unittest import mock
 
 from reticle.context import PressureRecentContextPolicyV3
-from reticle.execution import TrustedLocalBackend
+from reticle.execution import BackendUnavailableError, IsolatedOCIBackend, TrustedLocalBackend
 from reticle.runtime import LocalRuntime
 from reticle.runtime.contracts import TaskEnvelope
 from reticle.runtime.controller import AgentController, AgentLimits, ModelResponse
@@ -62,9 +62,11 @@ class HostStandInBackend:
     def __init__(self, python=None):
         self.python = python or PYTEST_PYTHON or sys.executable
         self.requests = []
+        self.mounted = []  # the top-level names of each request's mounted directory when it ran
 
     def run(self, request, cancellation_event=None):
         self.requests.append(request)
+        self.mounted.append(sorted(path.name for path in Path(request.working_directory).iterdir()))
         root = str(Path(request.working_directory).resolve())
         command = [part.replace("/workspace", root) for part in request.command]
         if command[0] == "python":
@@ -413,6 +415,11 @@ class RunnerWiringTests(unittest.TestCase):
             run_pilot.load_verifier_manifest(treatments)
 
 
+NETWORK_TEST = ("import socket\n\nimport pytest\n\n\ndef test_no_network():\n"
+                "    with pytest.raises(OSError):\n"
+                "        socket.create_connection(('1.1.1.1', 53), timeout=5)\n")
+
+
 def stream(*events):
     return {"events": list(events)}
 
@@ -463,6 +470,12 @@ class GenerationTests(VerifierFixture):
                                                "ANTHROPIC_API_KEY": "must-not-reach-the-child"})
         patched.start()
         self.addCleanup(patched.stop)
+        # the isolated backend: the host stand-in in place of podman (the real one: RealPodmanTests)
+        self.backend = HostStandInBackend(self.python)
+        isolated = mock.patch.object(run_pilot, "resolve_execution",
+                                     lambda name, image: stand_in_execution(self.backend))
+        isolated.start()
+        self.addCleanup(isolated.stop)
         self.task_file = self.root / "tasks.synthetic.json"
         self.task_file.write_text(json.dumps({"schema_version": 1, "tasks": [self.task]}), encoding="utf-8")
         self.out = self.root / "verifiers"
@@ -507,12 +520,22 @@ class GenerationTests(VerifierFixture):
         self.assertIn("None of its cases failed", second["prompt"])
         generation = json.loads((self.out / "synthetic-mut-001" / "generation.json").read_text(encoding="utf-8"))
         self.assertEqual([a["rejected_because"] for a in generation["attempt_log"]], ["no_failure", None])
+        # both pre-edit runs went through the isolated backend, with only the tree copy and the bundle mounted
+        self.assertEqual(manifest["generator"]["pre_edit_execution"]["backend"], "isolated-oci")
+        self.assertEqual(self.backend.mounted, [["bundle", "candidate"], ["bundle", "candidate"]])
+        for request in self.backend.requests:
+            self.assertEqual(request.command[1:], ["/workspace/bundle/run_repro_test.py", "/workspace/bundle",
+                                                   "/workspace/candidate", "--with-output"])
+            self.assertTrue(request.writable_mount)
+            self.assertNotIn(ROOT.resolve(), Path(request.working_directory).resolve().parents)
 
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             repro_verifiers.main(["score", "--out", str(self.out), "--tasks", str(self.task_file),
                                   "--repos", str(self.repos), "--python", self.python])
         validity = json.loads((self.out / "validity.json").read_text(encoding="utf-8"))
+        self.assertEqual(validity["execution"]["backend"], "isolated-oci")
+        self.assertEqual(self.backend.mounted[2:], [["candidate", "evaluator"], ["candidate", "evaluator"]])
         scored = validity["tasks"]["synthetic-mut-001"]
         self.assertEqual((scored["mutated"]["failing"], scored["gold"]["failing"], scored["valid"]), (1, 0, True))
         self.assertEqual(validity["valid"], 1)
@@ -581,6 +604,38 @@ class GenerationTests(VerifierFixture):
                     self.generate()
                 self.assertFalse((self.out / "synthetic-mut-001" / "test_reticle_repro.py").exists())
 
+    def test_without_an_isolated_engine_nothing_is_called_or_run(self):
+        self.replies(reply_with(VALID_TEST))
+        unavailable = (SystemExit("OCI image localhost/x is not available"),
+                       BackendUnavailableError("Isolated OCI execution requires Docker or Podman; neither is installed"))
+        for error in unavailable:
+            with self.subTest(error=error), \
+                    mock.patch.object(run_pilot, "resolve_execution", mock.Mock(side_effect=error)):
+                with self.assertRaises(SystemExit):
+                    self.generate()
+                for command in ("score", "agree"):
+                    target = ["--tasks", str(self.task_file)] if command == "score" else ["--runs", str(self.root),
+                                                                                          "--prefix", "c021"]
+                    with self.assertRaises(SystemExit):
+                        repro_verifiers.main([command, "--out", str(self.out), *target])
+        self.assertEqual(self.stub_calls(), [], "no model call without the isolated backend")
+        self.assertFalse((self.out / "manifest.json").exists())
+        self.assertEqual(self.backend.requests, [])
+
+    def test_a_model_written_test_never_runs_trusted_local(self):
+        tree = self.tree("mutated")
+        for backend in (None, TrustedLocalBackend()):
+            with self.subTest(backend=backend):
+                with self.assertRaisesRegex(SystemExit, "never trusted-local"):
+                    repro_verifiers.run_on_tree(VALID_TEST, tree, self.root / "scratch-a", self.python, backend)
+                with self.assertRaisesRegex(SystemExit, "never trusted-local"):
+                    repro_verifiers.check_tree(self.bundle(VALID_TEST, label=f"b-{id(backend)}"), tree,
+                                               self.root / "s", backend)
+                with self.assertRaisesRegex(ValueError, "never trusted-local"):
+                    ReproTestVerifier(LocalRuntime(self.root / "s2", tree), backend, self.bundle(None, label=
+                                      f"n-{id(backend)}", collected=None))
+        self.assertFalse((tree / "test_reticle_repro.py").exists())
+
     def test_a_refused_read_outside_is_not_an_escape(self):
         workspace = (self.root / "ws").resolve()
         workspace.mkdir()
@@ -589,6 +644,48 @@ class GenerationTests(VerifierFixture):
                 {"id": "c", "name": "Glob", "input": {"pattern": "../**/*.py"}}]
         escapes = repro_verifiers.read_escapes(uses, {"a": True, "b": False, "c": False}, workspace)
         self.assertEqual([e["name"] for e in escapes], ["Glob"])
+
+
+@unittest.skipUnless(os.environ.get("RETICLE_OCI_TEST_IMAGE"),
+                     "set RETICLE_OCI_TEST_IMAGE (an image with python and pytest, e.g. card 024's "
+                     "localhost/reticle-p6-task:py313-v1) to run model-written tests in real podman")
+class RealPodmanTests(VerifierFixture):
+    """The generator's pre-edit run and the check() path in the real isolated backend: the reproduction test fails on
+    the mutated tree and passes on the gold tree inside the container, and the container has no network."""
+
+    def setUp(self):
+        super().setUp()
+        self.backend, self.execution = repro_verifiers.isolated_execution(os.environ["RETICLE_OCI_TEST_IMAGE"])
+        self.assertIsInstance(self.backend, IsolatedOCIBackend)
+
+    def run_code(self, code, tree, label):
+        scratch = self.root / f"scratch-{label}"
+        scratch.mkdir()
+        return repro_verifiers.run_on_tree(code, tree, scratch, self.execution["guest_python"], self.backend)
+
+    def test_fails_on_the_mutated_tree_passes_on_gold_and_has_no_network(self):
+        mutated, gold = self.tree("mutated"), self.tree("gold", gold=True)
+        report = self.run_code(VALID_TEST, mutated, "mutated")
+        self.assertEqual((report["collected"], report["passed"], report["failed"]), (2, 1, 1), report)
+        self.assertEqual(report["isolation"], {"backend": "isolated-oci", "host_isolation": True})
+        report = self.run_code(VALID_TEST, gold, "gold")
+        self.assertEqual((report["collected"], report["passed"], report["failed"]), (2, 2, 0), report)
+        report = self.run_code(NETWORK_TEST, gold, "network")
+        self.assertEqual((report["collected"], report["passed"], report["failed"]), (1, 1, 0), report)
+        self.assertFalse((mutated / "test_reticle_repro.py").exists())
+
+    def test_check_path_in_the_container(self):
+        bundle = write_bundle(self.root / "bundle", test_file=self._test_file(), python=self.execution["guest_python"],
+                              timeout_seconds=120, runner=run_pilot.VERIFIER_RUNNER, collected=2)
+        for label, gold, expected in (("mutated", False, 1), ("gold", True, 0)):
+            verdict = repro_verifiers.check_tree(bundle, self.tree(label, gold=gold), self.root / f"s-{label}",
+                                                 self.backend)
+            self.assertEqual((verdict["status"], verdict["failing"]), ("success", expected), verdict)
+
+    def _test_file(self):
+        path = self.root / "valid.py"
+        path.write_text(VALID_TEST, encoding="utf-8")
+        return path
 
 
 @unittest.skipUnless(PYTEST_PYTHON, "the evaluator needs an interpreter with pytest")

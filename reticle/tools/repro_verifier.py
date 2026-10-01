@@ -12,8 +12,8 @@ itself be wrong; how often it is right (fails on the mutated tree, passes on the
 How a call runs (HiddenTestOracle.check, with this class's counts): the run's verifier bundle (the frozen test,
 verifier.json, an empty pytest ini and run_repro_test.py) lives outside the workspace; each call copies it and a
 snapshot of the workspace to a scratch directory under the session directory, runs run_repro_test.py there through
-the run's execution backend, parses the counts in memory, removes the directory, and journals one
-``verifier_check`` event with the counts only. When no test could be written for the task (the generator found no
+the run's execution backend (an isolated one only: the class refuses a trusted-local backend), parses the counts
+in memory, removes the directory, and journals one ``verifier_check`` event with the counts only. When no test could be written for the task (the generator found no
 candidate that failed on the pre-edit tree), the tool is still offered, with the same schema, and every call returns
 an error without running anything or spending a call.
 """
@@ -88,6 +88,10 @@ class ReproTestVerifier(HiddenTestOracle):
     def __init__(self, runtime: LocalRuntime, backend, verifier_root, *, max_calls: int = DEFAULT_MAX_CALLS,
                  timeout_seconds: float = 720.0, command=RUNNER_COMMAND):
         super(HiddenTestOracle, self).__init__(runtime, backend)  # AcceptanceRunner: no task.json to read
+        if not getattr(self.backend, "host_isolation", False):
+            # card 024 port: the frozen test is model-written, so it runs only in an isolated backend (podman,
+            # --network none); with backend None AcceptanceRunner would have fallen back to TrustedLocalBackend
+            raise ValueError("the reproduction-test verifier runs only in an isolated backend, never trusted-local")
         if max_calls < 1:
             raise ValueError("max_calls must be at least 1")
         workspace = Path(runtime.workspace.root).resolve()

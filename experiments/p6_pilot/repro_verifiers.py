@@ -33,6 +33,14 @@ Each attempt's stream is kept beside the manifest for review. Cost is the CLI's 
 (total_cost_usd); --spend-cap-usd stops before an attempt once the manifest's recorded spend would pass it, and a
 task that can get no call at all is recorded as unavailable (reason "generation spend cap reached").
 
+Confinement (exp/ontology-pilot, card 024; owner decision 2026-10-01, "Confine it in podman (Recommended)"): every
+step that executes a model-written test (generate's pre-edit run, score, agree) runs it in the card's OCI image
+through reticle's IsolatedOCIBackend, as the runs do: --network none, read-only root, no capabilities, private
+tmpfs /tmp, and one bind mount holding only a scratch copy of the tree and the verifier bundle (never the
+repository, the task clones, the manifest directory or the tree itself). The image is --oci-image (default the
+card's); its id is recorded in the manifest's generator record. There is no host fallback: without a working engine
+or the image every command stops before any model call or test run.
+
 Usage (from the repository root):
   python experiments/p6_pilot/repro_verifiers.py generate --out experiments/session_harness/verifiers/021 \\
       --tasks experiments/mutation_tasks/tasks.mutations.json sqlparse-mut-001 --model claude-sonnet-5
@@ -63,6 +71,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(HERE))
 
 import run_pilot  # noqa: E402
+from reticle.execution import BackendUnavailableError, ExecutionRequest  # noqa: E402
 from claude_cli import (  # noqa: E402
     CLI_VERSION_MISMATCH, ISOLATION_ARGUMENTS, MODEL_MISMATCH, PINNED_CLI_ENVIRONMENT, child_environment,
     cli_version, resolve_executable, utc_now, version_number,
@@ -79,6 +88,8 @@ MAX_TURNS = 30
 ATTEMPT_BUDGET_USD = 0.60
 CLI_TIMEOUT_SECONDS = 900
 PRE_EDIT_TIMEOUT_SECONDS = 300
+DEFAULT_OCI_IMAGE = "localhost/reticle-p6-task:py313-v1"  # card 024's image (id 8b74015e5079...)
+GUEST_ROOT = "/workspace"  # IsolatedOCIBackend mounts the request's working directory here
 OUTPUT_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
@@ -180,14 +191,37 @@ def sha256_text(text: str) -> str:
     return hashlib.sha256(text.replace("\r\n", "\n").encode("utf-8")).hexdigest()
 
 
-def generator_record(model: str, version: str, max_attempts: int, attempt_budget: float) -> Dict[str, Any]:
+def isolated_execution(image: str):
+    """(IsolatedOCIBackend, execution contract) for image, exactly as run_pilot --backend oci resolves it; stops
+    (SystemExit) when the engine or the image is unavailable. Never a host fallback."""
+    try:
+        backend, execution = run_pilot.resolve_execution("oci", image)
+    except BackendUnavailableError as exc:
+        raise SystemExit(f"isolated execution unavailable ({exc}); a model-written test never runs on the host")
+    require_isolated(backend)
+    return backend, execution
+
+
+def require_isolated(backend) -> None:
+    if backend is None or not getattr(backend, "host_isolation", False):
+        raise SystemExit("a model-written test runs only in an isolated backend (podman, --network none); "
+                         "never trusted-local")
+
+
+def execution_record(execution: Dict[str, Any]) -> Dict[str, Any]:
+    return {key: execution.get(key) for key in ("backend", "image", "image_id", "guest_python")}
+
+
+def generator_record(model: str, version: str, max_attempts: int, attempt_budget: float,
+                     execution: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     return {"version": GENERATOR_VERSION, "model": model, "cli_version": version, "tools": list(READ_TOOLS),
             "permission_mode": "dontAsk", "max_attempts": max_attempts, "max_turns": MAX_TURNS,
             "attempt_budget_usd": attempt_budget, "system_prompt_sha256": sha256_text(SYSTEM_PROMPT),
             "prompt_template_sha256": sha256_text(PROMPT_TEMPLATE),
             "feedback_template_sha256": sha256_text(FEEDBACK_TEMPLATE),
             "acceptance": "compiles; collects >= 1 case without a collection error; >= 1 case fails on the "
-                          "pre-edit tree"}
+                          "pre-edit tree",
+            "pre_edit_execution": execution_record(execution or {})}
 
 
 def cli_arguments(model: str, system_prompt_file: Path, budget_usd: float) -> List[str]:
@@ -304,22 +338,36 @@ def run_cli(arguments: List[str], prompt: str, cwd: Path, timeout: float) -> Tup
             completed.stderr.decode("utf-8", "replace"), round(time.time() - started, 1))
 
 
-def run_on_tree(code: str, tree: Path, scratch: Path, python: str) -> Dict[str, Any]:
-    """The runner's report (with the output tail) for code on a scratch copy of tree; never touches tree."""
-    candidate, bundle_dir = scratch / "candidate", scratch / "bundle"
+def run_on_tree(code: str, tree: Path, scratch: Path, python: str, backend) -> Dict[str, Any]:
+    """The runner's report (with the output tail) for code on a scratch copy of tree, run inside the isolated
+    backend; never touches tree. Only scratch/mount (the copy as candidate/, the bundle as bundle/) is mounted, at
+    /workspace; python is the guest interpreter. Refuses a backend that is not host-isolated."""
+    require_isolated(backend)
+    mount = scratch / "mount"
+    candidate, bundle_dir = mount / "candidate", mount / "bundle"
     shutil.copytree(tree, candidate)
-    test_path = scratch / TEST_FILE
+    test_path = scratch / TEST_FILE  # outside the mount; write_bundle copies it into the bundle
     test_path.write_text(code, encoding="utf-8")
     write_bundle(bundle_dir, test_file=test_path, python=python, timeout_seconds=PRE_EDIT_TIMEOUT_SECONDS,
                  runner=run_pilot.VERIFIER_RUNNER, collected=None)
-    completed = subprocess.run([sys.executable, str(bundle_dir / "run_repro_test.py"), str(bundle_dir),
-                                str(candidate), "--with-output"], capture_output=True, text=True, encoding="utf-8",
-                               errors="replace", timeout=PRE_EDIT_TIMEOUT_SECONDS + 60)
+    command = [python, f"{GUEST_ROOT}/bundle/run_repro_test.py", f"{GUEST_ROOT}/bundle", f"{GUEST_ROOT}/candidate",
+               "--with-output"]
+    execution = backend.run(ExecutionRequest(
+        command=command, working_directory=mount, timeout_seconds=PRE_EDIT_TIMEOUT_SECONDS + 60,
+        output_limit_bytes=1_000_000, mutates_workspace=False, writable_mount=True))
+    stdout = execution.stdout.decode("utf-8", "replace")
     try:
-        return json.loads(completed.stdout.strip().splitlines()[-1])
+        report = json.loads(stdout.strip().splitlines()[-1])
+        if not isinstance(report, dict):
+            raise ValueError("not a report")
+        report["isolation"] = {"backend": execution.backend, "host_isolation": execution.host_isolation}
+        return report
     except (ValueError, IndexError):
         return {"collected": 0, "passed": 0, "failed": 0, "skipped": 0, "collection_error": True,
-                "exit_code": completed.returncode, "timed_out": False, "output_tail": completed.stderr[-3000:]}
+                "exit_code": execution.exit_code, "timed_out": execution.status == "timeout",
+                "output_tail": (stdout + execution.stderr.decode("utf-8", "replace"))[-3000:],
+                "isolation": {"backend": execution.backend, "host_isolation": execution.host_isolation,
+                              "status": execution.status}}
 
 
 def judge(code: Optional[str], report: Optional[Dict[str, Any]]) -> Optional[str]:
@@ -376,9 +424,10 @@ def materialize(task: dict, repos: Path, destination: Path, *, gold: bool = Fals
 
 
 def generate_task(task: dict, *, out_dir: Path, repos: Path, model: str, python: str, max_attempts: int,
-                  attempt_budget: float, spend_left: float, log=print,
+                  attempt_budget: float, spend_left: float, backend, log=print,
                   expected_cli_version: Optional[str] = None) -> Dict[str, Any]:
-    """Generate, check and (maybe) freeze one task's test; returns its manifest entry."""
+    """Generate, check (in the isolated backend) and (maybe) freeze one task's test; returns its manifest entry."""
+    require_isolated(backend)
     task_dir = out_dir / task["task_id"]
     attempts_dir = task_dir / "attempts"
     attempts_dir.mkdir(parents=True, exist_ok=True)
@@ -436,7 +485,7 @@ def generate_task(task: dict, *, out_dir: Path, repos: Path, model: str, python:
                 else:
                     scratch = Path(tempfile.mkdtemp(prefix="repro-pre-edit-"))
                     try:
-                        report = run_on_tree(code, workspace, scratch, python)
+                        report = run_on_tree(code, workspace, scratch, python, backend)
                     finally:
                         shutil.rmtree(scratch, ignore_errors=True)
             reason = judge(code, report)
@@ -471,13 +520,14 @@ def generate(args) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = out_dir / "manifest.json"
     manifest = load_manifest(manifest_path)
+    backend, execution = isolated_execution(args.oci_image)  # before any model call: no engine, no generation
     version = cli_version()
-    record = generator_record(args.model, version, args.max_attempts, args.attempt_budget_usd)
+    record = generator_record(args.model, version, args.max_attempts, args.attempt_budget_usd, execution)
     if manifest["generator"] is not None and manifest["generator"] != record:
         raise SystemExit(f"{manifest_path} was generated with a different generator configuration; use a new --out")
     manifest["generator"] = record
     _, tasks = run_pilot.load_tasks(args.tasks)
-    python = str(Path(args.python or run_pilot.TASK_PYTHON))
+    python = args.python or execution["guest_python"]
     for task in tasks:
         if task["task_id"] in manifest["tasks"]:
             print(f"{task['task_id']}: already in the manifest ({manifest['tasks'][task['task_id']]['status']}); kept")
@@ -494,7 +544,7 @@ def generate(args) -> int:
             continue
         entry = generate_task(task, out_dir=out_dir, repos=Path(args.repos), model=args.model, python=python,
                               max_attempts=args.max_attempts, attempt_budget=args.attempt_budget_usd,
-                              spend_left=spend_left, expected_cli_version=version_number(version))
+                              spend_left=spend_left, backend=backend, expected_cli_version=version_number(version))
         manifest["tasks"][task["task_id"]] = entry
         save_manifest(manifest_path, manifest)
         print(f"{task['task_id']}: {entry['status']} after {entry['attempts']} attempt(s), ${entry['cost_usd']:.3f}")
@@ -504,10 +554,13 @@ def generate(args) -> int:
     return 0
 
 
-def check_tree(bundle: Path, tree: Path, session: Path) -> Dict[str, Any]:
-    """One check() call through ReproTestVerifier on tree (trusted-local); the payload the model would see."""
+def check_tree(bundle: Path, tree: Path, session: Path, backend) -> Dict[str, Any]:
+    """One check() call through ReproTestVerifier on tree, in the isolated backend (as in a run); the payload the
+    model would see."""
+    require_isolated(backend)
     runtime = LocalRuntime(session, tree)
-    verifier = ReproTestVerifier(runtime, None, bundle, max_calls=1, timeout_seconds=PRE_EDIT_TIMEOUT_SECONDS + 60)
+    verifier = ReproTestVerifier(runtime, backend, bundle, max_calls=1,
+                                 timeout_seconds=PRE_EDIT_TIMEOUT_SECONDS + 60)
     content, status = verifier.check()
     return {"status": status, **json.loads(content)}
 
@@ -516,7 +569,8 @@ def score(args) -> int:
     out_dir = Path(args.out).resolve()
     manifest = load_manifest(out_dir / "manifest.json")
     task_file, tasks = run_pilot.load_tasks(args.tasks)
-    python = str(Path(args.python or run_pilot.TASK_PYTHON))
+    backend, execution = isolated_execution(args.oci_image)
+    python = args.python or execution["guest_python"]
     results = {}
     for task in [task for task in tasks if task["task_id"] in manifest["tasks"]]:
         task_id = task["task_id"]
@@ -530,7 +584,7 @@ def score(args) -> int:
             outcome = {"status": entry["status"]}
             for label, gold in (("mutated", False), ("gold", True)):
                 tree = materialize(task, Path(args.repos), temp / f"{label}-tree", gold=gold)
-                outcome[label] = check_tree(bundle, tree, temp / f"{label}-session")
+                outcome[label] = check_tree(bundle, tree, temp / f"{label}-session", backend)
             mutated, gold = outcome["mutated"], outcome["gold"]
             outcome["valid"] = bool(entry["status"] == "available" and mutated.get("failing", 0) >= 1
                                     and gold.get("failing") == 0 and gold.get("status") == "success")
@@ -540,7 +594,8 @@ def score(args) -> int:
             shutil.rmtree(temp, ignore_errors=True)
     valid = sum(1 for value in results.values() if value["valid"])
     summary = {"scored_at": utc_now(), "manifest_sha256_lf": run_pilot.sha256_lf(out_dir / "manifest.json"),
-               "task_file": run_pilot.task_file_record(task_file), "valid": valid, "scored": len(results),
+               "task_file": run_pilot.task_file_record(task_file), "execution": execution_record(execution),
+               "valid": valid, "scored": len(results),
                "tasks": results}
     target = out_dir / args.validity_file
     target.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8", newline="\n")
@@ -553,7 +608,8 @@ def agree(args) -> int:
     well a realistic verifier's verdict (failing == 0) predicts the hidden tests' verdict on real candidate trees."""
     out_dir = Path(args.out).resolve()
     manifest = load_manifest(out_dir / "manifest.json")
-    python = str(Path(args.python or run_pilot.TASK_PYTHON))
+    backend, execution = isolated_execution(args.oci_image)
+    python = args.python or execution["guest_python"]
     rows = []
     for run_dir in sorted(Path(args.runs).glob(f"{args.prefix}-*")):
         results = run_dir / "results.jsonl"
@@ -572,7 +628,7 @@ def agree(args) -> int:
                                       collected=entry.get("collected"))
                 tree = temp / "tree"
                 shutil.copytree(workspace, tree)  # the evidence is never touched
-                verdict = check_tree(bundle, tree, temp / "session")
+                verdict = check_tree(bundle, tree, temp / "session", backend)
             finally:
                 shutil.rmtree(temp, ignore_errors=True)
             accepted = (record.get("acceptance") or {}).get("status") == "accepted"
@@ -583,7 +639,8 @@ def agree(args) -> int:
     matrix = {f"accepted={a}, verifier_passes={v}": sum(1 for r in rows if r["accepted"] == a and r["verifier_passes"] == v)
               for a in (True, False) for v in (True, False)}
     summary = {"scored_at": utc_now(), "manifest_sha256_lf": run_pilot.sha256_lf(out_dir / "manifest.json"),
-               "prefix": args.prefix, "runs": len(rows), "matrix": matrix, "rows": rows}
+               "prefix": args.prefix, "execution": execution_record(execution), "runs": len(rows),
+               "matrix": matrix, "rows": rows}
     target = out_dir / args.agreement_file
     target.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"{len(rows)} runs; {matrix}; written to {target}")
@@ -600,7 +657,10 @@ def main(argv=None) -> int:
                              help="the task file, then task ids (score: default every task of the file in the "
                                   "manifest)")
         command.add_argument("--repos", default=str(run_pilot.REPOS), help="clones of the task repositories")
-        command.add_argument("--python", default=None, help="task interpreter (default: the runner's)")
+        command.add_argument("--python", default=None,
+                             help="guest interpreter inside the image (default: the backend's, as in a run)")
+        command.add_argument("--oci-image", default=DEFAULT_OCI_IMAGE,
+                             help="the OCI image every model-written test runs in (podman, --network none)")
     generate_parser = commands.choices["generate"]
     generate_parser.add_argument("--model", required=True)
     generate_parser.add_argument("--max-attempts", type=int, default=MAX_ATTEMPTS)
@@ -613,7 +673,10 @@ def main(argv=None) -> int:
     agree_parser.add_argument("--out", required=True, help="verifier directory (manifest.json)")
     agree_parser.add_argument("--runs", required=True, help="runner directories (experiments/p6_pilot/runs)")
     agree_parser.add_argument("--prefix", required=True, help="run name prefix (c021)")
-    agree_parser.add_argument("--python", default=None, help="task interpreter (default: the runner's)")
+    agree_parser.add_argument("--python", default=None,
+                              help="guest interpreter inside the image (default: the backend's, as in a run)")
+    agree_parser.add_argument("--oci-image", default=DEFAULT_OCI_IMAGE,
+                              help="the OCI image every model-written test runs in (podman, --network none)")
     agree_parser.add_argument("--agreement-file", default="agreement.json")
     args = parser.parse_args(argv)
     return {"generate": generate, "score": score, "agree": agree}[args.command](args)
