@@ -15,8 +15,9 @@ Two modes, standard library only (plus generate.py's AST code):
                    is reported separately as ADDRESS-ONLY (the recorded case is sqlparse-mut-072, whose failure
                    message prints an object repr; mutation_tasks/REPORT.md weakness 11 on integration/2026-10).
                Verdict: PASS (strict), PASS-ADDRESS-ONLY (only (b) addresses differ), or FAIL.
-               Then the counts, and the amendment's PROPOSED selection rule applied to the new kept tasks (ids after
-               sqlparse-mut-076): counts only, nothing is written except the --result text file.
+               Then the counts, and the amendment's selection rule (approved 2026-10-01) applied to the new kept
+               tasks (ids after sqlparse-mut-076): counts only, nothing is written except the --result text file.
+               The printed label stays "PROPOSED" so that a rerun reproduces stage2a-010-result.txt.
 
 Usage (from the repository root):
   python experiments/mutation_tasks/check_stage2a_010.py --schedule [--repo-dir PATH]
@@ -43,7 +44,7 @@ RECORDED_KEPT = 76
 RECORDED_TRIED = 100
 ADDRESS = re.compile(r"0x[0-9A-Fa-f]+")
 LOG_KEYS = ("file", "line", "kind", "detail", "function")
-SELECTION_SEED = "10:stage-2a"  # PROPOSED (amendment 1); stage 1 used 10
+SELECTION_SEED = "10:stage-2a"  # approved 2026-10-01 (amendment 1); stage 1 used 10
 
 
 def load(path: Path) -> dict:
@@ -85,7 +86,7 @@ def failing_key(task: dict) -> tuple:
 
 
 def propose_selection(new: list, recorded: list) -> dict:
-    """Amendment 1, PROPOSED: the stage-1 rule (build_bank_010.py steps 2-5) with 'dev core' read as every recorded
+    """Amendment 1, approved 2026-10-01: the stage-1 rule (build_bank_010.py steps 2-5) with 'dev core' read as every recorded
     bank task (the 76 of tasks.mutations.json), seed '10:stage-2a'. Counts only."""
     old_fn = {t["mutated_function"] for t in recorded}
     old_sets = {failing_key(t) for t in recorded}

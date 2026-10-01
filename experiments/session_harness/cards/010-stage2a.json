@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "id": "E3-difficulty-calibration-010-stage2a",
+  "title": "Difficulty calibration 010, stage 2a: calibrate the 39 new generator tasks (amendment 1)",
+  "status": "approved",
+  "markdown": "experiments/session_harness/E3-difficulty-calibration-010.md",
+  "hypothesis": "The 39 function-distinct stage-2a tasks (generator continuation past sqlparse-mut-076; amendment 1, A1.3) give the Reticle incumbent (Sonnet 5 via the CLI) a mix of solved, mixed and unsolved tasks from which the stage-1 keep/drop rule, applied to these 39 alone, adds eval tasks to stage 1's 12, disjoint from every dev task.",
+  "run_prefix": "c010b",
+  "run_name_template": "{prefix}-{task}-r{rollout}",
+  "runner": {
+    "script": "experiments/p6_pilot/run_pilot.py",
+    "runner_version": 8
+  },
+  "environment": {
+    "claude_cli_version": "2.1.286 (Claude Code)"
+  },
+  "prerequisites": [
+    {
+      "text": "Stage-2a generation (cloud, 2026-10-01, branch cloud-results-010-stage2a, commit bdf7db9): 531 of 531 candidates tried, 351 kept, 275 new; DETERMINISM: PASS-ADDRESS-ONLY (only sqlparse-mut-072). Owner accepted PASS-ADDRESS-ONLY as a pass, 2026-10-01: \"Accept (Recommended)\"",
+      "done": true
+    },
+    {
+      "text": "Stage-2a candidates built by experiments/mutation_tasks/build_bank_010_stage2a.py (seeds \"10:stage-2a\" and \"10:stage-2a:statement-form\") and committed; --check reproduces them; 39 candidates, equal to check_stage2a_010.py --compare's candidates_function_distinct. Owner accepted the selection rule, 2026-10-01: \"Accept (Recommended)\"",
+      "done": true
+    },
+    {
+      "text": "No-model controls on all 39 candidates: gold accepted and noop rejected on the exact fail_to_pass set, twice each, OCI (c010b-control-gold, -noop, -gold-rep2, -noop-rep2; check_controls_010.py --stage 2a; E3-difficulty-calibration-010-stage2a-controls.json)",
+      "done": true
+    },
+    {
+      "text": "Owner approval of the call count and cost, 2026-10-01, verbatim: \"Approve 78 runs (Recommended)\" (39 tasks x 2 rollouts = 78 runs on claude-sonnet-5, CLI 2.1.286, local OCI, same protocol as stage 1; about $70 at list)",
+      "done": true
+    }
+  ],
+  "arms": [
+    {
+      "name": "incumbent",
+      "client": "claude-cli",
+      "model": "claude-sonnet-5",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [],
+      "expected_protocol_hash": null,
+      "note": "Stage 1's incumbent arm (cards/010.json) unchanged: runner v8, claude-cli, claude-sonnet-5 pinned by full ID, pressure-recent-v3, reticle-tools-v3, OCI image 8b74015e5079, repeat guard off, no treatment, CLI 2.1.286. If the CLI version differs at launch, stop and ask; do not re-pin it silently (amendment 1, A1.4)."
+    }
+  ],
+  "controls": [
+    {
+      "name": "gold",
+      "client": "gold",
+      "task_set": "calibration",
+      "like_arm": "incumbent",
+      "expect": "accepted",
+      "run_name": "c010b-control-gold"
+    },
+    {
+      "name": "noop",
+      "client": "noop",
+      "task_set": "calibration",
+      "like_arm": "incumbent",
+      "expect": "rejected",
+      "run_name": "c010b-control-noop"
+    }
+  ],
+  "tasks": {
+    "file": "experiments/mutation_tasks/tasks.difficulty010-stage2a.json",
+    "file_sha256": "ec23bca95330fd979131b15b9751901800858a1e42249fd42a3d6d782b89e73a",
+    "sets": {
+      "calibration": {
+        "ref": {
+          "path": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.sets.json",
+          "key": "calibration",
+          "sha256": "fc45989dbabb1a61cc92b0f1452f6c25d04171f319fcdb83e314731f9df971d9"
+        },
+        "note": "Stage 2a: 39 candidates from build_bank_010_stage2a.py (seed \"10:stage-2a\"), recorded before any stage-2a calibration run: 5 single-test, 17 multi-test with the generated statement, 17 multi-test with the failure-message sentence removed (ids ending -nm)."
+      }
+    }
+  },
+  "blocks": [
+    {
+      "name": "calibration",
+      "task_set": "calibration",
+      "arms": [
+        "incumbent"
+      ],
+      "rollouts": 2,
+      "arm_order": {
+        "rule": "fixed"
+      }
+    }
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 20,
+      "model_attempts": 24,
+      "active_seconds": 1200,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {
+        "default": 120,
+        "max": 600
+      },
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {
+      "max_runs": 78,
+      "max_model_attempts": 2184,
+      "monetary_cap_usd": null,
+      "note": "Stage 1's cap scaled per run: stage 1 allowed 1,680 attempts for 60 runs (28 per run: 24 planned plus room for 10 retried runs). 78 runs x 28 = 2,184: 78 x 24 = 1,872 planned plus room for 13 retried runs (10 x 78/60). CLI on the subscription: no monetary cap, billing recorded as unknown. List-price estimate approved by the owner: about $70 (stage 1 averaged $0.90 a run; range about $55-95)."
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [
+      60,
+      300
+    ],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "As card 007: the repeat guard is off; repeat flags are derived from the journals afterwards.",
+    "manual": [
+      "Evaluator leakage, evidence loss, or authority escape stops the campaign (trajectory review).",
+      "A run ended by a usage limit, an adapter failure or a machine sleep is voided (renamed *.void-<reason>) and rerun, as in card 018 and stage 1; it is not a calibration outcome.",
+      "No statement, task or budget is changed after the first stage-2a calibration run; the keep/drop rule is applied mechanically to these 39 tasks alone and its output written to E3-difficulty-calibration-010-stage2a.split.json.",
+      "Calibration outcomes select tasks only. They are never reused as the incumbent arm of a later comparison.",
+      "The campaign stops at 78 valid runs or when the 2,184-attempt cap is reached; an extension needs a new approval."
+    ]
+  },
+  "measurements": {
+    "per_run": [
+      "accepted",
+      "stop_reason",
+      "responses_used",
+      "provider_attempts",
+      "tool_calls",
+      "active_seconds",
+      "wall_seconds",
+      "tokens",
+      "first_edit_response",
+      "edit_in_gold_files",
+      "verification_before_finish"
+    ],
+    "campaign": [
+      "acceptance_rate_ci",
+      "outcome_distribution",
+      "per_task_outcomes",
+      "acceptance_by:statement_message_dropped",
+      "acceptance_by:mutation_kind",
+      "acceptance_by_size:fail_to_pass"
+    ]
+  },
+  "decision_rule": "Stage 1's keep/drop rule (cards/010.json), applied unchanged to the 39 stage-2a tasks alone, in the order of the stage-2a calibration list (E3-difficulty-calibration-010-stage2a.sets.json): per task after 2 valid rollouts: solved 2/2, mixed 1/2, hard 0/2. Eval starts as every mixed and hard task. Predicted acceptance of a composition = task-weighted mean of the preregistered category predictors (solved 0.94, mixed 0.25, hard 0.08). Add solved tasks in calibration-list order while predicted acceptance < 0.40; if still < 0.30 with no solved task left, move hard tasks to dev from the end of the list until it reaches 0.30. Every other task goes to dev. The eval tasks it keeps are added to stage 1's 12; stage 1's split file is not changed. Report the predicted acceptance for stage 2a, for stage 1, and for the union, and the union's eval size against the power table. Nothing about the tasks, statements or budgets changes after the first run; calibration outcomes are never reused as incumbent data.",
+  "report": {
+    "path": "experiments/session_harness/E3-difficulty-calibration-010-stage2a-report.md",
+    "sets_path": "experiments/session_harness/E3-difficulty-calibration-010-stage2a.split.json"
+  },
+  "notes": [
+    "Amendment 1 (2026-10-01) of experiments/session_harness/E3-difficulty-calibration-010.md; cards/010.json (stage 1) is not edited.",
+    "One runner invocation per task and rollout (c010b-<task>-r<k>), as stage 1; the prefix c010b keeps stage-2a run folders apart from stage 1's c010-*.",
+    "Controls: the recorded c010b-control-gold and c010b-control-noop runs over all 39 candidates, named so that a resume finds them complete. The repeats (-rep2) are extra evidence for the determinism filter; run_card.py does not plan them.",
+    "Per-run budgets, arm, model pin, CLI version, image and stop rules copy stage 1 (cards/010.json) so that stage-2a difficulty is measured under the same protocol."
+  ]
+}

@@ -16,8 +16,10 @@ powered confirmation only if the pilot is promising; (5) no separate lesson-stor
 starts. Decision (4) follows from (3): stage 2a is not run now.  
 Owner decision (2026-09-30, verbatim): "Yeah we can pin sonnet 5 for now, though I think we pivot after this initial test run that we've gotten the comparison for to harder tasks and see if they extend/generalize".  
 Model: pinned by full ID `claude-sonnet-5` after alias drift (2026-09-30): CLI 2.1.286 resolved the alias `sonnet` to `claude-sonnet-5-5`.  
-Amendment 1 (2026-10-01): stage 2a generation approved by the owner ("Stage 2a first (Recommended)"); not yet run.
-Its calibration runs and cost are not approved. See [Amendment 1](#amendment-1-2026-10-01-stage-2a).  
+Amendment 1 (2026-10-01): stage 2a generation approved by the owner ("Stage 2a first (Recommended)") and run in the
+cloud (DETERMINISM: PASS-ADDRESS-ONLY). After generation the owner accepted the address-only exception and the
+selection rule, and approved the stage-2a calibration, 78 runs (2026-10-01; [A1.5](#a15-owner-decisions-and-stage-2a-build-2026-10-01)).
+Machine card [`cards/010-stage2a.json`](cards/010-stage2a.json); not yet launched.  
 Stage: S6a follow-up (proposed in the [card 007 report](E3-calibration-007-report.md)). Machine card:
 [`cards/010.json`](cards/010.json).
 
@@ -449,12 +451,12 @@ The check passes when both of these hold:
 - (b) the full output's first 76 tasks are `sqlparse-mut-001` to `-076`, in order, with byte-identical
   `mutation_patch` and `statement`.
 
-**Known exception (PROPOSED, pending owner approval).** `sqlparse-mut-072`'s statement quotes an object repr with a
+**Known exception (approved 2026-10-01).** `sqlparse-mut-072`'s statement quotes an object repr with a
 CPython memory address: `<DML 'select' at 0x24ED3E03B80>`. The address changes in every process. A full regeneration
 on 2026-09-28 saw exactly this difference ([REPORT.md](../mutation_tasks/REPORT.md) weakness 11, on branch
 `integration/2026-10`). The script therefore reports `PASS-ADDRESS-ONLY` when every statement difference disappears
-after replacing `0x[0-9A-Fa-f]+`. Proposal: treat `PASS-ADDRESS-ONLY` as a pass. `mut-072` is excluded from every
-split, because its statement names the mutated function. Until the owner accepts this, `PASS-ADDRESS-ONLY` is handled
+after replacing `0x[0-9A-Fa-f]+`. `PASS-ADDRESS-ONLY` counts as a pass (approved 2026-10-01; A1.5). `mut-072` is excluded from every
+split, because its statement names the mutated function. Before that approval, `PASS-ADDRESS-ONLY` was handled
 like a failure for the purpose of using new ids.
 
 That regeneration also lost `sqlparse-mut-044` to the 60 s timeout, on a heavily loaded host (75.9 s against 3.2 s).
@@ -465,7 +467,7 @@ On the VM, the generator is the only job.
 - The cloud run still commits its outputs and the result file to `cloud-results-010-stage2a`, for diagnosis only.
 - A rerun or fix needs a further amendment.
 
-### A1.3 Selection of new candidates for calibration (PROPOSED, pending owner approval)
+### A1.3 Selection of new candidates for calibration (approved 2026-10-01)
 
 The card has no selection rule for stage 2a. It only expects "about 45-55 new function-distinct candidates", from the
 "62 [functions] no bank task uses". The rule it does have is stage 1's (section "Stage 1 rule";
@@ -481,7 +483,7 @@ The card has no selection rule for stage 2a. It only expects "about 45-55 new fu
 >    sorted by id, shuffled with random.Random(f"{SEED}:statement-form"), and the first half (rounded down) become
 >    weak-signal variants `<id>-nm` [...]
 
-Proposed minimal adaptation, the same rule with three substitutions:
+Minimal adaptation (approved 2026-10-01), the same rule with three substitutions:
 1. **Pool.** The kept tasks of `tasks.mutations.full.json` after `sqlparse-mut-076`, and only after the determinism
    check passes.
 2. **Excluded.** Step 2, unchanged.
@@ -496,15 +498,16 @@ Proposed minimal adaptation, the same rule with three substitutions:
    reported. This needs no model, but about 1-2 h of local OCI time.
 
 `check_stage2a_010.py --compare` applies steps 1-4 and reports counts only. The stage-2a bank and sets files are
-written by a builder made after approval; it is not built yet.
+written by [`build_bank_010_stage2a.py`](../mutation_tasks/build_bank_010_stage2a.py), made after approval (A1.5).
 
-### A1.4 Calibration of the new candidates (protocol fixed; runs and cost NOT approved)
+### A1.4 Calibration of the new candidates (protocol fixed; 78 runs approved 2026-10-01)
 
 **Protocol.** Identical to "Preregistered calibration run (stage 1)":
 - runner v8, `--client claude-cli --models claude-sonnet-5`, Claude CLI 2.1.286;
 - `pressure-recent-v3`, `reticle-tools-v3`, OCI image `8b74015e5079`, repeat guard off, no treatment;
 - 20 responses, 24 attempts, 1,200 active seconds, `max_tokens` 4096;
-- 2 rollouts, rollout-major, runs named `c010-<task>-r<k>`;
+- 2 rollouts, rollout-major, runs named `c010b-<task>-r<k>` (prefix `c010b`, set when the machine card was drafted, so
+  that no stage-2a folder can collide with a stage-1 `c010-` folder; the run name is not a protocol-hash input);
 - the same void-and-rerun rule.
 
 If the CLI version changes before launch, stop and ask; do not re-pin it silently.
@@ -518,30 +521,75 @@ If the CLI version changes before launch, stop and ask; do not re-pin it silentl
 > 0.30. Every other task goes to dev. Nothing about the tasks, statements or budgets changes after the first run;
 > calibration outcomes are never reused as incumbent data.
 
-The card gives no rule for applying this to a later stage. **PROPOSED, pending owner approval:**
+The card gives no rule for applying this to a later stage. **Approved 2026-10-01:**
 - Apply the rule unchanged to the stage-2a tasks alone, in the order of the stage-2a calibration list.
 - Add the resulting eval tasks to stage 1's 12. Stage 1's split file stays as written.
 - Report the predicted acceptance per stage and for the union.
 
 Why not the pooled alternative (one rule over stage 1 + 2a, with stage 1 first in list order)? It would first pull
 stage-1 solved tasks that are already in dev (`mut-009`, `-074`, `-058`, ... in that order) back into eval, before any
-stage-2a solved task. That would change a split the pilot's development already uses. The owner can choose pooling
-instead.
+stage-2a solved task. That would change a split the pilot's development already uses. The owner chose the per-stage
+rule (A1.5).
 
-**Run count and cost: NOT approved.**
+**Run count and cost: approved 2026-10-01 (78 runs; A1.5).**
 - They are fixed after generation and controls: runs = 2 x the number of candidates that pass controls; attempt cap
   28 per run, as in stage 1 (1,680 / 60).
 - Cost basis: stage 1, $0.57 per accepted run and $1.31 per rejected run at list. At about 50 candidates (100 runs),
   that is about $65-80 at stage 1's observed 0.80 acceptance, and $57-131 from all accepted to all rejected. The
   owner's option text estimated about $95-115.
-- The figure goes to the owner for approval before any run.
+- The figure went to the owner before any run: 39 tasks x 2 = 78 runs, about $70 at list, approved 2026-10-01.
 
 **Machine card.** `cards/010.json` is not edited. The stage-2a calibration gets a new machine card,
 `cards/010-stage2a.json` (named like `006-replay.json`). It is drafted after generation, once its task and sets files
 exist to be hash-pinned, and checked with `run_card.py --validate` only. Nothing is executed until approval.
+Drafted 2026-10-01 after the owner's approval (A1.5); status `approved`.
 
 **Stopping.** The card's stopping rules apply unchanged. Under the program rule, the design is declared infeasible if
 two consecutive stages each add fewer than 5 eval tasks; stage 1 added 12.
+
+### A1.5 Owner decisions and stage-2a build (2026-10-01)
+
+**Generation result** (cloud, branch `cloud-results-010-stage2a`, commit `bdf7db9`, merged into `exp/ontology-pilot`;
+[`stage2a-010-result.txt`](../mutation_tasks/stage2a-010-result.txt)): 531 of 531 candidates tried, 351 kept, 275 new
+after `sqlparse-mut-076`; both gold checks pass; `DETERMINISM: PASS-ADDRESS-ONLY`, with `mut-072` the only difference.
+The cloud task interpreter was Python 3.13.14; the host bank used 3.13.15.
+
+**Owner decisions (2026-10-01), each with its question.** The question texts are as relayed to this record; "..." marks
+text elided in the relay.
+
+1. Question: "Accept the reproducibility exception? Tasks 001-076 regenerated identically on the cloud machine except task 072, whose description differs only by a Python memory address. Task 072 is already excluded from every set."
+   Answer (verbatim): "Accept (Recommended)" (option text: "PASS-ADDRESS-ONLY counts as a pass, so the new task ids (077 onward) may be used.")
+2. Question: "Accept the proposed selection rule for stage 2a? ... leaving 39 function-distinct tasks (5 single-test, 34 multi-test). The keep/drop rule is applied to those 39 alone, and the tasks it keeps are added to stage 1's 12."
+   Answer (verbatim): "Accept (Recommended)" (option text: "Calibrate all 39 and apply the keep/drop rule to stage 2a separately. Pooling would pull round-1 tasks that were dropped back in ahead of any new task.")
+3. Question: "Approve the stage 2a calibration: 39 tasks x 2 rollouts = 78 runs on claude-sonnet-5 (CLI 2.1.286, local OCI backend, same protocol as stage 1). It costs about $70 at list (stage 1 averaged $0.90 a run; range about $55-95), plus model-free gold/no-op controls first. ..."
+   Answer (verbatim): "Approve 78 runs (Recommended)" (option text: "Run the model-free controls, then the 78 calibration runs locally, one process at a time. The stage-1 stopping rules apply.")
+
+**Bank and sets.** [`build_bank_010_stage2a.py`](../mutation_tasks/build_bank_010_stage2a.py) applies A1.3 (seeds
+`"10:stage-2a"` and `"10:stage-2a:statement-form"`; it imports `no_message` from the unchanged stage-1 builder) and
+stops unless its count equals `check_stage2a_010.py`'s `candidates_function_distinct` (39). Outputs:
+- [`tasks.difficulty010-stage2a.json`](../mutation_tasks/tasks.difficulty010-stage2a.json), 39 tasks;
+- [`E3-difficulty-calibration-010-stage2a.sets.json`](E3-difficulty-calibration-010-stage2a.sets.json): calibration
+  order, strata (5 single-test, 17 multi-test with message, 17 multi-test without, `-nm`), dev pool 220 (182 sharing a
+  function or failing set with the 76 recorded tasks, 38 duplicates among new), excluded 16.
+
+Rerun: `python experiments/mutation_tasks/build_bank_010_stage2a.py --check` (both files `same`).
+
+**Machine card.** [`cards/010-stage2a.json`](cards/010-stage2a.json): stage 1's arm, budgets, image and stop rules;
+39 x 2 = 78 runs, prefix `c010b`; campaign cap 2,184 attempts (stage 1's 28 per run: 1,680 / 60). `--plan` lists 78
+runs plus the 2 controls, with no blockers. Stage 1's plan is unchanged: every recorded stage-1 run's hash (60 runs,
+2 retries, 2 controls) equals `run_card.py cards/010.json --plan --json`, and `apply_split_010.py` reports the same.
+
+**Controls.** **39/39 pass** (`python experiments/session_harness/check_controls_010.py --stage 2a`; criteria unchanged from
+"Offline filters"), so no task is dropped. Runs, OCI image `8b74015e5079`, podman, one container at a time at Idle
+priority with thread variables set to 1, no model:
+- `c010b-control-gold` and `c010b-control-noop` (39 tasks each), recorded hashes `d80ec15e5757` and `5aca4f18f1c4`,
+  equal to `run_card.py cards/010-stage2a.json --plan --replay`;
+- the repeats `-gold-rep2` and `-noop-rep2`, same commands under another run name;
+- the 3-task `-sample` runs, done first.
+
+Every gold run accepted, every noop run rejected on exactly the recorded `fail_to_pass` set; the slowest evaluation
+took 18.7 s. Summary: [`E3-difficulty-calibration-010-stage2a-controls.json`](E3-difficulty-calibration-010-stage2a-controls.json).
+Not done: the calibration itself (78 runs) is not launched.
 
 ## Not done (as of approval, before the calibration run; results are in the report)
 

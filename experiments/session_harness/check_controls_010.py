@@ -8,7 +8,9 @@ A candidate passes when, in every recorded control run that covers it:
   and at least 2 gold and 2 noop runs exist (determinism: identical outcomes and failing sets across repeats),
   and every control evaluation took at most RUNTIME_LIMIT_S seconds (runtime limit).
 
-Usage: python experiments/session_harness/check_controls_010.py [--json OUT]
+Usage: python experiments/session_harness/check_controls_010.py [--stage 1|2a] [--json OUT]
+  --stage 2a (amendment 1) reads experiments/mutation_tasks/tasks.difficulty010-stage2a.json and the runs
+  c010b-control-*; the criteria are unchanged. Default: stage 1 (tasks.difficulty010.json, c010-control-*).
 """
 from __future__ import annotations
 
@@ -20,16 +22,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 RUNS = ROOT / "experiments" / "p6_pilot" / "runs"
 BANK = ROOT / "experiments" / "mutation_tasks" / "tasks.difficulty010.json"
+STAGES = {"1": (BANK, "c010-control-*"),
+          "2a": (ROOT / "experiments" / "mutation_tasks" / "tasks.difficulty010-stage2a.json", "c010b-control-*")}
 RUNTIME_LIMIT_S = 60.0
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json")
+    ap.add_argument("--stage", choices=sorted(STAGES), default="1")
     args = ap.parse_args()
-    tasks = {t["task_id"]: t for t in json.loads(BANK.read_text(encoding="utf-8"))["tasks"]}
+    bank, pattern = STAGES[args.stage]
+    tasks = {t["task_id"]: t for t in json.loads(bank.read_text(encoding="utf-8"))["tasks"]}
     seen = defaultdict(lambda: {"gold": [], "noop": []})
-    for d in sorted(RUNS.glob("c010-control-*")):
+    for d in sorted(RUNS.glob(pattern)):
         res = d / "results.jsonl"
         if not d.is_dir() or not res.exists():
             continue
