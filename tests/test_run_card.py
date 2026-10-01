@@ -103,14 +103,9 @@ class Fixture:
 
 class CardValidationTests(unittest.TestCase):
     def test_repository_cards_validate(self):
-        for name in ("006-replay", "007", "008", "009", "010", "012", "013", "014", "015", "017"):
+        for name in ("006-replay", "007", "008", "009", "010", "011", "012", "013", "014", "015", "017"):
             card = run_card.load_card(CARDS / f"{name}.json")
             self.assertEqual(run_card.validate_card(card), [], name)
-        # Card 011's runs are complete (its markdown and report), but its machine card still says approved with
-        # the alias, so the pinning rule flags it until its status is corrected or its model pinned.
-        self.assertEqual(run_card.validate_card(run_card.load_card(CARDS / "011.json")),
-                         ["arms.incumbent: model 'sonnet' is a CLI alias; a claude-cli card with status approved pins "
-                          "the full model ID (e.g. claude-sonnet-5)"])
 
     def test_executable_claude_cli_cards_pin_the_full_model_id(self):
         """An alias resolves to whatever the installed CLI maps it to (2026-09-30: `sonnet` moved from
@@ -406,17 +401,18 @@ class ExpansionTests(unittest.TestCase):
     def test_treatment_cards_plan_the_runner_hashes_and_keep_the_incumbent(self):
         """Cards 013-015: the treatment flag in extra_args is hashed as the runner hashes it; the incumbent arm
         plans card 007's hash for every shared task (013, which ran on the alias) or card 007's routing with only
-        the model pinned to its full ID (014, 015, pinned 2026-09-30 after the alias drift)."""
+        the model pinned to its full ID and the CLI re-pinned to 2.1.286 (014, 015, pinned 2026-09-30 after the
+        alias drift)."""
         runner = run_card.RunnerAdapter.load(ROOT / "experiments" / "p6_pilot" / "run_pilot.py").module
         card_007 = run_card.build_plan(run_card.load_card(CARDS / "007.json"), CARDS / "007.json")
         hash_007 = {inv.task_ids[0]: inv.expected_hash for inv in card_007.runs}
         routing_007 = {inv.task_ids[0]: inv.expected_config["provider_routing"] for inv in card_007.runs}
 
-        def pinned(routing, model):
+        def pinned(routing, model, cli_version):
             (contract,) = routing.values()
             arguments = list(contract["arguments"])
             arguments[arguments.index("--model") + 1] = model
-            return {model: {**contract, "model": model, "arguments": arguments}}
+            return {model: {**contract, "model": model, "arguments": arguments, "cli_version": cli_version}}
 
         for name, arm_name in (("013", "finish-guard"), ("014", "midpoint-nudge"), ("015", "check-oracle")):
             with self.subTest(card=name):
@@ -437,7 +433,8 @@ class ExpansionTests(unittest.TestCase):
                         self.assertEqual(inv.expected_config["provider_routing"], routing_007[task_id])
                     else:
                         self.assertEqual(model, "claude-sonnet-5")
-                        self.assertEqual(inv.expected_config["provider_routing"], pinned(routing_007[task_id], model))
+                        self.assertEqual(inv.expected_config["provider_routing"], pinned(routing_007[task_id], model,
+                                                                                        card["environment"]["claude_cli_version"]))
                     if inv.name == "incumbent":
                         if model == "sonnet":
                             self.assertEqual(inv.expected_hash, hash_007[task_id])

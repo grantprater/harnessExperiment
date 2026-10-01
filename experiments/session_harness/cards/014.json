@@ -12,7 +12,7 @@
     "runner_version": 8
   },
   "environment": {
-    "claude_cli_version": "2.1.283 (Claude Code)"
+    "claude_cli_version": "2.1.286 (Claude Code)"
   },
   "prerequisites": [
     {
