@@ -1,8 +1,12 @@
 # E3 difficulty calibration 010: a harder mutation bank with a dev/eval split
 
 Date: 2026-09-30  
-Status: **approved 2026-09-30; stage-1 calibration running from branch `exp/ontology-pilot`.** Stage 1 is built offline: 30 candidates selected, gold/noop
-controls passed on all 30, twice each. No model has been called for this card.  
+Status: **completed 2026-10-01 (stage 1).** 60 valid runs on `claude-sonnet-5` (CLI 2.1.286), 48/60 accepted
+(0.80); 2 adapter-failure attempts voided and rerun. The keep/drop rule gives an eval split of 12 tasks (predicted
+acceptance 0.42) and moves 18 to dev. Twelve is below every power-table design, so per the bank stopping rule the next
+stage (2a) needs an amended card and approval. [Report](E3-difficulty-calibration-010-report.md),
+[split](E3-difficulty-calibration-010.split.json). Stage 1 was built offline: 30 candidates selected, gold/noop
+controls passed on all 30, twice each.  
 Owner decision (2026-09-30, verbatim): "1. Yes we can do that first."  
 Owner decision (2026-09-30, verbatim): "Sure, I agree with your recommendations". This approves, from the open
 decisions below: (1) the stage-1 calibration, 60 runs, at most 1,680 attempts, about $52 list on the CLI subscription;
@@ -369,7 +373,7 @@ The reasoning tools may add tokens per run: the finish guard added 14% attempts.
    2a in a single approval.
 5. Whether the lesson store gets its own untouched eval tasks.
 
-## Not done
+## Not done (as of approval, before the calibration run; results are in the report)
 
 - No model calls, and no calibration run.
 - Stage 2a (generator continuation), 2b (composer) and 3 (other repos) were not run or built.
