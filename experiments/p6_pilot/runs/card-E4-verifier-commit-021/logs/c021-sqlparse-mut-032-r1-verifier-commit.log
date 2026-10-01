@@ -1,0 +1,8 @@
+# 2026-09-29T07:47:47+00:00 /home/user/harnessExperiment/.runtime/test-venv/bin/python /home/user/harnessExperiment/experiments/p6_pilot/run_pilot.py --client claude-cli --models claude-sonnet-5 --arm pressure-recent-v3 --backend trusted-local --tasks experiments/mutation_tasks/tasks.mutations.json sqlparse-mut-032 --run-name c021-sqlparse-mut-032-r1-verifier-commit --max-calls-per-run 20 --max-context-bytes 80000 --max-tokens 4096 --pytest-timeout 600 --max-attempts-per-run 24 --max-total-calls 24 --elapsed-cap-seconds 1200 --verifier repro-test:3 --verifier-manifest experiments/session_harness/verifiers/021/manifest.json --nudge commit --cli-reply-recovery lenient-json+second-turn-on-retry
+1 runs (1 tasks x 1 models), arm pressure-recent-v3, protocol c015aa369e8e
+claude-cli 2.1.284 (Claude Code): at most 20 responses per run; every CLI attempt counts toward --max-total-calls=24; billing unknown (local subscription login, no API key)
+per-run guards: {"stop_on_repeats": false, "resume_after_provider_stop": 0, "resume_wait_seconds": null}; backend trusted-local
+task budgets per run: {"claude-sonnet-5": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
+treatments (in the protocol hash): nudge commit commit-nudge-v1; verifier repro-test repro-test-verifier-v1
+claude-cli reply recovery lenient-json+second-turn-on-retry (adapter claude-cli-adapter-v3: --max-turns 1, 2 on retries after a rejected StructuredOutput call; in the protocol hash)
+sqlparse-mut-032__claude-sonnet-5: model_call_limit -> rejected {'fail-to-pass': 'fail', 'pass-to-pass': 'pass'}

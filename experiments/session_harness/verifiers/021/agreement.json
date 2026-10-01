@@ -1,0 +1,470 @@
+{
+  "scored_at": "2026-09-29T10:37:36.348301+00:00",
+  "manifest_sha256_lf": "aef36ed83f827cd35f15fff30727370c251363fbdf70021bb01870ccd27ccbd6",
+  "prefix": "c021",
+  "runs": 38,
+  "matrix": {
+    "accepted=True, verifier_passes=True": 5,
+    "accepted=True, verifier_passes=False": 6,
+    "accepted=False, verifier_passes=True": 5,
+    "accepted=False, verifier_passes=False": 22
+  },
+  "rows": [
+    {
+      "run": "c021-control-gold",
+      "task_id": "sqlparse-mut-001",
+      "accepted": true,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-control-noop",
+      "task_id": "sqlparse-mut-001",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-001-r1-incumbent",
+      "task_id": "sqlparse-mut-001",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-001-r1-verifier-commit",
+      "task_id": "sqlparse-mut-001",
+      "accepted": true,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-001-r2-incumbent",
+      "task_id": "sqlparse-mut-001",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-001-r2-verifier-commit",
+      "task_id": "sqlparse-mut-001",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-001-r3-incumbent",
+      "task_id": "sqlparse-mut-001",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-001-r3-verifier-commit",
+      "task_id": "sqlparse-mut-001",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-022-r1-incumbent",
+      "task_id": "sqlparse-mut-022",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 3,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-022-r1-verifier-commit",
+      "task_id": "sqlparse-mut-022",
+      "accepted": true,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 1,
+        "passing": 2,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-022-r2-incumbent",
+      "task_id": "sqlparse-mut-022",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 3,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-022-r2-verifier-commit",
+      "task_id": "sqlparse-mut-022",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 3,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-022-r3-incumbent",
+      "task_id": "sqlparse-mut-022",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 3,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-022-r3-verifier-commit",
+      "task_id": "sqlparse-mut-022",
+      "accepted": true,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 1,
+        "passing": 2,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-025-r1-incumbent",
+      "task_id": "sqlparse-mut-025",
+      "accepted": true,
+      "verifier_passes": true,
+      "verdict": {
+        "status": "success",
+        "failing": 0,
+        "passing": 3,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-025-r1-verifier-commit",
+      "task_id": "sqlparse-mut-025",
+      "accepted": true,
+      "verifier_passes": true,
+      "verdict": {
+        "status": "success",
+        "failing": 0,
+        "passing": 3,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-032-r1-incumbent",
+      "task_id": "sqlparse-mut-032",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 1,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-032-r1-verifier-commit",
+      "task_id": "sqlparse-mut-032",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 1,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-032-r2-incumbent",
+      "task_id": "sqlparse-mut-032",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 1,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-032-r2-verifier-commit",
+      "task_id": "sqlparse-mut-032",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 1,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-032-r3-incumbent",
+      "task_id": "sqlparse-mut-032",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 1,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-032-r3-verifier-commit",
+      "task_id": "sqlparse-mut-032",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 1,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-034-r1-incumbent",
+      "task_id": "sqlparse-mut-034",
+      "accepted": true,
+      "verifier_passes": true,
+      "verdict": {
+        "status": "success",
+        "failing": 0,
+        "passing": 3,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-034-r1-verifier-commit",
+      "task_id": "sqlparse-mut-034",
+      "accepted": true,
+      "verifier_passes": true,
+      "verdict": {
+        "status": "success",
+        "failing": 0,
+        "passing": 3,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-040-r1-incumbent",
+      "task_id": "sqlparse-mut-040",
+      "accepted": true,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 1,
+        "passing": 1,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-040-r1-verifier-commit",
+      "task_id": "sqlparse-mut-040",
+      "accepted": true,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 1,
+        "passing": 1,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-057-r1-incumbent",
+      "task_id": "sqlparse-mut-057",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 2,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-057-r1-verifier-commit",
+      "task_id": "sqlparse-mut-057",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 2,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-057-r2-incumbent",
+      "task_id": "sqlparse-mut-057",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 2,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-057-r2-verifier-commit",
+      "task_id": "sqlparse-mut-057",
+      "accepted": false,
+      "verifier_passes": true,
+      "verdict": {
+        "status": "success",
+        "failing": 0,
+        "passing": 4,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-057-r3-incumbent",
+      "task_id": "sqlparse-mut-057",
+      "accepted": false,
+      "verifier_passes": true,
+      "verdict": {
+        "status": "success",
+        "failing": 0,
+        "passing": 4,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-057-r3-verifier-commit",
+      "task_id": "sqlparse-mut-057",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 2,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-061-r1-incumbent",
+      "task_id": "sqlparse-mut-061",
+      "accepted": false,
+      "verifier_passes": true,
+      "verdict": {
+        "status": "success",
+        "failing": 0,
+        "passing": 2,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-061-r1-verifier-commit",
+      "task_id": "sqlparse-mut-061",
+      "accepted": true,
+      "verifier_passes": true,
+      "verdict": {
+        "status": "success",
+        "failing": 0,
+        "passing": 2,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-061-r2-incumbent",
+      "task_id": "sqlparse-mut-061",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-061-r2-verifier-commit",
+      "task_id": "sqlparse-mut-061",
+      "accepted": false,
+      "verifier_passes": false,
+      "verdict": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-061-r3-incumbent",
+      "task_id": "sqlparse-mut-061",
+      "accepted": false,
+      "verifier_passes": true,
+      "verdict": {
+        "status": "success",
+        "failing": 0,
+        "passing": 2,
+        "calls_left": 0
+      }
+    },
+    {
+      "run": "c021-sqlparse-mut-061-r3-verifier-commit",
+      "task_id": "sqlparse-mut-061",
+      "accepted": false,
+      "verifier_passes": true,
+      "verdict": {
+        "status": "success",
+        "failing": 0,
+        "passing": 2,
+        "calls_left": 0
+      }
+    }
+  ]
+}

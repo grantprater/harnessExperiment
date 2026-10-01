@@ -1,0 +1,398 @@
+{
+  "task_id": "sqlparse-mut-001",
+  "status": "available",
+  "attempts": 2,
+  "cost_usd": 1.238165,
+  "statement_sha256": "8c82588cd4653d1b5cf90b37461801b6064632e5ed26cfdd2c7b288eda46f109",
+  "generated_at": "2026-09-29T06:38:41.047472+00:00",
+  "file": "sqlparse-mut-001/test_reticle_repro.py",
+  "sha256_lf": "31a8b8b839cedca1450eac7826e4bb72498fe97a8bbcc6f307c9602ba539fa85",
+  "collected": 2,
+  "pre_edit": {
+    "collected": 2,
+    "passed": 0,
+    "failed": 2,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 1,
+      "seconds": 403.1,
+      "cost_usd": 0.6582246,
+      "num_turns": 20,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class ReindentFilter",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/filters/reindent.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/formatter.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def format",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/__init__.py",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "stmt",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace/CHANGELOG",
+            "output_mode": "content",
+            "-i": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "_last_stmt|_curr_stmt",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/CHANGELOG"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/engine/statement_splitter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/filters/others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/engine/filter_stack.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/__init__.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "select foo",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace/docs",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace/docs/source/intro.rst",
+            "output_mode": "content",
+            "-C": 5
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/test*"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "foo;\\\\\\\\nselect|foo;\\\\n\\\\nselect",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "845",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/utils.py"
+          }
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": null,
+      "rationale": null,
+      "pre_edit": null,
+      "rejected_because": "no_structured_output"
+    },
+    {
+      "attempt": 2,
+      "cli_exit_code": 0,
+      "seconds": 317.6,
+      "cost_usd": 0.5799406,
+      "num_turns": 23,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*reindent*"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def format",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/filters/reindent.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/__init__.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "stmts|_last_stmt|reindent\" \", stmt.insert\" ",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/CHANGELOG",
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/AGENTS.md"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/engine/statement_splitter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/filters/others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/engine/filter_stack.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "select foo|reindent\" |multiple statements|stmt\" ",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace/docs",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "endswith|_last_stmt|nl =",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Newline|Whitespace",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/tokens.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/sql.py",
+            "offset": 1,
+            "limit": 100
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/sqlparse/tokens.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": true,
+          "input": {
+            "pattern": "reindent|format(\" ",
+            "path": "/tmp/repro-gen-o8cz8bzr/workspace/README.rst",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-o8cz8bzr/workspace/docs/source/intro.rst"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "31a8b8b839cedca1450eac7826e4bb72498fe97a8bbcc6f307c9602ba539fa85",
+      "rationale": "The report identifies the regressed behaviour as \"format reindent: stmts\": formatting multiple semicolon-separated statements with reindent=True. The library's own split() (documented in docs/source/intro.rst) treats \"select foo; select bar\" as two independent statements with no blank line implied between them, and sqlparse's well-established reindent behaviour simply places each re-indented statement on its own line separated by a single newline (e.g. 'select foo;\\nselect bar'), never inserting extra blank lines for plain, single-line statements. Tracing sqlparse/engine/statement_splitter.py and sqlparse/filters/reindent.py shows that the trailing newline consumed after the terminating ';' is attached to the *next* statement and then stripped to an empty token by StripWhitespaceFilter; ReindentFilter._split_statements then mistakes that now-empty leading whitespace token for \"not the first token\" and inserts a spurious extra newline, on top of the '\\n\\n' that ReindentFilter.process() already inserts because the previous statement never ends with '\\n' \u2014 together producing multiple blank lines instead of the single expected newline, which is what the two tests assert against.",
+      "pre_edit": {
+        "collected": 2,
+        "passed": 0,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

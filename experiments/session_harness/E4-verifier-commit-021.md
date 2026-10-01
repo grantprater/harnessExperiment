@@ -1,8 +1,7 @@
 # E4 verifier + commitment 021: a realistic check() and a mid-budget commitment prompt, paired, on the cloud VM
 
 Date: 2026-09-29 (UTC)  
-Status: proposed; the idea was approved by the owner on 2026-09-29 ("yes, approved"); running it needs the owner's
-approval of this card (pasting [`RUN_IN_CLOUD-021.md`](../cloud/RUN_IN_CLOUD-021.md)) and the VM smoke  
+Status: running; approved by the owner through experiments/cloud/RUN_IN_CLOUD-021.md, launched in a cloud session 2026-09-29 07:13 UTC  
 Stage: S6 (tool use + agent loop) on cloud compute. Machine-readable card: [`cards/021.json`](cards/021.json).  
 
 ## Where we are
