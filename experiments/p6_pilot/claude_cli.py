@@ -31,6 +31,11 @@ from claude-sonnet-5 to claude-sonnet-5-5 without any change in the protocol has
 Every response is also checked against the model the CLI reports (the init event and each assistant
 message); a different model stops the run at once with the `model_mismatch` failure (never retried).
 
+CLI pin: the CLI version is a protocol-hash input, read once at run start. The runner also passes it as
+expected_cli_version, and a call whose init event reports another `claude_code_version` stops the run with the
+`cli_version_mismatch` failure (never retried): on 2026-10-01 the CLI updated itself mid-campaign (card 010 stage 2a).
+Every child gets DISABLE_AUTOUPDATER=1, so the adapter's own CLI processes never update the CLI.
+
 Tool probe (asks the nested CLI, with the adapter's exact flags and no Reticle tools, what it can call):
   python experiments/p6_pilot/claude_cli.py --probe-tools OUT_DIR
 """
@@ -89,6 +94,13 @@ REPLY_SCHEMA = {
 # A full Claude model ID. Aliases (sonnet, opus, haiku, default, opusplan, ...) and *-latest IDs are refused.
 FULL_MODEL_ID = re.compile(r"claude-[a-z0-9][a-z0-9.-]*[a-z0-9]")
 MODEL_MISMATCH = "model_mismatch"  # the failure kind and the prefix of its error message
+# 2026-10-01: the CLI auto-updated from 2.1.286 to 2.1.287 in the middle of card 010 stage 2a; one run had calls on
+# both versions and the version was checked only at run start. With expected_cli_version set, a call whose init
+# event reports another claude_code_version stops the run as cli_version_mismatch (void, never retried).
+CLI_VERSION_MISMATCH = "cli_version_mismatch"  # the failure kind and the prefix of its error message
+# Set in every child the adapter starts: the CLI must never update itself in the middle of a campaign. Not hashed
+# (only the removed names are recorded), so no protocol hash changes.
+PINNED_CLI_ENVIRONMENT = {"DISABLE_AUTOUPDATER": "1"}
 REPLY_CHANNEL_TOOLS = frozenset({"StructuredOutput"})  # how --json-schema returns the reply; not an action
 # Flags that isolate the nested CLI from user configuration and remove every built-in tool.
 ISOLATION_ARGUMENTS = [
@@ -154,8 +166,14 @@ def cli_version(executable: str = "claude") -> str:
     if path is None:
         raise SystemExit(f"{executable} is not on PATH")
     completed = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=60,
-                               env=child_environment()[0])
+                               env=child_environment(PINNED_CLI_ENVIRONMENT)[0])
     return completed.stdout.strip()
+
+
+def version_number(version: Optional[str]) -> Optional[str]:
+    """The bare version: `2.1.286 (Claude Code)` (what --version prints) -> `2.1.286` (the init event's form)."""
+    parts = str(version).split() if version else []
+    return parts[0] if parts else None
 
 
 def _text(content) -> str:
@@ -343,10 +361,13 @@ class ClaudeCliClient:
 
     def __init__(self, model: str, calls_path: Path, run_id: str, budget, *, max_attempts: int = 3,
                  timeout: int = 300, backoff_seconds: float = 5.0, max_turns: int = 1,
-                 executable: str = "claude", workdir: Optional[Path] = None):
+                 executable: str = "claude", workdir: Optional[Path] = None,
+                 expected_cli_version: Optional[str] = None):
         self.model, self.calls_path, self.run_id, self.budget = model, Path(calls_path), run_id, budget
         self.max_attempts, self.timeout, self.backoff_seconds = max_attempts, timeout, backoff_seconds
         self.max_turns, self.executable = max_turns, executable
+        # The version the run's protocol hash recorded (`claude --version` at run start); None checks nothing.
+        self.expected_cli_version = version_number(expected_cli_version)
         self.workdir = Path(workdir) if workdir else None
         self.call_index = 0
 
@@ -375,7 +396,7 @@ class ClaudeCliClient:
         if not system_file.exists():
             system_file.write_text(system_prompt, encoding="utf-8")
         arguments = self.arguments(system_file)
-        environment, removed = child_environment()
+        environment, removed = child_environment(PINNED_CLI_ENVIRONMENT)
         last_error = "no attempt made"
         for attempt in range(1, self.max_attempts + 1):
             # Same order as OpenRouterClient: campaign cap, task reservation, campaign unit.
@@ -417,8 +438,15 @@ class ClaudeCliClient:
                 entry["reported_models"] = reported
                 mismatch = [m for m in reported if m != self.model]
                 problem = isolation_problem(init) if init is not None else None
+                served = init.get("claude_code_version") if init is not None else None
                 if problem:  # checked first: a reply from a non-isolated CLI is never used
                     last_error, retry, failure = problem, False, "tool_isolation_violation"
+                elif init is not None and self.expected_cli_version and served != self.expected_cli_version:
+                    # another CLI than the hashed one served this call (an update mid-run): never used, never retried
+                    entry["cli_version_mismatch"] = {"expected": self.expected_cli_version, "reported": served}
+                    last_error = (f"{CLI_VERSION_MISMATCH}: the run's protocol records CLI {self.expected_cli_version}, "
+                                  f"the CLI reported {served}")
+                    retry, failure = False, CLI_VERSION_MISMATCH
                 elif mismatch:  # a reply from another model is never used, and a retry would only repeat it
                     entry["model_mismatch"] = {"expected": self.model, "reported": reported}
                     last_error = (f"{MODEL_MISMATCH}: requested {self.model}, the CLI reported {reported}")

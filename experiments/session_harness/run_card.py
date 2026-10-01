@@ -57,8 +57,11 @@ EXECUTABLE_STATUSES = ("approved", "running")
 # moved the alias `sonnet` from claude-sonnet-5 to claude-sonnet-5-5 without a protocol-hash change.
 FULL_CLAUDE_MODEL_ID = re.compile(r"claude-[a-z0-9][a-z0-9.-]*[a-z0-9]")
 # The runner's stop labels for adapter failures: voided and retried or stopped, never a task outcome.
-# model_mismatch (the CLI reported another model than the pinned one) cannot be fixed by a retry.
-ADAPTER_FAILURE_STOPS = ("model_error", "model_mismatch")
+# model_mismatch (the CLI reported another model than the pinned one) and cli_version_mismatch (a call served by
+# another CLI version than the run's hashed one) cannot be fixed by a retry: the campaign stops at a checkpoint.
+CLI_VERSION_MISMATCH = "cli_version_mismatch"
+PIN_STOPS = ("model_mismatch", CLI_VERSION_MISMATCH)
+ADAPTER_FAILURE_STOPS = ("model_error", *PIN_STOPS)
 EXIT_OK, EXIT_REFUSED, EXIT_CHECKPOINT, EXIT_INTEGRITY, EXIT_LOCKED = 0, 2, 3, 4, 5
 DEFAULT_RUN_NAME_TEMPLATE = "{prefix}-{task}-r{rollout}-{arm}"
 # config.json fields added to runner v8 after some runs were recorded (S6a: --tasks FILE.json); a replay of an
@@ -103,6 +106,12 @@ CAMPAIGN_MEASUREMENTS = {
     "paired_table": "Paired units",
 }
 PARAMETRIC_MEASUREMENT = re.compile(r"^(acceptance_by|acceptance_by_size):([A-Za-z0-9_]+)$|^delta:([a-z0-9-]+):([a-z0-9-]+)$")
+
+
+def bare_version(version) -> Optional[str]:
+    """`2.1.286 (Claude Code)` (the card's pin, as --version prints it) -> `2.1.286` (the CLI init event's form)."""
+    parts = str(version).split() if version else []
+    return parts[0] if parts else None
 
 
 def utc_now() -> str:
@@ -1215,9 +1224,33 @@ class Campaign:
 
     def next_attempt_name(self, inv: Invocation) -> str:
         names = self.attempt_names(inv)
-        if names and not (self.runs_root(inv) / names[-1] / "results.jsonl").exists():
+        if names and not (self.runs_root(inv) / names[-1] / "results.jsonl").exists() \
+                and not self.cli_version_problem(inv, names[-1]):
             return names[-1]  # interrupted: the runner keeps the old session and reruns in place
         return inv.run_name if not names else f"{inv.run_name}-a{len(names) + 1}"
+
+    def cli_version_problem(self, inv: Invocation, name: str) -> Optional[str]:
+        """Why an attempt of a claude-cli invocation is off the card's CLI pin, or None: its config.json recorded
+        another CLI version, or any call in its calls.jsonl was served by another one (the CLI updated itself
+        mid-run, 2026-10-01). Such an attempt is void (cli_version_mismatch): never a completed attempt."""
+        pin = bare_version(self.plan.card.get("environment", {}).get("claude_cli_version"))
+        if inv.client != "claude-cli" or not pin or inv.script is None:
+            return None
+        run_dir = self.runs_root(inv) / name
+        config_path = run_dir / "config.json"
+        if config_path.exists():
+            routing = json.loads(config_path.read_text(encoding="utf-8")).get("provider_routing") or {}
+            started = sorted({str(bare_version(contract.get("cli_version"))) for contract in routing.values()
+                              if isinstance(contract, dict) and "cli_version" in contract} - {pin})
+            if started:
+                return f"{CLI_VERSION_MISMATCH}: {name} started on CLI {', '.join(started)}; the card pins {pin}"
+        served = [(row.get("cli_init") or {}).get("claude_code_version") for row in read_jsonl(run_dir / "calls.jsonl")
+                  if row.get("cli_init")]
+        off = [version for version in served if version != pin]
+        if off:
+            return (f"{CLI_VERSION_MISMATCH}: {name} has {len(off)} of {len(served)} calls on CLI "
+                    f"{', '.join(sorted({str(v) for v in off}))}; the card pins {pin}")
+        return None
 
     def records(self, inv: Invocation, name: str) -> List[dict]:
         wanted = set(inv.task_ids)
@@ -1241,6 +1274,9 @@ class Campaign:
 def classify(plan: Plan, campaign: Campaign, inv: Invocation, name: str, exit_code) -> Outcome:
     """Plan section 5.3: integrity problems stop the campaign; provider/model errors may be retried."""
     run_dir = campaign.runs_root(inv) / name
+    off_pin = campaign.cli_version_problem(inv, name)
+    if off_pin:  # checked first: a run on another CLI is void (an adapter failure), not a corrupted protocol
+        return Outcome("failure", off_pin, campaign.records(inv, name))
     config_path = run_dir / "config.json"
     if config_path.exists() and inv.expected_config is not None:
         config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -1276,7 +1312,7 @@ def classify(plan: Plan, campaign: Campaign, inv: Invocation, name: str, exit_co
     failures = [r for r in records if is_model_failure(r)]
     if failures:
         error = (failures[0].get("agent") or {}).get("error") or ""
-        if failures[0].get("stop") == "model_mismatch":  # the error text starts with model_mismatch
+        if failures[0].get("stop") in PIN_STOPS:  # the error text starts with the stop label
             return Outcome("failure", error[:300], records)
         return Outcome("failure", f"model_error: {error[:200]}", records)
     record = records[0]
@@ -1292,7 +1328,8 @@ def is_model_failure(record: dict) -> bool:
 def completed_attempt(campaign: Campaign, inv: Invocation) -> Optional[str]:
     for name in campaign.attempt_names(inv):
         records = campaign.records(inv, name)
-        if len({r["task_id"] for r in records}) == len(inv.task_ids) and not any(is_model_failure(r) for r in records):
+        if len({r["task_id"] for r in records}) == len(inv.task_ids) and not any(is_model_failure(r) for r in records) \
+                and not campaign.cli_version_problem(inv, name):
             return name
     return None
 
@@ -1332,6 +1369,24 @@ def preflight(plan: Plan, campaign: Campaign, python: str, out) -> Optional[Tupl
             return EXIT_INTEGRITY, (f"preflight: arm {inv.arm['name']} would record protocol {observed}; the card "
                                     f"expects {inv.expected_hash} (machine drift: CLI version, image ID, or engine?)")
         out(f"preflight {inv.arm['name']}: protocol {observed} matches")
+    return None
+
+
+def cli_drift(plan: Plan, inv: Invocation) -> Optional[str]:
+    """Before each claude-cli attempt: the CLI on PATH must still be the card's pinned version (the runner's
+    `claude --version`, as its protocol hash reads it). The campaign preflight checks it only once, at the start."""
+    pin = plan.card.get("environment", {}).get("claude_cli_version")
+    adapter = RunnerAdapter._cache.get(inv.script) if inv.script else None
+    probe = getattr(adapter.module, "cli_version", None) if adapter is not None else None
+    if inv.client != "claude-cli" or not isinstance(pin, str) or probe is None:
+        return None
+    try:
+        found = probe()
+    except (Exception, SystemExit) as exc:  # noqa: BLE001 - any failure to read the version stops the campaign
+        found = f"unreadable ({type(exc).__name__}: {exc})"
+    if found != pin:
+        return (f"checkpoint: {CLI_VERSION_MISMATCH}: the CLI on PATH is {found!r}; the card pins {pin!r}. Put the "
+                f"pinned CLI first on PATH (DISABLE_AUTOUPDATER=1), then --resume")
     return None
 
 
@@ -1396,6 +1451,13 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
 
     for inv in plan.invocations:
         done = completed_attempt(campaign, inv)
+        if not done:  # resume preflight: an earlier attempt off the CLI pin is void and the invocation reruns
+            for name in campaign.attempt_names(inv):
+                problem = campaign.cli_version_problem(inv, name)
+                if problem and not any(e["event"] == "void" and e.get("run") == name
+                                       for e in read_jsonl(campaign.log_path)):
+                    campaign.log("void", run=name, detail=problem)
+                    out(f"void: {problem}")
         if done:
             outcome = classify(plan, campaign, inv, done, 0)
             if outcome.kind == "integrity":
@@ -1412,6 +1474,9 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
             reason = over_cap(inv)
             if reason:
                 return finish(EXIT_CHECKPOINT, reason)
+            drift = cli_drift(plan, inv)
+            if drift:  # before the attempt starts, so a CLI that changed since the last run never serves one
+                return finish(EXIT_CHECKPOINT, drift)
             name = campaign.next_attempt_name(inv)
             campaign.log("invocation_start", index=inv.index, base=inv.run_name, run=name, retry=retries,
                          command=[display_path(inv.script), *with_run_name(inv.args, name)])
@@ -1430,6 +1495,9 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
             if outcome.detail.startswith("model_mismatch"):  # a retry would meet the same model
                 return finish(EXIT_CHECKPOINT, f"checkpoint: {outcome.detail}; the attempt is void. Pin the model "
                                                f"the CLI serves (or restore the expected one), then --resume")
+            if outcome.detail.startswith(CLI_VERSION_MISMATCH):  # a retry would meet the same CLI
+                return finish(EXIT_CHECKPOINT, f"checkpoint: {outcome.detail}; the attempt is void. Put the pinned "
+                                               f"CLI first on PATH (DISABLE_AUTOUPDATER=1), then --resume")
             consecutive += 1
             if consecutive >= rules["consecutive_failures_to_stop"]:
                 return finish(EXIT_CHECKPOINT, f"checkpoint: {consecutive} consecutive failed attempts "

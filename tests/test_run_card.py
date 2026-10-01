@@ -586,6 +586,88 @@ class ExecutionTests(unittest.TestCase):
         # Not a task outcome: the invocation has no completed attempt, so --resume runs it again.
         self.assertIsNone(run_card.completed_attempt(run_card.Campaign(plan), plan.invocations[1]))
 
+    def test_cli_version_mismatch_is_a_void_adapter_failure_that_stops_without_retry(self):
+        fixture = Fixture(self)
+        plan = fixture.plan(fixture.card())
+        names = [inv.run_name for inv in plan.invocations]
+        fixture.behave({names[1]: "cli_version_mismatch"})
+        self.assertEqual(fixture.execute(plan), run_card.EXIT_CHECKPOINT)
+        self.assertEqual(fixture.invoked(), names[:2])  # no retry: it would meet the same CLI
+        self.assertEqual(fixture.sleeps, [])
+        end = [e for e in fixture.events(plan) if e["event"] == "invocation_end"][-1]
+        self.assertEqual(end["outcome"], "failure")
+        self.assertTrue(end["detail"].startswith("cli_version_mismatch:"), end["detail"])
+        self.assertIn("pinned CLI first on PATH", fixture.events(plan)[-1]["reason"])
+        record = run_card.read_jsonl(fixture.dir / "runs" / names[1] / "results.jsonl")[0]
+        self.assertTrue(run_card.is_model_failure(record))
+        self.assertIsNone(run_card.completed_attempt(run_card.Campaign(plan), plan.invocations[1]))
+
+    def test_a_finished_run_with_a_call_off_the_pin_is_void_and_reruns(self):
+        """Card 010 stage 2a, c010b-sqlparse-mut-102-r1: 19 calls on the pinned CLI, the last 2 on an update; the run
+        finished normally (the runner's guard did not exist yet) and the campaign counted it."""
+        fixture = Fixture(self)
+        plan = fixture.plan(fixture.card())
+        names = [inv.run_name for inv in plan.invocations]
+        fixture.behave({names[1]: ["cli_drift", "accept"]})
+        self.assertEqual(fixture.execute(plan), run_card.EXIT_CHECKPOINT)
+        end = [e for e in fixture.events(plan) if e["event"] == "invocation_end"][-1]
+        self.assertEqual((end["outcome"], end["detail"]),
+                         ("failure", f"cli_version_mismatch: {names[1]} has 1 of 2 calls on CLI 10.0.0; "
+                                     f"the card pins 9.9.9"))
+        self.assertIsNone(run_card.completed_attempt(run_card.Campaign(plan), plan.invocations[1]))
+        self.assertEqual(fixture.execute(plan, resume=True), run_card.EXIT_OK)
+        self.assertEqual(fixture.invoked()[2:], [f"{names[1]}-a2", *names[2:]])
+        self.assertEqual(run_card.completed_attempt(run_card.Campaign(plan), plan.invocations[1]), f"{names[1]}-a2")
+
+    def test_resume_voids_finished_attempts_off_the_pin_and_reruns_only_them(self):
+        """An attempt recorded before the per-call check: --resume finds it, logs it void, and reruns it alone."""
+        fixture = Fixture(self)
+        plan = fixture.plan(fixture.card())
+        names = [inv.run_name for inv in plan.invocations]
+        self.assertEqual(fixture.execute(plan), run_card.EXIT_OK)
+        calls = fixture.dir / "runs" / names[3] / "calls.jsonl"
+        with calls.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"run_id": "t", "attempt": 3, "cli_init": {"claude_code_version": "10.0.0"}}) + "\n")
+        started = fixture.dir / "runs" / names[5] / "config.json"  # the run started on the update (085-r1)
+        config = json.loads(started.read_text(encoding="utf-8"))
+        for contract in config["provider_routing"].values():
+            contract["cli_version"] = "10.0.0 (newer)"
+        config["protocol_hash"] = "dd0d661ce3b3"
+        started.write_text(json.dumps(config), encoding="utf-8")
+        self.assertEqual(fixture.execute(plan, resume=True), run_card.EXIT_OK)
+        self.assertEqual(fixture.invoked()[len(names):], [f"{names[3]}-a2", f"{names[5]}-a2"])
+        voids = {e["run"]: e["detail"] for e in fixture.events(plan) if e["event"] == "void"}
+        self.assertEqual(sorted(voids), sorted([names[3], names[5]]))
+        self.assertIn("started on CLI 10.0.0; the card pins 9.9.9", voids[names[5]])
+        self.assertEqual(fixture.execute(plan, resume=True), run_card.EXIT_OK)  # nothing left; voids logged once
+        self.assertEqual(len(fixture.invoked()), len(names) + 2)
+        self.assertEqual(len([e for e in fixture.events(plan) if e["event"] == "void"]), 2)
+
+    def test_a_folder_renamed_void_reruns_under_its_planned_name(self):
+        """The repository's void convention (*.void-<reason>): the invocation has no attempt left and reruns as -r1."""
+        fixture = Fixture(self)
+        plan = fixture.plan(fixture.card())
+        names = [inv.run_name for inv in plan.invocations]
+        self.assertEqual(fixture.execute(plan), run_card.EXIT_OK)
+        runs_root = fixture.dir / "runs"
+        (runs_root / names[2]).rename(runs_root / f"{names[2]}.void-cli-10.0.0")
+        self.assertEqual(run_card.Campaign(plan).attempt_names(plan.invocations[2]), [])
+        self.assertEqual(fixture.execute(plan, resume=True), run_card.EXIT_OK)
+        self.assertEqual(fixture.invoked()[len(names):], [names[2]])
+        self.assertTrue((runs_root / f"{names[2]}.void-cli-10.0.0" / "results.jsonl").exists())
+
+    def test_a_cli_that_changed_since_the_preflight_stops_before_the_next_attempt(self):
+        fixture = Fixture(self)
+        plan = fixture.plan(fixture.card())
+        names = [inv.run_name for inv in plan.invocations]
+        fixture.behave({names[0]: "accept"})
+        with mock.patch.object(run_card, "preflight", return_value=None), \
+                mock.patch.dict(os.environ, {"CARD_STUB_CLI_VERSION": "10.0.0 (newer)"}):
+            self.assertEqual(fixture.execute(plan), run_card.EXIT_CHECKPOINT)
+        self.assertEqual(fixture.invoked(), [])
+        self.assertIn("cli_version_mismatch: the CLI on PATH is '10.0.0 (newer)'; the card pins '9.9.9 (stub)'",
+                      fixture.events(plan)[-1]["reason"])
+
     def test_consecutive_failures_across_invocations(self):
         fixture = Fixture(self)
         card = fixture.card()

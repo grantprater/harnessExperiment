@@ -590,6 +590,42 @@ Every gold run accepted, every noop run rejected on exactly the recorded `fail_t
 took 18.7 s. Summary: [`E3-difficulty-calibration-010-stage2a-controls.json`](E3-difficulty-calibration-010-stage2a-controls.json).
 Not done: the calibration itself (78 runs) is not launched.
 
+### A1.6 CLI auto-update during the stage-2a calibration (2026-10-01)
+
+**Incident.** The card pins Claude CLI `2.1.286 (Claude Code)`. At 12:04 local time on 2026-10-01 the user's CLI
+(`C:\Users\grant\.local\bin\claude.exe`) updated itself to 2.1.287 while `run_card.py cards/010-stage2a.json
+--execute --resume` was running. The runner stopped at invocation 40/80 with `integrity stop: corrupted_protocol:
+c010b-sqlparse-mut-085-r1/config.json differs from the card in ['protocol_hash', 'provider_routing'] (recorded protocol
+dd0d661ce3b3, expected 160bb0c782a8)`. 38 runs had finished. Per-call versions (`calls.jsonl`
+`cli_init.claude_code_version`):
+- `c010b-sqlparse-mut-085-r1`: all 24 calls on 2.1.287 (it started after the update; recorded hash `dd0d661ce3b3`).
+- `c010b-sqlparse-mut-102-r1`: 19 calls on 2.1.286, then 2 on 2.1.287; logged "ok (model_call_limit -> rejected)".
+  The guard missed it: the CLI version was read only at run start (config.json, protocol hash), not per call.
+- The other 36 runs: every call on 2.1.286; each recorded hash equals `--plan`.
+
+**Owner decision (2026-10-01).** Question (verbatim): "The CLI auto-updated to 2.1.287 mid-calibration. 36 runs are clean on 2.1.286; 085-r1 and 102-r1 touched 2.1.287 and would be voided and rerun. How should the remaining runs proceed?"
+Answer (verbatim): "Private 2.1.286 copy (Recommended)" (option text: "Install CLI 2.1.286 from npm into the project's .runtime folder, used only by the runner, with auto-update off for it. Your own claude stays on 2.1.287. Void the two runs and resume the same card: 42 runs left (40 + 2 reruns, about $2 extra). The same copy would keep the 240-run pilot on one version. I'd also add a per-call CLI-version check so a mid-run update is caught.")
+
+**What was done** (no model call):
+- Private CLI: `npm install --prefix C:\Users\grant\harnessExperiment\.runtime\claude-cli-2.1.286
+  @anthropic-ai/claude-code@2.1.286` (outside the repository; the user's own install and global npm prefix untouched).
+  Its native binary is `.runtime\claude-cli-2.1.286\node_modules\@anthropic-ai\claude-code\bin\claude.exe`;
+  `--version` prints `2.1.286 (Claude Code)`; `claude auth status` reports the existing claude.ai login (no model call).
+  The runner finds it by PATH (that `bin` directory first; it holds only `claude.exe`), with `DISABLE_AUTOUPDATER=1`.
+  No hash changes: `run_card.py --plan --json` for this card and for `cards/010.json` is byte-identical before and after,
+  `apply_split_010.py` output for stage 1 is identical, and the runner's own `--dry-run` for 085-r1 under the launch
+  environment prints `claude-cli 2.1.286 (Claude Code)` and protocol `160bb0c782a8`.
+- Void: both runs renamed `*.void-cli-2.1.287` (folders and their per-run logs under
+  `runs/card-E3-difficulty-calibration-010-stage2a/logs/`), kept as side data, not calibration outcomes; a `void` event
+  for each is appended to the campaign log. `--resume` skips the 2 controls and 36 clean runs and runs 42: the 40
+  unstarted runs plus 085-r1 and 102-r1 under their planned names.
+- Per-call CLI-version check (runner v8, no bump; no protocol hash changes): the claude-cli client compares each
+  call's `claude_code_version` with the version recorded at run start and stops the run as `cli_version_mismatch`
+  (an adapter failure: void, never retried, never a task outcome), and its children run with `DISABLE_AUTOUPDATER=1`;
+  `run_card.py` treats an attempt whose config.json or any call is off the card's pin as void (`cli_version_mismatch`,
+  checkpoint stop; `--resume` logs it `void` and reruns it as the next attempt), and before every claude-cli attempt
+  checks that `claude --version` on PATH still equals the pin.
+
 ## Not done (as of approval, before the calibration run; results are in the report)
 
 - No model calls, and no calibration run.

@@ -31,7 +31,8 @@ prompt = sys.stdin.buffer.read().decode("utf-8")
 n = len(list(state.glob("call-*.json"))) + 1
 (state / f"call-{n:03d}.json").write_text(json.dumps({
     "argv": sys.argv[1:], "prompt": prompt, "cwd": os.getcwd(),
-    "present": sorted(k for k in ("ANTHROPIC_API_KEY", "CLAUDECODE", "CLAUDE_CODE_SESSION_ID") if k in os.environ)}),
+    "present": sorted(k for k in ("ANTHROPIC_API_KEY", "CLAUDECODE", "CLAUDE_CODE_SESSION_ID") if k in os.environ),
+    "autoupdater": os.environ.get("DISABLE_AUTOUPDATER")}),
     encoding="utf-8")
 replies = json.loads((state / "replies.json").read_text(encoding="utf-8"))
 reply = replies[min(n, len(replies)) - 1]
@@ -44,9 +45,9 @@ sys.exit(reply.get("exit", 0))
 MODEL = "claude-stub"  # a full model ID, as the client requires; the stub CLI reports it back
 
 
-def init_event(tools=("StructuredOutput",), api_key_source="none", mcp=(), model=MODEL):
+def init_event(tools=("StructuredOutput",), api_key_source="none", mcp=(), model=MODEL, version="0.0.0"):
     return {"type": "system", "subtype": "init", "tools": list(tools), "mcp_servers": list(mcp),
-            "apiKeySource": api_key_source, "model": model, "claude_code_version": "0.0.0"}
+            "apiKeySource": api_key_source, "model": model, "claude_code_version": version}
 
 
 def result_event(structured=None, is_error=False, text="", subtype="success"):
@@ -379,6 +380,67 @@ class ModelPinTests(ClaudeCliTestCase):
             self.assertEqual(contract["arguments"][contract["arguments"].index("--model") + 1], model)
             hashes[model] = run_pilot.protocol_hash("pressure-recent-v3", {model: contract}, execution, {})
         self.assertEqual(len(set(hashes.values())), 3, hashes)
+
+
+class CliVersionPinTests(ClaudeCliTestCase):
+    """2026-10-01: the CLI updated itself from 2.1.286 to 2.1.287 in the middle of card 010 stage 2a; one run had calls
+    on both versions, because the version (a protocol-hash input) was read only at run start."""
+
+    def pinned_client(self, expected="0.0.0 (stub)"):
+        return claude_cli.ClaudeCliClient(MODEL, self.calls_path, "run-v", run_pilot.CallBudget(100, 0),
+                                          backoff_seconds=0, workdir=self.root / "cli-cwd",
+                                          expected_cli_version=expected)
+
+    def test_a_call_served_by_another_cli_version_stops_the_run_unretried(self):
+        updated = ok(tool("finish", summary="done"))
+        updated["events"][0] = init_event(version="0.0.1")
+        self.replies(updated, ok(tool("finish", summary="done")))
+        with self.assertRaisesRegex(run_pilot.ModelClientError,
+                                    r"^cli_version_mismatch: the run's protocol records CLI 0\.0\.0, "
+                                    r"the CLI reported 0\.0\.1$"):
+            self.pinned_client().complete([{"role": "user", "content": "x"}], [])
+        self.assertEqual(len(self.stub_calls()), 1, "a CLI version mismatch is not retried")
+        row = run_pilot.read_jsonl(self.calls_path)[-1]
+        self.assertEqual(row["failure"], "cli_version_mismatch")
+        self.assertEqual(row["cli_version_mismatch"], {"expected": "0.0.0", "reported": "0.0.1"})
+        self.assertNotIn("response", row, "a reply from another CLI is never used")
+
+    def test_the_pinned_version_passes_and_no_pin_checks_nothing(self):
+        for expected in ("0.0.0 (stub)", "0.0.0", None):
+            with self.subTest(expected=expected):
+                self.replies(ok(tool("finish", summary="done")))
+                response = self.pinned_client(expected).complete([{"role": "user", "content": "x"}], [])
+                self.assertEqual(response.metadata["cli_version"], "0.0.0")
+        other = ok(tool("finish", summary="done"))
+        other["events"][0] = init_event(version="7.7.7")
+        self.replies(other)
+        self.pinned_client(None).complete([{"role": "user", "content": "x"}], [])  # no pin: nothing raised
+
+    def test_mismatch_through_the_controller_is_the_cli_version_mismatch_stop(self):
+        updated = ok(tool("read_file", path="a.txt"))
+        updated["events"][0] = init_event(version="0.0.1")
+        self.replies(updated)
+        task = TaskEnvelope("cli-task", "Read a.txt, then finish.", budgets={"model_responses": 5, "model_attempts": 5})
+        client = run_pilot.GuardedClient(self.pinned_client(), self.tools)
+        result = AgentController(self.runtime, task, self.tools, client, AgentLimits(6, 100_000),
+                                 policy=PressureRecentContextPolicyV3()).run()
+        self.assertEqual(result.stop_reason, "model_error")
+        self.assertEqual(run_pilot.guard_stop_label(result.to_dict()), "cli_version_mismatch")
+        self.assertFalse(run_pilot.is_provider_stop(result.to_dict()))  # never resumed as a provider outage
+        self.assertEqual(self.outcomes(), ["cli_version_mismatch"])
+
+    def test_children_never_update_the_cli(self):
+        self.replies(ok(tool("finish", summary="done")))
+        self.pinned_client().complete([{"role": "user", "content": "x"}], [])
+        self.assertEqual(self.stub_calls()[0]["autoupdater"], "1")
+
+    def test_the_guard_leaves_the_contract_and_hash_unchanged(self):
+        contract = claude_cli.cli_contract("claude-sonnet-5", max_turns=1, timeout=300, version="2.1.286 (Claude Code)")
+        self.assertEqual(sorted(contract), ["adapter_version", "arguments", "billing", "cli_version", "client", "model",
+                                            "removed_environment", "reply", "reply_schema", "system_prompt_sha256",
+                                            "timeout_seconds"])
+        self.assertEqual(claude_cli.version_number("2.1.286 (Claude Code)"), "2.1.286")
+        self.assertIsNone(claude_cli.version_number(""))
 
 
 class RenderTests(unittest.TestCase):

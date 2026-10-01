@@ -871,6 +871,15 @@ question texts are verbatim:
 The stage-2a calibration is approved at 78 runs (39 tasks x 2 rollouts, about $70 at list), after the model-free
 controls. Machine card: `experiments/session_harness/cards/010-stage2a.json`; record in card 010 amendment 1, A1.5.
 
+**Owner decision (2026-10-01, card 010 stage 2a, CLI auto-update).** At 12:04 local time the user's CLI updated itself
+from 2.1.286 (the card's pin) to 2.1.287 mid-calibration; the runner stopped at invocation 40/80 (integrity stop on
+`c010b-sqlparse-mut-085-r1`, all 24 calls on 2.1.287); `c010b-sqlparse-mut-102-r1` had 19 calls on 2.1.286 and 2 on
+2.1.287; the other 36 finished runs are clean. The owner was asked (verbatim): "The CLI auto-updated to 2.1.287 mid-calibration. 36 runs are clean on 2.1.286; 085-r1 and 102-r1 touched 2.1.287 and would be voided and rerun. How should the remaining runs proceed?"
+Answer (verbatim): "Private 2.1.286 copy (Recommended)" (option text: "Install CLI 2.1.286 from npm into the project's .runtime folder, used only by the runner, with auto-update off for it. Your own claude stays on 2.1.287. Void the two runs and resume the same card: 42 runs left (40 + 2 reruns, about $2 extra). The same copy would keep the 240-run pilot on one version. I'd also add a per-call CLI-version check so a mid-run update is caught.")
+Done 2026-10-01: private CLI 2.1.286 under `.runtime/claude-cli-2.1.286` (runner PATH, `DISABLE_AUTOUPDATER=1`),
+both runs voided as `*.void-cli-2.1.287`, per-call CLI-version check (`cli_version_mismatch`), no protocol hash change;
+record in card 010 amendment 1, A1.6.
+
 **Implementation choices before any E3 model run in OCI** (from
 `experiments/session_harness/S2b-oci-boundaries-controls.md`):
 

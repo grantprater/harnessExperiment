@@ -109,7 +109,8 @@ from reticle.tools.reasoning import ReasoningTools, REASONING_SCHEMAS, tool_cont
 HERE = Path(__file__).resolve().parent
 DEFAULT_TASK_FILE = HERE / "tasks.json"
 sys.path.insert(0, str(HERE))
-from claude_cli import MODEL_MISMATCH, ClaudeCliClient, cli_contract, cli_version, model_id_problem  # noqa: E402
+from claude_cli import (CLI_VERSION_MISMATCH, MODEL_MISMATCH, ClaudeCliClient, cli_contract, cli_version,  # noqa: E402
+                        model_id_problem, version_number)
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
 TASK_PYTHON = ROOT / ".runtime" / "bugs-venv" / "Scripts" / "python.exe"
 BASE_URL = "https://openrouter.ai/api/v1"
@@ -135,6 +136,11 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    replay); a response from any other model than the requested one stops the run as model_mismatch
 #    (an adapter failure, voided, never a task outcome) and ends the invocation; claude-cli results record
 #    reported_models. Nothing hashed changes: the requested model was already in the routing contract.
+#    Later in v8, without a bump (2026-10-01, after the CLI updated itself from 2.1.286 to 2.1.287 in the middle
+#    of card 010 stage 2a): the claude-cli client checks every call's claude_code_version against the version
+#    recorded at run start (the hashed one) and stops the run as cli_version_mismatch (an adapter failure, voided,
+#    never a task outcome); its children run with DISABLE_AUTOUPDATER=1; claude-cli results record cli_versions.
+#    Nothing hashed changes: the CLI version was already in the routing contract.
 RUNNER_VERSION = 8
 CLI_TIMEOUT_SECONDS = 300  # per attempt, as the OpenRouter client's HTTP timeout
 CLI_MAX_TURNS = 1  # the reply is the model's first message; the CLI stops before a second model turn
@@ -154,8 +160,10 @@ OBSERVATION_TOOLS = {
     "list_files", "read_file", "outline", "search", "read_output", "search_output",
     "history", "search_history", "read_artifact", "read_note",
 }
-# Stop labels read from the controller's error prefix. model_mismatch is the claude-cli adapter's model guard.
-GUARD_STOPS = ("diagnostic_termination", "attempt_cap_reached", MODEL_MISMATCH)
+# Stop labels read from the controller's error prefix. model_mismatch and cli_version_mismatch are the claude-cli
+# adapter's model and CLI-version guards.
+GUARD_STOPS = ("diagnostic_termination", "attempt_cap_reached", MODEL_MISMATCH, CLI_VERSION_MISMATCH)
+ADAPTER_PIN_STOPS = (MODEL_MISMATCH, CLI_VERSION_MISMATCH)  # every later run would meet the same drift
 RETRYABLE_HTTP = {408, 429, 500, 502, 503, 504}
 MAX_ATTEMPTS = 3  # the first attempt plus at most two retries (plan section 5.3)
 MANAGED_ROOT_FILES = ("conftest.py", "pytest.ini", "setup.cfg", "tox.ini", "pyproject.toml")
@@ -1049,7 +1057,8 @@ def main() -> None:
             inner = OpenRouterClient(api_key, model, calls_path, run_id, budget, args.max_tokens, routing[model])
         elif args.client == "claude-cli":
             inner = ClaudeCliClient(model, calls_path, run_id, budget, max_attempts=MAX_ATTEMPTS,
-                                    timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS)
+                                    timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS,
+                                    expected_cli_version=routing[model]["cli_version"])
         else:
             inner = scripted_client(args.client, task, repo)
         client = GuardedClient(inner, tools, args.stop_on_repeats)
@@ -1088,6 +1097,12 @@ def main() -> None:
             record["reported_models"] = sorted({m for row in run_calls for m in row.get("reported_models") or []})
             if record["stop"] == MODEL_MISMATCH:
                 record["model_mismatch"] = {"expected": model, "reported": record["reported_models"]}
+            # every CLI version that served a call of this run (one, unless the CLI changed mid-run)
+            record["cli_versions"] = sorted({str((row.get("cli_init") or {}).get("claude_code_version"))
+                                             for row in run_calls if row.get("cli_init")})
+            if record["stop"] == CLI_VERSION_MISMATCH:
+                record["cli_version_mismatch"] = {"expected": version_number(routing[model]["cli_version"]),
+                                                  "reported": record["cli_versions"]}
         record["tool_results"] = [
             {"call_id": m.get("tool_call_id"), "head": m["content"][:300], "tail": m["content"][-300:]}
             for m in TranscriptStore(runtime).load() if m.get("role") == "tool"
@@ -1104,7 +1119,7 @@ def main() -> None:
         if budget_stop:
             print(f"Stopping: {budget_stop}")
             break
-        if record["stop"] == MODEL_MISMATCH:  # every later run would meet the same model; void this one and stop
+        if record["stop"] in ADAPTER_PIN_STOPS:  # every later run would meet the same drift; void this one and stop
             print(f"Stopping: {record['agent'].get('error')}")
             break
 
