@@ -51,6 +51,14 @@ ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = Path(__file__).resolve().parent / "cards" / "card.schema.json"
 LIVE_CLIENTS = ("openrouter", "claude-cli")
 EXECUTABLE_STATUSES = ("approved", "running")
+# The claude-cli client takes full model IDs only (the runner's claude_cli.model_id_problem; kept here so a card
+# validates without loading its runner). Required of cards --execute can launch (status approved or running);
+# completed, inconclusive, invalidated and proposed cards validate and replay as before. 2026-09-30: CLI 2.1.286
+# moved the alias `sonnet` from claude-sonnet-5 to claude-sonnet-5-5 without a protocol-hash change.
+FULL_CLAUDE_MODEL_ID = re.compile(r"claude-[a-z0-9][a-z0-9.-]*[a-z0-9]")
+# The runner's stop labels for adapter failures: voided and retried or stopped, never a task outcome.
+# model_mismatch (the CLI reported another model than the pinned one) cannot be fixed by a retry.
+ADAPTER_FAILURE_STOPS = ("model_error", "model_mismatch")
 EXIT_OK, EXIT_REFUSED, EXIT_CHECKPOINT, EXIT_INTEGRITY, EXIT_LOCKED = 0, 2, 3, 4, 5
 DEFAULT_RUN_NAME_TEMPLATE = "{prefix}-{task}-r{rollout}-{arm}"
 # config.json fields added to runner v8 after some runs were recorded (S6a: --tasks FILE.json); a replay of an
@@ -250,6 +258,11 @@ def validate_card(card) -> List[str]:
             errors.append(f"{where}: provider pins apply to the openrouter client only")
         if arm["client"] == "claude-cli" and card["environment"]["claude_cli_version"] is None:
             errors.append(f"{where}: pin environment.claude_cli_version or mark it unresolved")
+        model = arm.get("model")
+        if arm["client"] == "claude-cli" and card["status"] in EXECUTABLE_STATUSES and isinstance(model, str) \
+                and (not FULL_CLAUDE_MODEL_ID.fullmatch(model) or model.endswith("-latest")):
+            errors.append(f"{where}: model {arm['model']!r} is a CLI alias; a claude-cli card with status {card['status']} pins "
+                          f"the full model ID (e.g. claude-sonnet-5)")
         guards = arm["guards"]
         if guards["resume_after_provider_stop"] == 0 and guards["resume_wait_seconds"] is not None:
             errors.append(f"{where}.guards: resume_wait_seconds must be null when resume_after_provider_stop is 0")
@@ -1263,14 +1276,17 @@ def classify(plan: Plan, campaign: Campaign, inv: Invocation, name: str, exit_co
     failures = [r for r in records if is_model_failure(r)]
     if failures:
         error = (failures[0].get("agent") or {}).get("error") or ""
+        if failures[0].get("stop") == "model_mismatch":  # the error text starts with model_mismatch
+            return Outcome("failure", error[:300], records)
         return Outcome("failure", f"model_error: {error[:200]}", records)
     record = records[0]
     return Outcome("ok", f"{record.get('stop')} -> {record.get('acceptance', {}).get('status')}", records)
 
 
 def is_model_failure(record: dict) -> bool:
-    """A provider/model error (the runner's stop label model_error), as opposed to a task outcome or guard."""
-    return record.get("stop") == "model_error"
+    """An adapter failure (the runner's stop label model_error or model_mismatch), as opposed to a task outcome
+    or guard: the attempt is void and never counted as an outcome."""
+    return record.get("stop") in ADAPTER_FAILURE_STOPS
 
 
 def completed_attempt(campaign: Campaign, inv: Invocation) -> Optional[str]:
@@ -1411,6 +1427,9 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
             if outcome.kind == "ok":
                 consecutive = 0
                 break
+            if outcome.detail.startswith("model_mismatch"):  # a retry would meet the same model
+                return finish(EXIT_CHECKPOINT, f"checkpoint: {outcome.detail}; the attempt is void. Pin the model "
+                                               f"the CLI serves (or restore the expected one), then --resume")
             consecutive += 1
             if consecutive >= rules["consecutive_failures_to_stop"]:
                 return finish(EXIT_CHECKPOINT, f"checkpoint: {consecutive} consecutive failed attempts "

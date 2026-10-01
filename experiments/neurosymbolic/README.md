@@ -150,6 +150,13 @@ spend estimate for 3 arms is $45-55 list price (~780 calls) at c013's 8 tasks x 
 it must be re-estimated for the card 010 task count and confirmed with the owner at launch.
 The model/provider is not yet chosen.
 
+**Owner decision (2026-09-30), model.** "Yeah we can pin sonnet 5 for now, though I think we pivot after this initial test run that we've gotten the comparison for to harder tasks and see if they extend/generalize". The pilot's model is pinned by
+full ID, `claude-sonnet-5` via the Claude CLI, after the alias `sonnet` drifted to `claude-sonnet-5-5` with CLI
+2.1.286 (card 010's alias drift note).
+
+**Planned next step.** After the 3-arm pilot on the card 010 bank (Sonnet 5), move to harder tasks to test whether
+the comparison extends and generalizes. Not yet designed.
+
 **Owner decision (2026-09-30), injection mechanism.** "Yes option A makes sense, do that."
 `injected` attaches the bounded summary and active findings to the *result* of the tool
 action; the action always executes and nothing is ever rejected, so the arm stays purely

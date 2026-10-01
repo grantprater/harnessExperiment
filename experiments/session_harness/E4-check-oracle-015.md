@@ -2,6 +2,7 @@
 
 Date: 2026-09-28  
 Status: proposed; awaiting owner approval  
+Model: pinned by full ID `claude-sonnet-5` after alias drift (2026-09-30): CLI 2.1.286 resolved the alias `sonnet` to `claude-sonnet-5-5`.  
 Stage: S6 (tool-use module). This treatment changes the task (the model gets a bounded acceptance signal), so it is
 an arm of its own and its result is not a harness improvement on the same task; it measures how much of the
 incumbent's failure is verification it cannot do. Machine-readable card: [`cards/015.json`](cards/015.json).

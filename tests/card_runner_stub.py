@@ -10,7 +10,7 @@ mutation_patch) enters the protocol hash, and config.json records task_file and 
 Behaviour comes from the JSON file named by CARD_STUB_BEHAVIOUR:
   {"log": PATH, "attempts": N, "runs": {RUN_NAME: BEHAVIOUR}}
 where BEHAVIOUR is accept (default for live clients and gold), reject (default for noop), model_error,
-crash (exit 1, no record), silent (exit 0, no record), wrong_hash, or over_budget, or a list of those
+model_mismatch (the claude-cli model guard's stop), crash (exit 1, no record), silent (exit 0, no record), wrong_hash, or over_budget, or a list of those
 used in turn by reruns of the same run name. Each non-dry-run invocation appends its run name to PATH.
 CARD_STUB_CLI_VERSION overrides the reported CLI version.
 """
@@ -189,11 +189,13 @@ def main():
                 handle.write(json.dumps({"run_id": task_id, "attempt": index + 1}) + "\n")
         responses = args.max_calls_per_run + 1 if mode == "over_budget" else min(3, args.max_calls_per_run)
         accepted = mode in ("accept", "over_budget", "wrong_hash")
-        stop = "model_error" if mode == "model_error" else "finish_requested"
+        stop = mode if mode in ("model_error", "model_mismatch") else "finish_requested"
+        error = {"model_error": "failed after 3 attempts: stub outage",
+                 "model_mismatch": f"model_mismatch: requested {models[0]}, the CLI reported ['claude-other']"}.get(mode)
         record = {
             "run_id": f"{task_id}__{models[0]}", "task_id": task_id, "model": models[0], "client": args.client,
             "arm": args.arm, "protocol_hash": arm_hash, "stop": stop,
-            "agent": {"stop_reason": stop, "error": "failed after 3 attempts: stub outage" if mode == "model_error" else None,
+            "agent": {"stop_reason": "model_error" if error else stop, "error": error,
                       "task_resources": {"consumed": {"active_seconds": 1.5}},
                       "usage_reported": {"prompt_tokens": 100.0, "completion_tokens": 10.0}},
             "totals": {"model_calls": responses if live else 2, "provider_attempts": attempts, "tool_calls": 2},

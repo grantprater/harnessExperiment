@@ -41,9 +41,12 @@ sys.exit(reply.get("exit", 0))
 '''
 
 
-def init_event(tools=("StructuredOutput",), api_key_source="none", mcp=()):
+MODEL = "claude-stub"  # a full model ID, as the client requires; the stub CLI reports it back
+
+
+def init_event(tools=("StructuredOutput",), api_key_source="none", mcp=(), model=MODEL):
     return {"type": "system", "subtype": "init", "tools": list(tools), "mcp_servers": list(mcp),
-            "apiKeySource": api_key_source, "model": "claude-stub", "claude_code_version": "0.0.0"}
+            "apiKeySource": api_key_source, "model": model, "claude_code_version": "0.0.0"}
 
 
 def result_event(structured=None, is_error=False, text="", subtype="success"):
@@ -56,8 +59,9 @@ def result_event(structured=None, is_error=False, text="", subtype="success"):
     return event
 
 
-def assistant_event(*blocks, message_id="msg_1"):
-    return {"type": "assistant", "message": {"id": message_id, "role": "assistant", "content": list(blocks)}}
+def assistant_event(*blocks, message_id="msg_1", model=MODEL):
+    return {"type": "assistant", "message": {"id": message_id, "role": "assistant", "model": model,
+                                             "content": list(blocks)}}
 
 
 def structured_use(structured):
@@ -138,7 +142,7 @@ class ClaudeCliTestCase(unittest.TestCase):
         return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(self.state.glob("call-*.json"))]
 
     def client(self, campaign_cap=100):
-        inner = claude_cli.ClaudeCliClient("sonnet", self.calls_path, "run-1", run_pilot.CallBudget(campaign_cap, 0),
+        inner = claude_cli.ClaudeCliClient(MODEL, self.calls_path, "run-1", run_pilot.CallBudget(campaign_cap, 0),
                                            backoff_seconds=0, workdir=self.root / "cli-cwd")
         return run_pilot.GuardedClient(inner, self.tools)
 
@@ -163,7 +167,7 @@ class ClaudeCliClientTests(ClaudeCliTestCase):
         argv = first["argv"]
         self.assertEqual(argv[argv.index("--tools") + 1], "")
         self.assertEqual(argv[argv.index("--setting-sources") + 1], "")
-        self.assertEqual(argv[argv.index("--model") + 1], "sonnet")
+        self.assertEqual(argv[argv.index("--model") + 1], MODEL)
         self.assertEqual(argv[argv.index("--max-turns") + 1], "1")
         self.assertEqual(argv[argv.index("--output-format") + 1], "stream-json")
         for flag in ("-p", "--safe-mode", "--strict-mcp-config", "--no-session-persistence", "--disable-slash-commands"):
@@ -210,7 +214,7 @@ class ClaudeCliClientTests(ClaudeCliTestCase):
         self.assertEqual(self.outcomes(), ["cli_error", "cli_error", "response"])
 
         self.replies(FAILED)
-        again = claude_cli.ClaudeCliClient("sonnet", self.calls_path, "run-2", run_pilot.CallBudget(100, 0),
+        again = claude_cli.ClaudeCliClient(MODEL, self.calls_path, "run-2", run_pilot.CallBudget(100, 0),
                                            backoff_seconds=0, workdir=self.root / "cli-cwd")
         with self.assertRaisesRegex(run_pilot.ModelClientError, "failed after 3 attempts"):
             again.complete([{"role": "user", "content": "x"}], [])
@@ -224,7 +228,7 @@ class ClaudeCliClientTests(ClaudeCliTestCase):
                 reply = ok(tool("finish", summary="done"))
                 reply["events"][0] = init
                 self.replies(reply)
-                client = claude_cli.ClaudeCliClient("sonnet", self.calls_path, "run-x", run_pilot.CallBudget(100, 0),
+                client = claude_cli.ClaudeCliClient(MODEL, self.calls_path, "run-x", run_pilot.CallBudget(100, 0),
                                                     backoff_seconds=0, workdir=self.root / "cli-cwd")
                 with self.assertRaises(run_pilot.ModelClientError):
                     client.complete([{"role": "user", "content": "x"}], [])
@@ -297,6 +301,84 @@ class ClaudeCliClientTests(ClaudeCliTestCase):
         other = dict(contract, model="opus")
         self.assertNotEqual(run_pilot.protocol_hash("pressure-recent-v3", {"sonnet": contract}, execution, {}),
                             run_pilot.protocol_hash("pressure-recent-v3", {"sonnet": other}, execution, {}))
+
+
+class ModelPinTests(ClaudeCliTestCase):
+    """2026-09-30: CLI 2.1.286 resolved the alias `sonnet` to claude-sonnet-5-5 (earlier: claude-sonnet-5) and the
+    protocol hash did not change. The client now takes full IDs only and checks every response's model."""
+
+    def test_a_response_from_another_model_stops_the_run_as_model_mismatch(self):
+        drifted = ok(tool("finish", summary="done"))
+        for event in drifted["events"]:
+            if event["type"] == "assistant":
+                event["message"]["model"] = "claude-sonnet-5-5"
+        cases = {"assistant message": drifted,
+                 "init event": {"events": [init_event(model="claude-sonnet-5-5")] + ok(tool("finish"))["events"][1:]}}
+        for where, reply in cases.items():
+            with self.subTest(where=where):
+                for path in self.state.glob("call-*.json"):
+                    path.unlink()
+                self.replies(reply, ok(tool("finish", summary="done")))
+                client = claude_cli.ClaudeCliClient(MODEL, self.calls_path, "run-x", run_pilot.CallBudget(100, 0),
+                                                    backoff_seconds=0, workdir=self.root / "cli-cwd")
+                with self.assertRaisesRegex(run_pilot.ModelClientError,
+                                            r"^model_mismatch: requested claude-stub, the CLI reported "
+                                            r"\['claude-sonnet-5-5', 'claude-stub'\]$"):
+                    client.complete([{"role": "user", "content": "x"}], [])
+                self.assertEqual(len(self.stub_calls()), 1, "a model mismatch is not retried")
+                row = run_pilot.read_jsonl(self.calls_path)[-1]
+                self.assertEqual(row["failure"], "model_mismatch")
+                self.assertEqual(row["model_mismatch"], {"expected": MODEL,
+                                                         "reported": ["claude-sonnet-5-5", "claude-stub"]})
+                self.assertNotIn("response", row, "the other model's reply is never used")
+
+    def test_mismatch_through_the_controller_is_the_model_mismatch_stop(self):
+        drifted = ok(tool("read_file", path="a.txt"))
+        drifted["events"][0]["model"] = "claude-other"
+        self.replies(drifted)
+        result = self.run_agent({"model_responses": 5, "model_attempts": 5})
+        self.assertEqual(result.stop_reason, "model_error")
+        self.assertEqual(run_pilot.guard_stop_label(result.to_dict()), "model_mismatch")
+        self.assertFalse(run_pilot.is_provider_stop(result.to_dict()))  # never resumed as a provider outage
+        self.assertEqual((result.model_calls, result.provider_attempts, result.tool_calls), (1, 1, 0))
+        self.assertEqual(self.outcomes(), ["model_mismatch"])
+
+    def test_the_reported_model_is_recorded_on_every_response(self):
+        self.replies(ok(tool("finish", summary="done")))
+        response = self.client().complete([{"role": "user", "content": "x"}], [])
+        self.assertEqual(response.metadata["reported_models"], [MODEL])
+        self.assertEqual(run_pilot.read_jsonl(self.calls_path)[0]["reported_models"], [MODEL])
+
+    def test_aliases_are_refused_and_full_ids_accepted(self):
+        for alias in ("sonnet", "opus", "haiku", "default", "opusplan", "best", "sonnet[1m]",
+                      "claude-sonnet-latest", "Claude-Sonnet-5", "claude-", ""):
+            self.assertIsNotNone(claude_cli.model_id_problem(alias), alias)
+        for model in ("claude-sonnet-5", "claude-sonnet-5-5", "claude-opus-5-5", "claude-haiku-4-5-20251001"):
+            self.assertIsNone(claude_cli.model_id_problem(model), model)
+
+    def test_the_runner_refuses_an_alias_for_a_live_run_and_plans_it_dry(self):
+        base = ["run_pilot.py", "--client", "claude-cli", "--run-name", "pin-test", "--tasks", "boltons-474"]
+        with mock.patch.object(sys, "argv", base + ["--models", "sonnet", "--max-total-calls", "1"]):
+            with self.assertRaisesRegex(SystemExit, "is not a full model ID"):
+                run_pilot.main()
+        self.assertEqual(self.stub_calls(), [], "refused before any CLI call")
+        for model, warned in (("sonnet", True), ("claude-sonnet-5", False)):
+            with self.subTest(model=model), mock.patch.object(sys, "argv", base + ["--models", model, "--dry-run"]), \
+                    mock.patch("builtins.print") as printed:
+                run_pilot.main()
+                lines = [" ".join(str(a) for a in c.args) for c in printed.call_args_list]
+                self.assertEqual(any(l.startswith("warning:") and "not a full model ID" in l for l in lines), warned)
+                self.assertTrue(any("protocol " in l for l in lines))
+
+    def test_the_full_model_id_enters_the_protocol_hash(self):
+        version = claude_cli.cli_version()
+        execution = {"backend": "trusted-local"}
+        hashes = {}
+        for model in ("sonnet", "claude-sonnet-5", "claude-sonnet-5-5"):
+            contract = claude_cli.cli_contract(model, max_turns=1, timeout=300, version=version)
+            self.assertEqual(contract["arguments"][contract["arguments"].index("--model") + 1], model)
+            hashes[model] = run_pilot.protocol_hash("pressure-recent-v3", {model: contract}, execution, {})
+        self.assertEqual(len(set(hashes.values())), 3, hashes)
 
 
 class RenderTests(unittest.TestCase):

@@ -28,7 +28,7 @@
     {
       "name": "incumbent",
       "client": "claude-cli",
-      "model": "sonnet",
+      "model": "claude-sonnet-5",
       "policy": "pressure-recent-v3",
       "toolset": "reticle-tools-v3",
       "backend": {
@@ -44,12 +44,12 @@
       },
       "extra_args": [],
       "expected_protocol_hash": null,
-      "note": "Card 007's incumbent arm unchanged (runner v8, claude-cli adapter v2, repeat guard off); its planned hash per task equals card 007's for the same task."
+      "note": "Card 007's incumbent arm (runner v8, claude-cli adapter v2, repeat guard off) with the model pinned by full ID: claude-sonnet-5 (2026-09-30), not the alias 'sonnet', which CLI 2.1.286 resolved to claude-sonnet-5-5. The model ID is a hash input, so its planned hash per task differs from card 007's (which ran on the alias) and equals card 007's routing with only the model changed."
     },
     {
       "name": "midpoint-nudge",
       "client": "claude-cli",
-      "model": "sonnet",
+      "model": "claude-sonnet-5",
       "policy": "pressure-recent-v3",
       "toolset": "reticle-tools-v3",
       "backend": {
@@ -68,7 +68,7 @@
         "midpoint"
       ],
       "expected_protocol_hash": null,
-      "note": "Card 007's incumbent arm plus --nudge midpoint. The flag is a runner treatment (not a toolset or policy version); run_card.py hashes it from extra_args with the runner's own treatments_from_args, so the planned hash is the one the runner records.",
+      "note": "Card 007's incumbent arm, model pinned to claude-sonnet-5, plus --nudge midpoint. The flag is a runner treatment (not a toolset or policy version); run_card.py hashes it from extra_args with the runner's own treatments_from_args, so the planned hash is the one the runner records.",
       "bundle": {
         "module": "agent loop",
         "surface": "continuation rule (harness message)",
@@ -221,7 +221,8 @@
   "notes": [
     "Runs are named c014-<task>-r<n>-<arm>; one runner invocation per task, rollout and arm, with --max-total-calls 24.",
     "Arm order is seeded per unit (block, task, rollout), so a task's two rollouts can run the arms in different orders; every unit runs both arms.",
-    "The incumbent arm is card 007's, so its planned hash per task equals card 007's for that task (for example b0fda8c921ad for sqlparse-mut-001 on this CRLF checkout).",
+    "The incumbent arm is card 007's with the model pinned to claude-sonnet-5. Before the pin (alias 'sonnet') its planned hash per task equaled card 007's (for example b0fda8c921ad for sqlparse-mut-001 on a CRLF checkout); the full model ID is a hash input, so it no longer does.",
+    "Model pinned by full ID (claude-sonnet-5, 2026-09-30) after alias drift: CLI 2.1.286 resolved the alias 'sonnet' to claude-sonnet-5-5, while c007/c013/c018 ran on claude-sonnet-5.",
     "The treatment enters the protocol hash only through the runner's 'treatments' record; RUNNER_VERSION stays 8."
   ]
 }

@@ -109,7 +109,7 @@ from reticle.tools.reasoning import ReasoningTools, REASONING_SCHEMAS, tool_cont
 HERE = Path(__file__).resolve().parent
 DEFAULT_TASK_FILE = HERE / "tasks.json"
 sys.path.insert(0, str(HERE))
-from claude_cli import ClaudeCliClient, cli_contract, cli_version  # noqa: E402
+from claude_cli import MODEL_MISMATCH, ClaudeCliClient, cli_contract, cli_version, model_id_problem  # noqa: E402
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
 TASK_PYTHON = ROOT / ".runtime" / "bugs-venv" / "Scripts" / "python.exe"
 BASE_URL = "https://openrouter.ai/api/v1"
@@ -130,6 +130,11 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    (card 007's recorded hashes still replay); on, each one's record enters the protocol hash under
 #    "treatments". A bump would change every incumbent hash and block the cards pinned to v8 without any
 #    change in what an incumbent runs.
+#    Later in v8, without a bump (2026-09-30, after the `sonnet` alias drifted to claude-sonnet-5-5 with CLI
+#    2.1.286): live claude-cli runs take full model IDs only (--dry-run still plans an alias, so old hashes
+#    replay); a response from any other model than the requested one stops the run as model_mismatch
+#    (an adapter failure, voided, never a task outcome) and ends the invocation; claude-cli results record
+#    reported_models. Nothing hashed changes: the requested model was already in the routing contract.
 RUNNER_VERSION = 8
 CLI_TIMEOUT_SECONDS = 300  # per attempt, as the OpenRouter client's HTTP timeout
 CLI_MAX_TURNS = 1  # the reply is the model's first message; the CLI stops before a second model turn
@@ -149,7 +154,8 @@ OBSERVATION_TOOLS = {
     "list_files", "read_file", "outline", "search", "read_output", "search_output",
     "history", "search_history", "read_artifact", "read_note",
 }
-GUARD_STOPS = ("diagnostic_termination", "attempt_cap_reached")
+# Stop labels read from the controller's error prefix. model_mismatch is the claude-cli adapter's model guard.
+GUARD_STOPS = ("diagnostic_termination", "attempt_cap_reached", MODEL_MISMATCH)
 RETRYABLE_HTTP = {408, 429, 500, 502, 503, 504}
 MAX_ATTEMPTS = 3  # the first attempt plus at most two retries (plan section 5.3)
 MANAGED_ROOT_FILES = ("conftest.py", "pytest.ini", "setup.cfg", "tox.ini", "pyproject.toml")
@@ -889,6 +895,12 @@ def main() -> None:
             raise SystemExit(f"--provider {item!r} must be MODEL=SLUG for a model in --models")
         pins[model] = provider_slug.lower()
     if args.client == "claude-cli":
+        for model in models:
+            problem = model_id_problem(model)
+            if problem and not args.dry_run:
+                raise SystemExit(f"--models: {problem}")
+            if problem:  # a dry run may still plan an alias, so the hashes of runs made before the rule replay
+                print(f"warning: {problem}; a live run would refuse it")
         version = cli_version()
         routing = {model: cli_contract(model, max_turns=CLI_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version)
                    for model in models}
@@ -1070,7 +1082,12 @@ def main() -> None:
         record["reported_cost_usd"] = round(sum(costs), 8) if costs else None
         if treatments:  # absent for an incumbent run, whose record is unchanged
             record["treatments"] = {surface: state.record() for surface, state in treatment_state.items()}
-        record["http_attempts"] = len(read_jsonl(calls_path)) - attempts_before
+        run_calls = read_jsonl(calls_path)[attempts_before:]
+        record["http_attempts"] = len(run_calls)
+        if args.client == "claude-cli":  # every model ID the CLI reported for this run (one, unless drifted)
+            record["reported_models"] = sorted({m for row in run_calls for m in row.get("reported_models") or []})
+            if record["stop"] == MODEL_MISMATCH:
+                record["model_mismatch"] = {"expected": model, "reported": record["reported_models"]}
         record["tool_results"] = [
             {"call_id": m.get("tool_call_id"), "head": m["content"][:300], "tail": m["content"][-300:]}
             for m in TranscriptStore(runtime).load() if m.get("role") == "tool"
@@ -1086,6 +1103,9 @@ def main() -> None:
         print(f"{run_id}: {record['stop']} -> {decision.status} {decision.criterion_outcomes}", flush=True)
         if budget_stop:
             print(f"Stopping: {budget_stop}")
+            break
+        if record["stop"] == MODEL_MISMATCH:  # every later run would meet the same model; void this one and stop
+            print(f"Stopping: {record['agent'].get('error')}")
             break
 
 

@@ -19,7 +19,7 @@
     {
       "name": "incumbent",
       "client": "claude-cli",
-      "model": "sonnet",
+      "model": "claude-sonnet-5",
       "policy": "pressure-recent-v3",
       "toolset": "reticle-tools-v3",
       "backend": {
@@ -31,7 +31,7 @@
       "guards": {"stop_on_repeats": false, "resume_after_provider_stop": 0, "resume_wait_seconds": null},
       "extra_args": [],
       "expected_protocol_hash": null,
-      "note": "Card 007's incumbent arm unchanged (runner v8, claude-cli adapter v2, repeat guard off, no treatment). The CLI version is a hash input: it was 2.1.283 for c007/c013/c018 and 2.1.286 on 2026-09-30; pin whatever is current at launch and keep it for the ontology experiment."
+      "note": "Card 007's incumbent arm (runner v8, claude-cli adapter v2, repeat guard off, no treatment) with the model pinned by full ID: claude-sonnet-5 (2026-09-30), not the alias 'sonnet', which CLI 2.1.286 resolved to claude-sonnet-5-5. The first calibration attempt ran on claude-sonnet-5-5; its runs are void (*.void-model-sonnet-5-5) and the calibration restarts on the pinned ID. The CLI version is a hash input: it was 2.1.283 for c007/c013/c018 and 2.1.286 on 2026-09-30; pin whatever is current at launch and keep it for the ontology experiment."
     }
   ],
   "controls": [
@@ -101,6 +101,7 @@
     "One runner invocation per task and rollout (c010-<task>-r<k>), as card 007.",
     "Controls: the recorded c010-control-gold and c010-control-noop runs over all 30 candidates, named so that a resume finds them complete. The repeats (-rep2) and the 3-task samples (-sample) are extra evidence for the determinism filter; run_card.py does not plan them.",
     "The markdown card's stage 2 (more tasks) and the dev/eval split are outside run_card.py: stage 2 needs its own candidate file and an amended card; the split is written by hand from the rule above.",
+    "Model pinned by full ID (claude-sonnet-5, 2026-09-30) after alias drift: CLI 2.1.286 resolved the alias 'sonnet' to claude-sonnet-5-5, while c007/c013/c018 ran on claude-sonnet-5.",
     "Per-run choices copy card 007 (20 responses, 24 attempts, 1,200 s, max_tokens 4096) so that calibration difficulty is measured under the same budgets as every earlier Sonnet campaign."
   ]
 }

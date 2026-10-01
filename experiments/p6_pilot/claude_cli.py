@@ -25,6 +25,12 @@ working directory is an empty temporary folder.
 `--output-format stream-json --verbose` is used instead of `json`: its final `result` event is the
 same object `json` prints, and it also carries the init event that lists the tools actually exposed.
 
+Model pin: the requested model must be a full model ID (`claude-...`), never a CLI alias (`sonnet`, `opus`,
+`haiku`, ...): an alias resolves to whatever the installed CLI maps it to, and CLI 2.1.286 moved `sonnet`
+from claude-sonnet-5 to claude-sonnet-5-5 without any change in the protocol hash (card 010, 2026-09-30).
+Every response is also checked against the model the CLI reports (the init event and each assistant
+message); a different model stops the run at once with the `model_mismatch` failure (never retried).
+
 Tool probe (asks the nested CLI, with the adapter's exact flags and no Reticle tools, what it can call):
   python experiments/p6_pilot/claude_cli.py --probe-tools OUT_DIR
 """
@@ -36,6 +42,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -79,6 +86,9 @@ REPLY_SCHEMA = {
     },
     "required": ["content", "tool_calls"],
 }
+# A full Claude model ID. Aliases (sonnet, opus, haiku, default, opusplan, ...) and *-latest IDs are refused.
+FULL_MODEL_ID = re.compile(r"claude-[a-z0-9][a-z0-9.-]*[a-z0-9]")
+MODEL_MISMATCH = "model_mismatch"  # the failure kind and the prefix of its error message
 REPLY_CHANNEL_TOOLS = frozenset({"StructuredOutput"})  # how --json-schema returns the reply; not an action
 # Flags that isolate the nested CLI from user configuration and remove every built-in tool.
 ISOLATION_ARGUMENTS = [
@@ -231,6 +241,33 @@ def parse_stream(stdout: str) -> Tuple[Optional[dict], Optional[dict], Optional[
     return init, result, rate_limit, bad, turns, first_blocks
 
 
+def model_id_problem(model: str) -> Optional[str]:
+    """Why `model` is not a pinned full model ID, or None. The claude-cli client takes full IDs only."""
+    if not isinstance(model, str) or not FULL_MODEL_ID.fullmatch(model) or model.endswith("-latest"):
+        return (f"claude-cli model {model!r} is not a full model ID: pass e.g. claude-sonnet-5, never an alias "
+                f"(sonnet, opus, haiku, ...) that the installed CLI resolves")
+    return None
+
+
+def reported_models(stdout: str, init: Optional[dict] = None) -> List[str]:
+    """Every model ID the stream reports: the init event's model and each assistant message's model."""
+    models = set()
+    if init is not None and init.get("model"):
+        models.add(str(init["model"]))
+    for line in stdout.splitlines():
+        if '"model"' not in line:
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(event, dict) and event.get("type") == "assistant":
+            model = (event.get("message") or {}).get("model")
+            if model:
+                models.add(str(model))
+    return sorted(models)
+
+
 def isolation_problem(init: dict) -> Optional[str]:
     tools = set(init.get("tools") or [])
     if tools - REPLY_CHANNEL_TOOLS:
@@ -376,9 +413,16 @@ class ClaudeCliClient:
                         "skills", "slash_commands", "cwd")}
                 if result is not None:
                     entry["cli_result"] = result
+                reported = reported_models(stdout, init)
+                entry["reported_models"] = reported
+                mismatch = [m for m in reported if m != self.model]
                 problem = isolation_problem(init) if init is not None else None
                 if problem:  # checked first: a reply from a non-isolated CLI is never used
                     last_error, retry, failure = problem, False, "tool_isolation_violation"
+                elif mismatch:  # a reply from another model is never used, and a retry would only repeat it
+                    entry["model_mismatch"] = {"expected": self.model, "reported": reported}
+                    last_error = (f"{MODEL_MISMATCH}: requested {self.model}, the CLI reported {reported}")
+                    retry, failure = False, MODEL_MISMATCH
                 elif init is None or (result is None and not first_blocks):
                     last_error = (f"no {'init' if init is None else 'result'} event (exit {completed.returncode}): "
                                   f"{(stderr or stdout)[-300:]}")
@@ -432,7 +476,7 @@ class ClaudeCliClient:
                 "num_turns": result.get("num_turns"), "cli_version": init.get("claude_code_version"),
                 "billing": "unknown", "cli_list_price_estimate_usd": result.get("total_cost_usd"),
                 "reply_channel": channel, "ignored_direct_calls": ignored, "cli_subtype": result.get("subtype"),
-                "cli_usage": usage, "model_call_ids": model_ids,
+                "cli_usage": usage, "model_call_ids": model_ids, "reported_models": reported,
             })
         raise ModelClientError(f"failed after {self.max_attempts} attempts: {last_error}")
 
@@ -458,7 +502,7 @@ PROBE_PROMPT = (
 )
 
 
-def probe_tools(out_dir: Path, model: str = "sonnet") -> dict:
+def probe_tools(out_dir: Path, model: str = "claude-sonnet-5") -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
     client = ClaudeCliClient(model, out_dir / "probe-calls.jsonl", "tool-probe", _SingleAttempt(), max_attempts=1)
     response = client.complete([{"role": "user", "content": PROBE_PROMPT}], [])

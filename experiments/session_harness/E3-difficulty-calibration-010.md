@@ -10,8 +10,22 @@ decisions below: (1) the stage-1 calibration, 60 runs, at most 1,680 attempts, a
 (3) the ontology run as a *pilot* on the stage-1 eval split (about 30 tasks x 2 rollouts x 3 arms), with stage 2a and a
 powered confirmation only if the pilot is promising; (5) no separate lesson-store eval split until lesson-store work
 starts. Decision (4) follows from (3): stage 2a is not run now.  
+Owner decision (2026-09-30, verbatim): "Yeah we can pin sonnet 5 for now, though I think we pivot after this initial test run that we've gotten the comparison for to harder tasks and see if they extend/generalize".  
+Model: pinned by full ID `claude-sonnet-5` after alias drift (2026-09-30): CLI 2.1.286 resolved the alias `sonnet` to `claude-sonnet-5-5`.  
 Stage: S6a follow-up (proposed in the [card 007 report](E3-calibration-007-report.md)). Machine card:
 [`cards/010.json`](cards/010.json).
+
+## Alias drift (2026-09-30)
+
+- The first calibration attempt passed the CLI alias `--models sonnet`. After the CLI update (2.1.283 to 2.1.286)
+  the alias resolved to `claude-sonnet-5-5`; c007, c013 and c018 ran on `claude-sonnet-5`. The protocol hash held
+  the CLI version and the alias, not the model that answered, so nothing caught it. The model ID is in each run's
+  `calls.jsonl` (stream-json `"model"` fields).
+- That attempt ran on `claude-sonnet-5-5` and stood at 26/30 accepted on rollout 1.
+- Its 39 runs were voided as `*.void-model-sonnet-5-5`. They are kept as side data, not calibration outcomes.
+- The calibration restarts from scratch on the pinned ID `claude-sonnet-5`. The runner now refuses aliases for
+  live claude-cli runs and stops a run as `model_mismatch` (an adapter failure, void) if the CLI reports any other
+  model than the pinned one.
 
 ## Question
 
@@ -200,7 +214,8 @@ Not filtered: statement leaks beyond "names the mutated function"; the calibrati
 ## Preregistered calibration run (stage 1)
 
 - **Arm.** Card 007's incumbent, unchanged:
-  - runner v8, `--client claude-cli --models sonnet`, `pressure-recent-v3`, `reticle-tools-v3`;
+  - runner v8, `--client claude-cli --models claude-sonnet-5` (pinned by full ID after the alias drift; card 007
+    passed the alias `sonnet`, which then resolved to this model), `pressure-recent-v3`, `reticle-tools-v3`;
   - OCI `8b74015e5079`, repeat guard off, no treatment;
   - 20 responses, 24 attempts, 1,200 active seconds, `max_tokens` 4096.
 
