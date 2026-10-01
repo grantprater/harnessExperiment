@@ -119,11 +119,11 @@ Arm `incumbent` distribution: all_accepted 17; mixed 2; none_accepted 1; mixed (
 | active_seconds | Runs: Active s | filled from results.jsonl |
 | wall_seconds | Runs: Wall s | filled from results.jsonl |
 | tokens | Runs: Tokens in/out | filled from results.jsonl |
-| first_edit_response | response index of the first workspace edit | pending: not in results.jsonl; derive from the session journal (S6b) |
-| rejected_calls | tool calls the runtime rejected | pending: not in results.jsonl; derive from the session journal (S6b) |
-| repeat_flags | three identical observation calls without a workspace change (post hoc when the guard is off) | pending: not in results.jsonl; derive from the session journal (S6b) |
-| edit_in_gold_files | whether the edits touch the task's gold_source_files | pending: not in results.jsonl; derive from the session journal (S6b) |
-| verification_before_finish | a test run after the last edit and before finish | pending: not in results.jsonl; derive from the session journal (S6b) |
+| first_edit_response | response index of the first workspace edit | derived from calls.jsonl (journals not pushed from the VM); see Analysis, "Measurements the skeleton lists as pending" |
+| rejected_calls | tool calls the runtime rejected | derived from calls.jsonl (journals not pushed from the VM); see Analysis, "Measurements the skeleton lists as pending" |
+| repeat_flags | three identical observation calls without a workspace change (post hoc when the guard is off) | derived from calls.jsonl (journals not pushed from the VM); see Analysis, "Measurements the skeleton lists as pending" |
+| edit_in_gold_files | whether the edits touch the task's gold_source_files | derived from calls.jsonl (journals not pushed from the VM); see Analysis, "Measurements the skeleton lists as pending" |
+| verification_before_finish | a test run after the last edit and before finish | derived from calls.jsonl (journals not pushed from the VM); see Analysis, "Measurements the skeleton lists as pending" |
 | acceptance_rate_ci | Summary by arm | filled |
 | outcome_distribution | Per-task outcomes: distribution | filled |
 | per_task_outcomes | Per-task outcomes | filled |
@@ -176,4 +176,251 @@ Incomplete units: 0.
 
 ## Analysis
 
-*to write*: outcome against the decision rule, trajectory review, what was not measured.
+Sources: each run's `results.jsonl` and `calls.jsonl`, the campaign log, and `tasks.boltons.json`. No model call
+was made for this analysis. The session journals (`sessions/`) were not pushed from the VM. The journal-derived
+measurements below therefore come from `calls.jsonl`: each request carries the previous response's tool results, and
+the last response's results come from `tool_results` in `results.jsonl`.
+
+### Outcome against the decision rule
+
+**Not passed.** All 40 runs completed with evidence:
+
+- 0 failed attempts and run_card exit 0;
+- gold control 2/2 accepted, noop control 2/2 rejected;
+- preflight hash `3245c91d816e`, as expected.
+
+Only **2 tasks are contrastive**, and the rule needs at least 5. Under the card, this report gives the distribution,
+and card 010's difficulty decision now covers both banks.
+
+| Measure | Card 023 (boltons) | Card 007 (sqlparse, same design) |
+|---|---|---|
+| Accepted | 36/40 = **0.90** (Wilson 95% 0.77-0.96) | 32/40 = 0.80 (Wilson 0.65-0.90; card 007's report prints 0.68-0.92, a Wald interval) |
+| Per task (2/2, 1/2, 0/2) | 17, 2, 1 | 15, 2, 3 |
+| Rejections by stop | 3 at the 20-response budget, 1 after `finish` | 4 budget, 4 finish |
+
+- The difference is +0.10. The intervals overlap, and Fisher's exact test (two-sided) gives p = 0.35.
+- The two cards differ in more than the bank:
+  - backend: trusted-local in the cloud VM here, OCI on the host there;
+  - CLI: 2.1.286 here, 2.1.283 in card 007's report header;
+  - reply-recovery adapter: v3 here, v2 there.
+- The rate is therefore not a bank comparison under one protocol.
+
+**By mutation kind and by `fail_to_pass` size** (from `tasks.boltons.json`; card 007's rates from its report):
+
+| Mutation kind | Tasks | Accepted | Card 007 |
+|---|---:|---:|---:|
+| compare_flip | 4 | 6/8 | 5/6 |
+| drop_not | 3 | 5/6 | 6/8 |
+| negate_condition | 4 | 8/8 | 7/8 |
+| off_by_one | 4 | 8/8 | 4/6 |
+| remove_guard | 1 | 2/2 | 4/6 |
+| swap_branches | 4 | 7/8 | 6/6 |
+
+| `fail_to_pass` size | Tasks | Accepted | Card 007 |
+|---|---:|---:|---:|
+| 1 | 5 | 10/10 | 3/8 |
+| 2-3 | 4 | 8/8 | 14/14 |
+| 4-10 | 9 | 14/18 | 4/4 |
+| 11+ | 2 | 4/4 | 11/14 |
+
+- Card 007's hard group, the single-test tasks, are all solved here.
+- All 4 rejections are on tasks of size 4-10 (015 and 056 have 6 failing tests; 023 has 8).
+- With 1 to 9 tasks per cell, no difference between cells can be measured.
+
+### Trajectory review: the four rejected runs
+
+| Run | Stop | Saw the mutated line | Edit | What it tried |
+|---|---|---|---|---|
+| 015-r1 | budget: 20 responses, 57 tool calls | **no**: it never opened `debugutils.py`. At response 7 a search for `trace` listed `boltons/debugutils.py:141: def wrap_trace`; the run did not follow it | none | It read 'trace dict / bytes / exc' as `tbutils`, then as `iterutils.remap(trace=True)`. It made 7 inline `remap` reproductions (r16, r19) and searched for the absent tests. |
+| 023-r1 | `finish`, 9 responses | **yes**: r4, reading `listutils.py` lines 140-350 | r7, in the gold file: the swapped branches became `if ...: del lists[list_idx]`, and the rebalancing (`_balance_list`) was dropped | A confident partial fix. The data loss is fixed, and the run checked it with its own stress test against a list (contents and lengths). The hidden `test_sort_barrel_list` asserts `len(bl.lists) > 1` after a pop; that is 1 of 8 still failing. |
+| 056-r1 | budget: 20 responses, 44 tool calls | **yes**: r5, `read_file` lines 745-1000 contains line 925, `if host and host[0] != '[' and ']' in port_str:`. It never returned to it | none | It read most of `urlutils.py` (quote maps, `to_text`, `QueryParamDict`) and ran the doctests, which pass. It made no reproduction with a bracketed IPv6 host, although all 6 failing cases use one; the statement's failure message was dropped at generation. At r10-r14 it looked for an upstream copy or the tests: `pip download`, `pip list`, `find /`, `git log`, `git diff HEAD~5` (see "Authority escape"). |
+| 056-r2 | budget: 20 responses, 21 attempts, 49 tool calls | **no**: its reads of `urlutils.py` covered lines 1-115, 212-270, 277-370, 474-575, 745-800, 940-992, 1066-1400 and 1564-1610, never 925 | none | Query-string quoting hypotheses (`_QUERY_SAFE`, `parse_qsl`), round-trip probes without IPv6 hosts, doctests. At r11-r20 it ran `git log` 3 times and `find /` 3 times, and it searched the healthy clone's test file at r20, which the path guard refused. The budget ended there. |
+
+**The contrastive partners.**
+
+- **015-r2:**
+  - At r9 it read `CHANGELOG.md` and then read all of `debugutils.py` at r10.
+  - It edited the mutated line at r11.
+  - It finished at r14 and was accepted.
+- **023-r2:**
+  - Its first edit was the same as r1's (r9).
+  - It then ran `python -m doctest boltons/listutils.py` (r11). The docstring's `len(blist.lists)` example failed.
+  - It added `_balance_list(-1)` to `append` and `extend` and was accepted. "False acceptance" below covers this repair.
+
+**Parser audit.** None of the four is a parser false failure:
+
+- Each rejection is the evaluator's verdict on the final workspace:
+  - 510 tests observed, with no collection or measurement errors and no timeout;
+  - fail-to-pass still failing: 6/6, 1/8, 6/6, 6/6;
+  - pass-to-pass passed in all four.
+- Only one reply in these runs was rejected as StructuredOutput: 056-r2, one retry. It cost an attempt, not a response.
+- Campaign-wide, of 429 replies from 443 CLI calls:
+  - the CLI rejected 16 StructuredOutput replies;
+  - 2 were recovered by the second turn;
+  - 14 were retried as new attempts;
+  - lenient JSON recovered 0.
+
+**Mechanisms.** Card 007's two mechanisms recur:
+
+- **(A) Confident finish on a self-chosen check:** 023-r1, which verified contents but not structure.
+- **(B) No commitment within the budget:** 3 runs on 2 tasks.
+  - In 015-r1 the search went to the wrong module.
+  - In both 056 runs it went to the wrong hypothesis (query-string quoting).
+  - In each 056 run, at least 5 of the 20 responses included calls that looked for the hidden tests or an upstream
+    copy (r1: r10-r14; r2: r7, r11, r12, r16, r19, r20).
+
+### Evolution set
+
+- **Contrastive (1/2):** `boltons-mut-015` (wrong-module search against finding the module through the changelog);
+  `boltons-mut-023` (a partial fix checked by its own test against a doctest-guided fix).
+- **Negative (0/2) with a fixable mechanism:** `boltons-mut-056`. Both runs used the budget without an edit, and
+  r1 had read the mutated line. Both spent responses on looking for tests or an upstream copy instead of reproducing
+  the failure. This is card 007's mechanism B, which counted its `sqlparse-mut-032` (explored until the budget).
+- **Judgement call:** 056 is the weakest member. Its statement carries no failure message, and 'roundtrip' and
+  'query params' do not point to IPv6 hosts. A harness change alone may not fix it.
+- **Total:** 3 tasks, below the card's pass rule. The other 17 tasks were solved twice and leave the set. Under the
+  card, all 20 are now held-in for near-transfer work.
+
+### Plan 5.3 integrity checks (all 40 runs)
+
+**Evaluator or hidden-test leakage: no test contents or evaluator output reached any run.**
+
+- *Method:* every tool result was searched (in the requests and in `results.jsonl`) for:
+  - each task's `fail_to_pass` test names and test-module paths;
+  - evaluator terms: `fail_to_pass`, `pass_to_pass`, `observed_test_count`, and the run's report artifact id.
+
+  Strings the model had typed itself were excluded.
+- *Result:* 11 hits.
+  - 10 echo a path or query the model sent itself. Most are not-found errors such as `tests/test_urlutils.py`
+    (the workspace has no `tests/`). One is a search with 0 matches; one is the r20 refusal below.
+  - The 11th is 056-r2 r19, `find / -iname "test_urlutils.py"`. It listed the paths of hidden-test copies in other
+    runs' `sessions/*/evaluator/files/tests/` and the healthy clone's `tests/`. These were paths only. The one read
+    attempt (r20) was refused, and the run ended rejected.
+
+**False acceptance: none.**
+
+- *Method:* for each of the 36 accepted runs, the mutated file was rebuilt and diffed against the healthy file:
+  1. take the healthy file from the host's boltons clone;
+  2. apply the task's `mutation_patch`;
+  3. replay the run's successful `replace_text` and `write_file` calls in order.
+
+  No run edited the library through a shell command (pattern search over all 156 `run` commands), and no run edited
+  a library file other than the gold file.
+- *Result:* 30 runs are exact reverts. For 049-r1 and 049-r2 the hunk context matched twice, so both edits were
+  checked by hand: they are exact reverts. The other 6 differ:
+  - **027-r1, 027-r2:** the revert, plus removal of a debug `print(self.ref_map[ref])` that upstream has in
+    `MinIDMap._clean`.
+  - **029-r2:** the revert, plus `cur = 1` changed to `cur = 1.0` in `backoff_iter`. After a zero start it yields
+    `1.0` instead of `1`.
+  - **060-r1, 060-r2:** the removed guard `if not self.group_map: return text` is replaced by an equivalent:
+    - r1 sets `combined_pattern = None` when there are no substitutions and returns the text;
+    - r2 compiles a pattern that never matches, `(?!)`.
+
+    `group_map` and `regex_values` are filled in the same loop, so both repairs behave like upstream.
+  - **023-r2: not a revert.**
+    - `pop()` now deletes only empty sublists, so the data loss is fixed, but it no longer rebalances.
+    - `append` and `extend` now call `_balance_list(-1)`, which upstream does not.
+    - All 8 fail-to-pass and all pass-to-pass tests pass, and observable list behaviour matches upstream; the
+      sublist layout differs.
+    - It fixes the mutation's behaviour, so it is counted as accepted and flagged as the one non-upstream repair.
+- *Caveat:* the host clone (`.runtime/bug-mining/repos/boltons`) is at `961dcff`, not the task's `45a2511`. The
+  rebuild replaces text, and every edit matched exactly once, so the diffs show only the regions the mutation and
+  the model touched.
+
+**Authority escape: 2 runs read outside the workspace, both rejected. No accepted run obtained anything from outside.**
+
+On the VM the workspace is
+`/home/user/harnessExperiment/experiments/p6_pilot/runs/<run>/sessions/<id>/workspace`, inside the harness
+repository's checkout. A `git` command run in the workspace therefore reads the harness repository.
+
+- **056-r1:**
+  - Read: `pip list`, and `find / -iname "*boltons*" -not -path "*/workspace/*"` (r11). The find listed:
+    - the healthy clone;
+    - `experiments/mutation_tasks/tasks.boltons.json`, which holds every gold patch;
+    - other runs' session directories.
+  - Read: `git log --oneline -10` and `git diff HEAD~5` (r14), the harness repository's last 5 commits. The output
+    was stopped at 2 MB; 50 KB entered the context:
+    - `RUN_IN_CLOUD-023.md`;
+    - smoke probe calls;
+    - `mutation_tasks/REPORT.md`;
+    - the start of `c023-boltons-mut-010-r1/calls.jsonl`.
+  - Refused: `pip download boltons ... 2>&1 | tail -20` (r10). The run tool refused the shell operators, so
+    nothing was fetched.
+  - The run did not open the clone or the task file afterwards.
+- **056-r2:**
+  - Read: `git log` 3 times (r11, r16; the two `-- boltons/urlutils.py` forms printed nothing) and `find /` 3 times
+    (r19).
+  - Refused: 2 `search_text` calls on the clone's `tests/test_urlutils.py` (r20), by the path guard ("Path escapes
+    workspace"); `pip show ... | head` and a piped `find /` (r12), by the run tool.
+- The 056 gold line (`host[0] == '['`) appears in no tool result of either run.
+- **Probes that returned no outside content:**
+  - 023-r2 and 027-r2 ran `pip show boltons` ("Package(s) not found").
+  - 027-r2 ran `search_text` on `/usr/lib/python3.11` and 023-r2 ran `glob_files` on `/`; the path guard refused
+    both.
+  - 023-r2, 044-r2 and 057-r2 tried to write scratch files under `/tmp`, and 031-r1 used the path
+    `/boltons/cacheutils.py`. All were refused by the path guard and then done inside the workspace.
+- No run executed `pip install` or a network fetch.
+- *Deviation from the card:* its manual stop rule says an authority escape stops the campaign. The escape was found
+  only in this post-hoc review. Live, the campaign would have stopped after 056-r1 (invocation 19 of 42).
+
+  This does not change the counts:
+  - every run has its own workspace and no memory of other runs;
+  - both escaping runs were rejected;
+  - no gold or hidden-test content reached any run.
+- *Open for later cards:* the routes stay open for any later trusted-local card:
+  - `git` on the enclosing repository;
+  - `find` over the VM;
+  - hidden-test copies in sibling session directories;
+  - the task file with its gold patches.
+
+  The path guard covers the file tools but not `run`.
+
+### Measurements the skeleton lists as pending
+
+These were derived from `calls.jsonl`, not from the journal.
+
+- **`first_edit_response`.** This is the first successful `replace_text` or `write_file` on a `boltons/` file.
+  - Accepted runs: median 4, range 3-14; 22 of 36 at response 4 or earlier.
+  - Never edited: 015-r1, 056-r1, 056-r2.
+  - 027-r2 created a scratch file at response 6, before its library edit at 14.
+- **`rejected_calls`.** These are tool results with `status=rejected`: 6 in 5 runs.
+  - 4 were `run` calls with shell operators: 027-r2, 056-r1, and 056-r2 twice.
+  - 1 was a `search_history` call whose `kinds` had the wrong type (031-r2).
+  - 1 was a `read_file` call whose `start_line` had the wrong type (049-r2).
+  - Path-guard refusals are recorded as errors, not rejections: 7 distinct paths in 6 runs (listed above).
+- **`repeat_flags`.** These are computed after the fact: the same tool and arguments 3 times with no successful
+  edit between them. The count is 0 in all 40 runs. Without the journal's context manifest, refetches after an
+  omission cannot be separated out, which does not matter at 0.
+- **`edit_in_gold_files`.** All 37 runs that edited a library file edited only the gold file.
+- **`verification_before_finish`.** All 37 runs that finished, 023-r1 included, ran a command after their last edit
+  and before `finish`. Every such check was the model's own, because the tests are hidden.
+- **Doctests (card addition).** 14 runs ran `python -m doctest` or `pytest --doctest-modules`: 12 accepted and 2
+  rejected (both 056 runs). In task 023 the doctest run is what separates the contrastive pair.
+- **Mutated line seen in a tool result.** 38 of 40 runs; the exceptions are 015-r1 and 056-r2.
+
+### Not measured
+
+- **Journal-based mining.** S6b signatures (`weakness_mining.py`), context manifests and the journal's evaluator test
+  counts need `sessions/`, which stayed on the VM. Repeat flags are approximated as described above.
+- **Rerun of the hidden tests.** The suite was not rerun on the rebuilt files; acceptance is the VM evaluator's
+  verdict.
+- **Files outside the mutated file.** The rebuild covers only the mutated file. No `run` command matched a
+  file-writing pattern (`sed -i`, redirection, `open(..., 'w')`, `.write(`, `patch`, `git checkout/apply`,
+  `cp`/`mv`), but the search uses patterns, not execution.
+- **Phase labels and cost by outcome.** No phase labels (rules or Jev), and no breakdown of tokens or cost by
+  outcome beyond the run table.
+- **The supervising cloud session's usage.**
+- **How the materializer lays out the workspace on the VM.** The only evidence is what the models' commands
+  printed.
+
+### What this means
+
+- **Both banks are too easy for Sonnet 5 under the incumbent.** Card 007 accepted 0.80 on sqlparse and this card
+  0.90 on boltons, with 2 contrastive tasks each.
+- **The near-transfer set is too small.** This card was meant to supply a near-transfer set. It has 3 tasks, 2 of
+  them contrastive, which is too few to compare a treatment against the incumbent.
+- **Card 010.** Card 010, a difficulty-calibrated sqlparse bank, is mid-calibration locally. The orchestrator
+  reported about 0.80 after 30 of 60 runs; that figure was not checked here, and the result is not final. Under this
+  card's rule, card 010's difficulty decision covers boltons too.
+- **Owner's plan.** The owner plans to move to harder tasks after the current pilot.
+- **Trusted-local backend.** The escape routes listed above exist on the trusted-local VM backend whatever the bank.

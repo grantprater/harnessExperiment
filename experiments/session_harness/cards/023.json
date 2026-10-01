@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "E3-calibration-023",
   "title": "Second mutation bank (boltons): incumbent calibration for near transfer, on the cloud VM backend",
-  "status": "running",
+  "status": "completed",
   "markdown": "experiments/session_harness/E3-calibration-023.md",
   "hypothesis": "A capable model succeeds on some boltons mutation tasks and fails on others under the incumbent harness, so a subset of the 20 selected tasks lands in the 30-70% zone. The bank is the near-transfer test set: harness changes selected on sqlparse tasks are later compared on it.",
   "run_prefix": "c023",
