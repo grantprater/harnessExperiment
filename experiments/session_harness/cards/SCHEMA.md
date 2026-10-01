@@ -193,6 +193,10 @@ used v1, whose contract has no `materializer` field. The card's arm with the smo
   an attempt whose CLI reports another model fails as `model_pin_violation` before its reply is used, and
   `run_card.py` stops the campaign on it as `corrupted_protocol` (exit 4) instead of retrying. The pin adds a
   `model_pin` entry to the routing contract, so it is in the hash; an alias (`sonnet`) is unchanged.
+  On `integration/2026-10` this is one guard with `exp/ontology-pilot`'s `model_mismatch`: the failure kind and
+  the runner's stop label are `model_mismatch`, the message reads `model_mismatch (model_pin_violation): ...`,
+  the runner stops the invocation's later tasks, and the void attempt reruns on `--resume`. Live runs refuse an
+  alias, and `--validate` refuses one on an approved or running claude-cli card.
 - **Order.** Controls first, then blocks in card order, units by `schedule`, arms by `arm_order`; strictly one
   runner process at a time.
 - **Evidence.** Each invocation writes its own run directory under `experiments/p6_pilot/runs/`. The campaign log is
