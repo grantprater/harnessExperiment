@@ -367,8 +367,10 @@ def generate_task(task: dict, *, out_dir: Path, repos: Path, model: str, python:
                 record["problem"] = problem
                 attempts.append(record)
                 log(f"{task['task_id']} attempt {number}: {problem}")
-                if problem.startswith(("tool_isolation_violation", "model_pin_violation", "auth_problem",
-                                       "read_outside_workspace")):
+                # model_problem's message starts with model_mismatch on integration/2026-10 (one guard; it still
+                # names model_pin_violation), so both prefixes stop generation
+                if problem.startswith(("tool_isolation_violation", "model_mismatch", "model_pin_violation",
+                                       "auth_problem", "read_outside_workspace")):
                     raise SystemExit(f"{task['task_id']}: {problem}; stopping (no test from this attempt is used)")
                 continue
             output = structured_output(parsed)

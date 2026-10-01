@@ -518,6 +518,11 @@ class GenerationTests(VerifierFixture):
         cases = {"tool_isolation_violation": stream(init(("Read", "Bash", "StructuredOutput")),
                                                     result_event(structured={"test_code": VALID_TEST})),
                  "read_outside_workspace": reply_with(VALID_TEST, read_path="../evaluator/task.json")}
+        # integration/2026-10: the merged model guard's message starts with model_mismatch and names
+        # model_pin_violation; either way generation stops (it used to start with model_pin_violation)
+        drifted = reply_with(VALID_TEST)
+        drifted["events"][0] = dict(drifted["events"][0], model="claude-other")
+        cases[r"model_mismatch \(model_pin_violation\)"] = drifted
         for problem, reply in cases.items():
             with self.subTest(problem=problem):
                 shutil.rmtree(self.out, ignore_errors=True)
