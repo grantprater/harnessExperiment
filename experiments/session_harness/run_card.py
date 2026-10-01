@@ -18,6 +18,12 @@ Modes (exactly one):
               budgets.campaign.list_price_cap_usd, stops before the next attempt once the CLI list-price
               estimates of the campaign's calls reach the cap
   --report    rewrite the report skeleton from whatever results exist; nothing runs
+  --integrity scan every attempt directory's run-tool commands for reads outside the workspace, git, package and
+              network tools (run_integrity.py; report only, changes no acceptance). --execute also scans each
+              attempt as it ends, logs an `integrity_scan` event and prints the flagged commands
+
+A trusted-local arm with `sandbox: unshare-confined` makes --execute refuse (exit 2) before any run when the host
+cannot confine its commands (the runner refuses too, dry runs included): never a silent unconfined run.
 
 Usage (from the repo root):
   python experiments/session_harness/run_card.py experiments/session_harness/cards/007.json --plan --limit 5
@@ -53,6 +59,8 @@ import time
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import run_integrity  # noqa: E402  (post-run integrity scan: report only)
 SCHEMA_PATH = Path(__file__).resolve().parent / "cards" / "card.schema.json"
 LIVE_CLIENTS = ("openrouter", "claude-cli")
 EXECUTABLE_STATUSES = ("approved", "running")
@@ -1187,6 +1195,69 @@ def engine_problems(plan: "Plan") -> List[str]:
     return problems
 
 
+CONFINED_SANDBOX = "unshare-confined"
+
+
+def confinement_problems(plan: "Plan") -> List[str]:
+    """Why an arm that asks for `sandbox: unshare-confined` cannot be confined on this machine: the runner's own
+    confined backend runs its self-test (one confined `true`). Empty when no arm asks for it. Fail closed: a card that
+    asks for confinement never runs without it."""
+    problems, seen = [], set()
+    for inv in plan.invocations:
+        backend = inv.arm["backend"]
+        if backend.get("sandbox") != CONFINED_SANDBOX or inv.script is None or inv.script in seen:
+            continue
+        seen.add(inv.script)
+        module = RunnerAdapter.load(inv.script).module
+        try:
+            confined, _ = module.resolve_execution("trusted-local", getattr(module, "DEFAULT_OCI_IMAGE", ""),
+                                                   CONFINED_SANDBOX)
+            problem = confined.availability()
+        except (SystemExit, Exception) as exc:  # noqa: BLE001 - any failure to confine is a refusal
+            problem = f"{type(exc).__name__}: {exc}"
+        if problem:
+            problems.append(f"the card asks for sandbox {CONFINED_SANDBOX}, which cannot run on this machine "
+                            f"({problem}); it refuses rather than run the model's commands unconfined")
+    return problems
+
+
+def integrity_scan(campaign: "Campaign", inv: "Invocation", name: str, out: Callable[[str], None]) -> dict:
+    """Scan one attempt's run-tool commands (run_integrity.scan_run), log an integrity_scan event, print flags.
+    Report only: the outcome and every record stay as they are."""
+    try:
+        scan = run_integrity.scan_run(campaign.runs_root(inv) / name)
+    except Exception as exc:  # noqa: BLE001 - a scan failure is logged, never a campaign stop
+        campaign.log("integrity_scan", run=name, version=run_integrity.SCAN_VERSION, error=repr(exc)[:300])
+        return {}
+    campaign.log("integrity_scan", run=name, version=scan["version"], run_commands=scan["run_commands"],
+                 flagged=len(scan["flagged"]), flag_counts=scan["flag_counts"],
+                 commands=[{k: entry[k] for k in ("response", "tool_call_id", "flags", "command")}
+                           for entry in scan["flagged"]])
+    if scan["flagged"]:
+        out(f"  integrity: {run_integrity.summary_line(scan)}")
+    return scan
+
+
+def print_integrity(plan: "Plan", out: Callable[[str], None] = print) -> Tuple[int, int]:
+    """--integrity: scan every attempt directory of the plan; (attempts scanned, attempts flagged). Report only."""
+    campaign, scanned, flagged = Campaign(plan), 0, 0
+    for inv in plan.invocations:
+        if inv.script is None:
+            continue
+        for name in campaign.attempt_names(inv):
+            scan = run_integrity.scan_run(campaign.runs_root(inv) / name)
+            scanned += 1
+            flagged += bool(scan["flagged"])
+            if scan["flagged"]:
+                out(run_integrity.summary_line(scan))
+                for entry in scan["flagged"]:
+                    out(f"  r{entry['response']} {entry['tool_call_id']} [{', '.join(entry['flags'])}] "
+                        f"{entry['command'][:200]}")
+    out(f"integrity scan ({run_integrity.SCAN_VERSION}): {flagged} of {scanned} attempt directories flagged "
+        f"(report only; acceptance unchanged)")
+    return scanned, flagged
+
+
 def machine_facts(plan: "Plan", python: str) -> dict:
     """Host facts for the campaign log: the isolation of every arm, the OS, CPUs, Pythons and CLI version."""
     facts = {
@@ -1476,7 +1547,7 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
     if existing and not resume:
         out(f"refused: {len(existing)} planned run directories already exist (first: {existing[0]}); pass --resume")
         return EXIT_REFUSED
-    problems = engine_problems(plan)
+    problems = engine_problems(plan) + confinement_problems(plan)
     if problems:
         reason = "refused: " + "; ".join(problems)
         campaign.log("stop", reason=reason)
@@ -1552,6 +1623,7 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
                          outcome=outcome.kind,
                          detail=outcome.detail, elapsed_s=round(time.time() - started, 1))
             out(f"[{inv.index}/{len(plan.invocations)}] {name}: {outcome.kind} ({outcome.detail})")
+            integrity_scan(campaign, inv, name, out)
             if outcome.kind == "integrity":
                 return finish(EXIT_INTEGRITY, f"integrity stop: {outcome.detail}")
             if outcome.kind == "ok":
@@ -1925,6 +1997,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     mode.add_argument("--plan", action="store_true")
     mode.add_argument("--execute", action="store_true")
     mode.add_argument("--report", action="store_true")
+    mode.add_argument("--integrity", action="store_true",
+                      help="scan every attempt's run-tool commands for outside reads (report only)")
     parser.add_argument("--resume", action="store_true", help="with --execute: skip invocations already completed")
     parser.add_argument("--limit", type=int, default=None, help="with --plan: print only the first N invocations")
     parser.add_argument("--json", action="store_true", help="with --plan: print the plan as JSON")
@@ -1957,6 +2031,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         return EXIT_OK
     if args.report:
         print(f"report skeleton: {display_path(write_report(plan))}")
+        return EXIT_OK
+    if args.integrity:
+        print_integrity(plan)
         return EXIT_OK
     return execute(plan, resume=args.resume, python=args.python, lock_path=args.lock)
 

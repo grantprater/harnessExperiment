@@ -25,6 +25,12 @@ Backends:
                  in new user, mount and network namespaces with the checkout's experiments/, .git, the raw series cache
                  and ~/harness-sealed hidden and only its working directory kept (sandbox.py); recorded in the
                  execution contract, so in the protocol hash, only when on
+  --sandbox unshare-confined   any task on trusted-local, Linux only (the cloud integrity fix): every run-tool,
+                 evaluator and check command runs in new user, mount, PID and network namespaces, in a new root that
+                 holds only its working directory, read-only system directories and the task interpreter, with a
+                 private /tmp and no capabilities (reticle.execution.ConfinedLocalBackend). The model's authority
+                 text says so. Refuses to start (dry runs too) if the host cannot run it; in the execution contract
+                 and the protocol hash, so a confined run never hashes like an unconfined one
 
 Arms (same tools, instructions, evaluator, and limits; only the context policy differs):
   bounded-transcript-v2  original task + as much recent transcript as fits; tool results shown
@@ -561,6 +567,10 @@ def resolve_execution(backend_name: str, image: str, sandbox=None):
                      "authority": "trusted-local, not host-isolated"}
         if sandbox is None:  # the contract is exactly as before
             return None, execution
+        if sandbox == namespace_sandbox.CONFINED_NAME:  # the model is told what it has; both are hashed
+            execution.update(authority=namespace_sandbox.CONFINED_AUTHORITY,
+                             sandbox=namespace_sandbox.confined_contract())
+            return namespace_sandbox.confined_backend(TASK_PYTHON), execution
         if sandbox != namespace_sandbox.SANDBOX_NAME:
             raise SystemExit(f"unknown --sandbox {sandbox!r}")
         execution.update(authority="trusted-local in unshare -rnm namespaces: loopback-only network; the checkout's "
@@ -1273,9 +1283,13 @@ def main() -> None:
                                  *FORECAST_CLIENTS])
     parser.add_argument("--backend", default="trusted-local", choices=["trusted-local", "oci"])
     parser.add_argument("--oci-image", default=DEFAULT_OCI_IMAGE)
-    parser.add_argument("--sandbox", choices=[namespace_sandbox.SANDBOX_NAME], default=None,
-                        help="forecast tasks on trusted-local (Linux): run every command under unshare -rnm with the "
-                             "checkout hidden; in the execution contract and the protocol hash")
+    parser.add_argument("--sandbox", choices=[namespace_sandbox.SANDBOX_NAME, namespace_sandbox.CONFINED_NAME],
+                        default=None,
+                        help="trusted-local on Linux: unshare-rnm (forecast tasks) runs every command under unshare "
+                             "-rnm with the checkout hidden; unshare-confined (any task) runs every command in a new "
+                             "root holding only its working directory, read-only system directories and the task "
+                             "interpreter, with no network and a private /tmp; refuses to start where it cannot "
+                             "run; in the execution contract and the protocol hash")
     parser.add_argument("--arm", default="bounded-transcript-v2", choices=sorted(ARMS))
     parser.add_argument("--run-name", required=True)
     parser.add_argument("--models", nargs="*", default=[])
@@ -1349,11 +1363,12 @@ def main() -> None:
         routing = {model: ({"order": [pins[model]], "allow_fallbacks": False, "require_parameters": True}
                            if model in pins else dict(UNPINNED_ROUTING)) for model in models}
     arm = args.arm
-    if args.sandbox and not forecast:
-        raise SystemExit("--sandbox applies to forecast tasks only")
+    if args.sandbox == namespace_sandbox.SANDBOX_NAME and not forecast:
+        raise SystemExit("--sandbox unshare-rnm applies to forecast tasks only")
     backend, execution = resolve_execution(args.backend, args.oci_image, args.sandbox)
-    if args.sandbox:
-        problem = namespace_sandbox.availability()
+    if args.sandbox:  # fail closed, dry runs included: never run a sandboxed card unconfined
+        problem = (backend.availability() if args.sandbox == namespace_sandbox.CONFINED_NAME
+                   else namespace_sandbox.availability())
         if problem:
             raise SystemExit(problem)
     guards = {"stop_on_repeats": args.stop_on_repeats,
