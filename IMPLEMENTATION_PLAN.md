@@ -843,6 +843,8 @@ records and decisions exist.
 
 **Owner decisions (2026-10-01):** "1. $144. 2. Yes. 3. Yes. 4. Yes", answering: (1) cloud credit balance is $144 (expires 2026-11-05); (2) launch card 023 (boltons calibration, $40 nested cap) in the cloud (launched 2026-10-01 as one-shot routine `trig_015orL1bg5GH8rm6TpZuaZz7` with the prompt in `experiments/cloud/RUN_IN_CLOUD-023.md`, results to branch `cloud-results-023`); (3) build an integration branch merging the cloud-card branches with the 2026-09-30 branches (not master); (4) add card 021's verifier-commit as a 4th arm of the evidence-ontology pilot (`experiments/neurosymbolic/README.md`).
 
+**Owner decisions (2026-10-01, later):** "We can wait for card 10 to build the pooled registry. We can keep it as the transfer test." (1) A pooled task registry across cards 007, 023 and 010 (per-task outcomes, role tag: iterate / held-out / near-transfer test / pilot eval) is built offline after card 010's calibration finishes; it is the S6 loop's evidence store. (2) The boltons bank stays the near-transfer test as card 023 planned: its evolution set (015, 023, 056) is not used for iteration. Also approved the same day ("Yes you can run that"): an offline integrity audit of cloud cards 019-021 for the trusted-local `run` authority escape found in card 023.
+
 **Implementation choices before any E3 model run in OCI** (from
 `experiments/session_harness/S2b-oci-boundaries-controls.md`):
 

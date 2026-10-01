@@ -83,7 +83,7 @@ contrastive (1/2).
 If it fails, the report gives the distribution, and card 010's difficulty decision applies to both banks. Card 010's
 difficulty arms are a separate decision: the statements are not tuned on these tasks.
 
-After the card, these 20 tasks are held-in for near-transfer work. The bank's other tasks stay fresh. A near-transfer
+After the card, these 20 tasks are held-in for near-transfer work. Confirmed by the owner on 2026-10-01 after the campaign: "We can keep it as the transfer test." (the evolution set 015, 023, 056 is not used for iteration). The bank's other tasks stay fresh. A near-transfer
 treatment card then pairs the incumbent and the sqlparse-selected treatment on this bank's evolution set, within one
 card and one environment.
 
