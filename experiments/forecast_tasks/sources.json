@@ -1,0 +1,862 @@
+{
+ "schema": "forecast-sources-v1",
+ "note": "Card 022's series (design section 4, extended by Q6's decision). Every source is public and keyless. A series has a kind: level (direction, touch and window_mean templates), wet_days (count of dates with at least threshold mm, and window_mean) or events (count of daily event counts, and window_mean). related names the series a question's workspace also gets. group is the unit the splits assign (a city's two weather series stay together); it defaults to the series name. FRED's gold fixing (GOLDAMGBD228NLBM, the design's sixth FRED series) returns 404 since FRED dropped the LBMA series, so the yen rate DEXJPUS stands in for it. The second block of 30 series (from DEXUSUK on) was added on 2026-09-29 (Q6, option A as amended by the owner).",
+ "history_start": "2023-01-01",
+ "fetch_end": "2026-09-27",
+ "sources": {
+  "fred": {
+   "title": "FRED (Federal Reserve Bank of St. Louis), fredgraph.csv, no API key",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id={id}",
+   "publication": "One value per business day, dated by the trading day; missing days (holidays) are absent. The value dated d is published after d's close, so on forecast date T the latest row is dated T-1 or earlier."
+  },
+  "open-meteo": {
+   "title": "Open-Meteo historical weather API (archive-api.open-meteo.com, ERA5-based reanalysis), no API key",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude={latitude}&longitude={longitude}&start_date={start}&end_date={end}&daily=temperature_2m_max,precipitation_sum&timezone=UTC",
+   "publication": "One value per UTC day. The snapshot holds every day before T; the real archive runs a few days behind, so a forecaster on T would have had slightly less. Recent days can be revised when preliminary reanalysis is replaced by the final one."
+  },
+  "usgs": {
+   "title": "USGS FDSN event web service (earthquake.usgs.gov/fdsnws/event/1), CSV, no API key",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime={start}&endtime={end}&minmagnitude={minmagnitude}{box}&orderby=time-asc",
+   "publication": "Events counted per UTC day of their origin time; a day with no event counts 0. Reviewed catalogues can add or re-rate events for weeks; the counts are as fetched."
+  },
+  "wikimedia": {
+   "title": "Wikimedia REST pageviews API (per-article, en.wikipedia, all-access, user agents), no API key",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/{article}/daily/{start_compact}/{end_compact}",
+   "publication": "Daily views by human (user) agents, dated by UTC day, published the next day."
+  }
+ },
+ "series": [
+  {
+   "name": "DGS10",
+   "source": "fred",
+   "kind": "level",
+   "id": "DGS10",
+   "title": "10-year US Treasury constant-maturity yield",
+   "units": "percent",
+   "related": [
+    "VIXCLS"
+   ]
+  },
+  {
+   "name": "DEXUSEU",
+   "source": "fred",
+   "kind": "level",
+   "id": "DEXUSEU",
+   "title": "US dollars per euro (noon buying rate)",
+   "units": "USD per EUR",
+   "related": [
+    "DEXJPUS"
+   ]
+  },
+  {
+   "name": "DCOILWTICO",
+   "source": "fred",
+   "kind": "level",
+   "id": "DCOILWTICO",
+   "title": "WTI crude oil spot price, Cushing",
+   "units": "USD per barrel",
+   "related": [
+    "SP500"
+   ]
+  },
+  {
+   "name": "SP500",
+   "source": "fred",
+   "kind": "level",
+   "id": "SP500",
+   "title": "S&P 500 index close",
+   "units": "index points",
+   "related": [
+    "VIXCLS"
+   ]
+  },
+  {
+   "name": "VIXCLS",
+   "source": "fred",
+   "kind": "level",
+   "id": "VIXCLS",
+   "title": "CBOE Volatility Index (VIX) close",
+   "units": "index points",
+   "related": [
+    "SP500"
+   ]
+  },
+  {
+   "name": "DEXJPUS",
+   "source": "fred",
+   "kind": "level",
+   "id": "DEXJPUS",
+   "title": "Japanese yen per US dollar (noon buying rate)",
+   "units": "JPY per USD",
+   "related": [
+    "DEXUSEU"
+   ]
+  },
+  {
+   "name": "london_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "london",
+   "variable": "temperature_2m_max",
+   "title": "London daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "london_precip"
+   ],
+   "group": "london"
+  },
+  {
+   "name": "london_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "london",
+   "variable": "precipitation_sum",
+   "title": "London daily precipitation total",
+   "units": "mm",
+   "related": [
+    "london_tmax"
+   ],
+   "group": "london"
+  },
+  {
+   "name": "new_york_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "new_york",
+   "variable": "temperature_2m_max",
+   "title": "New York daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "new_york_precip"
+   ],
+   "group": "new_york"
+  },
+  {
+   "name": "new_york_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "new_york",
+   "variable": "precipitation_sum",
+   "title": "New York daily precipitation total",
+   "units": "mm",
+   "related": [
+    "new_york_tmax"
+   ],
+   "group": "new_york"
+  },
+  {
+   "name": "tokyo_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "tokyo",
+   "variable": "temperature_2m_max",
+   "title": "Tokyo daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "tokyo_precip"
+   ],
+   "group": "tokyo"
+  },
+  {
+   "name": "tokyo_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "tokyo",
+   "variable": "precipitation_sum",
+   "title": "Tokyo daily precipitation total",
+   "units": "mm",
+   "related": [
+    "tokyo_tmax"
+   ],
+   "group": "tokyo"
+  },
+  {
+   "name": "sydney_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "sydney",
+   "variable": "temperature_2m_max",
+   "title": "Sydney daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "sydney_precip"
+   ],
+   "group": "sydney"
+  },
+  {
+   "name": "sydney_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "sydney",
+   "variable": "precipitation_sum",
+   "title": "Sydney daily precipitation total",
+   "units": "mm",
+   "related": [
+    "sydney_tmax"
+   ],
+   "group": "sydney"
+  },
+  {
+   "name": "mumbai_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "mumbai",
+   "variable": "temperature_2m_max",
+   "title": "Mumbai daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "mumbai_precip"
+   ],
+   "group": "mumbai"
+  },
+  {
+   "name": "mumbai_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "mumbai",
+   "variable": "precipitation_sum",
+   "title": "Mumbai daily precipitation total",
+   "units": "mm",
+   "related": [
+    "mumbai_tmax"
+   ],
+   "group": "mumbai"
+  },
+  {
+   "name": "sao_paulo_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "sao_paulo",
+   "variable": "temperature_2m_max",
+   "title": "Sao Paulo daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "sao_paulo_precip"
+   ],
+   "group": "sao_paulo"
+  },
+  {
+   "name": "sao_paulo_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "sao_paulo",
+   "variable": "precipitation_sum",
+   "title": "Sao Paulo daily precipitation total",
+   "units": "mm",
+   "related": [
+    "sao_paulo_tmax"
+   ],
+   "group": "sao_paulo"
+  },
+  {
+   "name": "cairo_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "cairo",
+   "variable": "temperature_2m_max",
+   "title": "Cairo daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "cairo_precip"
+   ],
+   "group": "cairo"
+  },
+  {
+   "name": "cairo_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "cairo",
+   "variable": "precipitation_sum",
+   "title": "Cairo daily precipitation total",
+   "units": "mm",
+   "related": [
+    "cairo_tmax"
+   ],
+   "group": "cairo"
+  },
+  {
+   "name": "moscow_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "moscow",
+   "variable": "temperature_2m_max",
+   "title": "Moscow daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "moscow_precip"
+   ],
+   "group": "moscow"
+  },
+  {
+   "name": "moscow_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "moscow",
+   "variable": "precipitation_sum",
+   "title": "Moscow daily precipitation total",
+   "units": "mm",
+   "related": [
+    "moscow_tmax"
+   ],
+   "group": "moscow"
+  },
+  {
+   "name": "quakes_world_m45",
+   "source": "usgs",
+   "kind": "events",
+   "minmagnitude": 4.5,
+   "title": "Earthquakes of magnitude 4.5 or more worldwide, per UTC day",
+   "units": "events per day",
+   "related": [
+    "quakes_california_m25"
+   ]
+  },
+  {
+   "name": "quakes_california_m25",
+   "source": "usgs",
+   "kind": "events",
+   "minmagnitude": 2.5,
+   "box": {
+    "minlatitude": 32,
+    "maxlatitude": 42,
+    "minlongitude": -125,
+    "maxlongitude": -114
+   },
+   "title": "Earthquakes of magnitude 2.5 or more in the box 32-42 N, 114-125 W (California and surroundings), per UTC day",
+   "units": "events per day",
+   "related": [
+    "quakes_world_m45"
+   ]
+  },
+  {
+   "name": "wiki_moon",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "Moon",
+   "title": "English Wikipedia daily views of the article Moon",
+   "units": "views per day",
+   "related": [
+    "wiki_chess"
+   ]
+  },
+  {
+   "name": "wiki_chess",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "Chess",
+   "title": "English Wikipedia daily views of the article Chess",
+   "units": "views per day",
+   "related": [
+    "wiki_moon"
+   ]
+  },
+  {
+   "name": "wiki_python",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "Python_(programming_language)",
+   "title": "English Wikipedia daily views of the article Python (programming language)",
+   "units": "views per day",
+   "related": [
+    "wiki_bitcoin"
+   ]
+  },
+  {
+   "name": "wiki_bitcoin",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "Bitcoin",
+   "title": "English Wikipedia daily views of the article Bitcoin",
+   "units": "views per day",
+   "related": [
+    "wiki_python"
+   ]
+  },
+  {
+   "name": "wiki_einstein",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "Albert_Einstein",
+   "title": "English Wikipedia daily views of the article Albert Einstein",
+   "units": "views per day",
+   "related": [
+    "wiki_ww2"
+   ]
+  },
+  {
+   "name": "wiki_ww2",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "World_War_II",
+   "title": "English Wikipedia daily views of the article World War II",
+   "units": "views per day",
+   "related": [
+    "wiki_einstein"
+   ]
+  },
+  {
+   "name": "DEXUSUK",
+   "source": "fred",
+   "kind": "level",
+   "id": "DEXUSUK",
+   "title": "US dollars per pound sterling (noon buying rate)",
+   "units": "USD per GBP",
+   "related": [
+    "DEXUSEU"
+   ]
+  },
+  {
+   "name": "DEXCAUS",
+   "source": "fred",
+   "kind": "level",
+   "id": "DEXCAUS",
+   "title": "Canadian dollars per US dollar (noon buying rate)",
+   "units": "CAD per USD",
+   "related": [
+    "DCOILWTICO"
+   ]
+  },
+  {
+   "name": "DEXMXUS",
+   "source": "fred",
+   "kind": "level",
+   "id": "DEXMXUS",
+   "title": "Mexican pesos per US dollar (noon buying rate)",
+   "units": "MXN per USD",
+   "related": [
+    "DEXCAUS"
+   ]
+  },
+  {
+   "name": "DGS2",
+   "source": "fred",
+   "kind": "level",
+   "id": "DGS2",
+   "title": "2-year US Treasury constant-maturity yield",
+   "units": "percent",
+   "related": [
+    "DGS10"
+   ]
+  },
+  {
+   "name": "NASDAQCOM",
+   "source": "fred",
+   "kind": "level",
+   "id": "NASDAQCOM",
+   "title": "NASDAQ Composite index close",
+   "units": "index points",
+   "related": [
+    "SP500"
+   ]
+  },
+  {
+   "name": "DHHNGSP",
+   "source": "fred",
+   "kind": "level",
+   "id": "DHHNGSP",
+   "title": "Henry Hub natural gas spot price",
+   "units": "USD per million Btu",
+   "related": [
+    "DCOILWTICO"
+   ]
+  },
+  {
+   "name": "beijing_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "beijing",
+   "group": "beijing",
+   "variable": "temperature_2m_max",
+   "title": "Beijing daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "beijing_precip"
+   ]
+  },
+  {
+   "name": "beijing_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "beijing",
+   "group": "beijing",
+   "variable": "precipitation_sum",
+   "title": "Beijing daily precipitation total",
+   "units": "mm",
+   "related": [
+    "beijing_tmax"
+   ]
+  },
+  {
+   "name": "johannesburg_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "johannesburg",
+   "group": "johannesburg",
+   "variable": "temperature_2m_max",
+   "title": "Johannesburg daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "johannesburg_precip"
+   ]
+  },
+  {
+   "name": "johannesburg_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "johannesburg",
+   "group": "johannesburg",
+   "variable": "precipitation_sum",
+   "title": "Johannesburg daily precipitation total",
+   "units": "mm",
+   "related": [
+    "johannesburg_tmax"
+   ]
+  },
+  {
+   "name": "buenos_aires_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "buenos_aires",
+   "group": "buenos_aires",
+   "variable": "temperature_2m_max",
+   "title": "Buenos Aires daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "buenos_aires_precip"
+   ]
+  },
+  {
+   "name": "buenos_aires_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "buenos_aires",
+   "group": "buenos_aires",
+   "variable": "precipitation_sum",
+   "title": "Buenos Aires daily precipitation total",
+   "units": "mm",
+   "related": [
+    "buenos_aires_tmax"
+   ]
+  },
+  {
+   "name": "toronto_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "toronto",
+   "group": "toronto",
+   "variable": "temperature_2m_max",
+   "title": "Toronto daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "toronto_precip"
+   ]
+  },
+  {
+   "name": "toronto_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "toronto",
+   "group": "toronto",
+   "variable": "precipitation_sum",
+   "title": "Toronto daily precipitation total",
+   "units": "mm",
+   "related": [
+    "toronto_tmax"
+   ]
+  },
+  {
+   "name": "singapore_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "singapore",
+   "group": "singapore",
+   "variable": "temperature_2m_max",
+   "title": "Singapore daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "singapore_precip"
+   ]
+  },
+  {
+   "name": "singapore_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "singapore",
+   "group": "singapore",
+   "variable": "precipitation_sum",
+   "title": "Singapore daily precipitation total",
+   "units": "mm",
+   "related": [
+    "singapore_tmax"
+   ]
+  },
+  {
+   "name": "delhi_tmax",
+   "source": "open-meteo",
+   "kind": "level",
+   "city": "delhi",
+   "group": "delhi",
+   "variable": "temperature_2m_max",
+   "title": "Delhi daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "related": [
+    "delhi_precip"
+   ]
+  },
+  {
+   "name": "delhi_precip",
+   "source": "open-meteo",
+   "kind": "wet_days",
+   "threshold": 1.0,
+   "city": "delhi",
+   "group": "delhi",
+   "variable": "precipitation_sum",
+   "title": "Delhi daily precipitation total",
+   "units": "mm",
+   "related": [
+    "delhi_tmax"
+   ]
+  },
+  {
+   "name": "quakes_japan_m4",
+   "source": "usgs",
+   "kind": "events",
+   "minmagnitude": 4.0,
+   "box": {
+    "minlatitude": 30,
+    "maxlatitude": 46,
+    "minlongitude": 128,
+    "maxlongitude": 146
+   },
+   "title": "Earthquakes of magnitude 4 or more in the box 30-46 N, 128-146 E (Japan), per UTC day",
+   "units": "events per day",
+   "related": [
+    "quakes_world_m45"
+   ]
+  },
+  {
+   "name": "quakes_alaska_m3",
+   "source": "usgs",
+   "kind": "events",
+   "minmagnitude": 3.0,
+   "box": {
+    "minlatitude": 51,
+    "maxlatitude": 72,
+    "minlongitude": -180,
+    "maxlongitude": -129
+   },
+   "title": "Earthquakes of magnitude 3 or more in the box 51-72 N, 129-180 W (Alaska and the Aleutians), per UTC day",
+   "units": "events per day",
+   "related": [
+    "quakes_world_m45"
+   ]
+  },
+  {
+   "name": "quakes_indonesia_m4",
+   "source": "usgs",
+   "kind": "events",
+   "minmagnitude": 4.0,
+   "box": {
+    "minlatitude": -11,
+    "maxlatitude": 6,
+    "minlongitude": 95,
+    "maxlongitude": 141
+   },
+   "title": "Earthquakes of magnitude 4 or more in the box 11 S-6 N, 95-141 E (Indonesia), per UTC day",
+   "units": "events per day",
+   "related": [
+    "quakes_world_m45"
+   ]
+  },
+  {
+   "name": "quakes_andes_m4",
+   "source": "usgs",
+   "kind": "events",
+   "minmagnitude": 4.0,
+   "box": {
+    "minlatitude": -45,
+    "maxlatitude": -5,
+    "minlongitude": -82,
+    "maxlongitude": -66
+   },
+   "title": "Earthquakes of magnitude 4 or more in the box 5-45 S, 66-82 W (Peru and Chile), per UTC day",
+   "units": "events per day",
+   "related": [
+    "quakes_world_m45"
+   ]
+  },
+  {
+   "name": "wiki_shakespeare",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "William_Shakespeare",
+   "title": "English Wikipedia daily views of the article William Shakespeare",
+   "units": "views per day",
+   "related": [
+    "wiki_davinci"
+   ]
+  },
+  {
+   "name": "wiki_solar_system",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "Solar_System",
+   "title": "English Wikipedia daily views of the article Solar System",
+   "units": "views per day",
+   "related": [
+    "wiki_black_hole"
+   ]
+  },
+  {
+   "name": "wiki_ai",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "Artificial_intelligence",
+   "title": "English Wikipedia daily views of the article Artificial intelligence",
+   "units": "views per day",
+   "related": [
+    "wiki_python"
+   ]
+  },
+  {
+   "name": "wiki_coffee",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "Coffee",
+   "title": "English Wikipedia daily views of the article Coffee",
+   "units": "views per day",
+   "related": [
+    "wiki_everest"
+   ]
+  },
+  {
+   "name": "wiki_everest",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "Mount_Everest",
+   "title": "English Wikipedia daily views of the article Mount Everest",
+   "units": "views per day",
+   "related": [
+    "wiki_coffee"
+   ]
+  },
+  {
+   "name": "wiki_photosynthesis",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "Photosynthesis",
+   "title": "English Wikipedia daily views of the article Photosynthesis",
+   "units": "views per day",
+   "related": [
+    "wiki_solar_system"
+   ]
+  },
+  {
+   "name": "wiki_davinci",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "Leonardo_da_Vinci",
+   "title": "English Wikipedia daily views of the article Leonardo da Vinci",
+   "units": "views per day",
+   "related": [
+    "wiki_shakespeare"
+   ]
+  },
+  {
+   "name": "wiki_black_hole",
+   "source": "wikimedia",
+   "kind": "level",
+   "article": "Black_hole",
+   "title": "English Wikipedia daily views of the article Black hole",
+   "units": "views per day",
+   "related": [
+    "wiki_solar_system"
+   ]
+  }
+ ],
+ "cities": {
+  "london": {
+   "latitude": 51.51,
+   "longitude": -0.13,
+   "title": "London"
+  },
+  "new_york": {
+   "latitude": 40.71,
+   "longitude": -74.01,
+   "title": "New York"
+  },
+  "tokyo": {
+   "latitude": 35.68,
+   "longitude": 139.69,
+   "title": "Tokyo"
+  },
+  "sydney": {
+   "latitude": -33.87,
+   "longitude": 151.21,
+   "title": "Sydney"
+  },
+  "mumbai": {
+   "latitude": 19.08,
+   "longitude": 72.88,
+   "title": "Mumbai"
+  },
+  "sao_paulo": {
+   "latitude": -23.55,
+   "longitude": -46.63,
+   "title": "Sao Paulo"
+  },
+  "cairo": {
+   "latitude": 30.04,
+   "longitude": 31.24,
+   "title": "Cairo"
+  },
+  "moscow": {
+   "latitude": 55.76,
+   "longitude": 37.62,
+   "title": "Moscow"
+  },
+  "beijing": {
+   "latitude": 39.9,
+   "longitude": 116.4,
+   "title": "Beijing"
+  },
+  "johannesburg": {
+   "latitude": -26.2,
+   "longitude": 28.05,
+   "title": "Johannesburg"
+  },
+  "buenos_aires": {
+   "latitude": -34.6,
+   "longitude": -58.38,
+   "title": "Buenos Aires"
+  },
+  "toronto": {
+   "latitude": 43.65,
+   "longitude": -79.38,
+   "title": "Toronto"
+  },
+  "singapore": {
+   "latitude": 1.35,
+   "longitude": 103.82,
+   "title": "Singapore"
+  },
+  "delhi": {
+   "latitude": 28.61,
+   "longitude": 77.21,
+   "title": "Delhi"
+  }
+ }
+}

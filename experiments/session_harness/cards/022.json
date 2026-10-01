@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "id": "E5-transfer-forecasting-022A",
+  "title": "Card 022, phase A: workspace forecasting as the held-out transfer domain (domain calibration and positive control)",
+  "status": "proposed",
+  "markdown": "experiments/session_harness/E5-transfer-forecasting-022-design.md",
+  "hypothesis": "On 40 workspace forecasting questions (public daily series cut the day before a forecast date in July or August 2026, on calibration series only; outcome sealed), the incumbent harness (runner v8, claude-cli, claude-sonnet-5, pressure-recent-v3) commits a valid forecast.json and resolve.py in at least 90% of runs, exercises the process (median responses >= 4, a run call in >= 60% of runs), beats the no-data one-shot comparator by at least 0.02 Brier, and is no worse than the history-only base-rate forecaster (gold) by more than 0.02, with clean leakage checks. Only if all five gates pass can phase B (the transfer test, a separate card) run.",
+  "run_prefix": "c022",
+  "run_name_template": "{prefix}-{task}-{block}-r{rollout}",
+  "runner": {
+    "script": "experiments/p6_pilot/run_pilot.py",
+    "runner_version": 8
+  },
+  "environment": {
+    "claude_cli_version": "2.1.284 (Claude Code)"
+  },
+  "prerequisites": [
+    {
+      "text": "owner approval of this card's runs recorded in the design doc (then set status to running). The owner approved the design's five recommendations and Q6's bank rework on 2026-09-29 (section 10), which is not approval to run",
+      "done": false
+    },
+    {
+      "text": "cloud isolation, probe half (the owner's Q3 amendment: cloud first): experiments/cloud/probe_isolation.sh passed on the cloud VM on 2026-09-29 04:27 UTC, 5 of 5, ISOLATION: NETWORK+FILES (root, util-linux unshare 2.39.3; origin/cloud-probe-isolation, commit 11dfc71)",
+      "done": true
+    },
+    {
+      "text": "cloud isolation, runner half: run_pilot.py --sandbox unshare-rnm (experiments/p6_pilot/sandbox.py) runs every run-tool and evaluator command of a forecast task in new user, mount and network namespaces with the checkout's experiments/, .git, the raw cache and ~/harness-sealed hidden; in the execution contract and the hash. Tested 2026-09-29 in podman python:3.11-slim as root (--cpus 1): the peeker control is rejected unwrapped (network, checkout, git, evaluator bundle and a planted sealed file all reached) and accepted wrapped (all blocked); gold commits wrapped with 52/52 agreement. The card's peeker control (expect accepted) re-checks it on the VM before any model run",
+      "done": true
+    },
+    {
+      "text": "the recall probe (probe_recall.py: the 200 bank questions and the 20 pre-cutoff positive-control questions, recall_control.json) and the one-shot comparator's call (oneshot_forecast.py --run --live) are built and tested against a stub CLI (cli_ask.py: claude_cli.py's isolation and model pin); the smoke with the pinned model (3 recall + 3 one-shot calls, under $1) is still to run, with approval",
+      "done": false
+    },
+    {
+      "text": "the post-run leakage audit (audit_forecast_runs.py: network words in commands and written files, dates on or after T in tool results beyond those the question states, checker tampering in written code; one hit stops the campaign) is built and tested",
+      "done": true
+    }
+  ],
+  "arms": [
+    {
+      "name": "incumbent",
+      "client": "claude-cli",
+      "model": "claude-sonnet-5",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "trusted-local",
+        "isolation": "vm-sandbox",
+        "sandbox": "unshare-rnm"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [],
+      "expected_protocol_hash": null,
+      "note": "The code incumbent's policy, tools, guards and client on forecast tasks: the runner gives a forecast task the forecast instructions and evaluate_forecast.py, and each task's contract (snapshot, statement, question.md and README digests, evaluator files) enters its hash, so every question has its own hash. Cloud first (trusted-local in the VM) with --sandbox unshare-rnm, which the execution contract records; the hash also contains the VM's task interpreter path, so --plan on the VM prints the hashes the runs must record. Fallback if the VM refuses the namespaces: the host OCI image (localhost/reticle-p6-task:py313-v1, image id 8b74015e5079..., podman), a card edit before approval."
+    }
+  ],
+  "controls": [
+    {
+      "name": "gold",
+      "client": "gold",
+      "task_set": "controls",
+      "like_arm": "incumbent",
+      "expect": "accepted"
+    },
+    {
+      "name": "constant",
+      "client": "constant",
+      "task_set": "controls",
+      "like_arm": "incumbent",
+      "expect": "accepted"
+    },
+    {
+      "name": "noop",
+      "client": "noop",
+      "task_set": "controls",
+      "like_arm": "incumbent",
+      "expect": "rejected"
+    },
+    {
+      "name": "gamer",
+      "client": "gamer",
+      "task_set": "controls",
+      "like_arm": "incumbent",
+      "expect": "rejected"
+    },
+    {
+      "name": "peeker",
+      "client": "peeker",
+      "task_set": "controls",
+      "like_arm": "incumbent",
+      "expect": "accepted"
+    }
+  ],
+  "tasks": {
+    "file": "experiments/forecast_tasks/tasks.forecast.json",
+    "file_sha256": "885152c2f56388852eb1cede8fb93419f5d3eb469256af3e61e3bd9f97d6a051",
+    "sets": {
+      "calibration": {
+        "ref": {
+          "path": "experiments/forecast_tasks/splits.json",
+          "key": "calibration",
+          "sha256": "26af68ce8f544d780b54ea736d0e76c4e25a593668a17d72be8d9d797048c606"
+        },
+        "note": "The frozen seed-22 draw v2 (build_bank.py): 40 questions on the 13 calibration series, forecast dates 2026-07-06..08-24; no calibration series appears in the sealed or reserve sets."
+      },
+      "repeat": {
+        "ref": {
+          "path": "experiments/forecast_tasks/splits.json",
+          "key": "calibration",
+          "sha256": "26af68ce8f544d780b54ea736d0e76c4e25a593668a17d72be8d9d797048c606"
+        },
+        "take": {
+          "count": 20,
+          "seed": 22
+        },
+        "note": "20 calibration questions run a second time, for the run-to-run SD (the re-estimation rule of design section 4)."
+      },
+      "controls": {
+        "ids": [
+          "fc-0706-dexmxus-direction-h14",
+          "fc-0720-quakes-andes-m4-count-h7"
+        ],
+        "note": "Two calibration questions (a FRED level series and a count) for the scripted controls."
+      }
+    }
+  },
+  "blocks": [
+    {
+      "name": "calibration",
+      "task_set": "calibration",
+      "arms": [
+        "incumbent"
+      ],
+      "rollouts": 1,
+      "arm_order": {
+        "rule": "fixed"
+      }
+    },
+    {
+      "name": "repeat",
+      "task_set": "repeat",
+      "arms": [
+        "incumbent"
+      ],
+      "rollouts": 1,
+      "arm_order": {
+        "rule": "fixed"
+      }
+    }
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 12,
+      "model_attempts": 15,
+      "active_seconds": 600,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 120,
+      "command_timeout_seconds": {
+        "default": 120,
+        "max": 600
+      },
+      "invocation_wall_seconds": 1200
+    },
+    "campaign": {
+      "max_runs": 60,
+      "max_model_attempts": 900,
+      "monetary_cap_usd": null,
+      "list_price_cap_usd": 25,
+      "note": "Design section 5: 40 + 20 incumbent runs, about $0.25 per run at list price (extrapolated from code repair; p90 about $0.50), so about $15; the campaign checkpoints once the CLI's list-price estimates reach $25. The recall probe and one-shot comparator (about $4) are separate invocations, not budgeted here. pytest_timeout_seconds is the forecast evaluator's time limit (plus the runner's 120 s), not a pytest limit."
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [
+      60,
+      300
+    ],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "No repeat guard, as card 007; repeat flags are derived from the transcripts afterwards.",
+    "manual": [
+      "Leakage stops the campaign: one hit in audit_forecast_runs.py (run it after every 10 runs and at the end), a peek that is not blocked, or a read outside the workspace.",
+      "A model_pin_violation (the CLI answered with a model other than claude-sonnet-5) or a change of reported_model or CLI version stops the campaign; the recall probe is rerun before any resume.",
+      "The sealed resolutions (~/harness-sealed/022/resolutions.json, sha256 bc4a1221a4d7e56fad672f89e91a940ef1bcac561fb1f1da4e2e342529a55826) are never copied to the machine that runs the campaign (the cloud VM runs as root, so nothing there may hold an outcome; the sandbox also hides ~/harness-sealed). Scoring happens afterwards on the host with score_forecasts.py --resolutions-sha256 <that value>, which refuses any other file.",
+      "Do not tune statements, budgets, the bank or the environment during the card; any change is a new card."
+    ]
+  },
+  "measurements": {
+    "per_run": [
+      "accepted",
+      "stop_reason",
+      "responses_used",
+      "provider_attempts",
+      "tool_calls",
+      "active_seconds",
+      "wall_seconds",
+      "tokens",
+      "rejected_calls",
+      "verification_before_finish"
+    ],
+    "campaign": [
+      "acceptance_rate_ci",
+      "per_task_outcomes",
+      "acceptance_by:template",
+      "acceptance_by:source"
+    ]
+  },
+  "decision_rule": "Phase A gates (design section 5), all required before phase B: (1) committed (run_card's accepted) in at least 90% of incumbent runs; (2) median responses of at least 4, and a run call in at least 60% of runs; (3) mean paired Brier of the incumbent at least 0.02 below the one-shot comparator's (score_forecasts.py, calibration set); (4) leakage checks clean (audit, peeker, recall probe with its pre-cutoff positive control); (5) the incumbent's mean Brier no more than 0.02 above gold's (the history-only base rate). A failed gate stops the card and is reported as a finding about the domain. The 20-question repeat block estimates the run-to-run SD for the sealed-set re-estimation rule.",
+  "report": {
+    "path": "experiments/session_harness/E5-transfer-forecasting-022A-report.md",
+    "sets_path": null
+  },
+  "notes": [
+    "Phase A only. Phase B (incumbent vs the selected change(s) on the 120 sealed questions of 36 series, design section 5) is not in this card: it needs near transfer on a second repository (Q2), a change that passes S6 acceptance, and card 021's or 014's result. The bank now meets the design's size (40/120/40, series-disjoint; section 10, Q6); phase A's repeat block fixes the sealed size through the re-estimation rule (section 4).",
+    "Accepted means committed, not correct: no outcome exists at run time. Brier and log score come afterwards from score_forecasts.py against the sealed resolutions pinned above.",
+    "Budgets are the design's (12 responses, 15 attempts, 600 active s, 80,000 context bytes, 4,096 max tokens, 120 s commands, 1,200 s per invocation).",
+    "Cloud first per the owner's amendment to Q3, confirmed by the VM probe; the OCI image is the fallback (arm note)."
+  ]
+}

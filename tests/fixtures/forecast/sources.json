@@ -1,0 +1,97 @@
+{
+ "cities": {
+  "london": {
+   "latitude": 51.51,
+   "longitude": -0.13,
+   "title": "London"
+  }
+ },
+ "fetch_end": "2026-09-27",
+ "history_start": "2024-06-01",
+ "note": "test fixture: 5 of card 022's series, trimmed from the real cache",
+ "schema": "forecast-sources-v1",
+ "series": [
+  {
+   "id": "DGS10",
+   "kind": "level",
+   "name": "DGS10",
+   "related": [],
+   "source": "fred",
+   "title": "10-year US Treasury constant-maturity yield",
+   "units": "percent"
+  },
+  {
+   "city": "london",
+   "group": "london",
+   "kind": "level",
+   "name": "london_tmax",
+   "related": [
+    "london_precip"
+   ],
+   "source": "open-meteo",
+   "title": "London daily maximum 2 m air temperature",
+   "units": "degrees C",
+   "variable": "temperature_2m_max"
+  },
+  {
+   "city": "london",
+   "group": "london",
+   "kind": "wet_days",
+   "name": "london_precip",
+   "related": [
+    "london_tmax"
+   ],
+   "source": "open-meteo",
+   "threshold": 1.0,
+   "title": "London daily precipitation total",
+   "units": "mm",
+   "variable": "precipitation_sum"
+  },
+  {
+   "box": {
+    "maxlatitude": 42,
+    "maxlongitude": -114,
+    "minlatitude": 32,
+    "minlongitude": -125
+   },
+   "kind": "events",
+   "minmagnitude": 2.5,
+   "name": "quakes_california_m25",
+   "related": [],
+   "source": "usgs",
+   "title": "Earthquakes of magnitude 2.5 or more in the box 32-42 N, 114-125 W (California and surroundings), per UTC day",
+   "units": "events per day"
+  },
+  {
+   "article": "Moon",
+   "kind": "level",
+   "name": "wiki_moon",
+   "related": [],
+   "source": "wikimedia",
+   "title": "English Wikipedia daily views of the article Moon",
+   "units": "views per day"
+  }
+ ],
+ "sources": {
+  "fred": {
+   "publication": "One value per business day, dated by the trading day; missing days (holidays) are absent. The value dated d is published after d's close, so on forecast date T the latest row is dated T-1 or earlier.",
+   "title": "FRED (Federal Reserve Bank of St. Louis), fredgraph.csv, no API key",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id={id}"
+  },
+  "open-meteo": {
+   "publication": "One value per UTC day. The snapshot holds every day before T; the real archive runs a few days behind, so a forecaster on T would have had slightly less. Recent days can be revised when preliminary reanalysis is replaced by the final one.",
+   "title": "Open-Meteo historical weather API (archive-api.open-meteo.com, ERA5-based reanalysis), no API key",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude={latitude}&longitude={longitude}&start_date={start}&end_date={end}&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "usgs": {
+   "publication": "Events counted per UTC day of their origin time; a day with no event counts 0. Reviewed catalogues can add or re-rate events for weeks; the counts are as fetched.",
+   "title": "USGS FDSN event web service (earthquake.usgs.gov/fdsnws/event/1), CSV, no API key",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime={start}&endtime={end}&minmagnitude={minmagnitude}{box}&orderby=time-asc"
+  },
+  "wikimedia": {
+   "publication": "Daily views by human (user) agents, dated by UTC day, published the next day.",
+   "title": "Wikimedia REST pageviews API (per-article, en.wikipedia, all-access, user agents), no API key",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/{article}/daily/{start_compact}/{end_compact}"
+  }
+ }
+}

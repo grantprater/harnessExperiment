@@ -145,7 +145,8 @@
           "type": "object",
           "additionalProperties": false,
           "required": ["kind"],
-          "properties": {"kind": {"const": "trusted-local"}, "isolation": {"enum": ["host", "vm-sandbox"]}}
+          "properties": {"kind": {"const": "trusted-local"}, "isolation": {"enum": ["host", "vm-sandbox"]},
+                         "sandbox": {"enum": ["unshare-rnm"]}}
         },
         {
           "type": "object",
@@ -196,7 +197,7 @@
       "required": ["name", "client", "task_set", "like_arm", "expect"],
       "properties": {
         "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
-        "client": {"enum": ["gold", "noop", "breaker", "gamer", "tester"]},
+        "client": {"enum": ["gold", "noop", "breaker", "gamer", "tester", "constant", "peeker"]},
         "task_set": {"type": "string", "minLength": 1},
         "like_arm": {"type": "string", "minLength": 1},
         "expect": {"enum": ["accepted", "rejected"]},

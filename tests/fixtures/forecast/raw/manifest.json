@@ -1,0 +1,57 @@
+{
+ "fred-DGS10.csv": {
+  "bytes": 9599,
+  "fetched_at": "fixture",
+  "series": [
+   "DGS10"
+  ],
+  "sha256": "488033f705a74de4e384ce5d3860904949a1326b9acbc920838e72fbfeba391d",
+  "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10&cosd=2024-06-01&coed=2026-09-27"
+ },
+ "open-meteo-london.json": {
+  "bytes": 18639,
+  "fetched_at": "fixture",
+  "series": [
+   "london_tmax",
+   "london_precip"
+  ],
+  "sha256": "3a23473b247584e2e9d8dade17e1f8c4990c555a389331ed7585a7ac1e5640e6",
+  "url": "https://archive-api.open-meteo.com/v1/archive?latitude=51.51&longitude=-0.13&start_date=2024-06-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+ },
+ "usgs-quakes_california_m25-2024.csv": {
+  "bytes": 35290,
+  "fetched_at": "fixture",
+  "series": [
+   "quakes_california_m25"
+  ],
+  "sha256": "79341a27f4a93a63edd886ad0654edbfe21231c8b6f9d9c35798292e8834e22e",
+  "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2024-06-01&endtime=2025-01-01&minmagnitude=2.5&maxlatitude=42&maxlongitude=-114&minlatitude=32&minlongitude=-125&orderby=time-asc"
+ },
+ "usgs-quakes_california_m25-2025.csv": {
+  "bytes": 44074,
+  "fetched_at": "fixture",
+  "series": [
+   "quakes_california_m25"
+  ],
+  "sha256": "d18762d7e969c3eaed403337d02776cab3c4457fa5844a1ce8a8edeebfd5aee6",
+  "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2025-01-01&endtime=2026-01-01&minmagnitude=2.5&maxlatitude=42&maxlongitude=-114&minlatitude=32&minlongitude=-125&orderby=time-asc"
+ },
+ "usgs-quakes_california_m25-2026.csv": {
+  "bytes": 37236,
+  "fetched_at": "fixture",
+  "series": [
+   "quakes_california_m25"
+  ],
+  "sha256": "9af057104a2e01f8a5ea53a62b08d28e190ad65e4bf0de0cd5aa3488b9e79f9a",
+  "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2026-01-01&endtime=2026-09-27&minmagnitude=2.5&maxlatitude=42&maxlongitude=-114&minlatitude=32&minlongitude=-125&orderby=time-asc"
+ },
+ "wikimedia-wiki_moon.json": {
+  "bytes": 33994,
+  "fetched_at": "fixture",
+  "series": [
+   "wiki_moon"
+  ],
+  "sha256": "110e0463c483c9d70cc5f6935cbf2f23958dc9d6e4f48a2b82078d0bceaff649",
+  "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Moon/daily/20240601/20260927"
+ }
+}

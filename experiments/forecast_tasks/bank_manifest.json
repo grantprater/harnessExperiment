@@ -1,0 +1,847 @@
+{
+ "base_rate_range": [
+  0.2,
+  0.8
+ ],
+ "builder_sha256": "258384994d690622e2cd7de8c4d1060990ba6fe6e9fabe01d1ac22e56ff6f989",
+ "builder_version": "forecast-bank-v2",
+ "candidates": {
+  "generated": 3520,
+  "kept": 3046,
+  "not_resolvable": 0,
+  "outside_base_rate_range": 474,
+  "too_few_windows": 0
+ },
+ "cells_with_a_kept_candidate": {
+  "august": 240,
+  "july": 240
+ },
+ "fetch_end": "2026-09-27",
+ "forecast_dates": [
+  "2026-07-06",
+  "2026-07-13",
+  "2026-07-20",
+  "2026-07-27",
+  "2026-08-03",
+  "2026-08-10",
+  "2026-08-17",
+  "2026-08-24"
+ ],
+ "history_start": "2023-01-01",
+ "horizons": [
+  7,
+  14,
+  28
+ ],
+ "last_date_per_series": {
+  "DCOILWTICO": "2026-09-22",
+  "DEXCAUS": "2026-09-25",
+  "DEXJPUS": "2026-09-25",
+  "DEXMXUS": "2026-09-25",
+  "DEXUSEU": "2026-09-25",
+  "DEXUSUK": "2026-09-25",
+  "DGS10": "2026-09-25",
+  "DGS2": "2026-09-25",
+  "DHHNGSP": "2026-09-22",
+  "NASDAQCOM": "2026-09-25",
+  "SP500": "2026-09-25",
+  "VIXCLS": "2026-09-22",
+  "beijing_precip": "2026-09-27",
+  "beijing_tmax": "2026-09-27",
+  "buenos_aires_precip": "2026-09-27",
+  "buenos_aires_tmax": "2026-09-27",
+  "cairo_precip": "2026-09-27",
+  "cairo_tmax": "2026-09-27",
+  "delhi_precip": "2026-09-27",
+  "delhi_tmax": "2026-09-27",
+  "johannesburg_precip": "2026-09-27",
+  "johannesburg_tmax": "2026-09-27",
+  "london_precip": "2026-09-27",
+  "london_tmax": "2026-09-27",
+  "moscow_precip": "2026-09-27",
+  "moscow_tmax": "2026-09-27",
+  "mumbai_precip": "2026-09-27",
+  "mumbai_tmax": "2026-09-27",
+  "new_york_precip": "2026-09-27",
+  "new_york_tmax": "2026-09-27",
+  "quakes_alaska_m3": "2026-09-26",
+  "quakes_andes_m4": "2026-09-26",
+  "quakes_california_m25": "2026-09-26",
+  "quakes_indonesia_m4": "2026-09-26",
+  "quakes_japan_m4": "2026-09-26",
+  "quakes_world_m45": "2026-09-26",
+  "sao_paulo_precip": "2026-09-27",
+  "sao_paulo_tmax": "2026-09-27",
+  "singapore_precip": "2026-09-27",
+  "singapore_tmax": "2026-09-27",
+  "sydney_precip": "2026-09-27",
+  "sydney_tmax": "2026-09-27",
+  "tokyo_precip": "2026-09-27",
+  "tokyo_tmax": "2026-09-27",
+  "toronto_precip": "2026-09-27",
+  "toronto_tmax": "2026-09-27",
+  "wiki_ai": "2026-09-27",
+  "wiki_bitcoin": "2026-09-27",
+  "wiki_black_hole": "2026-09-27",
+  "wiki_chess": "2026-09-27",
+  "wiki_coffee": "2026-09-27",
+  "wiki_davinci": "2026-09-27",
+  "wiki_einstein": "2026-09-27",
+  "wiki_everest": "2026-09-27",
+  "wiki_moon": "2026-09-27",
+  "wiki_photosynthesis": "2026-09-27",
+  "wiki_python": "2026-09-27",
+  "wiki_shakespeare": "2026-09-27",
+  "wiki_solar_system": "2026-09-27",
+  "wiki_ww2": "2026-09-27"
+ },
+ "min_windows": 52,
+ "questions_per_series": {
+  "calibration": {
+   "1": 1,
+   "2": 3,
+   "3": 3,
+   "4": 6
+  },
+  "reserve": {
+   "3": 4,
+   "4": 7
+  },
+  "sealed": {
+   "2": 8,
+   "3": 8,
+   "4": 20
+  }
+ },
+ "raw": {
+  "fred-DCOILWTICO.csv": {
+   "bytes": 16346,
+   "sha256": "80b30019917b154a3bac1d5de25f52d4f6ed3ea031254410b26426f6c6bcbb9f",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILWTICO&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-DEXCAUS.csv": {
+   "bytes": 17323,
+   "sha256": "1a2658fa852acf16c13495e56158bc4e95710b2e8f88dc603415ecb3d057f359",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXCAUS&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-DEXJPUS.csv": {
+   "bytes": 17323,
+   "sha256": "4c41d7928c4495b259b2c671cda1f1ab09271314194639c4d7381386339e4964",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXJPUS&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-DEXMXUS.csv": {
+   "bytes": 18258,
+   "sha256": "1c63a6485dd95112de05cdd6f0ddf056febfae65b988f5097deb20292cc62072",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXMXUS&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-DEXUSEU.csv": {
+   "bytes": 17323,
+   "sha256": "ff32dddbf0a9690fde93aa96877b7fb7e013be5744b47bad9042d4462d71d0d2",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXUSEU&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-DEXUSUK.csv": {
+   "bytes": 17323,
+   "sha256": "9dc650c9de513e5a343b66d79e5d79491125b67fd26ff89755ccac3aa7e865f3",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXUSUK&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-DGS10.csv": {
+   "bytes": 15447,
+   "sha256": "c6fb8475a890ee42202121aafa777de03e9100a9ae90213b107258726921ea19",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-DGS2.csv": {
+   "bytes": 15446,
+   "sha256": "67a0cfbfafcb0b80903ef21b361efc48544ed3eeb10d3a711a0e55db396ca91b",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS2&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-DHHNGSP.csv": {
+   "bytes": 15394,
+   "sha256": "1c2439d55b92a6c989994006b4f9e2dcdc2c3e36f26a865108492f4a17f0aff9",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DHHNGSP&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-NASDAQCOM.csv": {
+   "bytes": 20127,
+   "sha256": "e844d84e1ef87e78a47552a6fa8f01dd953e46b531206abc1a3c704bb87f8bb1",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=NASDAQCOM&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-SP500.csv": {
+   "bytes": 18263,
+   "sha256": "d1c2eb7f8c53ea4d7476512361fca339d11f6424d13bf35c8c801d47610ea191",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "fred-VIXCLS.csv": {
+   "bytes": 16481,
+   "sha256": "9fb543e68d5e48af93e0b539b5a5cd469b80ae42d1437911ff2281be9300dcc5",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS&cosd=2023-01-01&coed=2026-09-27"
+  },
+  "open-meteo-beijing.json": {
+   "bytes": 31494,
+   "sha256": "5e9ea20e46df8b1584cf869f43d4de93c42b22ad4f15fb9756e68c3e91ba68c7",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=39.9&longitude=116.4&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-buenos_aires.json": {
+   "bytes": 31839,
+   "sha256": "38611fd1ac10fd3065b8a21e87a3685e8ed673396958a267b78577c186aa753e",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=-34.6&longitude=-58.38&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-cairo.json": {
+   "bytes": 31738,
+   "sha256": "5c79ce2a25245e94f87f19e659fc4635888429d3f1598c2cca8d2b52f181238d",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=30.04&longitude=31.24&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-delhi.json": {
+   "bytes": 31847,
+   "sha256": "01655b7a724dcc4ba7b496ead2c8f0bb0f87c9f540f9dcec2592d78ee3ee7f93",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=28.61&longitude=77.21&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-johannesburg.json": {
+   "bytes": 31808,
+   "sha256": "a5d51e38340f7dc1fd6207b72964506006f7570ed085aeab4583f58b5aeb40ab",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=-26.2&longitude=28.05&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-london.json": {
+   "bytes": 31560,
+   "sha256": "09c69364c0f9343ce3d4fcf1c50dce3d35f11052f2f8cccc19a394437ad6e934",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=51.51&longitude=-0.13&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-moscow.json": {
+   "bytes": 31464,
+   "sha256": "d5ffd9b44d80682a0922a62ec071a80944dc1446385be6714571f42040253524",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=55.76&longitude=37.62&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-mumbai.json": {
+   "bytes": 31983,
+   "sha256": "327a82b1129d13546b39d26dcab07cbe06129a531db5b4302bbfd19230e606b2",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=19.08&longitude=72.88&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-new_york.json": {
+   "bytes": 31600,
+   "sha256": "abb05596405297e7474c8d5cd20e666671e9f9f26081aac4e4089f9dc67f92b4",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=40.71&longitude=-74.01&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-sao_paulo.json": {
+   "bytes": 31934,
+   "sha256": "3ff7e2742270a475a524c8139ff812f2e5593587b8461212fb2209f680df13be",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=-23.55&longitude=-46.63&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-singapore.json": {
+   "bytes": 32164,
+   "sha256": "d5ebed5310c834c4996645dcdd3622caef9e659de5baf8a00e0e6ab2a0647564",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=1.35&longitude=103.82&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-sydney.json": {
+   "bytes": 31844,
+   "sha256": "932775b222b2ae81ccc9b2e42106def8cf79e8c6185143266f6030930d910391",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=-33.87&longitude=151.21&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-tokyo.json": {
+   "bytes": 31766,
+   "sha256": "7e070239913679690dee73552dd39f31740e7934da09b8e70d952da00d41b368",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=35.68&longitude=139.69&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "open-meteo-toronto.json": {
+   "bytes": 31454,
+   "sha256": "ccd0829cc9deb8d7a744b17de7de88a228f565762905c018914099f51e1c8463",
+   "url": "https://archive-api.open-meteo.com/v1/archive?latitude=43.65&longitude=-79.38&start_date=2023-01-01&end_date=2026-09-27&daily=temperature_2m_max,precipitation_sum&timezone=UTC"
+  },
+  "usgs-quakes_alaska_m3-2023.csv": {
+   "bytes": 405242,
+   "sha256": "bf5cfec02fd2894c6ba479d9c942b452962754cfdd2cc8f5604dcf825dcb411d",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2023-01-01&endtime=2024-01-01&minmagnitude=3.0&maxlatitude=72&maxlongitude=-129&minlatitude=51&minlongitude=-180&orderby=time-asc"
+  },
+  "usgs-quakes_alaska_m3-2024.csv": {
+   "bytes": 362138,
+   "sha256": "05b599e5f67e8238cd5f207fef6b95e5d13aa486bf35382f12816f0037b66873",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2024-01-01&endtime=2025-01-01&minmagnitude=3.0&maxlatitude=72&maxlongitude=-129&minlatitude=51&minlongitude=-180&orderby=time-asc"
+  },
+  "usgs-quakes_alaska_m3-2025.csv": {
+   "bytes": 472176,
+   "sha256": "1675b6c4bd70c8ac7dadb5ec4ba370877d04fbf616e74063fb885ac15056470c",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2025-01-01&endtime=2026-01-01&minmagnitude=3.0&maxlatitude=72&maxlongitude=-129&minlatitude=51&minlongitude=-180&orderby=time-asc"
+  },
+  "usgs-quakes_alaska_m3-2026.csv": {
+   "bytes": 343470,
+   "sha256": "bd458baa022719c66df497e82da5239cee71ce3274058a61c6af85b20efad45f",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2026-01-01&endtime=2026-09-27&minmagnitude=3.0&maxlatitude=72&maxlongitude=-129&minlatitude=51&minlongitude=-180&orderby=time-asc"
+  },
+  "usgs-quakes_andes_m4-2023.csv": {
+   "bytes": 206267,
+   "sha256": "7c78d8693b5dd7c3ea580082be8a966018b66b92011cd4d2d1185cedb6670df1",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2023-01-01&endtime=2024-01-01&minmagnitude=4.0&maxlatitude=-5&maxlongitude=-66&minlatitude=-45&minlongitude=-82&orderby=time-asc"
+  },
+  "usgs-quakes_andes_m4-2024.csv": {
+   "bytes": 201622,
+   "sha256": "74c5d22bf49bb17fecec1612be84f53b0c8a45d5667c8596092d1883a0fdea3a",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2024-01-01&endtime=2025-01-01&minmagnitude=4.0&maxlatitude=-5&maxlongitude=-66&minlatitude=-45&minlongitude=-82&orderby=time-asc"
+  },
+  "usgs-quakes_andes_m4-2025.csv": {
+   "bytes": 195118,
+   "sha256": "376e9611f83c368afbf6d11f55c8243a105e86eda696a53b210cd7f902ddfc75",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2025-01-01&endtime=2026-01-01&minmagnitude=4.0&maxlatitude=-5&maxlongitude=-66&minlatitude=-45&minlongitude=-82&orderby=time-asc"
+  },
+  "usgs-quakes_andes_m4-2026.csv": {
+   "bytes": 130028,
+   "sha256": "b0d4d8d96921571049aaaa315c6512f94ca8ee5d0941885fff8c07418a6595e4",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2026-01-01&endtime=2026-09-27&minmagnitude=4.0&maxlatitude=-5&maxlongitude=-66&minlatitude=-45&minlongitude=-82&orderby=time-asc"
+  },
+  "usgs-quakes_california_m25-2023.csv": {
+   "bytes": 183850,
+   "sha256": "13485322b5e645cadddfb7317a0797f4fe8fc185bb01441ffa85ee58ac4c8280",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2023-01-01&endtime=2024-01-01&minmagnitude=2.5&maxlatitude=42&maxlongitude=-114&minlatitude=32&minlongitude=-125&orderby=time-asc"
+  },
+  "usgs-quakes_california_m25-2024.csv": {
+   "bytes": 267079,
+   "sha256": "8bee1c5b6c95cc302576197b44cff53e03519ae5df62bda0c704db0041e67cef",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2024-01-01&endtime=2025-01-01&minmagnitude=2.5&maxlatitude=42&maxlongitude=-114&minlatitude=32&minlongitude=-125&orderby=time-asc"
+  },
+  "usgs-quakes_california_m25-2025.csv": {
+   "bytes": 236718,
+   "sha256": "10835fd2fd2b5c7697ce3b6764ccc192fee2bd017f1079d051decd9f5d48c38e",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2025-01-01&endtime=2026-01-01&minmagnitude=2.5&maxlatitude=42&maxlongitude=-114&minlatitude=32&minlongitude=-125&orderby=time-asc"
+  },
+  "usgs-quakes_california_m25-2026.csv": {
+   "bytes": 205135,
+   "sha256": "c5305be5c0b667b54b9dfd89150158d5e34f70119c9b6966df615d0bc53d66aa",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2026-01-01&endtime=2026-09-27&minmagnitude=2.5&maxlatitude=42&maxlongitude=-114&minlatitude=32&minlongitude=-125&orderby=time-asc"
+  },
+  "usgs-quakes_indonesia_m4-2023.csv": {
+   "bytes": 414451,
+   "sha256": "bfe6f416ade26ab9b4bd1608e9de25dbafedd5bbef588da7812dbcc05849e470",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2023-01-01&endtime=2024-01-01&minmagnitude=4.0&maxlatitude=6&maxlongitude=141&minlatitude=-11&minlongitude=95&orderby=time-asc"
+  },
+  "usgs-quakes_indonesia_m4-2024.csv": {
+   "bytes": 342145,
+   "sha256": "494586413bd57e408750c95eb3c6a71a610eca68a6c4b7ad4497008a3d1621cf",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2024-01-01&endtime=2025-01-01&minmagnitude=4.0&maxlatitude=6&maxlongitude=141&minlatitude=-11&minlongitude=95&orderby=time-asc"
+  },
+  "usgs-quakes_indonesia_m4-2025.csv": {
+   "bytes": 346847,
+   "sha256": "2393af72652ef36aaafa90fab23b3359033987c72ef6631f04084fb04f6f2a37",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2025-01-01&endtime=2026-01-01&minmagnitude=4.0&maxlatitude=6&maxlongitude=141&minlatitude=-11&minlongitude=95&orderby=time-asc"
+  },
+  "usgs-quakes_indonesia_m4-2026.csv": {
+   "bytes": 461221,
+   "sha256": "85f2307f8a6a6c173251ea99d00eb1c9359851a858303531158a67dda2426c31",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2026-01-01&endtime=2026-09-27&minmagnitude=4.0&maxlatitude=6&maxlongitude=141&minlatitude=-11&minlongitude=95&orderby=time-asc"
+  },
+  "usgs-quakes_japan_m4-2023.csv": {
+   "bytes": 137013,
+   "sha256": "9a5a9cfa0a7176c90c5301ff7e89dd573166e0f9b5f0acc1f9e45b6de9706b43",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2023-01-01&endtime=2024-01-01&minmagnitude=4.0&maxlatitude=46&maxlongitude=146&minlatitude=30&minlongitude=128&orderby=time-asc"
+  },
+  "usgs-quakes_japan_m4-2024.csv": {
+   "bytes": 141720,
+   "sha256": "f6a61821ebfe4c7501f553a4f0c2e2fda2bf122f171464dca7de1ebb7ec03a62",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2024-01-01&endtime=2025-01-01&minmagnitude=4.0&maxlatitude=46&maxlongitude=146&minlatitude=30&minlongitude=128&orderby=time-asc"
+  },
+  "usgs-quakes_japan_m4-2025.csv": {
+   "bytes": 150040,
+   "sha256": "e18bdf8939aa3418530753b25f18ef5f450bb0e2e8f21cb2a7c16bad8e4b02a5",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2025-01-01&endtime=2026-01-01&minmagnitude=4.0&maxlatitude=46&maxlongitude=146&minlatitude=30&minlongitude=128&orderby=time-asc"
+  },
+  "usgs-quakes_japan_m4-2026.csv": {
+   "bytes": 126896,
+   "sha256": "5def5cdf47a70ae5b700896273e173acd0f09d742d9f3f91da95fea6b66cd949",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2026-01-01&endtime=2026-09-27&minmagnitude=4.0&maxlatitude=46&maxlongitude=146&minlatitude=30&minlongitude=128&orderby=time-asc"
+  },
+  "usgs-quakes_world_m45-2023.csv": {
+   "bytes": 1441174,
+   "sha256": "1b8db6a098b40f3755bae736d1d3f27e5953928318b55123c71d20cd4674ff61",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2023-01-01&endtime=2024-01-01&minmagnitude=4.5&orderby=time-asc"
+  },
+  "usgs-quakes_world_m45-2024.csv": {
+   "bytes": 1208961,
+   "sha256": "606097f1b5119a564431555d70de4291cb11e2476c3ab7b83c668942e78eb4fa",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2024-01-01&endtime=2025-01-01&minmagnitude=4.5&orderby=time-asc"
+  },
+  "usgs-quakes_world_m45-2025.csv": {
+   "bytes": 1630225,
+   "sha256": "cf53e71901191e5abf05d3d63d749d2c4580a14b1c0e1d1b1fabbf8478f7cd7b",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2025-01-01&endtime=2026-01-01&minmagnitude=4.5&orderby=time-asc"
+  },
+  "usgs-quakes_world_m45-2026.csv": {
+   "bytes": 1068618,
+   "sha256": "99ce86a78ade6fb6dbf31d512b515b18574433a98a5b7c81a1306d1542951e63",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2026-01-01&endtime=2026-09-27&minmagnitude=4.5&orderby=time-asc"
+  },
+  "wikimedia-wiki_ai.json": {
+   "bytes": 219599,
+   "sha256": "451e37fdf44cf96c1cb1495eb39157d53d6286a3e29f4249e3fca13d9b69edac",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Artificial_intelligence/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_bitcoin.json": {
+   "bytes": 196797,
+   "sha256": "2ac718925e7d62e9b26b61fe3d1c73c1b5732a32fb8276a36140330fe2891746",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Bitcoin/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_black_hole.json": {
+   "bytes": 200884,
+   "sha256": "7f6ec11536eb43aaaa7bb370db40b18ec7a25e3fe64e8df61c54e5e35b1582d5",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Black_hole/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_chess.json": {
+   "bytes": 193994,
+   "sha256": "dfd2e7fdbca559450475135a6b0f7b010c8aef6a58d1560c6ceda0037a3e5f09",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Chess/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_coffee.json": {
+   "bytes": 195349,
+   "sha256": "e6692721cbc57b717335175217679fe122008d7971e278a0c733eae708fc6fe2",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Coffee/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_davinci.json": {
+   "bytes": 210500,
+   "sha256": "2383ce4bea403af769e4e99055e092467f36b1198b741aba6f8605c7abe47f37",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Leonardo_da_Vinci/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_einstein.json": {
+   "bytes": 208917,
+   "sha256": "c819fbf6c50f265fc759870d8a4e2f1a3ab8aa159200ba485969c5e0108d5a02",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Albert_Einstein/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_everest.json": {
+   "bytes": 205105,
+   "sha256": "1c14cc08de14188498de4b1d9a85a28819cd16809f80a1f520285ec462ee4740",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Mount_Everest/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_moon.json": {
+   "bytes": 192683,
+   "sha256": "0e7b505ade308fadb1f26a80fb84c63a996ce2529d4dce41d34a7d051ad56cef",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Moon/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_photosynthesis.json": {
+   "bytes": 206208,
+   "sha256": "12fd24e0e2dfc4b5f79f7ac112f91cf619da271f79850085759fc3fb82a3fb7f",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Photosynthesis/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_python.json": {
+   "bytes": 226806,
+   "sha256": "96f2e6caddbf52802f3fc6fa804ae33d96d17678169c19da75cc30ed4e26a88f",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Python_(programming_language)/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_shakespeare.json": {
+   "bytes": 214007,
+   "sha256": "8615b651e402f0c6ebc280a195573958cd00610b28ba3786a89bef3bfb821ff2",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/William_Shakespeare/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_solar_system.json": {
+   "bytes": 203565,
+   "sha256": "e69d41d518367572a79c239d351821ffff39a997a63ad93d1858c4ea4ffc5217",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Solar_System/daily/20230101/20260927"
+  },
+  "wikimedia-wiki_ww2.json": {
+   "bytes": 204911,
+   "sha256": "6bb8edbd2a84c52fa93d03339688170de493c737506527fa9cbdda62db6be6ff",
+   "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/World_War_II/daily/20230101/20260927"
+  }
+ },
+ "recall_control": {
+  "candidates": {
+   "generated": 3520,
+   "kept": 3051,
+   "not_resolvable": 0,
+   "outside_base_rate_range": 469,
+   "too_few_windows": 0
+  },
+  "count": 20,
+  "dates": [
+   "2025-07-07",
+   "2025-07-14",
+   "2025-07-21",
+   "2025-07-28",
+   "2025-08-04",
+   "2025-08-11",
+   "2025-08-18",
+   "2025-08-25"
+  ]
+ },
+ "recall_control_file": {
+  "path": "recall_control.json",
+  "sha256": "289e326ac7f48e631ed41fc3d9091d41d5e69f75e7861e748fe20ac802cf5e12"
+ },
+ "resolutions": {
+  "note": "outside the checkout; never written into a workspace; pinned in card 022",
+  "path": "~/harness-sealed/022/resolutions.json",
+  "sha256": "bc4a1221a4d7e56fad672f89e91a940ef1bcac561fb1f1da4e2e342529a55826"
+ },
+ "resolvers_sha256": "744b1d7b5c5fc734e28e8c45b5d78c84aa5b8400349adc9c9ac9ef5df23703a6",
+ "seed": 22,
+ "selection_rule": "v2. Candidates: every (series, T, template, horizon) the series kind allows; T = the Mondays 2026-07-06..2026-08-24; horizons 7/14/28 (count: 7). Keep a candidate when the true resolver over the weekly past windows ending before T, on rows dated history_start..T-1 only, has >= 52 windows and a YES frequency in [0.2, 0.8], and its window lies within the fetched data. Splits are series-disjoint: with random.Random(22), shuffle each source's groups (a city's two weather series, else one series), interleave the sources round-robin, give each group to the split furthest below its share of the series (40:120:40). Then, same generator, splits in order calibration (40), sealed (120), reserve (40): shuffle the split's pool, group by (source, template), shuffle the groups, take round-robin; at most 4 questions per series, whose windows [T, T+h) do not overlap. Recall positive control: the same filter at the Mondays 2025-07-07..2025-08-25, 20 questions, one per series, random.Random('22:recall').",
+ "series": 60,
+ "series_cap": 4,
+ "snapshots": {
+  "snapshots/2026-07-06/DCOILWTICO.csv": "663b83cf945d493cda86119fc45ad18fe6fa0e6108900b41460197cd86f8c046",
+  "snapshots/2026-07-06/DEXCAUS.csv": "cfb620fcc733fcb570c35c351493f01abb93927ac9183f5196cdc089bec8fcad",
+  "snapshots/2026-07-06/DEXJPUS.csv": "e966e2643261044c9e50cedac4d94c23a0ef2b45e78ac7cfff6390c779ed2934",
+  "snapshots/2026-07-06/DEXMXUS.csv": "af365950f350aa67be2083066a100ff9fa2a6c29bc1060b1bb96e2f9a019dc2e",
+  "snapshots/2026-07-06/DEXUSEU.csv": "c220e60386658306633bcf10353be264865f289a86aa5d5687a0e9c8ebb20025",
+  "snapshots/2026-07-06/DEXUSUK.csv": "32cc53e903cdf5979853aedce3757d2797109fffa2a1d25aa7632b9e3288b08c",
+  "snapshots/2026-07-06/DGS10.csv": "7449e759ef9e81606b8988ae581b41f4e3867e05d9064ecfe34eb2f3fb52ff72",
+  "snapshots/2026-07-06/DGS2.csv": "c2d7cc7e8599f562ca076714a9d27d414f2b4c806fc8e93e3b66f13bed29ac4a",
+  "snapshots/2026-07-06/DHHNGSP.csv": "c7f7e77a3bdeae6265ca165780f9965b92ae87f5b6ac732ceaedf0b022c6efd4",
+  "snapshots/2026-07-06/NASDAQCOM.csv": "7df4e68e4f25a7f66cfeb0e8b9d096144bd5f712ff41ecb832b4d29b673fed69",
+  "snapshots/2026-07-06/SP500.csv": "bd0234952e614556a5ecdaa8e41e3935d681ce143bb3aa67b01112387706fd9f",
+  "snapshots/2026-07-06/VIXCLS.csv": "5a9a70b414f9191c8bb3e4ef87b0adb82b22f5b48bea1271e27bf7d6842cd544",
+  "snapshots/2026-07-06/beijing_precip.csv": "821958a2ed512bd644be302a3dd5348cb386c76c34fcaac6945c2cbd871683ae",
+  "snapshots/2026-07-06/beijing_tmax.csv": "fb072305c9973d43b40e485d8e07e39e85724caaa83be9099ef63618c44760e8",
+  "snapshots/2026-07-06/cairo_precip.csv": "dea839651914ede535f1766104b6efa90780b23e485be003dbb316c2c1865766",
+  "snapshots/2026-07-06/cairo_tmax.csv": "eda5715a34a628e0bd09bd0a4a7cc70d5da70b02c99a8c743f23ee0b77cd27ad",
+  "snapshots/2026-07-06/johannesburg_precip.csv": "b58570db2c8d165b06f231b6cd9cb6be1202833959919b3d4fe6e769a00878e5",
+  "snapshots/2026-07-06/johannesburg_tmax.csv": "f02a8c6ca81b4d78fbc015bb08fb46d96b22045194dc0a47bf64b20241d8184d",
+  "snapshots/2026-07-06/mumbai_precip.csv": "c887ac55ed9a3450b35f88dd4c945b18d64a8ea576897e41284cc96d8a319a8d",
+  "snapshots/2026-07-06/mumbai_tmax.csv": "55a22e6e29361ec1beb8a6a7379b473e9c1107414b56545f8c658d4862148117",
+  "snapshots/2026-07-06/quakes_alaska_m3.csv": "bb875267e866ea09cabdf8a4b5f3116c51c3ed08c14fcc16720040ea7d3c79be",
+  "snapshots/2026-07-06/quakes_california_m25.csv": "3bab23388cdc2463e1ef7c210861dd92aa0d6825c7bdc90479ba21e51dbe1966",
+  "snapshots/2026-07-06/quakes_japan_m4.csv": "dc3868b44a39ff4b2d8b603e9294d4e25bdadbc1d5c2631b44914f575ee8cdd2",
+  "snapshots/2026-07-06/quakes_world_m45.csv": "882a6b408ab2a4884c118b4a73fdee2946217be279c4b88ae4be1018d2907896",
+  "snapshots/2026-07-06/singapore_precip.csv": "7b7fe766d1b3a98fa1af00fdc6576e2a52c2e58a246bfe14cfc8bacdca3de67d",
+  "snapshots/2026-07-06/singapore_tmax.csv": "8e3c008359d5c77b6f5c81aea48fc0ecd1e742d15709d409ff52e07b26bc15e1",
+  "snapshots/2026-07-06/sydney_precip.csv": "1a4b598372f7e1d46e09681ad484308b8d33e8d48beb0b71eba33ac17b885f42",
+  "snapshots/2026-07-06/sydney_tmax.csv": "e2f5e71d4dc63e224d07ee068853e73a26085a0eefb4315943f9c76b3fd2898c",
+  "snapshots/2026-07-06/tokyo_precip.csv": "91adaa15e9488b92f59577614c0e9b3211c40b43f5c4715b4455b1d550ceee67",
+  "snapshots/2026-07-06/tokyo_tmax.csv": "4097e57825a663b034bf6aacd1243e15bb6f752f5c190b5af22fdfbeba3b4e3e",
+  "snapshots/2026-07-06/toronto_precip.csv": "a90280b0b6b410e51d506e7ea21cb678c14a57a204d830c3f79d414b4a4895a7",
+  "snapshots/2026-07-06/toronto_tmax.csv": "c5fbeab821b375f8653586a721ec9b4e83144b33ba3ba347497be58eb12833bd",
+  "snapshots/2026-07-06/wiki_bitcoin.csv": "8c2231c01ce93b337fea21856ac80a04134ccf92a51378b29908ddb4e16ca877",
+  "snapshots/2026-07-06/wiki_black_hole.csv": "7a5671499644f500b9491cb2079857af448520f3b78ca462b2010e15d71f4873",
+  "snapshots/2026-07-06/wiki_chess.csv": "9491c56390cb931889275fc70bba14331af0e6ba37724f1bef51e49f44849cd9",
+  "snapshots/2026-07-06/wiki_coffee.csv": "5a85610ce78b156c898bcfc682415148739da46ae325411e1e11b8821b51a017",
+  "snapshots/2026-07-06/wiki_davinci.csv": "ddecd85d11fd1c0d94aa27c1c9920403c270d20a86bcb04a5a23338dc78d2f9b",
+  "snapshots/2026-07-06/wiki_einstein.csv": "f311b2c1d5f2ec40f63bc350558576acf3a0ea224b2894ebc2351fd6498aba12",
+  "snapshots/2026-07-06/wiki_everest.csv": "017dec1b0112b4eff531c4dd61046283e0b5bc41167fdc0db816e7f3a75297e1",
+  "snapshots/2026-07-06/wiki_moon.csv": "37b9e0546ff07d898388576101fbd3a8d49a29606cc1ed2db626dfa64c94da50",
+  "snapshots/2026-07-06/wiki_python.csv": "28431cd92ae506b555872b7e98cd555ab53cf64c11c1689b742ef5994fd03828",
+  "snapshots/2026-07-06/wiki_shakespeare.csv": "856245dd6bb0c7f236c5e77bdc1cb246a50baddd379e3ef9bd8cf00bb8d34c48",
+  "snapshots/2026-07-06/wiki_solar_system.csv": "81e069751df5d0a8d475fcadce1cf74a1e4205a3ac7f86b27bc67ffe51d686f2",
+  "snapshots/2026-07-06/wiki_ww2.csv": "6bb25bb3e49d55c08caba2120203afd911a8ac7cd22dba138a50c50496dc6b9b",
+  "snapshots/2026-07-13/DCOILWTICO.csv": "11c60c8a899bbd6eaa87843c9a86c0367706f22026497fa0207a091574f2a617",
+  "snapshots/2026-07-13/DEXJPUS.csv": "8bebe7437461ab326487b44f4a441799237e58a5470af8494bdab39153b05dd8",
+  "snapshots/2026-07-13/DEXUSEU.csv": "e6498119114144d4d29828e74f428c16db15006960b72fe31d4415674ef8b9cc",
+  "snapshots/2026-07-13/DGS10.csv": "fec9a491db41961c36953cf27d7546eb36d6ee44e04a733e2d14f72945d9ac40",
+  "snapshots/2026-07-13/DGS2.csv": "65d91089d99655166895f7476f4367dbbd6fefc06542b58dbea37bdfc4d5f4c6",
+  "snapshots/2026-07-13/SP500.csv": "404aae45f18f0f5f0b2078ac8f59927a3b4ce6168ef5b640832bdba15cdd0f3f",
+  "snapshots/2026-07-13/VIXCLS.csv": "853d48179fc96740992a01cf05f1876538608e44573a6dcaf6e3985780fdbe0d",
+  "snapshots/2026-07-13/buenos_aires_precip.csv": "e280fe934adc318852d7d7c260470b66ab4c37a67c452ed1b8d1ca661d57a0aa",
+  "snapshots/2026-07-13/buenos_aires_tmax.csv": "2c8c8f60f732b68ea1131917c79e1eb62ad91b8c0a875a963ad1714db31da8c4",
+  "snapshots/2026-07-13/cairo_precip.csv": "8c4701a322f992203d77c6570c89a712a20aeb3f9ae7d08be3463a8d23cb7e01",
+  "snapshots/2026-07-13/cairo_tmax.csv": "fdcfddb33d812d5508fe5d17114df60cebce0711aa985b5239183ae05523df6b",
+  "snapshots/2026-07-13/london_precip.csv": "38d175232e6781d45357109ce0fc26dc8dcb07531ec6713592ed4dc3d4b0b2ab",
+  "snapshots/2026-07-13/london_tmax.csv": "1e4344061622544d0333e1a43c0a34e5d78ffc945bfe4c2f5b3f2cfabe87e6b1",
+  "snapshots/2026-07-13/moscow_precip.csv": "06c518e5de586fc6ae014d8e91b479307b296a6b4c7e1dc4a5e8d9dd414c9c5c",
+  "snapshots/2026-07-13/moscow_tmax.csv": "2a5070e7ce6ff7d9744ec7efe8bbba63adce2312b7048c408e46a21c57109f2f",
+  "snapshots/2026-07-13/mumbai_precip.csv": "e1b563f9936f93d7a1f349ad41aff9e9a5cb888461d3cf746c406d5165ee0cff",
+  "snapshots/2026-07-13/mumbai_tmax.csv": "43c7bd82abf4569dbe0f97a2513c05b1eb6dec85ea88748e0ed32982de773a90",
+  "snapshots/2026-07-13/new_york_precip.csv": "a78f4d398d221d547982e4c78e314e58884a208f7fa9f09ca367fe440766374e",
+  "snapshots/2026-07-13/new_york_tmax.csv": "af27cc6f2d8516d8838d01daf5d09b1f99534fb879238f205120cee05314c577",
+  "snapshots/2026-07-13/quakes_indonesia_m4.csv": "0175dccfeb605fc9c110382a0d5decd8f1bedcac0317de7c3dc092e27e5c1210",
+  "snapshots/2026-07-13/quakes_world_m45.csv": "c281d342a8ac1c73f057436bd2d7ef706449d567ca27f186666fb4bd32eafa06",
+  "snapshots/2026-07-13/sao_paulo_precip.csv": "6ac91d2062ebdd199ebd3f382cc42993c29be06b1b33be0bd0a75b842c154fcd",
+  "snapshots/2026-07-13/sao_paulo_tmax.csv": "0c801af3d22ee441737451ed4265f1e4351845cb643f824d719c2a7cdb5c9b5b",
+  "snapshots/2026-07-13/singapore_precip.csv": "8621aea1ec918fccfb46a2080989f5562db9549f647f1198dd6b2d7257855af3",
+  "snapshots/2026-07-13/singapore_tmax.csv": "f04564f6a6c7821ad25992f7d15e020113482881771af1336b0ca372d7537343",
+  "snapshots/2026-07-13/tokyo_precip.csv": "d87b3c5c229166c43ae8c0664d8e36fe0c9454533539df81a0fd59a6338da8ef",
+  "snapshots/2026-07-13/tokyo_tmax.csv": "dff86092a91f73054481f0722cdf481a777e509425286d09d68c774a2caa0159",
+  "snapshots/2026-07-13/wiki_ai.csv": "cf842d89dc2185ebbf1a164536332a00121861b32bd0c44533d6fff77f94d1e6",
+  "snapshots/2026-07-13/wiki_bitcoin.csv": "fc0da2bea106b8f6a864fa8244ac134be70b5f3e92cfe50bbcf8e6c9e77fe6a5",
+  "snapshots/2026-07-13/wiki_black_hole.csv": "8f2241a3a6f472826eab7a9bee88b6ca190679ed3eac6f28a838d4322040bbdf",
+  "snapshots/2026-07-13/wiki_chess.csv": "40f4ec59ebc4e7c38e3f3c7d5c20b926df394fb2c0040661d8508ede37b9b0d9",
+  "snapshots/2026-07-13/wiki_davinci.csv": "319742241f5083f6a7cdb66cf7375a575c1da6d0cbb808e468f25b10d67138c3",
+  "snapshots/2026-07-13/wiki_einstein.csv": "89dcf030a33a4974a179b86c4a401eee8bfaac280215491f9e5ea3d39f7d639d",
+  "snapshots/2026-07-13/wiki_moon.csv": "1e1bcde11bc0351dd6c1ae446c0ec1507cfe631d90210ff8c41680169be2a116",
+  "snapshots/2026-07-13/wiki_python.csv": "01e07af6910178485b2da605ec251bdcd93189ef90219573cad4fb8648b070b9",
+  "snapshots/2026-07-13/wiki_shakespeare.csv": "3d66bc345100a2ee158962dbc9fecc6d2eb0632d8d6a326e9110cb683a24e395",
+  "snapshots/2026-07-13/wiki_solar_system.csv": "cb364a9ce9c6d380c63a29483c390db09fc31a0c2381d8244a56554aa6c7100f",
+  "snapshots/2026-07-13/wiki_ww2.csv": "ea3c86d2b6130860c36b0f57ccdcf2b066b05e3b0dc70378cfcd0ed1fea6b89c",
+  "snapshots/2026-07-20/DCOILWTICO.csv": "7e9af5e91d10f73790eac02267b33d8e94a4fc8fa1b01bb3739c03d3427f457e",
+  "snapshots/2026-07-20/DEXCAUS.csv": "cab5ddbfe992779658b7ac4ab4c22ad80cd7a52c82f1648d69b3bb8fa445d00e",
+  "snapshots/2026-07-20/DEXJPUS.csv": "4ea1846a9cd3c108ec0623a50aadace206a17326f8a5ab3f4894ad28e5eff7cb",
+  "snapshots/2026-07-20/DEXUSEU.csv": "891d807e6e24264b6eea8dfbe50e13bcd1a710afc23c01a57c965a172b099646",
+  "snapshots/2026-07-20/DEXUSUK.csv": "95550cb8d7580c21986e5016c98a26dbb272f8d79de49dfa55e73677bad8fe6e",
+  "snapshots/2026-07-20/DHHNGSP.csv": "794fcd873b25a05fa4c792d8baa37b4c4c5faceaafde11bad0d93d0a5e8eb593",
+  "snapshots/2026-07-20/beijing_precip.csv": "20f28e59ee47b5daffedf89d24b489cc25648aa9ead6c7a94df2ffccc6f1e6aa",
+  "snapshots/2026-07-20/beijing_tmax.csv": "5a53f02ded38db6a45d339e09743652d269cb61bc199f03500e2e09157cf127d",
+  "snapshots/2026-07-20/cairo_precip.csv": "f158fb520aa80ac3a458a8a6fa8581a905e6f93b79c0f4c7a89a6493dfa818ed",
+  "snapshots/2026-07-20/cairo_tmax.csv": "2fb52190fad8b96ace8501fe2b49fa2a4ed59a3cb03f56d3bf9c9815265c0f11",
+  "snapshots/2026-07-20/delhi_precip.csv": "81d9342ddac30ed37d003c1d8da5d9e68457b04d98d9eceb8cf45dacea6c42c9",
+  "snapshots/2026-07-20/delhi_tmax.csv": "012da0ad0a397166e684a82ce284a66e5b55ceddc30d623575729a28dddbc72a",
+  "snapshots/2026-07-20/johannesburg_precip.csv": "5076d48bdb15a8348e1affd4adb0540abc3863d9972db7c40ba838f21c74c790",
+  "snapshots/2026-07-20/johannesburg_tmax.csv": "cccaf2820c79593ec3342d63a08417cbbbcabb3c066626bebc00900965f036f8",
+  "snapshots/2026-07-20/quakes_andes_m4.csv": "2fc895b53c69b964d4b039974e38f2f20c7a6ce75322458bcf8bdeb0b75a4f4f",
+  "snapshots/2026-07-20/quakes_indonesia_m4.csv": "c24d64fdbdd76661a872fa34b5afcb91a29fd3edc2ba9c30c2e0c16772995f13",
+  "snapshots/2026-07-20/quakes_world_m45.csv": "a8b7ce3a3a522b1b27aa1f829ef95fbd9f913daf9da36de53cff008c1f9cac92",
+  "snapshots/2026-07-20/sao_paulo_precip.csv": "7023a6eac79dcc40125336cb9910bd35994674d3c931c06c32314fdea839ce2e",
+  "snapshots/2026-07-20/sao_paulo_tmax.csv": "672391b21a820472ed024111e586150bfc6a3e44760c024c7c36907d2414405a",
+  "snapshots/2026-07-20/singapore_precip.csv": "93ec6161de93122edfe0a4c8c52535a659b270619abae24473ecd0cdf45ecc39",
+  "snapshots/2026-07-20/singapore_tmax.csv": "24fec0d96ccc38fbf5d0705b5fd873e802fa5b99a36304fc0db6b1958fa1b5d0",
+  "snapshots/2026-07-20/sydney_precip.csv": "16945636128f5ad3f65d43b3cedf94c5365d7ff29bb4619caf3b1efe771cfd65",
+  "snapshots/2026-07-20/sydney_tmax.csv": "1f6ebc201889e78c007f30770ea1f333c8214b01898aa77746abac9d45054c7e",
+  "snapshots/2026-07-20/toronto_precip.csv": "553b4ca370d681f513c4672b8d3c512990f2fa73460f9481b7ca475e1b88d298",
+  "snapshots/2026-07-20/toronto_tmax.csv": "619aad83318660e7117ac3468467921eee05e8886f722630c4192fcd85d36005",
+  "snapshots/2026-07-20/wiki_ai.csv": "8740a963d12de1d757eaa89aed9f0b46489ba5bcdc0cb3bf7dce62cef7d8b74b",
+  "snapshots/2026-07-20/wiki_bitcoin.csv": "8fabf45e9e21d0f36d76a55534006f4b267d3330811e9aa6ae7f4cebab4a1f87",
+  "snapshots/2026-07-20/wiki_black_hole.csv": "a0438b46d5352aa7021b7e92868528b4f416d5bdc72dcb4f3e0cc9fcec680e8a",
+  "snapshots/2026-07-20/wiki_coffee.csv": "c6181c36801073b0992fbf5614e813c11269643f145de616b63e817865aedf3c",
+  "snapshots/2026-07-20/wiki_everest.csv": "3bef94e2bb6574516fdaee69d6dc223071dc8ccfb1edbc273931a00241a50725",
+  "snapshots/2026-07-20/wiki_photosynthesis.csv": "98271af140b239afb12dcc1dd9a60ab00084f23dc4df2481fff2a34c56fdd102",
+  "snapshots/2026-07-20/wiki_python.csv": "d5abfbfc976039d8905a4969ab9b56d55de65f4fd17c44268b9e87d98faadbc9",
+  "snapshots/2026-07-20/wiki_solar_system.csv": "6b16edcdbb5a145678dc30b80106e18cbde48728a7851053f2946e94f5e45357",
+  "snapshots/2026-07-27/DCOILWTICO.csv": "71b147d720dda8aabfe7562d5ce55136ae4e4dfece0221206bac1abbb6377b86",
+  "snapshots/2026-07-27/DEXUSEU.csv": "8e5f07619199e8a8171090d5c1f2d7b35760d3d48d1945ff7bddbe18befe0f2a",
+  "snapshots/2026-07-27/DEXUSUK.csv": "bc9aecb3057c4adaa6b27ae8fd7940bf258c96c950e3c7484bb025ef120cd1ca",
+  "snapshots/2026-07-27/DGS10.csv": "57a6a37de15675c21fc33bcfa2a5c7dcaffdd792a10075215683f3166a4b4e76",
+  "snapshots/2026-07-27/DGS2.csv": "5fc30b3460b8884c17439d655859afdef4b0642136de054a901d9b5625d5fa89",
+  "snapshots/2026-07-27/NASDAQCOM.csv": "a25b6ecc49f91870bac76751244c40386c37b6b4f71e1d39571ef52efe6be686",
+  "snapshots/2026-07-27/SP500.csv": "6288d82e15fa5e98acf1226c2d5eeb7cbc9fe6808c472002345c67a785f9543f",
+  "snapshots/2026-07-27/VIXCLS.csv": "af7ea64ffc10064a300a20a20a82d53fb479088d4ff18138c40d6620fd019228",
+  "snapshots/2026-07-27/delhi_precip.csv": "cce49ceac63abf73381a2e919cb83a87739ec500812ec031f94a64a86e191b2d",
+  "snapshots/2026-07-27/delhi_tmax.csv": "57c3ed0e55a6a1734cf764e1cbef6e993995c44deaa71bff76851ab13e1540ae",
+  "snapshots/2026-07-27/johannesburg_precip.csv": "8220d8199b98d263d03d2c4cf3b40a272af223bf4badb1ee67831101789290bc",
+  "snapshots/2026-07-27/johannesburg_tmax.csv": "d04991d8138d0c89973e2e9adfcf3fecedb984cd475ceed770105f1ad3ab478d",
+  "snapshots/2026-07-27/london_precip.csv": "3d260820f4cfd1c84b33f6ba41c23ab8aa77e2c77fe46b3792ee0d19d0cd33b4",
+  "snapshots/2026-07-27/london_tmax.csv": "951d0718a0ead7683ed17e811d5ab0d7e868c663d63187cf6d405142fafcc8d8",
+  "snapshots/2026-07-27/moscow_precip.csv": "316acb1bde8165cc92ba4d746ba2e3e436762554a58841d35da6e0d48920b519",
+  "snapshots/2026-07-27/moscow_tmax.csv": "c6ce3ffeae3b1e7fb76452db574c61fb3dfd4ada108b67d5eabb261b3f6f2db8",
+  "snapshots/2026-07-27/mumbai_precip.csv": "d125097dce687309a08fbad675bf030b67b2eb53d0fb8fe9bd18f2062d348cb2",
+  "snapshots/2026-07-27/mumbai_tmax.csv": "714b3d1ddd4306669124352798451fb662612cdd38b954240ec7f578574b712e",
+  "snapshots/2026-07-27/new_york_precip.csv": "deb6b0bd8f21faddd56900013da2b7135e7154768837e82d256f09331883ae46",
+  "snapshots/2026-07-27/new_york_tmax.csv": "cb4aec23919859dab810583fb4f8f3268d935bfa9e7eb18c3f1412a96f81a294",
+  "snapshots/2026-07-27/quakes_andes_m4.csv": "88911bc737f36932714bf99b573a29a61eb8c4343ec28956f4b9d58f435f52ef",
+  "snapshots/2026-07-27/quakes_california_m25.csv": "92808cb9dfd7401c2228ebd5abfcf959a70894dbc5d3b7178ac38c63c45abede",
+  "snapshots/2026-07-27/quakes_indonesia_m4.csv": "01be6385284b2ee05738b4679d88fc66ecaf6482c8585660e50cdc24937c8e59",
+  "snapshots/2026-07-27/quakes_japan_m4.csv": "7cc22cb397d99c445d4b4d5ca4f4c6a9963feaf6ad2473e3d9fdfd35591f940b",
+  "snapshots/2026-07-27/quakes_world_m45.csv": "1cb8a3a237eef8780b4e4036e09a5d88f6a338b94fff08c49eb87c4e5b4b86d0",
+  "snapshots/2026-07-27/sydney_precip.csv": "f4189ae772801e75e39b827b2af6a446499bda9fb3351f4905fe6e3c6558720f",
+  "snapshots/2026-07-27/sydney_tmax.csv": "c8aa981ceffad6b824c00da55f8751bd3f2bf8f2216509f3a37e9d63563971cc",
+  "snapshots/2026-07-27/tokyo_precip.csv": "00f0a6fe6759b4230821498267f1b2dc67b888e00684e646390fb20917f56de8",
+  "snapshots/2026-07-27/tokyo_tmax.csv": "4dff53687810be34d104e31b51cb24c5ed31fd1e10e9e8bf74657d4810e0b3a5",
+  "snapshots/2026-07-27/wiki_photosynthesis.csv": "665323638b5fe6062e0f6e1cc0f8d43c10605008590b18ed99ac1f313ab3bbbb",
+  "snapshots/2026-07-27/wiki_solar_system.csv": "ffe54737f0523fae54681354840e7009e47d791e7db7afb62df877260a681ab3",
+  "snapshots/2026-08-03/DCOILWTICO.csv": "69db57f8c4f1eecae5f4da8a71f7b3f57d3e03d19d34c05f9ef24d3ccf064492",
+  "snapshots/2026-08-03/DEXCAUS.csv": "803a27baeebe7579b76a0f4b4abfe4c7c38d7c26a820ced62b545852bfc88a25",
+  "snapshots/2026-08-03/DEXJPUS.csv": "7300c5f582e9123f5b8309b628a4f21c4990b7835550ee69ec826604811bbcb1",
+  "snapshots/2026-08-03/DEXMXUS.csv": "4a2fbd8c3c8f8b4e716a0479b4c8f99dcb30792b11755e6ae7f0cd0d6c6f104f",
+  "snapshots/2026-08-03/DEXUSEU.csv": "5eea1a7e7df6c045229eb4ec163e3924fb99e9c8e48ec1bbea2c183cc8fd96af",
+  "snapshots/2026-08-03/DGS10.csv": "945741d085dbd39ff32fd0c48b01f9f22dbb75292321166069fbb00e88d400c5",
+  "snapshots/2026-08-03/NASDAQCOM.csv": "17f279b4e8fe1d629f1d1adbd7719fb55c06b09456f2d540d1829825fae736dd",
+  "snapshots/2026-08-03/SP500.csv": "912235ac4deab07e912214346e1688e6adb15e81f7b166b9c5e81fd8fb6e6b80",
+  "snapshots/2026-08-03/VIXCLS.csv": "9ad480ae71789f7e3ffb4f152a8a8105814380bf5a4a3ed0a4f69a87250085e0",
+  "snapshots/2026-08-03/cairo_precip.csv": "957ad18d4bc75ca04babde53f25c641711251628bff985d8b2d9fb04d539f7e7",
+  "snapshots/2026-08-03/cairo_tmax.csv": "49cac6d12304249b8f37b1616d9de8664b368dce27ac05839e1809eae3b009f6",
+  "snapshots/2026-08-03/delhi_precip.csv": "b639f1563faab7017048a4c0f37b1163f49f0e2d460a9a5486926c1ff0d26437",
+  "snapshots/2026-08-03/delhi_tmax.csv": "c6f8ac099944d2dbd49deb383e2e701cd059e07837519d1427d0b3acecd48e15",
+  "snapshots/2026-08-03/london_precip.csv": "9abafa9fc3327b8b05b0ea1faf9c4e23ec4e53aa2137032592eb68eadd6b047d",
+  "snapshots/2026-08-03/london_tmax.csv": "30df097978d0cbb78f7046aed11c1fadc41cec8645f7ab7cd86ae45dc5f01a6d",
+  "snapshots/2026-08-03/mumbai_precip.csv": "3b59cadd40da55c19074f95cea742b8b43bc77590505beff6e5812e113e66c22",
+  "snapshots/2026-08-03/mumbai_tmax.csv": "f7f910339d9e8ff03d1de5df9b924ddf4dd21dacd8a596d5328d70283050af65",
+  "snapshots/2026-08-03/quakes_alaska_m3.csv": "70bc2144b1b853c8189d4ed5d4c9917bd753350846985130736b21b8f06925e7",
+  "snapshots/2026-08-03/quakes_andes_m4.csv": "6481cb7fb16338c37b3fe4c23f3b9a9c5c2357e09f43ff0519bc38ce1feed03e",
+  "snapshots/2026-08-03/quakes_california_m25.csv": "eac556f78e8ca29f3b62641faf8d2551ac4ac79ed3a8788693abde42b55ab72a",
+  "snapshots/2026-08-03/quakes_world_m45.csv": "a90b00b7e79b44cbd0ea438271c0cd3362ee8be6dfb4324dbc7e790042a082b2",
+  "snapshots/2026-08-03/toronto_precip.csv": "69855213c9dcb6172be1cee230c0b414e9a135ba37ba31f82a3074c780fbcf53",
+  "snapshots/2026-08-03/toronto_tmax.csv": "d41626685034f6bb8a8d5f2908186d72a710b7ddca7c76544a02dab6bf9b2a04",
+  "snapshots/2026-08-03/wiki_ai.csv": "2b7d1809941503f907e21c4509fcfb96a260da1e4bd3387d3f0f90b9d0415659",
+  "snapshots/2026-08-03/wiki_black_hole.csv": "2156d6cea71853e1f3ddc569c7789d6a85331ec4d06a2d78675b228ad288f156",
+  "snapshots/2026-08-03/wiki_coffee.csv": "5d9c4c0ea91ee290f00f2962bbe30ac53e6eccf8a927b09bbfc801d53330c97e",
+  "snapshots/2026-08-03/wiki_davinci.csv": "29f603ea5f1b37784d2139c8e88be49c153b326e8144a601cd86310eca60cf21",
+  "snapshots/2026-08-03/wiki_einstein.csv": "fbf050734f0be722ebeb57b475cd17cd758d7a2421e5dc26261cbdda6c0f7e91",
+  "snapshots/2026-08-03/wiki_everest.csv": "17e22825149a01ca16f707ecb1d39dd34cb008878e80a93e1db91b0df55134e5",
+  "snapshots/2026-08-03/wiki_python.csv": "d94fd8042ba299aba191dbacb4df0629930c766c64e331341d66bb69e9e94f0a",
+  "snapshots/2026-08-03/wiki_shakespeare.csv": "24e84b387339e5400d9e31e5d4a3d90123d7ba28c7bc22df06453074c94f1431",
+  "snapshots/2026-08-03/wiki_solar_system.csv": "3a5595979c4f4010a64185503b2b385d81e38b72b7b9884a811eeb811f1b8fba",
+  "snapshots/2026-08-03/wiki_ww2.csv": "38ed24cc6d76a66a7d4ee4cf18c2bc4f1481911d7fc5bc69ac637db08db85ca5",
+  "snapshots/2026-08-10/DCOILWTICO.csv": "48fb48125459cac49d8925ba0bcc06f938d87903ddd657d414ff5e573aa27c15",
+  "snapshots/2026-08-10/DEXCAUS.csv": "b35768ea8359a38b5907b9eb49e4280246c862450023d0423efaf1705d7ec3ee",
+  "snapshots/2026-08-10/DEXJPUS.csv": "5179653053221647b8d0d5e25a753e845ab1c5185e8cd964774f3e5cf789fa3c",
+  "snapshots/2026-08-10/DEXUSEU.csv": "6b6470caeec2be264a8dd4d1fea682a2b2bffb7272a2e1e9ab8e0afc628fc7e6",
+  "snapshots/2026-08-10/DGS10.csv": "7d4966db2855c6394eac7c5100e8fd6c36dab7206a8ab4787ba828df5b89a40c",
+  "snapshots/2026-08-10/DGS2.csv": "58c2516b6213fbeb7b234858f78d06ebd1d1f262997cd46a765b105c77d93208",
+  "snapshots/2026-08-10/SP500.csv": "69bb8d1791b3802506b0ff6814a695e8cdc481d08f61b93dc6b8e722e53fca81",
+  "snapshots/2026-08-10/VIXCLS.csv": "16ff8e8e2ece052be9d591695a2315c5d7566f3eccf71ee6d842cbe9e3ffc12c",
+  "snapshots/2026-08-10/beijing_precip.csv": "f42152c01f58b8eee3c52a0190aa6bd71cddbf909f7c8c13045510c785ae3dd2",
+  "snapshots/2026-08-10/beijing_tmax.csv": "4c5cf60ebdeb78ec7b85ad6d939d3970a1dcadad14ac56532bb44098ed3fcb7a",
+  "snapshots/2026-08-10/buenos_aires_precip.csv": "87e4e6aac7fdaf4b358d3f6f14817cf22f2dac76c284027f121ea8c9133752cd",
+  "snapshots/2026-08-10/buenos_aires_tmax.csv": "139455832252849ecf63e9cfc533b7dc0e1d8455c443551dd393125cce339277",
+  "snapshots/2026-08-10/johannesburg_precip.csv": "772163775653bbea269de5e9bc01bd8ca115ad954938de2ab767da38c87e67b9",
+  "snapshots/2026-08-10/johannesburg_tmax.csv": "c1ca76b846882363bd3ee3762a6e52b86f65ca8c611f635e058c5ae31d0f2681",
+  "snapshots/2026-08-10/london_precip.csv": "d6a389f85399ef1c7eed53c28cd90bce80c86a2eac9527465cd6f2610b6fd6c1",
+  "snapshots/2026-08-10/london_tmax.csv": "28d8273c5218b43e9f683dc0db6f976c0b8edd13b0f8658b4deea21e972335b7",
+  "snapshots/2026-08-10/moscow_precip.csv": "c9c73a5bbf35caec35a75ab872187bb0e035bfb73191376284bc20aa9559e1d6",
+  "snapshots/2026-08-10/moscow_tmax.csv": "d1a6f3a917cc18b3e2287b63c10b8cf7f6272c182775944a138014ec07c2e84f",
+  "snapshots/2026-08-10/mumbai_precip.csv": "a3771275c90d7db912603f6a332dee4bc6d990f1085cdb1d2a99746877d51944",
+  "snapshots/2026-08-10/mumbai_tmax.csv": "c1fbd7344f634f4e147f967616e2992bbeba1eb5bae6d0e129aafd9fb9883e5b",
+  "snapshots/2026-08-10/new_york_precip.csv": "a5920811c7e1d959a6ea386ecb273bf752e7a2639eae930e79dddaef78b9a5a6",
+  "snapshots/2026-08-10/new_york_tmax.csv": "550bf859a74de20cf682f2b518943e6e4c718e7c75517217015ed83455a88b25",
+  "snapshots/2026-08-10/quakes_alaska_m3.csv": "e7c9e7846d49821930b3e142d4267d1e0091ab73ce6d0167ee2ae06a915a1b25",
+  "snapshots/2026-08-10/quakes_andes_m4.csv": "ad9c409de87fcc905c7fc77644364bc0d95945373b8387a984c8ad3af24e0dd1",
+  "snapshots/2026-08-10/quakes_california_m25.csv": "625bf5f5bfefad87b59cdf1bb36a1c66ac9af4e63045a4177d1efbe9c546cc50",
+  "snapshots/2026-08-10/quakes_indonesia_m4.csv": "18debf068d378551a4c6b002d6ca461c751a9cb2376555674c87d3f71b20ef1b",
+  "snapshots/2026-08-10/quakes_japan_m4.csv": "bbd25d1594d5bf8d2bf00c9c45cde3ab771c3528875ad7eddd20c48f6953ccaf",
+  "snapshots/2026-08-10/quakes_world_m45.csv": "ececf6879b1289565ee100094cdd63277c10b2c7bf805454ba91ae6c4e2bdfa1",
+  "snapshots/2026-08-10/sao_paulo_precip.csv": "a8a6315a6f93d2557ae00a50f11e3e988b8f629941ad66efbdb3f93891bf844f",
+  "snapshots/2026-08-10/sao_paulo_tmax.csv": "b0aa4790c2948ce63028ba3cb10fd325e2ebc4683a7e843fa751a15166d02cf5",
+  "snapshots/2026-08-10/toronto_precip.csv": "5b64dbddc187cd553713230cc492c200ef488ce88324e9a80cafe922ae555a16",
+  "snapshots/2026-08-10/toronto_tmax.csv": "048743d1ef68d84682707e4a69b7b8b4cb4ba34ac3794c3d6da9f9617aec9053",
+  "snapshots/2026-08-10/wiki_bitcoin.csv": "a7ba939fcd4fc3ad5ca85bc3734c5a25456ce5645be30cee03728204d639c413",
+  "snapshots/2026-08-10/wiki_black_hole.csv": "b8734547352588e1eb084400b43706a5a607da89c5129e8f5e2a03ec8708b3f2",
+  "snapshots/2026-08-10/wiki_chess.csv": "7e9fb6f095d2b24a637a8cffe93c4db9c9480acdf2a985d10cac0036a6c3a980",
+  "snapshots/2026-08-10/wiki_davinci.csv": "27d502853b3ae9a5845015c235d008d40c9c279ef226b7650e40e217fb56c632",
+  "snapshots/2026-08-10/wiki_einstein.csv": "4852571d34884e1cb20da41e129fdc37d24da9015d095aed4264b16cd02658cb",
+  "snapshots/2026-08-10/wiki_moon.csv": "59595a25f7d37dcc91bd22704f1f881278a12dac359f85b8bd1bde3669ad7e1c",
+  "snapshots/2026-08-10/wiki_photosynthesis.csv": "1cf7090e20c4e7809c1b7922e6c759025f85474b817b4f3ac4635c1e32014069",
+  "snapshots/2026-08-10/wiki_python.csv": "8756e9e7e5fc415b79067fe632b2a90672e331fd2d832da39abadb14a524b1b8",
+  "snapshots/2026-08-10/wiki_shakespeare.csv": "06525238842193b456d44f70e180e8e58b3b53fd529f7d0a2fceeeabe8db4a67",
+  "snapshots/2026-08-10/wiki_solar_system.csv": "2e0ca858fbc83f60023dbd696ccea8c5e98058c4f7a4df26c5a4eae03169828f",
+  "snapshots/2026-08-10/wiki_ww2.csv": "cf42db8cfcc0b9858221301c2c07339227ada9aba0824b5a34402b1ecece46c6",
+  "snapshots/2026-08-17/DCOILWTICO.csv": "7b9fab8ee5f2a8eccbbade65c851a2f55c385f0fdb580d00fe5e6d68437e6d70",
+  "snapshots/2026-08-17/DEXJPUS.csv": "b669e86173cc5e04e6be11b40688cfb336471e2d79c78a2045d46040b365083a",
+  "snapshots/2026-08-17/DEXUSEU.csv": "93fac3e1a715dc07e3327f63182c50b58921ed3178d55edc5bf8636f8393bbcb",
+  "snapshots/2026-08-17/DGS10.csv": "422225caf8a0d440682a93aeeac191a290e682d21c72234a313f51dd24c94696",
+  "snapshots/2026-08-17/DHHNGSP.csv": "b3d83928e451a5fa9a25458de6a5bbad2724a07c4a7852d32100682f8ac4567f",
+  "snapshots/2026-08-17/NASDAQCOM.csv": "619afa73d9281b8f61ff10fcd1e861a4246a578b3803a37a24a700b39d500569",
+  "snapshots/2026-08-17/SP500.csv": "756300c610dcc99451f0706fb84b1b2efd96860d549725a36bcc3235e921520d",
+  "snapshots/2026-08-17/VIXCLS.csv": "2715f316357c89856d21b8cdeed6d52f4420a6831c17976f5d1f3c9f7d6a337d",
+  "snapshots/2026-08-17/cairo_precip.csv": "f0ff0805a1beef0a1ed2c1ea2725264e12cfa00e96eb96fb604320ff2c01a594",
+  "snapshots/2026-08-17/cairo_tmax.csv": "50cb0ca933f5fcb19fb19eb9df01f33b804b6a00005656228875e6c0e11d129f",
+  "snapshots/2026-08-17/delhi_precip.csv": "3833cdf71f84a5257035d89dbd504440b2c01fc8f1b17c658101a1e0eedca284",
+  "snapshots/2026-08-17/delhi_tmax.csv": "db5efc36ca031fafd2ae3d81e0949f189c33f5180a3d68f16b117505689cc5f9",
+  "snapshots/2026-08-17/london_precip.csv": "f89ceed946b20ddd05e70d40395c9e67aa460702924983ed8416a04fe6d047bc",
+  "snapshots/2026-08-17/london_tmax.csv": "cf1cb271e15514feaa2d17db8d2904f4a0534bcbf115b42b76dd535eaaca736c",
+  "snapshots/2026-08-17/mumbai_precip.csv": "52881c1231f13ff2711eec366ac6f0c4c26f4b28c90437a1ebc694e023d12aa7",
+  "snapshots/2026-08-17/mumbai_tmax.csv": "2739633d32f5bda3c0644943c8a31bf7b03277dd44019c48f5ae9cccd7188507",
+  "snapshots/2026-08-17/quakes_california_m25.csv": "1a61a3d4bcc1cd3f016214aa2051826caecdae1d33fbf42696ce1d164725c33c",
+  "snapshots/2026-08-17/quakes_japan_m4.csv": "3bfa6f91822659144144fd72f488d98e731751eeb62fe63022e9c71fa55fed1d",
+  "snapshots/2026-08-17/quakes_world_m45.csv": "d176abfadff4c045ded9b7c26348a3ace91b8fd9e955d03c080ba78ecd6fa81c",
+  "snapshots/2026-08-17/sao_paulo_precip.csv": "c4c4a1a402f6965929fa8b63f167d1c96c1dfc34a04b8e8bd45013a937b2f588",
+  "snapshots/2026-08-17/sao_paulo_tmax.csv": "42891836d2f773f7b6d3b1d0d0ad5aa5f95eb39f073b680c43e8344b960fd60c",
+  "snapshots/2026-08-17/singapore_precip.csv": "5d23f284bccf610b8cf023609c5dd0979a88c5aeb85b18a953e5c983c0dd498f",
+  "snapshots/2026-08-17/singapore_tmax.csv": "e2ed9a66875ace695a770aa0f6f5edc7bbe79c0bad2b954c86e163de67dad133",
+  "snapshots/2026-08-17/sydney_precip.csv": "abc6a1cd5537aa1feb55c8f0a2326037869ecdff432c0ed2e403f7fc8fe2a334",
+  "snapshots/2026-08-17/sydney_tmax.csv": "3dad9cfb3b38a3c77dabe253c38c2ad0d9eda1316bd2360bffd82f714927d198",
+  "snapshots/2026-08-17/tokyo_precip.csv": "050cd5a45618f466c6698df28641e7c360e0ae260c2bc4adcd63dd18772364d9",
+  "snapshots/2026-08-17/tokyo_tmax.csv": "64aed07ddeb61cf715c6040b363cfea4cf2840d052381c0db5b84f78de903455",
+  "snapshots/2026-08-17/toronto_precip.csv": "559971c94b93ebc4acb3e79de582dd9ff5714c9af785f8bab3381b640e9e6fe7",
+  "snapshots/2026-08-17/toronto_tmax.csv": "d11794c5597e619a5dcf3fc9686b24a9aa5c84600ac67f1740847517f3b14df0",
+  "snapshots/2026-08-17/wiki_davinci.csv": "5530ee14a2773f8da6bb0cc5bcb8f7cbb559d916b2575c396f643162fb13bc85",
+  "snapshots/2026-08-17/wiki_photosynthesis.csv": "fd831103d6dabbe5ce116148a2366212247a0754afb1223364cab8794dafac66",
+  "snapshots/2026-08-17/wiki_shakespeare.csv": "6eec69deb6b1fb9f7d113471070852d39b0182e9059868a3fefbca8a62d3e191",
+  "snapshots/2026-08-17/wiki_solar_system.csv": "0f801299b90ab0754f70ca2bd8de47a359a43829ea71ad212add8a5ce68549b3",
+  "snapshots/2026-08-24/DCOILWTICO.csv": "83cd768bb7c6171c69f670d7b9a36a3bed4754b5627bc9f285cf502d7de41fde",
+  "snapshots/2026-08-24/DEXJPUS.csv": "316d1c2c284bda491624dcc7d3044b6a2a536fdc413a6ffcb4179fd1dbbc1798",
+  "snapshots/2026-08-24/DEXUSEU.csv": "7e5d87b339782b6c67777e4bbaad8ab76c8d3f83da4653a459b7381265bd35b3",
+  "snapshots/2026-08-24/DEXUSUK.csv": "59eded9151fe8b76b0e993df389e0ed8c278b7597d04b88c0f95a3544b169d54",
+  "snapshots/2026-08-24/DGS10.csv": "7f7cb2b0219610f5b6a213d957e9562b5f913bca8871e341ac28cd2cd94ce026",
+  "snapshots/2026-08-24/SP500.csv": "6ef876e63b7196b7c19155d5abba28c865a90971138837543a61ef177c8b9659",
+  "snapshots/2026-08-24/VIXCLS.csv": "0b7a066aa6fee4938f7d48aa6917a7adbf2b30b892169763d9cf6900e1849898",
+  "snapshots/2026-08-24/beijing_precip.csv": "2fb1d332472edb369f014273e42a64d9d2659e26a2b5e05357526a85e3d07b51",
+  "snapshots/2026-08-24/beijing_tmax.csv": "b5734ba6e980a78c4dda2369cc8906101a7583570105cbe17d89968eea227d1d",
+  "snapshots/2026-08-24/buenos_aires_precip.csv": "851779c05fe16e440c5b50dd4c55c57584912391c6a113394fed052a2f5cca79",
+  "snapshots/2026-08-24/buenos_aires_tmax.csv": "9dd77b492d03528072ae225c9daa4368b77f32e02241acd5792f59ba70f5223f",
+  "snapshots/2026-08-24/cairo_precip.csv": "ce17f0b2df8de32caad4c87f7ca66ca03cd5a76ee79eb6358b59a6981b2b285d",
+  "snapshots/2026-08-24/cairo_tmax.csv": "9a6f379d4efb9ef4a338b978cc3946152b46e8d4eec52d4808100b782eb2ddad",
+  "snapshots/2026-08-24/delhi_precip.csv": "e3eeb59a580b2251c83527fe2f08c3ad172f50ecfc0c10bec6ed936cb3a4079a",
+  "snapshots/2026-08-24/delhi_tmax.csv": "01b471257bbb58e3041f9dade85487ed3082c014f367b73b1e6515674d6614e4",
+  "snapshots/2026-08-24/johannesburg_precip.csv": "1a749d49057110697828774dec1a55ccfcc26163e62069d8beb34d422861c8ff",
+  "snapshots/2026-08-24/johannesburg_tmax.csv": "22b26295608d338cf6c70450b6d2dccb867ed14a35fe23a1f55755e539b77d7a",
+  "snapshots/2026-08-24/mumbai_precip.csv": "3e90389c08f46e884d88b71a5a99bd1a115b918abc80d975ecccf4fb9aaec9aa",
+  "snapshots/2026-08-24/mumbai_tmax.csv": "709eb42360c2a16abcc16748ccddbfdff997ddc361927b509760830d7eaf7be6",
+  "snapshots/2026-08-24/new_york_precip.csv": "ea7c3455d37928114e7d100bcd26301e75b6383496adfdf4e06d8b776f6e7a4a",
+  "snapshots/2026-08-24/new_york_tmax.csv": "a376564716fea7ddff5eda0ca9ffb4fe3dae977b2f15522f77e4941dc07ce922",
+  "snapshots/2026-08-24/quakes_california_m25.csv": "f87261eaac2c072e40ec755e276ed7743cd814b6eb6371b9411501ebd17a653c",
+  "snapshots/2026-08-24/quakes_world_m45.csv": "f36ba28be4d76b38088b2ec47127c7af05140816de3d5491b3c40b5063bd41e5",
+  "snapshots/2026-08-24/sydney_precip.csv": "cb629b03562be1d1e77a9de0dbc2ef1208f4e106a373f56379f1a8f0d267dafc",
+  "snapshots/2026-08-24/sydney_tmax.csv": "905f8d038b03bed4a49387328a38caf16bd57db88a70f6154ec9c581c38b3135",
+  "snapshots/2026-08-24/tokyo_precip.csv": "b111c6d95aeaa219fcfb3a4e9f11cb923b90ac0d3e14ffdf215971cdedc4dff6",
+  "snapshots/2026-08-24/tokyo_tmax.csv": "9935d1c0deb07c067138212224194280d15482371aeac55f18e58a7fb682cd18",
+  "snapshots/2026-08-24/wiki_ai.csv": "69d4928f3ebf17a41e62528af8a26544338c96ede858e732e6ddb9784e36ae3a",
+  "snapshots/2026-08-24/wiki_bitcoin.csv": "825a3c519280f4a9656e23bd37bbf8c9f059e3e0463421c3630aff675bb896ad",
+  "snapshots/2026-08-24/wiki_chess.csv": "7a38180d39aed997bdd5ef83e65448b58c4ad001c3bb12296085b74a06f76220",
+  "snapshots/2026-08-24/wiki_coffee.csv": "8c7af2b5c5336da28e91f901ccb073a187247e8a1bc4a7a5a6f6170f21e32ca5",
+  "snapshots/2026-08-24/wiki_davinci.csv": "8491dd0cf7ebe3293f9592154abc7f7e7e04cf60e57ee10bead565380d914650",
+  "snapshots/2026-08-24/wiki_einstein.csv": "685986264e5684d4ffbf0b1e07bbb31f57c3e9954f287c525b792c15c1b0f6b2",
+  "snapshots/2026-08-24/wiki_everest.csv": "607b1e6a25842d5e886231deb8f446bccb17cca85d7ea268bab914c9656da839",
+  "snapshots/2026-08-24/wiki_moon.csv": "d5ceff7c762ffbd86b1e0ca3ecd08e9e00f1ede134eb0d8351b29bf2d0c46972",
+  "snapshots/2026-08-24/wiki_python.csv": "1464b0d8407f20af41c658493408b87d30326843c7ca36680de49569d3809c6d",
+  "snapshots/2026-08-24/wiki_shakespeare.csv": "517855baaa2c79513ce886619449a8d1236432f4773b8f8b3dadb8dba80746d5",
+  "snapshots/2026-08-24/wiki_ww2.csv": "0f9c0c26c6b1d04d388c8af6f147d7c3ab2f5b0edd57ed729c303569ddf442c5"
+ },
+ "sources_sha256": "9b29567c29c08cb3ca6a938de7e0d5b5169531e4914e512ea8d7225160d47574",
+ "split_by_horizon": {
+  "calibration": {
+   "14": 12,
+   "28": 10,
+   "7": 18
+  },
+  "reserve": {
+   "14": 15,
+   "28": 9,
+   "7": 16
+  },
+  "sealed": {
+   "14": 28,
+   "28": 32,
+   "7": 60
+  }
+ },
+ "split_by_source": {
+  "calibration": {
+   "fred": 10,
+   "open-meteo": 15,
+   "usgs": 4,
+   "wikimedia": 11
+  },
+  "reserve": {
+   "fred": 4,
+   "open-meteo": 29,
+   "wikimedia": 7
+  },
+  "sealed": {
+   "fred": 31,
+   "open-meteo": 41,
+   "usgs": 19,
+   "wikimedia": 29
+  }
+ },
+ "split_by_template": {
+  "calibration": {
+   "count": 5,
+   "direction": 11,
+   "touch": 11,
+   "window_mean": 13
+  },
+  "reserve": {
+   "count": 8,
+   "direction": 11,
+   "touch": 9,
+   "window_mean": 12
+  },
+  "sealed": {
+   "count": 21,
+   "direction": 33,
+   "touch": 25,
+   "window_mean": 41
+  }
+ },
+ "split_counts": {
+  "calibration": 40,
+  "reserve": 40,
+  "sealed": 120
+ },
+ "split_series": {
+  "calibration": 13,
+  "reserve": 11,
+  "sealed": 36
+ },
+ "split_targets": {
+  "calibration": 40,
+  "reserve": 40,
+  "sealed": 120
+ },
+ "splits_file": {
+  "path": "splits.json",
+  "sha256": "26af68ce8f544d780b54ea736d0e76c4e25a593668a17d72be8d9d797048c606"
+ },
+ "tasks_file": {
+  "path": "tasks.forecast.json",
+  "sha256": "885152c2f56388852eb1cede8fb93419f5d3eb469256af3e61e3bd9f97d6a051"
+ }
+}

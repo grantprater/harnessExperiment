@@ -13,11 +13,18 @@ Clients:
   breaker     makes the fixed source files unimportable, then finishes (pipeline check, no API)
   gamer       adds conftest hooks that report every test as passed (pipeline check, no API)
   tester      runs the existing test roots through the run tool without edits (pipeline check, no API)
+  constant    forecast tasks only: writes {"probability": 0.5} and the true resolver, then finishes (no API)
+  peeker      forecast tasks only: tries the network and files outside the workspace, then writes a forecast only if
+              every attempt was blocked (no API)
 
 Backends:
   trusted-local  candidate commands and evaluation run on the host (not isolated)
   oci            candidate commands and evaluation run in a pinned local image by image ID,
                  workspace-only mount, no network (see experiments/p6_pilot/oci/Containerfile)
+  --sandbox unshare-rnm   forecast tasks on trusted-local, Linux only: every run-tool and evaluator command runs
+                 in new user, mount and network namespaces with the checkout's experiments/, .git, the raw series cache
+                 and ~/harness-sealed hidden and only its working directory kept (sandbox.py); recorded in the
+                 execution contract, so in the protocol hash, only when on
 
 Arms (same tools, instructions, evaluator, and limits; only the context policy differs):
   bounded-transcript-v2  original task + as much recent transcript as fits; tool results shown
@@ -26,11 +33,19 @@ Arms (same tools, instructions, evaluator, and limits; only the context policy d
 
 Tasks (--tasks [FILE.json] [TASK_ID ...]):
   An argument ending in .json names the task file (default experiments/p6_pilot/tasks.json); the other
-  arguments select task ids from it (default: all). A mutation task (experiments/mutation_tasks/) gets its
+  arguments select task ids from it (default: all). One invocation takes code tasks or forecast tasks, never both.
+  A mutation task (experiments/mutation_tasks/) gets its
   mutation_patch applied with git apply and its hidden_paths (the test root) removed from the workspace;
   the evaluator still installs the healthy test roots from fix_commit. Each such task's contract (mutation
   kind and file, hidden-tests flag, patch and statement digests) is recorded in config.json and enters the
   protocol hash; tasks without one leave both unchanged.
+  A forecast task (kind "forecast", card 022; experiments/forecast_tasks/) gets a workspace with question.md and data/
+  (snapshots cut before its forecast date, checked against their sha256; no outcome), the forecast instructions, and
+  the evaluator evaluate_forecast.py, which accepts a run when it committed: a valid forecast.json and a resolve.py
+  whose outcome() returns a bool on a past window. The scripted clients write the forecast deliverables instead:
+  gold the history-only base rate with the true resolver, constant 0.5, gamer an out-of-range probability, noop
+  nothing. Its contract (snapshot and text digests, evaluator files) enters the protocol hash, and the hash then
+  carries the forecast instructions and evaluator instead of the code ones; code-task hashes are unchanged.
 
 Treatments (S6 harness surfaces; all off by default, and a run with none of them is hashed, configured, and
 executed exactly as before). Each one that is on is described under "treatments" in config.json and in the
@@ -140,6 +155,7 @@ from claude_cli import (  # noqa: E402
     MODEL_MISMATCH, REPLY_RECOVERY, RETRY_MAX_TURNS, ClaudeCliClient, cli_contract, cli_version, model_id_problem,
 )
 from interpreters import task_python  # noqa: E402
+import sandbox as namespace_sandbox  # noqa: E402
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
 
 # $RETICLE_TASK_PYTHON, else .runtime/bugs-venv's interpreter (Scripts/python.exe on Windows, bin/python on
@@ -205,6 +221,25 @@ MANAGED_ROOT_FILES = ("conftest.py", "pytest.ini", "setup.cfg", "tox.ini", "pypr
 # v2: built in a staging directory, copied into the workspace, every file and directory stamped with the commit time.
 MATERIALIZER_VERSION = "mutation-workspace-v2"
 UNPINNED_ROUTING = {"require_parameters": True}
+# Card 022's forecast tasks (kind "forecast"). Later in v8, without a bump: only a forecast task's contract and hash
+# inputs mention any of this, so every code task's hash and config are unchanged.
+FORECAST_DIR = ROOT / "experiments" / "forecast_tasks"
+FORECAST_DATA_DIR = FORECAST_DIR  # where a forecast task's snapshot paths are relative to
+FORECAST_MATERIALIZER_VERSION = "forecast-workspace-v1"
+FORECAST_EVALUATOR_FILES = ("evaluate_forecast.py", "resolvers.py")
+FORECAST_RESOLVER_TIMEOUT_SECONDS = 60
+FORECAST_AGREEMENT_WINDOWS = 52
+FORECAST_CLIENTS = ("constant", "peeker")  # scripted clients that exist only for forecast tasks
+FORECAST_INSTRUCTIONS = (
+    "Today is {forecast_date}. You are forecasting one yes/no question about a public time series. The workspace "
+    "holds question.md (the question, its resolution criteria and fine print) and data/ (CSV files with every row "
+    "dated before today; data/README.md describes them).\n\n{statement}\n\n"
+    "Write forecast.json as {{\"probability\": p}}, where p is your probability (a number from 0 to 1) that the "
+    "question resolves YES, and resolve.py defining outcome(rows, T, horizon) -> bool: your reading of the resolution "
+    "criteria as code, applicable to any forecast date T (rows: the target series as (datetime.date, float) pairs "
+    "sorted by date; T: a datetime.date; horizon: the number of days). Python standard library only. Forecasts are "
+    "scored by Brier score against data published after today. Call finish when done."
+)
 
 INSTRUCTIONS = (
     "You are working in a source checkout of {repo} ({repo_url}) at an upstream commit. "
@@ -416,6 +451,22 @@ def model_tool_schemas(treatments: dict) -> list:
     return [*TOOL_SCHEMAS, *extra] if extra else TOOL_SCHEMAS
 
 
+def lf_sha256(path: Path) -> str:
+    """sha256 with CRLF folded to LF (the bytes git stores), so a checkout's line endings do not change it."""
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def is_forecast_task(task: dict) -> bool:
+    return task.get("kind") == "forecast"
+
+
+def forecast_evaluator_digests() -> dict:
+    """The forecast evaluator's files (LF sha256) and fixed limits; part of every forecast task's contract."""
+    digests = {name: lf_sha256(FORECAST_DIR / name) for name in FORECAST_EVALUATOR_FILES}
+    return {**digests, "resolver_timeout_seconds": FORECAST_RESOLVER_TIMEOUT_SECONDS,
+            "agreement_windows": FORECAST_AGREEMENT_WINDOWS}
+
+
 def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict, task_contracts=(), treatments=None) -> str:
     inputs = {
         "runner_version": RUNNER_VERSION, "arm": arm, "instructions": INSTRUCTIONS, "tools": TOOL_SCHEMAS,
@@ -425,6 +476,12 @@ def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict, task_c
     }
     if task_contracts:  # only tasks that alter the exported tree (mutation tasks); upstream P6 hashes are unchanged
         inputs["task_contracts"] = sorted(task_contracts, key=lambda contract: contract["task_id"])
+        if any(contract.get("kind") == "forecast" for contract in task_contracts):
+            # A forecast run is given other instructions and graded by another evaluator; the code ones are not hashed.
+            inputs["task_kind"] = "forecast"
+            inputs["instructions"] = FORECAST_INSTRUCTIONS
+            inputs["evaluator"] = forecast_evaluator_digests()
+            del inputs["managed_root_files"]
     if treatments:  # only runs with a treatment on; an incumbent's inputs are exactly as before
         inputs["treatments"] = treatments
         inputs["tools"] = model_tool_schemas(treatments)
@@ -464,8 +521,24 @@ def task_file_record(path: Path) -> dict:
     return {"path": shown, "sha256_lf": hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()}
 
 
+def forecast_contract(task: dict) -> dict:
+    """A forecast task's contract: everything its workspace, statement and evaluator are made from, as digests."""
+    digest = lambda text: hashlib.sha256(text.encode("utf-8")).hexdigest()  # noqa: E731
+    return {
+        "task_id": task["task_id"], "kind": "forecast", "materializer": FORECAST_MATERIALIZER_VERSION,
+        "template": task["template"], "params": task["params"], "series": task["series"],
+        "related": list(task["related"]), "forecast_date": task["forecast_date"], "horizon_days": task["horizon_days"],
+        "history_start": task["history_start"],
+        "snapshot_sha256": {name: item["sha256"] for name, item in sorted(task["snapshot"].items())},
+        "statement_sha256": digest(task["statement"]), "question_sha256": digest(task["question_md"]),
+        "readme_sha256": digest(task["data_readme"]), "evaluator": forecast_evaluator_digests(),
+    }
+
+
 def task_contract(task: dict):
     """What a task changes in the exported tree the model is given; None for an upstream P6 task."""
+    if is_forecast_task(task):
+        return forecast_contract(task)
     if not (task.get("mutation_patch") or task.get("hidden_paths") or task.get("hidden_tests")):
         return None
     patch = task.get("mutation_patch")
@@ -481,11 +554,21 @@ def task_contract(task: dict):
     }
 
 
-def resolve_execution(backend_name: str, image: str):
+def resolve_execution(backend_name: str, image: str, sandbox=None):
     """Return (backend or None for trusted-local, recorded execution contract). Never falls back."""
     if backend_name == "trusted-local":
-        return None, {"backend": "trusted-local", "guest_python": str(TASK_PYTHON),
-                      "authority": "trusted-local, not host-isolated"}
+        execution = {"backend": "trusted-local", "guest_python": str(TASK_PYTHON),
+                     "authority": "trusted-local, not host-isolated"}
+        if sandbox is None:  # the contract is exactly as before
+            return None, execution
+        if sandbox != namespace_sandbox.SANDBOX_NAME:
+            raise SystemExit(f"unknown --sandbox {sandbox!r}")
+        execution.update(authority="trusted-local in unshare -rnm namespaces: loopback-only network; the checkout's "
+                                   "experiments/, .git, raw cache and ~/harness-sealed hidden; working directory only",
+                         sandbox=namespace_sandbox.contract())
+        return namespace_sandbox.NamespaceSandboxBackend(namespace_sandbox.hidden_paths(ROOT)), execution
+    if sandbox is not None:
+        raise SystemExit("--sandbox applies to the trusted-local backend only")
     engine = IsolatedOCIBackend(image).engine
     inspected = subprocess.run([engine, "image", "inspect", "--format", "{{.Id}}", image],
                                capture_output=True, text=True)
@@ -650,6 +733,67 @@ def materialize_workspace(task: dict, repo: Path, workspace: Path) -> None:
         stamp_tree(workspace, commit_time)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
+
+
+def read_snapshot(task: dict, name: str) -> bytes:
+    """A forecast snapshot's bytes (LF), after checking them against the task's sha256 and its forecast date."""
+    item = task["snapshot"][name]
+    data = (FORECAST_DATA_DIR / item["path"]).read_bytes().replace(b"\r\n", b"\n")
+    if hashlib.sha256(data).hexdigest() != item["sha256"]:
+        raise ValueError(f"{task['task_id']}: snapshot {item['path']} does not match its sha256")
+    lines = data.decode("utf-8").splitlines()
+    if lines[:1] != ["date,value"]:
+        raise ValueError(f"{task['task_id']}: snapshot {item['path']} has no date,value header")
+    for line in lines[1:]:  # ISO dates compare as text
+        if line.split(",", 1)[0] >= task["forecast_date"]:
+            raise ValueError(f"{task['task_id']}: snapshot {item['path']} has a row dated {line[:10]}, not before "
+                             f"the forecast date {task['forecast_date']}")
+    return data
+
+
+def materialize_forecast_workspace(task: dict, workspace: Path) -> None:
+    """question.md, data/README.md and data/<series>.csv for the target and related series: rows dated before the
+    forecast date only. Nothing else is written; the outcome is not in the checkout at all (sealed resolutions)."""
+    if workspace.exists():
+        raise FileExistsError(f"workspace already exists: {workspace}")
+    files = {"question.md": task["question_md"].encode("utf-8"), "data/README.md": task["data_readme"].encode("utf-8")}
+    for name in [task["series"], *task["related"]]:
+        files[f"data/{name}.csv"] = read_snapshot(task, name)
+    for relative, data in files.items():
+        target = workspace / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+
+
+def build_forecast_evaluator(task: dict, bundle: Path, python: str) -> str:
+    """The bundle evaluate_forecast.py reads: the true resolvers, the target snapshot and task.json. Outside the
+    workspace; it holds no outcome either."""
+    (bundle / "data").mkdir(parents=True)
+    snapshot = read_snapshot(task, task["series"])
+    (bundle / "data" / f"{task['series']}.csv").write_bytes(snapshot)
+    for name in FORECAST_EVALUATOR_FILES:
+        shutil.copyfile(FORECAST_DIR / name, bundle / name)
+    contract = forecast_contract(task)
+    inputs = hashlib.sha256(json.dumps(contract, sort_keys=True).encode("utf-8")).hexdigest()
+    version = f"{task['task_id']}:inputs-{inputs[:16]}:evaluator-{contract['evaluator']['evaluate_forecast.py'][:16]}"
+    (bundle / "task.json").write_text(json.dumps({
+        "task_id": task["task_id"], "python": python, "series": task["series"], "template": task["template"],
+        "params": task["params"], "forecast_date": task["forecast_date"], "horizon_days": task["horizon_days"],
+        "history_start": task["history_start"], "resolver_timeout_seconds": FORECAST_RESOLVER_TIMEOUT_SECONDS,
+        "agreement_windows": FORECAST_AGREEMENT_WINDOWS, "evaluator_version": version,
+    }, indent=2), encoding="utf-8")
+    return version
+
+
+def forecast_acceptance_plan(task: dict, version: str) -> AcceptancePlan:
+    return AcceptancePlan(task["task_id"], [CriterionContract(
+        "committed", "forecast.json holds one probability in [0, 1] and resolve.py's outcome() returns a bool on a "
+        "past window.", "executable", version)],
+        evaluator_command=["{python}", "{bundle}/evaluate_forecast.py", "{bundle}", "{candidate}"])
+
+
+def forecast_description(task: dict) -> str:
+    return FORECAST_INSTRUCTIONS.format(forecast_date=task["forecast_date"], statement=task["statement"])
 
 
 def build_evaluator(task: dict, repo: Path, bundle: Path, pytest_timeout: int, python: str) -> str:
@@ -948,7 +1092,108 @@ class ScriptedRunClient:
         return ModelResponse({"role": "assistant", "content": None, "tool_calls": [call]})
 
 
+class ScriptedStepsClient:
+    """Issues fixed tool calls, one response per step, then finishes."""
+
+    def __init__(self, steps, summary: str):
+        self.steps, self.summary, self.calls = list(steps), summary, 0
+
+    def complete(self, messages, tools) -> ModelResponse:
+        self.calls += 1
+        if self.calls <= len(self.steps):
+            calls = [{"id": f"step{self.calls}_{i}", "type": "function", "function": {
+                "name": name, "arguments": json.dumps(arguments)}} for i, (name, arguments) in
+                enumerate(self.steps[self.calls - 1], 1)]
+        else:
+            calls = [{"id": "scripted_finish", "type": "function", "function": {
+                "name": "finish", "arguments": json.dumps({"summary": self.summary})}}]
+        return ModelResponse({"role": "assistant", "content": None, "tool_calls": calls})
+
+
+def true_resolver_source(task: dict) -> str:
+    """resolve.py for the scripted forecast clients: the true resolvers, then outcome() for this task's template."""
+    source = (FORECAST_DIR / "resolvers.py").read_text(encoding="utf-8").replace("\r\n", "\n")
+    return (f"{source}\n\ndef outcome(rows, T, horizon):\n"
+            f"    return resolve({task['template']!r}, rows, T, horizon, {task['params']!r})\n")
+
+
+# The peeker's probe script: every attempt to reach the network or read outside the workspace is printed; the forecast
+# is written only if all of them were blocked, so an isolating backend is "accepted" and a leak is "rejected".
+PEEK_SCRIPT = """import glob, json, socket, urllib.request
+from pathlib import Path
+
+here = Path.cwd()
+checkout = here.joinpath(*[".."] * 7)  # runs/<name>/sessions/<run>/workspace -> the repository root
+probes = {}
+
+
+def attempt(name, action):
+    try:
+        action()
+        probes[name] = "REACHED"
+    except Exception as exc:
+        probes[name] = "blocked: " + type(exc).__name__
+
+
+def read(path):  # an empty read (a file covered by /dev/null) is not a leak
+    if not Path(path).read_bytes():
+        raise FileNotFoundError(str(path) + " is empty")
+
+
+SEALED = "harness-sealed/022/resolutions.json"  # under some home directory; commands get no HOME variable
+
+
+def read_sealed():
+    found = [p for root in ("/root", "/home/*", "C:/Users/*") for p in glob.glob(root + "/" + SEALED)]
+    if not found:
+        raise FileNotFoundError(SEALED)
+    read(found[0])
+
+
+def read_git():
+    git = checkout / ".git"
+    read(git / "HEAD" if git.is_dir() else git)
+
+
+attempt("https", lambda: urllib.request.urlopen("https://example.com", timeout=5).read(1))
+attempt("socket", lambda: socket.create_connection(("1.1.1.1", 443), timeout=5).close())
+attempt("dns", lambda: socket.getaddrinfo("example.com", 443))
+attempt("checkout", lambda: read(checkout / "experiments" / "forecast_tasks" / "sources.json"))
+attempt("git", read_git)
+attempt("evaluator_bundle", lambda: read(here / ".." / "evaluator" / "task.json"))
+attempt("sealed", read_sealed)
+print(json.dumps(probes, indent=1, sort_keys=True))
+if all(value.startswith("blocked") for value in probes.values()):
+    Path("forecast.json").write_text(json.dumps({"probability": 0.5}))
+"""
+
+
+def forecast_scripted_client(kind: str, task: dict):
+    resolver = ("write_file", {"path": "resolve.py", "content": true_resolver_source(task)})
+
+    def forecast(probability):
+        return ("write_file", {"path": "forecast.json", "content": json.dumps({"probability": probability})})
+
+    if kind == "gold":
+        return ScriptedStepsClient([[forecast(task["base_rate"]), resolver]], "history-only base rate")
+    if kind == "constant":
+        return ScriptedStepsClient([[forecast(0.5), resolver]], "constant 0.5")
+    if kind == "gamer":
+        return ScriptedStepsClient([[forecast(1.7), resolver]], "probability outside [0, 1]")
+    if kind == "peeker":
+        return ScriptedStepsClient([[resolver, ("write_file", {"path": "peek.py", "content": PEEK_SCRIPT})],
+                                    [("run", {"command": "python peek.py", "timeout_seconds": 60})]],
+                                   "forecast written only if every peek was blocked")
+    if kind == "noop":
+        return ScriptedStepsClient([], "no change")
+    raise SystemExit(f"the {kind} client has no forecast-task behaviour")
+
+
 def scripted_client(kind: str, task: dict, repo: Path):
+    if is_forecast_task(task):
+        return forecast_scripted_client(kind, task)
+    if kind in FORECAST_CLIENTS:
+        raise SystemExit(f"the {kind} client is for forecast tasks only")
     if kind == "gold":
         writes = [(path, git(repo, "show", f"{task['fix_commit']}:{path}").decode("utf-8"))
                   for path in task["gold_source_files"]]
@@ -1012,6 +1257,8 @@ def evaluator_details(runtime: LocalRuntime, report_artifact_id: str) -> dict:
                 "pytest_exit_code": output.get("pytest_exit_code"),
                 "pytest_timed_out": output.get("pytest_timed_out"),
             })
+            if "forecast" in output:  # forecast tasks only; a code task's record is unchanged
+                details["forecast"] = output["forecast"]
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             details["evaluator_output_error"] = repr(exc)
     details["measurement_errors"] = [m.get("infrastructure_error") for m in report.get("measurements", [])
@@ -1022,9 +1269,13 @@ def evaluator_details(runtime: LocalRuntime, report_artifact_id: str) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--client", required=True,
-                        choices=["openrouter", "claude-cli", "gold", "noop", "breaker", "gamer", "tester"])
+                        choices=["openrouter", "claude-cli", "gold", "noop", "breaker", "gamer", "tester",
+                                 *FORECAST_CLIENTS])
     parser.add_argument("--backend", default="trusted-local", choices=["trusted-local", "oci"])
     parser.add_argument("--oci-image", default=DEFAULT_OCI_IMAGE)
+    parser.add_argument("--sandbox", choices=[namespace_sandbox.SANDBOX_NAME], default=None,
+                        help="forecast tasks on trusted-local (Linux): run every command under unshare -rnm with the "
+                             "checkout hidden; in the execution contract and the protocol hash")
     parser.add_argument("--arm", default="bounded-transcript-v2", choices=sorted(ARMS))
     parser.add_argument("--run-name", required=True)
     parser.add_argument("--models", nargs="*", default=[])
@@ -1062,6 +1313,12 @@ def main() -> None:
                       if args.cli_reply_recovery and args.client == "claude-cli" else {})
 
     task_file, tasks = load_tasks(args.tasks)
+    forecast = any(is_forecast_task(t) for t in tasks)
+    if forecast and not all(is_forecast_task(t) for t in tasks):
+        raise SystemExit("--tasks mixes forecast and code tasks; run them in separate invocations")
+    if args.client in FORECAST_CLIENTS and not forecast:
+        raise SystemExit(f"the {args.client} client is for forecast tasks only")
+    instructions = FORECAST_INSTRUCTIONS if forecast else INSTRUCTIONS
     contracts = [c for c in (task_contract(t) for t in tasks) if c is not None]
     verifier_manifest = load_verifier_manifest(treatments) if "verifier" in treatments and not args.dry_run else None
     live = args.client in ("openrouter", "claude-cli")
@@ -1092,7 +1349,13 @@ def main() -> None:
         routing = {model: ({"order": [pins[model]], "allow_fallbacks": False, "require_parameters": True}
                            if model in pins else dict(UNPINNED_ROUTING)) for model in models}
     arm = args.arm
-    backend, execution = resolve_execution(args.backend, args.oci_image)
+    if args.sandbox and not forecast:
+        raise SystemExit("--sandbox applies to forecast tasks only")
+    backend, execution = resolve_execution(args.backend, args.oci_image, args.sandbox)
+    if args.sandbox:
+        problem = namespace_sandbox.availability()
+        if problem:
+            raise SystemExit(problem)
     guards = {"stop_on_repeats": args.stop_on_repeats,
               "resume_after_provider_stop": args.resume_after_provider_stop,
               "resume_wait_seconds": args.resume_wait_seconds if args.resume_after_provider_stop else None}
@@ -1107,7 +1370,7 @@ def main() -> None:
         "max_calls_per_run": args.max_calls_per_run, "max_context_bytes": args.max_context_bytes,
         "max_tokens": args.max_tokens, "pytest_timeout_seconds": args.pytest_timeout, "temperature": 0,
         "max_attempts_per_call": MAX_ATTEMPTS, "max_total_calls": args.max_total_calls,
-        "instructions": INSTRUCTIONS, "tools": model_tool_schemas(treatments), "toolset_version": TOOLSET_VERSION,
+        "instructions": instructions, "tools": model_tool_schemas(treatments), "toolset_version": TOOLSET_VERSION,
         "execution": execution, "guards": guards,
     }
     if treatments:  # absent when every treatment is off, so an incumbent's config.json is unchanged
@@ -1210,18 +1473,29 @@ def main() -> None:
         run_root = run_dir / "sessions" / run_id
         if run_root.exists():  # an earlier attempt of this run was interrupted; keep it for audit
             run_root.rename(run_root.with_name(f"{run_id}.interrupted-{datetime.now():%Y%m%d%H%M%S}"))
-        repo = ensure_commits(task)
         workspace, bundle = run_root / "workspace", run_root / "evaluator"
-        materialize_workspace(task, repo, workspace)
-        version = build_evaluator(task, repo, bundle, args.pytest_timeout, execution["guest_python"])
         verifier_root = None
-        if verifier_manifest is not None:
-            verifier_root = build_task_verifier(verifier_manifest, task["task_id"], run_root / "verifier",
-                                                execution["guest_python"], args.pytest_timeout)
+        if forecast:
+            repo = None
+            materialize_forecast_workspace(task, workspace)
+            version = build_forecast_evaluator(task, bundle, execution["guest_python"])
+            plan = forecast_acceptance_plan(task, version)
+            description = forecast_description(task)
+            criteria = [{"id": "committed", "kind": "executable", "visibility": "hidden"}]
+        else:
+            repo = ensure_commits(task)
+            materialize_workspace(task, repo, workspace)
+            version = build_evaluator(task, repo, bundle, args.pytest_timeout, execution["guest_python"])
+            if verifier_manifest is not None:
+                verifier_root = build_task_verifier(verifier_manifest, task["task_id"], run_root / "verifier",
+                                                    execution["guest_python"], args.pytest_timeout)
+            plan = acceptance_plan(task, version)
+            description = INSTRUCTIONS.format(repo=task["repo"], repo_url=task["repo_url"], statement=task["statement"])
+            criteria = [{"id": "hidden-upstream-tests", "kind": "executable", "visibility": "hidden"}]
         runtime = LocalRuntime(run_root / "session", workspace)
         initial_revision = runtime.workspace.revision()
         src = workspace / "src"
-        if backend is None:
+        if backend is None or not backend.host_isolation:  # trusted-local, sandboxed or not: host paths
             python_path = str(src if src.is_dir() else workspace)
         else:
             python_path = "/workspace/src" if src.is_dir() else "/workspace"  # guest path of the same tree
@@ -1234,8 +1508,8 @@ def main() -> None:
         interventions = build_interventions(runtime, treatments, treatment_state)
         envelope = TaskEnvelope(
             task_id=task["task_id"],
-            description=INSTRUCTIONS.format(repo=task["repo"], repo_url=task["repo_url"], statement=task["statement"]),
-            criteria=[{"id": "hidden-upstream-tests", "kind": "executable", "visibility": "hidden"}],
+            description=description,
+            criteria=criteria,
             authority={"filesystem": "task workspace", "execution": execution["authority"],
                        "network": "not provided to tasks"},
             budgets=run_budgets[model],
@@ -1291,7 +1565,7 @@ def main() -> None:
             for m in TranscriptStore(runtime).load() if m.get("role") == "tool"
         ]
         decision = AcceptanceRunner(runtime, backend).evaluate(
-            acceptance_plan(task, version), evaluator_root=bundle, timeout_seconds=args.pytest_timeout + 120)
+            plan, evaluator_root=bundle, timeout_seconds=args.pytest_timeout + 120)
         record["initial_workspace_revision"] = initial_revision
         record["acceptance"] = {"status": decision.status, "criterion_outcomes": decision.criterion_outcomes,
                                 "report_artifact_id": decision.report_artifact_id,
