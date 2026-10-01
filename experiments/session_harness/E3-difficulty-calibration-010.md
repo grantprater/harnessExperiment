@@ -22,7 +22,7 @@ Stage: S6a follow-up (proposed in the [card 007 report](E3-calibration-007-repor
   the CLI version and the alias, not the model that answered, so nothing caught it. The model ID is in each run's
   `calls.jsonl` (stream-json `"model"` fields).
 - That attempt ran on `claude-sonnet-5-5` and stood at 26/30 accepted on rollout 1.
-- Its 39 runs were voided as `*.void-model-sonnet-5-5`. They are kept as side data, not calibration outcomes.
+- Its 39 completed runs, plus 1 run interrupted when the driver was stopped (40 folders), were voided as `*.void-model-sonnet-5-5`. They are kept as side data, not calibration outcomes.
 - The calibration restarts from scratch on the pinned ID `claude-sonnet-5`. The runner now refuses aliases for
   live claude-cli runs and stops a run as `model_mismatch` (an adapter failure, void) if the CLI reports any other
   model than the pinned one.
