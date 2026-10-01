@@ -1,0 +1,5 @@
+# 2026-10-01T01:35:14+00:00 /home/user/harnessExperiment/.runtime/test-venv/bin/python /home/user/harnessExperiment/experiments/p6_pilot/run_pilot.py --client noop --arm pressure-recent-v3 --backend trusted-local --tasks experiments/mutation_tasks/tasks.boltons.json boltons-mut-010 boltons-mut-001 --run-name c023-control-noop --max-calls-per-run 20 --max-context-bytes 80000 --max-tokens 4096 --pytest-timeout 600 --max-attempts-per-run 24 --elapsed-cap-seconds 1200 --cli-reply-recovery lenient-json+second-turn-on-retry
+task budgets per run: {"noop-client": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
+--cli-reply-recovery applies to the claude-cli client only; the noop client ignores it
+boltons-mut-001__noop-client: finish_requested -> rejected {'fail-to-pass': 'fail', 'pass-to-pass': 'pass'}
+boltons-mut-010__noop-client: finish_requested -> rejected {'fail-to-pass': 'fail', 'pass-to-pass': 'pass'}

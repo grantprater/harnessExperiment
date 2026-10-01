@@ -1,7 +1,7 @@
 # E3 calibration 023: the second (boltons) mutation bank, near-transfer baseline
 
 Date: 2026-09-28  
-Status: proposed; awaiting owner approval (then set `cards/023.json` status to running). Not run.  
+Status: running; approved by the owner through experiments/cloud/RUN_IN_CLOUD-023.md, launched in a cloud session 2026-10-01 01:35 UTC  
 Departures approved by the owner in session on 2026-09-29 ("yes, approved"): the boltons `prefilter_unexecuted`
 coverage prefilter and the `--shortfall redistribute` amendment to card 007's selection rule. Launch is by pasting
 [`experiments/cloud/RUN_IN_CLOUD-023.md`](../cloud/RUN_IN_CLOUD-023.md).  
