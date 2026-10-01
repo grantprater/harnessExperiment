@@ -22,6 +22,10 @@
     {
       "text": "Owner approval of this card's launch: run count, cost and the verifier's generation calls (1-3 per task, 31 tasks, at most 93 calls), recorded verbatim in E3-ontology-pilot-024.md; then set status to approved",
       "done": false
+    },
+    {
+      "text": "Verifier manifest generated after the launch approval: experiments/p6_pilot/repro_verifiers.py generate --out experiments/session_harness/verifiers/024 --tasks experiments/mutation_tasks/tasks.pilot024-eval.json --model claude-sonnet-5 --oci-image localhost/reticle-p6-task:py313-v1 --spend-cap-usd <approved cap> (pre-edit runs in podman, network none; at most 93 calls), committed; then re-plan, since the verifier-commit hashes planned before it are provisional (manifest_sha256_lf null)",
+      "done": false
     }
   ],
   "arms": [
@@ -141,10 +145,7 @@
         "treatment": "repro-test-verifier-v1 + commit-nudge-v1 (commitment-tools-v1)",
         "flag": "--verifier repro-test:3 --verifier-manifest experiments/session_harness/verifiers/024/manifest.json --nudge commit",
         "max_calls": 3,
-        "code": "reticle/tools/repro_verifier.py, experiments/p6_pilot/run_repro_test.py, experiments/p6_pilot/repro_verifiers.py, reticle/runtime/nudges.py, reticle/tools/commitment.py"
-      },
-      "runner": {
-        "unresolved": "the verifier-commit code (card 021) is on integration/2026-10 (merge dbcca70 + 4ae5dea), not on exp/ontology-pilot. Merging it was tried and aborted on 2026-10-01: its claude_cli.cli_contract adds a model_pin block for every full model id, which changes the planned hash of all 31 tasks in the incumbent, memory and symbolic arms (cause confirmed: the same code without that block reproduces all 186 hashes). Owner decision needed before this arm can be planned."
+        "code": "reticle/tools/repro_verifier.py, experiments/p6_pilot/run_repro_test.py, experiments/p6_pilot/repro_verifiers.py, reticle/runtime/nudges.py, reticle/tools/commitment.py (ported verifier-only from integration/2026-10, commits 52deea7, a41fcff, 4ae5dea; owner decision 2026-10-01 'Port verifier only'; generation runs every model-written test in this card's OCI image, owner decision 'Confine it in podman')"
       }
     }
   ],

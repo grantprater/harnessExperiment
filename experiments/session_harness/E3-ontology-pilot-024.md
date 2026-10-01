@@ -2,8 +2,9 @@
 
 Date: 2026-10-01  
 Status: **proposed (draft; not approved, not launched).** `run_card.py --execute` refuses it: the status is
-`proposed`, the launch-approval prerequisite is not done, and the verifier-commit arm's runner is
-`{"unresolved": ...}` (see "Verifier-commit: blocked on a hash change").  
+`proposed`, the launch-approval prerequisite is not done, and the verifier manifest is not generated (generation needs
+the approved model calls). The verifier-commit code is ported (see "Verifier-commit: ported verifier-only, generation
+confined in podman").  
 Machine card: [`cards/024.json`](cards/024.json). Task file:
 [`tasks.pilot024-eval.json`](../mutation_tasks/tasks.pilot024-eval.json), built by
 [`build_pilot_eval_tasks.py`](../mutation_tasks/build_pilot_eval_tasks.py) (`--check` rebuilds it).  
@@ -23,6 +24,21 @@ Owner decisions this card rests on (2026-10-01, verbatim; also in
 - Earlier: verifier-commit stays the 4th arm; its 1-3 generation calls per task are confirmed with the owner at
   launch; card 021 is invalidated, but the arm is kept. Pilot protocol:
   [`experiments/neurosymbolic/README.md`](../neurosymbolic/README.md).
+
+Owner decisions on the draft (2026-10-01, verbatim; also in `IMPLEMENTATION_PLAN.md`):
+1. Q: "Merging the verifier-commit code from integration/2026-10 changes the protocol hash of every
+   incumbent/memory/symbolic run (its CLI wrapper adds a model_pin block), so the pilot would no longer run the same
+   code as card 010's calibration. How should the arm's code come in?" A: "Port verifier only (Recommended)". The
+   option read: "Bring over only the verifier-commit runner and repro-test code, not the CLI wrapper change. Must keep
+   all 186 other hashes equal to calibration. The 'same code as calibration' rule holds."
+2. Q: "Before the pilot, verifier-commit generates a reproduction test per task (at most 93 calls, about 43 expected,
+   about $19). The model-written test file is then executed with plain host Python on this machine, outside any
+   sandbox. How should that run?" A: "Confine it in podman (Recommended)". The option read: "Run each generated test
+   in the same OCI image the runs use (network none, scratch copy only) before freezing it. A small code change;
+   nothing model-written runs on the host."
+3. Q: "The card's decision rule, written before any data: an arm earns a powered follow-up if it beats the incumbent
+   by at least +0.10 in acceptance AND wins more tasks than it loses; an arm at -0.10 or worse is recorded as harmful.
+   The draft agent chose the 0.10 threshold. Keep it?" A: "Keep +0.10 (Recommended)".
 
 Card number: 024, the next number after the highest card anywhere in the repository (023, card 023 on
 `integration/2026-10`; checked over every local and remote branch). 016 is an unused gap below cards already run and
@@ -71,7 +87,9 @@ the `protocol_hash` in `config.json` and every `results.jsonl` row of that task'
 the task file's path, so copying the 31 tasks unchanged into one file keeps each task's hash.
 
 Result (2026-10-01, commit of this card): **31/31 match**; each task has one recorded hash across both runs, equal to
-the planned one. No mismatch. Rollouts share a task's hash.
+the planned one. No mismatch. Rollouts share a task's hash. Rechecked after the verifier port and confinement: still
+31/31, and the full `--plan` (text and `--json`) is unchanged for every incumbent, memory and symbolic invocation and
+both controls (188 of 188); only the 62 verifier-commit invocations changed, from no runner to provisional hashes.
 
 | Task | Stage | Hash (planned = recorded) | Task | Stage | Hash (planned = recorded) |
 |---|---|---|---|---|---|
@@ -95,59 +113,83 @@ the planned one. No mismatch. Rollouts share a task's hash.
 
 The hash includes `evaluate_task.py`'s bytes as checked out (CRLF on this Windows checkout), as for card 010.
 
-## Verifier-commit: blocked on a hash change
+## Verifier-commit: ported verifier-only, generation confined in podman
 
-The arm's code (card 021: `reticle/tools/repro_verifier.py`, `experiments/p6_pilot/run_repro_test.py`,
-`experiments/p6_pilot/repro_verifiers.py`, `reticle/runtime/nudges.py`, `reticle/tools/commitment.py`, and the runner
-flags) is on `integration/2026-10` (merge `dbcca70`, which brings `wt/card021` with `wt/cloud-port` and
-`wt/cli-retry`, plus the guard fix `4ae5dea`), not on `exp/ontology-pilot`.
+**History.** The arm's code (card 021) is on `integration/2026-10` (merge `dbcca70`, which brings `wt/card021` with
+`wt/cloud-port` and `wt/cli-retry`, plus the guard fix `4ae5dea`). Merging `dbcca70` into this branch was tried on
+2026-10-01 and aborted before any commit: the merged `claude_cli.cli_contract` adds a `model_pin` block to the routing
+contract for every full model id, which changes the planned hash of all 31 tasks in the incumbent, memory and symbolic
+arms (186 of 186 invocations; e.g. `sqlparse-mut-015` incumbent `8ad5bfad9053` would become `3f1a67374a22`). The owner
+chose option 2 of the three then listed: port only the verifier (decision 1 below).
 
-Merging `dbcca70` into this branch was tried on 2026-10-01 and aborted before any commit. The merged
-`claude_cli.cli_contract` adds a `model_pin` block to the routing contract for every full model id
-(`pins_model`: any id starting `claude-`). That changes the planned hash of **all 31 tasks in the incumbent, memory and
-symbolic arms (186 of 186 invocations)**; e.g. `sqlparse-mut-015` incumbent `8ad5bfad9053` becomes `3f1a67374a22`.
-Cause confirmed by planning this card against an export of the `dbcca70` code with only that block disabled: all 186
-hashes then equal this branch's. The tip of `integration/2026-10` (`68333e2`) gives the same 186 differences. The
-integration branch's own runner comment says so: "a full-id card's hash differs from the one exp/ontology-pilot
-planned". The brief's rule was: if the merge changes the incumbent or reasoning hashes, abort and report. Nothing was
-merged, and the incumbent was not changed.
+**Port (commit `07f70df`).** Only what the arm needs, from `52deea7`, `a41fcff` and `4ae5dea`:
+- taken whole: `experiments/p6_pilot/run_repro_test.py`, `reticle/tools/repro_verifier.py`,
+  `reticle/tools/commitment.py`, `reticle/runtime/nudges.py`, `reticle/tools/check_oracle.py`,
+  `experiments/session_harness/score_commitments.py`, `tests/test_card021_verifier_commit.py` (adapted, below);
+- `experiments/p6_pilot/repro_verifiers.py`: from integration; the generator's auth, model-pin and reported-model
+  checks (b083d70's, with 4ae5dea's stop prefixes) are defined in the generator instead of `claude_cli.py`, so
+  `cli_contract` is unchanged; generation also gets the runner's CLI pin (`DISABLE_AUTOUPDATER=1`; every attempt's
+  `claude_code_version` must equal the version `claude --version` reported when generation started);
+- `experiments/p6_pilot/run_pilot.py`: `52deea7`'s hunks by hand (`--verifier`, `--verifier-manifest`,
+  `--nudge commit`, the per-task bundle, tool order with `--reasoning`).
+- Not brought: `claude_cli.py` (the `model_pin` contract), the cloud port, CLI reply recovery, the unshare-confined
+  cloud backend (`eb74ac7`, card 021's integrity-audit fix: it confines the cloud trusted-local `run` tool and is not
+  on the OCI path), card 021's records.
+- Card 021 was contaminated because its trusted-local `run` tool had no path guard. Nothing in this arm can fall back to
+  trusted-local now: `run_pilot.py` refuses `--verifier` without `--backend oci`, `build_tools` refuses a verifier
+  without an isolated backend, and `ReproTestVerifier` itself refuses a backend that is not host-isolated (it used to
+  inherit `AcceptanceRunner`'s `TrustedLocalBackend` default).
 
-So the card keeps the arm, with `"runner": {"unresolved": ...}`: `--plan` lists it as a blocker and plans no hash for
-it. Owner options (not decided here):
-1. Merge as is and accept new hashes for all arms. The incumbent then no longer reproduces card 010's recorded
-   protocol hash: the contract records the model-pin rule, the runs' behaviour is the same, but the hash-equality check
-   above fails by design.
-2. Port only the verifier and commit-nudge code, without the cloud port's contract change (the model guard on this
-   branch, `model_mismatch`, already checks the pinned model; the contract records nothing new).
-3. Merge, and make the `model_pin` contract entry opt-in so existing full-id hashes are unchanged (a code change on the
-   integration side, with its own review).
+**Confinement (commit `c47deb8`).** Every step that executes a model-written test runs it in this card's image, through
+the same `IsolatedOCIBackend` the runs use, resolved exactly as `run_pilot.py --backend oci` resolves it:
+- generation's pre-edit run (`run_on_tree`, the run that decides what is frozen) and offline `score` / `agree`
+  (`check_tree`, which used `ReproTestVerifier` with no backend, i.e. trusted-local);
+- `podman run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --pids-limit 128
+  --memory 512m --userns keep-id --tmpfs /tmp:rw,noexec,nosuid,size=64m`, one bind mount at `/workspace` holding only
+  a scratch copy of the pre-edit tree (`candidate/`) and the bundle (`bundle/`), the guest `python`, the same 300 s
+  pytest timeout (+60 s outer);
+- `--oci-image` (default `localhost/reticle-p6-task:py313-v1`); the image id is recorded in the manifest's generator
+  record (`pre_edit_execution`) and in `validity.json` / `agreement.json`;
+- fail closed: no engine or no image stops `generate`, `score` and `agree` before any model call or test run; there is
+  no host fallback.
 
-**Generation calls, and when** (from card 021's `repro_verifiers.py generate`, as on `integration/2026-10`):
-- Before the campaign, once per task, never during a run: a headless `claude -p` with the pinned model, a fresh
-  context, only the CLI's Read, Glob and Grep tools on a temporary copy of the pre-edit workspace, `--permission-mode
-  dontAsk`, `--max-budget-usd 0.60` per call, at most 30 turns.
+Evidence, 2026-10-01, no model call (image ID `8b74015e5079d613...`):
+- A hand-written reproduction test for `sqlparse-mut-154` (`repr(sqlparse.parse("select 1")[0].tokens[0])` starts with
+  `<DML 'select'`) through `run_on_tree` in podman: **mutated tree 1 collected, 1 failed; gold tree 1 collected,
+  1 passed**. Neither tree was touched.
+- A probe test in the same container: a TCP connect to `1.1.1.1:53` failed with `OSError`, an https fetch of pypi.org
+  failed with `URLError [Errno -3]`, and `/workspace` held only `bundle` and `candidate`.
+- `tests/test_card021_verifier_commit.py::RealPodmanTests` (2 tests; skipped unless `RETICLE_OCI_TEST_IMAGE` is set,
+  like the repository's other OCI tests) passed with this image: fail on mutated, pass on gold, no network, and the
+  check() path in the container.
+- Scripted controls under this arm's flags, one task, with a hand-written one-task manifest outside the repository
+  (generation needs model calls; `run_pilot.py` directly, since `run_card.py` runs controls only with `--execute`):
+  gold **accepted**, noop **rejected**, backend `isolated-oci`, verifier bundle available (1 case), commit nudge
+  `commit-nudge-v1`. Run folders kept outside the repository.
+
+**Generation calls, and when** (`repro_verifiers.py generate`):
+- After the owner's launch approval and before the campaign, once per task, never during a run: a headless
+  `claude -p` (the private 2.1.286 first on PATH) with the pinned model, a fresh context, only the CLI's Read, Glob and
+  Grep tools on a temporary copy of the pre-edit workspace, `--permission-mode dontAsk`, `--max-budget-usd 0.60` per
+  call, at most 30 turns.
 - 1 call per task if the first file compiles, collects at least one case and has at least one failing case on the
-  pre-edit tree; otherwise up to `MAX_ATTEMPTS` = 3 calls (each retry sees the previous file, its counts and the
-  pytest tail). **At most 3 calls per task, 93 for 31 tasks.** Card 021 averaged 1.375 calls per task (11 for 8 tasks;
-  1.6 on its 5 hard tasks).
-- The default `--spend-cap-usd` is $8, too low for 31 tasks; at launch it needs to be set (proposed $56 = 93 x $0.60)
-  with the owner's approval. A task that can get no call under the cap is recorded unavailable; check() then returns an
-  error.
+  pre-edit tree (now run in podman); otherwise up to `MAX_ATTEMPTS` = 3 calls (each retry sees the previous file, its
+  counts and the pytest tail). **At most 3 calls per task, 93 for 31 tasks**; expected about 43 (card 021 averaged
+  1.375 calls per task, 11 for 8 tasks; 1.6 on its 5 hard tasks). Confinement adds no call.
+- Spend cap: the default `--spend-cap-usd` is $8, too low for 31 tasks. **Proposed: $56** (93 x $0.60 = $55.80, so the
+  cap never cuts a third attempt); a proposal for the owner's launch approval, not decided. A task that can get no call
+  under the cap is recorded unavailable; check() then returns an error.
+- Command (proposed): `python experiments/p6_pilot/repro_verifiers.py generate --out
+  experiments/session_harness/verifiers/024 --tasks experiments/mutation_tasks/tasks.pilot024-eval.json --model
+  claude-sonnet-5 --spend-cap-usd 56 --oci-image localhost/reticle-p6-task:py313-v1`.
 - The frozen tests go to `experiments/session_harness/verifiers/024/` with `manifest.json`, whose sha256 is a hash
-  input, so this arm's hashes exist only after generation.
+  input. **The verifier-commit hashes `--plan` prints today are provisional** (planned with `manifest_sha256_lf` null);
+  they change once the manifest exists, and the runner refuses a verifier run without it. Hence the card's
+  prerequisite "Verifier manifest generated".
 
-**Backend.** During the campaign, check() runs the frozen test through the run's execution backend: under OCI, a
-separate `--rm` container whose only mount is a scratch copy, and the verifier bundle lives in the run directory
-outside the workspace the model's commands mount. This is the confinement card 021 lacked (its cloud trusted-local
-`run` tool had no path guard, so the model could read the verifier directory). Two caveats:
-- Card 021's tests exercise the verifier only on trusted-local; under OCI it uses the hidden-test oracle's backend
-  path (`reticle/tools/check_oracle.py`, which `ReproTestVerifier` subclasses), not yet run with the verifier. A
-  gold/noop control under the verifier arm should run before the campaign.
-- Generation itself is not in OCI: `repro_verifiers.py` runs each model-written test file with the host interpreter
-  (`run_on_tree`, `sys.executable`) on a temporary copy of the pre-edit tree. On this machine that means model-written
-  Python runs unsandboxed on the user's host. The CLI's reads are audited for paths outside the copy, but the test
-  execution is not confined. Proposed: run generation in OCI or in the cloud VM, or review each file before it runs;
-  owner decision at launch.
+**Backend during the campaign.** check() runs the frozen test through the run's OCI backend: a separate `--rm`
+container whose only mount is a scratch copy, and the verifier bundle lives in the run directory outside the
+workspace the model's commands mount.
 
 ## Tasks and cross-task state
 
@@ -187,7 +229,8 @@ Readings:
   [`experiments/neurosymbolic/README.md`](../neurosymbolic/README.md) reads the pattern.
 
 Nothing here is a significance claim; a +0.10 threshold is below the roughly 23-point effect the screen can detect,
-on purpose, so that a screen errs toward a follow-up.
+on purpose, so that a screen errs toward a follow-up. The owner kept the threshold on 2026-10-01 ("Keep +0.10
+(Recommended)", decision 3 above).
 
 ## Runs, caps and calls
 
@@ -213,7 +256,8 @@ max $2.44), **$2.571 per eval task** for 2 runs. 32 of the 62 runs were accepted
   = $79.7 + $287.0 = **$366.7**.
 - Worst case, every run at card 010's maximum: 248 x $2.442 = $605.6.
 - Repro generation: card 021 spent $4.83 for 8 tasks ($0.604 per task; $0.893 on its hard tasks): expected
-  31 x $0.604 = **$18.7** (31 x $0.893 = $27.7 at the hard-task rate); cap 93 x $0.60 = $55.80.
+  31 x $0.604 = **$18.7** (31 x $0.893 = $27.7 at the hard-task rate); at most 93 x $0.60 = $55.80; proposed
+  `--spend-cap-usd 56` (owner approval at launch). Running the pre-edit check in podman changes no call or cost.
 - Total expected about **$338-395 list**. The CLI subscription bills nothing today; billing is recorded as unknown.
 - Wall time: card 010's mean on these 62 runs was 7.07 min (max 21.7). 248 x 7 min = 1,736 min = **about 29 h**
   sequential (248 x 7.07 = 29.2 h), plus the controls (minutes) and generation (not measured here).
@@ -227,7 +271,8 @@ max $2.44), **$2.571 per eval task** for 2 runs. 32 of the 62 runs were accepted
   campaign attempt cap is the only hard limit. Check the billing status at launch and checkpoint daily.
 - Usage limits: card 018 lost runs to them; such runs are voided and rerun (stop rules).
 - CLI version: the private 2.1.286 copy must be first on PATH; a different version stops the campaign.
-- Verifier generation runs model-written code on the host (above).
+- Verifier generation: model-written test files now run only in podman (network none, scratch mount); podman or
+  the image missing stops generation before any call.
 
 ## Stopping rule
 
@@ -238,8 +283,9 @@ valid runs or the attempt cap; an extension needs a new approval.
 
 ## Not done
 
-- No model call, no run, no generation. The card is not launched; the owner approves the launch (runs, cost,
+- No model call, no campaign run, no generation. The card is not launched; the owner approves the launch (runs, cost,
   generation calls and spend cap) separately.
-- The verifier-commit code is not merged (hash change above), so that arm cannot be planned yet.
-- No gold/noop control was run for this card (the plan includes them; they need OCI time, no model).
+- The verifier-commit hashes are provisional until the manifest is generated.
+- The card's own gold/noop controls (31 tasks each) were not run: `run_card.py` runs them only with `--execute`,
+  which a proposed card refuses. Only the one-task sample above (gold/noop under the verifier arm's flags) was run.
 - No report skeleton was written; `run_card.py --execute` writes it.

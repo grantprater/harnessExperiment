@@ -893,6 +893,20 @@ Done: 64 eval twins quarantined in the pooled registry (`quarantined-eval-twin`:
 [card 024](experiments/session_harness/E3-ontology-pilot-024.md) (`proposed`, 248 runs; not launched; the owner approves
 the launch separately).
 
+**Owner decisions (2026-10-01, card 024 draft).**
+1. Question (verbatim): "Merging the verifier-commit code from integration/2026-10 changes the protocol hash of every incumbent/memory/symbolic run (its CLI wrapper adds a model_pin block), so the pilot would no longer run the same code as card 010's calibration. How should the arm's code come in?"
+Answer (verbatim): "Port verifier only (Recommended)" (option text: "Bring over only the verifier-commit runner and repro-test code, not the CLI wrapper change. Must keep all 186 other hashes equal to calibration. The 'same code as calibration' rule holds.")
+2. Question (verbatim): "Before the pilot, verifier-commit generates a reproduction test per task (at most 93 calls, about 43 expected, about $19). The model-written test file is then executed with plain host Python on this machine, outside any sandbox. How should that run?"
+Answer (verbatim): "Confine it in podman (Recommended)" (option text: "Run each generated test in the same OCI image the runs use (network none, scratch copy only) before freezing it. A small code change; nothing model-written runs on the host.")
+3. Question (verbatim): "The card's decision rule, written before any data: an arm earns a powered follow-up if it beats the incumbent by at least +0.10 in acceptance AND wins more tasks than it loses; an arm at -0.10 or worse is recorded as harmful. The draft agent chose the 0.10 threshold. Keep it?"
+Answer (verbatim): "Keep +0.10 (Recommended)".
+
+Done on `exp/ontology-pilot`: verifier-only port (`07f70df`, from `52deea7`, `a41fcff`, `4ae5dea`; no `claude_cli.py`
+change) and podman confinement of every model-written test run (`c47deb8`; fail closed, no host fallback). Card 024's
+incumbent, memory and symbolic hashes are unchanged (incumbent 31/31 equal to card 010). Remaining before launch: the
+owner's launch approval (runs, cost, generation calls, spend cap; $56 proposed), then generation of the verifier
+manifest, then status `approved`.
+
 **Implementation choices before any E3 model run in OCI** (from
 `experiments/session_harness/S2b-oci-boundaries-controls.md`):
 
