@@ -859,13 +859,13 @@ Generation is specified there and ready to launch, with the prompt in
 
 **Owner decisions (2026-10-01, card 010 stage 2a, after generation).** Generation ran in the cloud (531 of 531
 candidates tried, 275 new kept tasks, `DETERMINISM: PASS-ADDRESS-ONLY`). The owner was asked three questions; the
-question texts are as relayed to this record ("..." marks text elided in the relay):
+question texts are verbatim:
 
 1. Question: "Accept the reproducibility exception? Tasks 001-076 regenerated identically on the cloud machine except task 072, whose description differs only by a Python memory address. Task 072 is already excluded from every set."
    Answer (verbatim): "Accept (Recommended)" (option text: "PASS-ADDRESS-ONLY counts as a pass, so the new task ids (077 onward) may be used.")
-2. Question: "Accept the proposed selection rule for stage 2a? ... leaving 39 function-distinct tasks (5 single-test, 34 multi-test). The keep/drop rule is applied to those 39 alone, and the tasks it keeps are added to stage 1's 12."
+2. Question: "Accept the proposed selection rule for stage 2a? Of 275 new tasks, 182 share a function or failing set with the original bank, 38 duplicate each other and 16 are excluded by name, leaving 39 function-distinct tasks (5 single-test, 34 multi-test). The keep/drop rule is applied to those 39 alone, and the tasks it keeps are added to stage 1's 12."
    Answer (verbatim): "Accept (Recommended)" (option text: "Calibrate all 39 and apply the keep/drop rule to stage 2a separately. Pooling would pull round-1 tasks that were dropped back in ahead of any new task.")
-3. Question: "Approve the stage 2a calibration: 39 tasks x 2 rollouts = 78 runs on claude-sonnet-5 (CLI 2.1.286, local OCI backend, same protocol as stage 1). It costs about $70 at list (stage 1 averaged $0.90 a run; range about $55-95), plus model-free gold/no-op controls first. ..."
+3. Question: "Approve the stage 2a calibration: 39 tasks x 2 rollouts = 78 runs on claude-sonnet-5 (CLI 2.1.286, local OCI backend, same protocol as stage 1). It costs about $70 at list (stage 1 averaged $0.90 a run; range about $55-95), plus model-free gold/no-op controls first. Expected yield is about 10-16 more eval tasks, for about 22-28 in total, since most new tasks are multi-test, which Sonnet solved more often."
    Answer (verbatim): "Approve 78 runs (Recommended)" (option text: "Run the model-free controls, then the 78 calibration runs locally, one process at a time. The stage-1 stopping rules apply.")
 
 The stage-2a calibration is approved at 78 runs (39 tasks x 2 rollouts, about $70 at list), after the model-free
