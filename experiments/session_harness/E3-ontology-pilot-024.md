@@ -1,10 +1,21 @@
 # E3 ontology pilot 024: four arms on card 010's eval split (screen)
 
 Date: 2026-10-01  
-Status: **proposed (draft; not approved, not launched).** `run_card.py --execute` refuses it: the status is
-`proposed`, the launch-approval prerequisite is not done, and the verifier manifest is not generated (generation needs
-the approved model calls). The verifier-commit code is ported (see "Verifier-commit: ported verifier-only, generation
-confined in podman").  
+Status: **approved (2026-10-01; launch approval below).** Phase 1 (verifier generation, `--spend-cap-usd 30`) runs
+first; `run_card.py --execute` still refuses until the verifier manifest is generated, verified, committed and re-planned.
+The verifier-commit code is ported (see "Verifier-commit: ported verifier-only, generation confined in podman").  
+Owner launch approval (2026-10-01, verbatim):
+- Q: "Card 024 is ready to launch. Phase 1: generate reproduction tests for verifier-commit (at most 93 model calls,
+  about 43 expected, about $19 list; tests run in podman). Phase 2: 248 pilot runs + 2 scripted controls on
+  claude-sonnet-5 via the private CLI 2.1.286, at most 7,037 model calls in total, about $338-395 list, about 29 h
+  sequential on this machine at idle priority. It bills the subscription; if Anthropic's paused Agent SDK credit change
+  resumes mid-campaign, `claude -p` usage could start drawing on a monthly credit ($20-200) instead. What do you
+  approve?" A: "Both phases (Recommended)". The option read: "Run generation, then I verify the manifest (one test per
+  task, each fails on the mutated tree and passes on gold), commit it, re-plan, and launch the 248 runs without asking
+  again. I stop and come back if anything in that check fails or costs exceed the estimate."
+- Q: "Spend cap for phase 1 generation (each call is already capped at $0.60, so 93 calls can never exceed $55.80)?"
+  A: "$30". The option read: "About 1.6x the expected spend. If hit, some tasks get no verifier, and I'd come back
+  before the pilot."  
 Machine card: [`cards/024.json`](cards/024.json). Task file:
 [`tasks.pilot024-eval.json`](../mutation_tasks/tasks.pilot024-eval.json), built by
 [`build_pilot_eval_tasks.py`](../mutation_tasks/build_pilot_eval_tasks.py) (`--check` rebuilds it).  
@@ -176,12 +187,12 @@ Evidence, 2026-10-01, no model call (image ID `8b74015e5079d613...`):
   pre-edit tree (now run in podman); otherwise up to `MAX_ATTEMPTS` = 3 calls (each retry sees the previous file, its
   counts and the pytest tail). **At most 3 calls per task, 93 for 31 tasks**; expected about 43 (card 021 averaged
   1.375 calls per task, 11 for 8 tasks; 1.6 on its 5 hard tasks). Confinement adds no call.
-- Spend cap: the default `--spend-cap-usd` is $8, too low for 31 tasks. **Proposed: $56** (93 x $0.60 = $55.80, so the
-  cap never cuts a third attempt); a proposal for the owner's launch approval, not decided. A task that can get no call
+- Spend cap: the default `--spend-cap-usd` is $8, too low for 31 tasks. **Approved: $30** (owner, 2026-10-01; $56 had been
+  proposed, the hard maximum 93 x $0.60 = $55.80). A task that can get no call
   under the cap is recorded unavailable; check() then returns an error.
-- Command (proposed): `python experiments/p6_pilot/repro_verifiers.py generate --out
+- Command: `python experiments/p6_pilot/repro_verifiers.py generate --out
   experiments/session_harness/verifiers/024 --tasks experiments/mutation_tasks/tasks.pilot024-eval.json --model
-  claude-sonnet-5 --spend-cap-usd 56 --oci-image localhost/reticle-p6-task:py313-v1`.
+  claude-sonnet-5 --spend-cap-usd 30 --oci-image localhost/reticle-p6-task:py313-v1`.
 - The frozen tests go to `experiments/session_harness/verifiers/024/` with `manifest.json`, whose sha256 is a hash
   input. **The verifier-commit hashes `--plan` prints today are provisional** (planned with `manifest_sha256_lf` null);
   they change once the manifest exists, and the runner refuses a verifier run without it. Hence the card's
@@ -256,8 +267,8 @@ max $2.44), **$2.571 per eval task** for 2 runs. 32 of the 62 runs were accepted
   = $79.7 + $287.0 = **$366.7**.
 - Worst case, every run at card 010's maximum: 248 x $2.442 = $605.6.
 - Repro generation: card 021 spent $4.83 for 8 tasks ($0.604 per task; $0.893 on its hard tasks): expected
-  31 x $0.604 = **$18.7** (31 x $0.893 = $27.7 at the hard-task rate); at most 93 x $0.60 = $55.80; proposed
-  `--spend-cap-usd 56` (owner approval at launch). Running the pre-edit check in podman changes no call or cost.
+  31 x $0.604 = **$18.7** (31 x $0.893 = $27.7 at the hard-task rate); at most 93 x $0.60 = $55.80; approved
+  `--spend-cap-usd 30` (owner, 2026-10-01). Running the pre-edit check in podman changes no call or cost.
 - Total expected about **$338-395 list**. The CLI subscription bills nothing today; billing is recorded as unknown.
 - Wall time: card 010's mean on these 62 runs was 7.07 min (max 21.7). 248 x 7 min = 1,736 min = **about 29 h**
   sequential (248 x 7.07 = 29.2 h), plus the controls (minutes) and generation (not measured here).

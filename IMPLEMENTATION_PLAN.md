@@ -907,6 +907,11 @@ incumbent, memory and symbolic hashes are unchanged (incumbent 31/31 equal to ca
 owner's launch approval (runs, cost, generation calls, spend cap; $56 proposed), then generation of the verifier
 manifest, then status `approved`.
 
+**Owner launch approval (2026-10-01, card 024).** Question (verbatim): "Card 024 is ready to launch. Phase 1: generate reproduction tests for verifier-commit (at most 93 model calls, about 43 expected, about $19 list; tests run in podman). Phase 2: 248 pilot runs + 2 scripted controls on claude-sonnet-5 via the private CLI 2.1.286, at most 7,037 model calls in total, about $338-395 list, about 29 h sequential on this machine at idle priority. It bills the subscription; if Anthropic's paused Agent SDK credit change resumes mid-campaign, `claude -p` usage could start drawing on a monthly credit ($20-200) instead. What do you approve?"
+Answer (verbatim): "Both phases (Recommended)" (option text: "Run generation, then I verify the manifest (one test per task, each fails on the mutated tree and passes on gold), commit it, re-plan, and launch the 248 runs without asking again. I stop and come back if anything in that check fails or costs exceed the estimate.")
+Question (verbatim): "Spend cap for phase 1 generation (each call is already capped at $0.60, so 93 calls can never exceed $55.80)?"
+Answer (verbatim): "$30". Card 024 status set to `approved`.
+
 **Implementation choices before any E3 model run in OCI** (from
 `experiments/session_harness/S2b-oci-boundaries-controls.md`):
 
