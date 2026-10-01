@@ -162,6 +162,8 @@ task (card 021's `repro_verifiers.py generate`, 1-3 headless calls per task); th
 final pilot size and spend are confirmed with the owner at launch. The arm's code comes from the
 integration branch (cloud-card branches merged with this one; same decision message, "3. Yes").
 
+**Owner decision (2026-10-01), after the cloud integrity audit.** Card 021's verifier-commit result was contaminated (two accepted runs read the answer outside the workspace; hard block 2/13 vs 0/15, p = 0.21 after exclusion; `experiments/cloud/INTEGRITY_AUDIT_019-021.md`). Asked whether to keep verifier-commit as the 4th arm, the owner answered "2. Yes keep it". The pilot runs on the OCI backend (no network, workspace-only mount, private /tmp), so it is the first clean test of the arm. Card 021 was set to invalidated ("1. stop it").
+
 **Planned next step.** After the pilot on the card 010 bank (Sonnet 5), move to harder tasks to test whether
 the comparison extends and generalizes. Not yet designed.
 

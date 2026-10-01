@@ -1,7 +1,7 @@
 # E4 verifier + commitment 021: a realistic check() and a mid-budget commitment prompt, paired, on the cloud VM
 
 Date: 2026-09-29 (UTC)  
-Status: running; approved by the owner through experiments/cloud/RUN_IN_CLOUD-021.md, launched in a cloud session 2026-09-29 07:13 UTC  
+Status: invalidated 2026-10-01 by the owner after the integrity audit. Asked whether to mark the card invalidated or keep it running with the contamination note, the owner answered "1. stop it". (Was: running; approved by the owner through experiments/cloud/RUN_IN_CLOUD-021.md, launched in a cloud session 2026-09-29 07:13 UTC.) The verifier-commit arm is re-tested cleanly as the 4th arm of the evidence-ontology pilot on the OCI backend (owner, same day: "2. Yes keep it").  
 Stage: S6 (tool use + agent loop) on cloud compute. Machine-readable card: [`cards/021.json`](cards/021.json).  
 
 Integrity audit (2026-10-01): contaminated; exclude `c021-sqlparse-mut-001-r1-verifier-commit` (read the hidden test) and `c021-sqlparse-mut-061-r1-verifier-commit` (downloaded the healthy file from PyPI), giving hard 2/13 vs 0/15 (one-sided Fisher p = 0.21); the card-020 numbers below also include an excluded run ([audit](../cloud/INTEGRITY_AUDIT_019-021.md)).
