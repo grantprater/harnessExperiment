@@ -43,7 +43,7 @@ Rules for the whole session:
    candidate pool of 531 and 431 untried. Otherwise stop: do not generate.
 5. Generation, as ONE background command. Run it with the Bash tool's background option; do not add `&`:
    ```
-   echo $$ > .runtime/c010-2a.pid; nice -n 19 $PY experiments/mutation_tasks/generate.py --python .runtime/bugs-venv/bin/python --work-dir /tmp/c010-2a-work --max-candidates 531 --budget-seconds 3600 --out experiments/mutation_tasks/tasks.mutations.full.json --log experiments/mutation_tasks/generation_log.full.json > .runtime/c010-2a-generate.out 2>&1; echo "generate exit $?" >> .runtime/c010-2a-generate.out
+   echo $$ > .runtime/c010-2a.pid; nice -n 19 $PY experiments/mutation_tasks/generate.py --python "$PWD/.runtime/bugs-venv/bin/python" --work-dir /tmp/c010-2a-work --max-candidates 531 --budget-seconds 3600 --out experiments/mutation_tasks/tasks.mutations.full.json --log experiments/mutation_tasks/generation_log.full.json > .runtime/c010-2a-generate.out 2>&1; echo "generate exit $?" >> .runtime/c010-2a-generate.out
    ```
    Put the rules' `cd ... export ...;` prefix in front, as for every command. Record the UTC start time.
 6. Wait with this single blocking command, tool timeout 600000 ms:

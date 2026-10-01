@@ -405,14 +405,14 @@ are. Rechecked 2026-10-01 with `apply_split_010.py` (offline): every stage-1 run
 
   ```
   OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 nice -n 19 .runtime/bugs-venv/bin/python \
-    experiments/mutation_tasks/generate.py --python .runtime/bugs-venv/bin/python --work-dir /tmp/c010-2a-work \
+    experiments/mutation_tasks/generate.py --python "$PWD/.runtime/bugs-venv/bin/python" --work-dir /tmp/c010-2a-work \
     --max-candidates 531 --budget-seconds 3600 \
     --out experiments/mutation_tasks/tasks.mutations.full.json \
     --log experiments/mutation_tasks/generation_log.full.json
   ```
 
   It differs from the card's literal command in three ways, none of which changes what is generated:
-  - `--python`: the generator's default task interpreter is the Windows venv path;
+  - `--python`: the generator's default task interpreter is the Windows venv path; it must be absolute, because the generator runs suites from inside the workspace (the first cloud attempt, 2026-10-01 06:34Z, stopped after 22 s on the relative path, before any candidate ran);
   - `--work-dir`: an explicit scratch directory;
   - output paths: the card gave bare file names; these put the outputs beside the bank.
 
