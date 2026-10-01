@@ -1,0 +1,257 @@
+{
+  "card": "E3-calibration-023",
+  "rule": "exclude statement_names_mutated_function; 3 per mutation kind plus 1 for seeded kinds; seeded shuffle from task-id order; take a task if its kind is under quota and its fail_to_pass set is new",
+  "selector": "experiments/session_harness/select_calibration_tasks.py",
+  "bank": {
+    "path": "experiments/mutation_tasks/tasks.boltons.json",
+    "sha256_lf": "d958410c25897fb4048736a0292b1a1b6029a65c0c04b8ce7568784a8d04eb5e"
+  },
+  "seed": 23,
+  "count": 20,
+  "quotas": {
+    "compare_flip": 4,
+    "drop_not": 3,
+    "negate_condition": 4,
+    "off_by_one": 4,
+    "remove_guard": 1,
+    "swap_branches": 4
+  },
+  "shortfall": "redistribute",
+  "initial_quotas": {
+    "compare_flip": 4,
+    "drop_not": 3,
+    "negate_condition": 4,
+    "off_by_one": 3,
+    "remove_guard": 3,
+    "swap_branches": 3
+  },
+  "redistributions": [
+    {
+      "short": {
+        "remove_guard": 1
+      },
+      "quotas": {
+        "compare_flip": 4,
+        "drop_not": 3,
+        "negate_condition": 4,
+        "off_by_one": 4,
+        "remove_guard": 1,
+        "swap_branches": 4
+      }
+    }
+  ],
+  "excluded_statement_names_mutated_function": [
+    "boltons-mut-003",
+    "boltons-mut-005",
+    "boltons-mut-006",
+    "boltons-mut-007",
+    "boltons-mut-009",
+    "boltons-mut-017",
+    "boltons-mut-018",
+    "boltons-mut-019",
+    "boltons-mut-020",
+    "boltons-mut-022",
+    "boltons-mut-026",
+    "boltons-mut-030",
+    "boltons-mut-035",
+    "boltons-mut-037",
+    "boltons-mut-039",
+    "boltons-mut-040",
+    "boltons-mut-041",
+    "boltons-mut-042",
+    "boltons-mut-050",
+    "boltons-mut-051",
+    "boltons-mut-052",
+    "boltons-mut-053",
+    "boltons-mut-054",
+    "boltons-mut-059",
+    "boltons-mut-061",
+    "boltons-mut-063"
+  ],
+  "eligible_tasks": 37,
+  "eligible_distinct_fail_to_pass_sets": 32,
+  "task_ids": [
+    "boltons-mut-010",
+    "boltons-mut-011",
+    "boltons-mut-015",
+    "boltons-mut-016",
+    "boltons-mut-021",
+    "boltons-mut-023",
+    "boltons-mut-027",
+    "boltons-mut-029",
+    "boltons-mut-031",
+    "boltons-mut-033",
+    "boltons-mut-034",
+    "boltons-mut-044",
+    "boltons-mut-045",
+    "boltons-mut-047",
+    "boltons-mut-048",
+    "boltons-mut-049",
+    "boltons-mut-056",
+    "boltons-mut-057",
+    "boltons-mut-060",
+    "boltons-mut-062"
+  ],
+  "tasks": [
+    {
+      "task_id": "boltons-mut-010",
+      "mutation_kind": "drop_not",
+      "mutation_file": "boltons/setutils.py",
+      "mutation_line": 164,
+      "fail_to_pass": 4,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-011",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "boltons/strutils.py",
+      "mutation_line": 1208,
+      "fail_to_pass": 3,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-015",
+      "mutation_kind": "drop_not",
+      "mutation_file": "boltons/debugutils.py",
+      "mutation_line": 189,
+      "fail_to_pass": 6,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-016",
+      "mutation_kind": "off_by_one",
+      "mutation_file": "boltons/strutils.py",
+      "mutation_line": 1208,
+      "fail_to_pass": 5,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-021",
+      "mutation_kind": "off_by_one",
+      "mutation_file": "boltons/urlutils.py",
+      "mutation_line": 298,
+      "fail_to_pass": 19,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-023",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "boltons/listutils.py",
+      "mutation_line": 176,
+      "fail_to_pass": 8,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-027",
+      "mutation_kind": "off_by_one",
+      "mutation_file": "boltons/cacheutils.py",
+      "mutation_line": 867,
+      "fail_to_pass": 1,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-029",
+      "mutation_kind": "compare_flip",
+      "mutation_file": "boltons/iterutils.py",
+      "mutation_line": 642,
+      "fail_to_pass": 1,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-031",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "boltons/cacheutils.py",
+      "mutation_line": 516,
+      "fail_to_pass": 1,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-033",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "boltons/iterutils.py",
+      "mutation_line": 802,
+      "fail_to_pass": 2,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-034",
+      "mutation_kind": "drop_not",
+      "mutation_file": "boltons/dictutils.py",
+      "mutation_line": 380,
+      "fail_to_pass": 6,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-044",
+      "mutation_kind": "compare_flip",
+      "mutation_file": "boltons/setutils.py",
+      "mutation_line": 240,
+      "fail_to_pass": 2,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-045",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "boltons/urlutils.py",
+      "mutation_line": 218,
+      "fail_to_pass": 44,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-047",
+      "mutation_kind": "off_by_one",
+      "mutation_file": "boltons/formatutils.py",
+      "mutation_line": 134,
+      "fail_to_pass": 3,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-048",
+      "mutation_kind": "swap_branches",
+      "mutation_file": "boltons/funcutils.py",
+      "mutation_line": 820,
+      "fail_to_pass": 8,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-049",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "boltons/urlutils.py",
+      "mutation_line": 726,
+      "fail_to_pass": 4,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-056",
+      "mutation_kind": "compare_flip",
+      "mutation_file": "boltons/urlutils.py",
+      "mutation_line": 925,
+      "fail_to_pass": 6,
+      "statement_message_dropped": true
+    },
+    {
+      "task_id": "boltons-mut-057",
+      "mutation_kind": "negate_condition",
+      "mutation_file": "boltons/setutils.py",
+      "mutation_line": 856,
+      "fail_to_pass": 1,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-060",
+      "mutation_kind": "remove_guard",
+      "mutation_file": "boltons/strutils.py",
+      "mutation_line": 1233,
+      "fail_to_pass": 1,
+      "statement_message_dropped": false
+    },
+    {
+      "task_id": "boltons-mut-062",
+      "mutation_kind": "compare_flip",
+      "mutation_file": "boltons/iterutils.py",
+      "mutation_line": 648,
+      "fail_to_pass": 4,
+      "statement_message_dropped": false
+    }
+  ]
+}

@@ -19,6 +19,7 @@ Structure: [`card.schema.json`](card.schema.json) (JSON Schema keywords, checked
 | `015.json` | [E4-check-oracle-015](../E4-check-oracle-015.md) | `proposed`; incumbent vs `--oracle hidden-tests:3` (task-changing arm), same tasks; blocked only on approval |
 | `019.json` | [E3-cloud-replication-019](../E3-cloud-replication-019.md) | `proposed`; card 007's design on a cloud VM: trusted-local (`isolation: vm-sandbox`), model pinned to `claude-sonnet-5`, list-price cap $40; blocked only on approval |
 | `020.json` | [E4-cloud-check-oracle-020](../E4-cloud-check-oracle-020.md) | `proposed`; card 015's arms on the cloud backend of card 019; blocked on approval and on card 019's result |
+| `023.json` | [E3-calibration-023](../E3-calibration-023.md) | `proposed`; card 007's design on the second (boltons) mutation bank, on card 019's cloud backend with card 020's CLI reply recovery; seed-23 selection recorded before any run; blocked only on approval |
 
 ## Commands
 

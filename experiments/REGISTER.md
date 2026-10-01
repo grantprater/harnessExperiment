@@ -48,7 +48,7 @@ Task supply: where the tasks that measure the candidates above come from.
 
 | Candidate | Need addressed | Mechanism | Status / evidence |
 |---|---|---|---|
-| Mutation-generated repair tasks | Hundreds of sealed repair tasks with hidden tests; public repairs may be contaminated | One semantic mutation of a healthy upstream checkout per task, kept when the suite fails partly; statement from failing-test names and the first failure message | Calibrated 2026-09-28 (card 007): Sonnet 0.80 acceptance, 2 contrastive + 3 negative of 20; too easy as generated; difficulty card 010 proposed; [report](session_harness/E3-calibration-007-report.md) |
+| Mutation-generated repair tasks | Hundreds of sealed repair tasks with hidden tests; public repairs may be contaminated | One semantic mutation of a healthy upstream checkout per task, kept when the suite fails partly; statement from failing-test names and the first failure message | Calibrated 2026-09-28 (card 007): Sonnet 0.80 acceptance, 2 contrastive + 3 negative of 20; too easy as generated; difficulty card 010 proposed; [report](session_harness/E3-calibration-007-report.md). Second bank for near transfer (2026-09-28): boltons, 63 tasks from 100 candidates, Linux cross-check 63/63, gold/noop controls pass on trusted-local and OCI; calibration [card 023](session_harness/E3-calibration-023.md) proposed |
 
 Next workload after E3: [D1 scientific-discovery simulator](session_harness/D1-discovery-simulator.md).
 Design complete; implementation and live runs unrun. Calibrate limited-probe prediction of a
