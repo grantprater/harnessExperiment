@@ -412,7 +412,10 @@ class ExpansionTests(unittest.TestCase):
             (contract,) = routing.values()
             arguments = list(contract["arguments"])
             arguments[arguments.index("--model") + 1] = model
-            return {model: {**contract, "model": model, "arguments": arguments, "cli_version": cli_version}}
+            # integration/2026-10: the merged model guard (cloud port) adds "model_pin" to a full ID's contract
+            model_pin = runner.cli_contract(model, max_turns=1, timeout=300, version=cli_version)["model_pin"]
+            return {model: {**contract, "model": model, "arguments": arguments, "cli_version": cli_version,
+                            "model_pin": model_pin}}
 
         for name, arm_name in (("013", "finish-guard"), ("014", "midpoint-nudge"), ("015", "check-oracle")):
             with self.subTest(card=name):
@@ -573,18 +576,23 @@ class ExecutionTests(unittest.TestCase):
         fixture = Fixture(self)
         plan = fixture.plan(fixture.card())
         names = [inv.run_name for inv in plan.invocations]
-        fixture.behave({names[1]: "model_mismatch"})
-        self.assertEqual(fixture.execute(plan), run_card.EXIT_CHECKPOINT)
+        fixture.behave({names[1]: ["model_mismatch", "accept"]})
+        # integration/2026-10: one guard with the cloud port's model pin, so a mismatch is an integrity stop
+        # (corrupted_protocol, exit 4) rather than exp/ontology-pilot's checkpoint (exit 3); still void and resumable.
+        self.assertEqual(fixture.execute(plan), run_card.EXIT_INTEGRITY)
         self.assertEqual(fixture.invoked(), names[:2])  # no retry: it would meet the same model
         self.assertEqual(fixture.sleeps, [])
         end = [e for e in fixture.events(plan) if e["event"] == "invocation_end"][-1]
-        self.assertEqual(end["outcome"], "failure")
-        self.assertTrue(end["detail"].startswith("model_mismatch: requested claude-m1"), end["detail"])
+        self.assertEqual(end["outcome"], "integrity")
+        self.assertTrue(end["detail"].startswith("corrupted_protocol: model_mismatch (model_pin_violation): "
+                                                 "requested claude-m1"), end["detail"])
         self.assertIn("model_mismatch", fixture.events(plan)[-1]["reason"])
         record = run_card.read_jsonl(fixture.dir / "runs" / names[1] / "results.jsonl")[0]
         self.assertTrue(run_card.is_model_failure(record))
         # Not a task outcome: the invocation has no completed attempt, so --resume runs it again.
         self.assertIsNone(run_card.completed_attempt(run_card.Campaign(plan), plan.invocations[1]))
+        self.assertEqual(fixture.execute(plan, resume=True), run_card.EXIT_OK)
+        self.assertEqual(fixture.invoked()[2:3], [f"{names[1]}-a2"])  # the void attempt runs again on --resume
 
     def test_consecutive_failures_across_invocations(self):
         fixture = Fixture(self)

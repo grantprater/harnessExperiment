@@ -1,0 +1,9 @@
+# For a base interpreter older than Python 3.12 (a cloud VM whose uv cannot provide 3.13.15 or 3.12; its system
+# python3 was 3.11.15 when probed): test-venv.requirements.txt with the nearest pins that support Python 3.11.
+# numpy 2.5 requires Python >= 3.12, so numpy is 2.4.6 (the last 2.4.x, requires >= 3.11); opencv-python 5.0.0.93
+# (cp37-abi3 wheels, numpy>=2), pillow 12.3.0 (>= 3.10) and pyyaml 6.0.3 (>= 3.8) already support 3.11 and are
+# unchanged. setup_cloud.sh selects this file automatically by version and says so in a NOTE.
+numpy==2.4.6
+opencv-python==5.0.0.93
+pillow==12.3.0
+pyyaml==6.0.3

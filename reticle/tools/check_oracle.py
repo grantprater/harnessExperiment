@@ -70,6 +70,8 @@ class HiddenTestOracle(AcceptanceRunner):
 
     name = "hidden-tests"
     version = ORACLE_VERSION
+    event_kind = "oracle_check"
+    scratch_prefix = "oracle-"
 
     def __init__(self, runtime: LocalRuntime, backend, evaluator_root, *, max_calls: int = DEFAULT_MAX_CALLS,
                  timeout_seconds: float = 720.0, command=EVALUATOR_COMMAND):
@@ -93,9 +95,9 @@ class HiddenTestOracle(AcceptanceRunner):
         return check_schema(self.max_calls)
 
     def _evaluate(self) -> Tuple[Optional[dict], Dict[str, Any]]:
-        """(the fail-to-pass criterion or None, execution facts). The scratch directory is removed before return,
+        """(the parsed evaluator report or None, execution facts). The scratch directory is removed before return,
         and every failure becomes a fact without its message (an exception text could name a test file)."""
-        scratch = Path(tempfile.mkdtemp(prefix="oracle-", dir=self.scratch_parent))
+        scratch = Path(tempfile.mkdtemp(prefix=self.scratch_prefix, dir=self.scratch_parent))
         execution = None
         try:
             shutil.copytree(self.evaluator_root, scratch / "evaluator")
@@ -117,34 +119,41 @@ class HiddenTestOracle(AcceptanceRunner):
         facts.update(status=execution.status, exit_code=execution.exit_code, duration_ms=execution.duration_ms)
         try:
             report = json.loads(execution.stdout.decode("utf-8"))
-            return report["criteria"]["fail-to-pass"], facts
-        except (ValueError, KeyError, TypeError, UnicodeDecodeError):
+            self._counts(report)  # a report without the fields the counts need is no report
+            return report, facts
+        except (ValueError, KeyError, TypeError, AttributeError, UnicodeDecodeError):
             return None, {**facts, "error": "no evaluator report"}
+
+    def _counts(self, report: dict) -> Tuple[int, int]:
+        """(failing, passing) over the task's fail_to_pass tests, from the evaluator's report."""
+        criterion = report["criteria"]["fail-to-pass"]
+        observed = set(criterion.get("coverage_ids") or []) - set(criterion.get("failing") or [])
+        passing = len(observed.intersection(self.fail_to_pass))
+        return len(self.fail_to_pass) - passing, passing
 
     def check(self) -> Tuple[str, str]:
         """(tool result text, tool status) for one check call; journals an oracle_check event."""
         if self.calls >= self.max_calls:
             self.refused += 1
-            self.runtime.journal.append("oracle_check", {
+            self.runtime.journal.append(self.event_kind, {
                 "version": self.version, "refused": True, "calls_used": self.calls, "max_calls": self.max_calls})
             return REFUSAL.format(limit=self.max_calls, used=self.calls), "rejected"
         self.calls += 1
         revision = self.runtime.workspace.revision()
-        criterion, facts = self._evaluate()
+        report, facts = self._evaluate()
         unchanged = self.runtime.workspace.revision() == revision
         calls_left = self.max_calls - self.calls
-        if criterion is None or not unchanged:
+        if report is None or not unchanged:
             payload = {"error": "the check did not complete", "calls_left": calls_left}
             status = "error"
         else:
-            observed = set(criterion.get("coverage_ids") or []) - set(criterion.get("failing") or [])
-            passing = len(observed.intersection(self.fail_to_pass))
-            payload = {"failing": len(self.fail_to_pass) - passing, "passing": passing, "calls_left": calls_left}
+            failing, passing = self._counts(report)
+            payload = {"failing": failing, "passing": passing, "calls_left": calls_left}
             status = "success"
         result = {"call": self.calls, **payload, **facts, "workspace_revision": revision,
                   "workspace_unchanged": unchanged}
         self.results.append(result)
-        self.runtime.journal.append("oracle_check", {"version": self.version, "refused": False,
+        self.runtime.journal.append(self.event_kind, {"version": self.version, "refused": False,
                                                      "max_calls": self.max_calls, **result})
         return json.dumps(payload), status
 
@@ -155,7 +164,8 @@ class HiddenTestOracle(AcceptanceRunner):
 
 
 class CheckOracleTools:
-    """ToolSuite mixin: offers ``check`` (appended to the toolset's schemas) backed by a HiddenTestOracle."""
+    """ToolSuite mixin: offers ``check`` (appended to the toolset's schemas) backed by a HiddenTestOracle, or by any
+    object with the same schema(), check() and record() (reticle.tools.repro_verifier.ReproTestVerifier)."""
 
     def __init__(self, *args, oracle: HiddenTestOracle, **kwargs):
         super().__init__(*args, **kwargs)

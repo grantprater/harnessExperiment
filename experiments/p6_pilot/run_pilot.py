@@ -49,6 +49,25 @@ protocol hash (name, version, fixed texts, parameters), and reported under "trea
                              non-discriminating checks and contradictions; see experiments/neurosymbolic/README.md
   --reasoning injected      same as symbolic, plus a bounded advisory summary appended to the result of each
                              replace_text/write_file/run action (never finish; nothing is rejected)
+  --verifier repro-test[:K] --verifier-manifest MANIFEST.json
+                             tool use (card 021): the same check() interface over a reproduction test a separate
+                             model call wrote before the campaign from the statement and the pre-edit tree, frozen
+                             in the manifest (reticle/tools/repro_verifier.py, repro_verifiers.py); not with --oracle
+  --nudge commit             agent loop (card 021): once per run at --nudge-fraction of the response budget, edits or
+                             not, a harness message asking for a committed hypothesis and a tested prediction, with
+                             the commit_hypothesis and record_observation tools offered from the first request
+                             (reticle/runtime/nudges.py, reticle/tools/commitment.py)
+
+claude-cli client options (off by default; not treatments, since they change how a reply is obtained, not what the
+model is offered; one that is on is recorded in the CLI contract under provider_routing and so in the protocol hash;
+other clients ignore them):
+  --cli-reply-recovery lenient-json+second-turn-on-retry
+                             adapter v3: a StructuredOutput input the CLI could not parse is used when
+                             json.loads(raw, strict=False) accepts it; after a rejected StructuredOutput call, the
+                             request's later attempts run at --max-turns 2 and may take the second message's
+                             StructuredOutput call (first attempts keep v2's --max-turns 1). What it did is recorded
+                             per attempt in calls.jsonl (cli_max_turns, ...) and per run in results.jsonl
+                             ("cli_reply_recovery"); see claude_cli.py
 
 Usage (from the repo root):
   python experiments/p6_pilot/run_pilot.py --client gold --run-name gold-check
@@ -93,7 +112,8 @@ from reticle.runtime import LocalRuntime  # noqa: E402
 from reticle.runtime.contracts import TaskEnvelope  # noqa: E402
 from reticle.runtime.controller import AgentController, AgentLimits, ModelClientError, ModelResponse  # noqa: E402
 from reticle.runtime.nudges import (  # noqa: E402
-    MIDPOINT_NUDGE_TEMPLATE, MIDPOINT_NUDGE_VERSION, MidpointNudge, midpoint_nudge_text,
+    COMMIT_NUDGE_TEMPLATE, COMMIT_NUDGE_VERSION, MIDPOINT_NUDGE_TEMPLATE, MIDPOINT_NUDGE_VERSION, CommitmentNudge,
+    MidpointNudge, commit_nudge_text, midpoint_nudge_text,
 )
 from reticle.runtime.source_edits import SOURCE_RULE_VERSION, SourceEditTracker  # noqa: E402
 from reticle.tools import TOOL_SCHEMAS, ToolSuite  # noqa: E402
@@ -105,13 +125,27 @@ from reticle.tools.finish_guard import (  # noqa: E402
 )
 from reticle.runtime.reasoning import EvidenceOntology, reasoning_contract  # noqa: E402
 from reticle.tools.reasoning import ReasoningTools, REASONING_SCHEMAS, tool_contract  # noqa: E402
+from reticle.tools.commitment import (  # noqa: E402
+    COMMITMENT_TOOLS_VERSION, CommitmentLog, CommitmentTools, commitment_schemas,
+)
+from reticle.tools.repro_verifier import (  # noqa: E402
+    DEFAULT_MAX_CALLS as VERIFIER_DEFAULT_MAX_CALLS, VERIFIER_VERSION, ReproTestVerifier, verifier_schema,
+    write_bundle as write_verifier_bundle,
+)
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_TASK_FILE = HERE / "tasks.json"
 sys.path.insert(0, str(HERE))
-from claude_cli import MODEL_MISMATCH, ClaudeCliClient, cli_contract, cli_version, model_id_problem  # noqa: E402
+from claude_cli import (  # noqa: E402
+    MODEL_MISMATCH, REPLY_RECOVERY, RETRY_MAX_TURNS, ClaudeCliClient, cli_contract, cli_version, model_id_problem,
+)
+from interpreters import task_python  # noqa: E402
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
-TASK_PYTHON = ROOT / ".runtime" / "bugs-venv" / "Scripts" / "python.exe"
+
+# $RETICLE_TASK_PYTHON, else .runtime/bugs-venv's interpreter (Scripts/python.exe on Windows, bin/python on
+# POSIX). Under trusted-local the path is in the execution contract, so it is part of the protocol hash.
+TASK_PYTHON = task_python(ROOT)
+
 BASE_URL = "https://openrouter.ai/api/v1"
 # 2: complete tool outputs with bounded views and read_output/search_output
 # 3: selectable execution backend (pinned OCI image), cache files excluded from revisions
@@ -130,11 +164,17 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    (card 007's recorded hashes still replay); on, each one's record enters the protocol hash under
 #    "treatments". A bump would change every incumbent hash and block the cards pinned to v8 without any
 #    change in what an incumbent runs.
+#    Later in v8, without a bump, for the same reason: the claude-cli client option --cli-reply-recovery. Off,
+#    the CLI contract and every hash are exactly as before; on, the contract (adapter v3, --max-turns 2 on
+#    retries after a rejected StructuredOutput call, the recovery rules) changes the hash through provider_routing.
 #    Later in v8, without a bump (2026-09-30, after the `sonnet` alias drifted to claude-sonnet-5-5 with CLI
 #    2.1.286): live claude-cli runs take full model IDs only (--dry-run still plans an alias, so old hashes
 #    replay); a response from any other model than the requested one stops the run as model_mismatch
 #    (an adapter failure, voided, never a task outcome) and ends the invocation; claude-cli results record
-#    reported_models. Nothing hashed changes: the requested model was already in the routing contract.
+#    reported_models. On exp/ontology-pilot nothing hashed changed. On integration/2026-10 this guard is merged
+#    with the cloud port's model pin (claude_cli.py, MODEL PIN), whose CLI contract adds "model_pin" for a full
+#    model id: a full-id card's hash differs from the one exp/ontology-pilot planned (an alias contract, and so
+#    card 007's recorded hashes, are unchanged).
 RUNNER_VERSION = 8
 CLI_TIMEOUT_SECONDS = 300  # per attempt, as the OpenRouter client's HTTP timeout
 CLI_MAX_TURNS = 1  # the reply is the model's first message; the CLI stops before a second model turn
@@ -176,7 +216,9 @@ INSTRUCTIONS = (
 )
 
 
-TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction", "--oracle", "--reasoning")
+TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction", "--oracle", "--verifier", "--verifier-manifest",
+                   "--reasoning")
+VERIFIER_RUNNER = HERE / "run_repro_test.py"
 
 
 def add_treatment_arguments(parser) -> None:
@@ -187,14 +229,21 @@ def add_treatment_arguments(parser) -> None:
     group.add_argument("--completion", choices=["finish-guard"], default=None,
                        help="finish-guard: reject the first finish after a source edit, once, unless a "
                             "command that failed before the edit passes after it")
-    group.add_argument("--nudge", choices=["midpoint"], default=None,
+    group.add_argument("--nudge", choices=["midpoint", "commit"], default=None,
                        help="midpoint: one harness message when --nudge-fraction of the responses are spent "
-                            "without a source edit")
+                            "without a source edit; commit: one harness message at --nudge-fraction, edits or not, "
+                            "asking for a committed hypothesis and a tested prediction (adds two recording tools)")
     group.add_argument("--nudge-fraction", type=float, default=None, metavar="F",
-                       help="share of the response budget after which --nudge midpoint is due (default 0.5)")
+                       help="share of the response budget after which the --nudge message is due (default 0.5)")
     group.add_argument("--oracle", default=None, metavar="hidden-tests[:K]",
                        help="a check() tool: hidden fail_to_pass counts only, at most K calls per run "
                             f"(default {DEFAULT_MAX_CALLS})")
+    group.add_argument("--verifier", default=None, metavar="repro-test[:K]",
+                       help="a check() tool over the task's frozen reproduction test (--verifier-manifest): counts "
+                            f"only, at most K calls per run (default {VERIFIER_DEFAULT_MAX_CALLS}); not with --oracle")
+    group.add_argument("--verifier-manifest", default=None, metavar="MANIFEST.json",
+                       help="the manifest of frozen reproduction tests (repro_verifiers.py generate); its sha256 "
+                            "enters the protocol hash")
 
 
 def treatments_record(args) -> dict:
@@ -208,7 +257,7 @@ def treatments_record(args) -> dict:
             "rule": "fail-then-pass", "rejection": FINISH_GUARD_MESSAGE, "reasons": REASONS,
         }
     if args.nudge_fraction is not None and args.nudge is None:
-        raise SystemExit("--nudge-fraction needs --nudge midpoint")
+        raise SystemExit("--nudge-fraction needs --nudge midpoint or --nudge commit")
     if args.nudge == "midpoint":
         fraction = 0.5 if args.nudge_fraction is None else args.nudge_fraction
         if not 0 < fraction < 1:
@@ -217,6 +266,17 @@ def treatments_record(args) -> dict:
             "name": "midpoint", "version": MIDPOINT_NUDGE_VERSION, "source_rule": SOURCE_RULE_VERSION,
             "fraction": fraction, "template": MIDPOINT_NUDGE_TEMPLATE, "text": midpoint_nudge_text(fraction),
             "role": "system", "placement": "after the latest tool results, once per run",
+        }
+    if args.nudge == "commit":
+        fraction = 0.5 if args.nudge_fraction is None else args.nudge_fraction
+        if not 0 < fraction < 1:
+            raise SystemExit(f"--nudge-fraction must be between 0 and 1, not {fraction}")
+        record["nudge"] = {
+            "name": "commit", "version": COMMIT_NUDGE_VERSION, "fraction": fraction,
+            "template": COMMIT_NUDGE_TEMPLATE, "text": commit_nudge_text(fraction), "role": "system",
+            "placement": "after the latest tool results, once per run, whether or not a source file was edited",
+            "tools": {"version": COMMITMENT_TOOLS_VERSION,
+                      "names": [schema["function"]["name"] for schema in commitment_schemas()]},
         }
     if args.oracle is not None:
         match = re.fullmatch(r"hidden-tests(?::(\d+))?", args.oracle)
@@ -227,7 +287,75 @@ def treatments_record(args) -> dict:
             "name": "hidden-tests", "version": ORACLE_VERSION, "max_calls": calls,
             "returns": ["failing", "passing", "calls_left"], "scope": "fail_to_pass",
         }
+    if args.verifier_manifest is not None and args.verifier is None:
+        raise SystemExit("--verifier-manifest needs --verifier repro-test[:K]")
+    if args.verifier is not None:
+        if args.oracle is not None:
+            raise SystemExit("--verifier and --oracle both offer check(); use one")
+        match = re.fullmatch(r"repro-test(?::(\d+))?", args.verifier)
+        calls = int(match.group(1) or VERIFIER_DEFAULT_MAX_CALLS) if match else 0
+        if calls < 1:
+            raise SystemExit(f"--verifier must be repro-test or repro-test:K with K >= 1, not {args.verifier!r}")
+        if args.verifier_manifest is None:
+            raise SystemExit("--verifier needs --verifier-manifest")
+        manifest = resolve_repo_path(args.verifier_manifest)
+        record["verifier"] = {
+            "name": "repro-test", "version": VERIFIER_VERSION, "max_calls": calls,
+            "returns": ["failing", "passing", "calls_left"],
+            "scope": "one reproduction test per task, written before the campaign from the statement and the "
+                     "pre-edit workspace, frozen in the manifest",
+            "runner_sha256_lf": sha256_lf(VERIFIER_RUNNER),
+            "manifest": shown_path(manifest),
+            "manifest_sha256_lf": sha256_lf(manifest) if manifest.is_file() else None,
+        }
     return record
+
+
+def resolve_repo_path(value) -> Path:
+    """A path as given, or relative to the repository root when it is relative and absent from the working dir."""
+    path = Path(value)
+    if not path.is_absolute() and not path.exists():
+        path = ROOT / path
+    return path.resolve()
+
+
+def shown_path(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def sha256_lf(path: Path) -> str:
+    """sha256 of a text file's content with LF line endings (the same on every checkout, whatever core.autocrlf
+    wrote to the working copy)."""
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def load_verifier_manifest(treatments: dict) -> dict:
+    """The verifier manifest a run uses; it must still have the sha256 recorded in the treatment (and the hash)."""
+    verifier = treatments["verifier"]
+    path = resolve_repo_path(verifier["manifest"])
+    if verifier["manifest_sha256_lf"] is None or not path.is_file():
+        raise SystemExit(f"verifier manifest {verifier['manifest']} does not exist; generate it first "
+                         "(experiments/p6_pilot/repro_verifiers.py generate)")
+    if sha256_lf(path) != verifier["manifest_sha256_lf"]:
+        raise SystemExit(f"verifier manifest {verifier['manifest']} changed since the protocol was hashed")
+    return {"path": path, **json.loads(path.read_text(encoding="utf-8"))}
+
+
+def build_task_verifier(manifest: dict, task_id: str, bundle: Path, python: str, timeout_seconds: float) -> Path:
+    """The run's verifier bundle for one task from the manifest; the test's sha256 is checked against it."""
+    entry = (manifest.get("tasks") or {}).get(task_id)
+    if entry is None:
+        raise SystemExit(f"verifier manifest {shown_path(manifest['path'])} has no entry for {task_id}")
+    test_file = None
+    if entry.get("status") == "available":
+        test_file = (Path(manifest["path"]).parent / entry["file"]).resolve()
+        if sha256_lf(test_file) != entry["sha256_lf"]:
+            raise SystemExit(f"verifier test {entry['file']} does not match its manifest sha256")
+    return write_verifier_bundle(bundle, test_file=test_file, python=python, timeout_seconds=timeout_seconds,
+                                 runner=VERIFIER_RUNNER, collected=entry.get("collected"))
 
 
 def treatments_from_args(argv) -> dict:
@@ -239,14 +367,53 @@ def treatments_from_args(argv) -> dict:
     return treatments_record(known)
 
 
+# claude-cli client options: not treatments (they change how a reply is obtained, not what the model is offered),
+# off by default; one that is on changes the CLI contract recorded as the model's routing, so it enters the
+# protocol hash there. Other clients accept and ignore them (a card's scripted controls take its arm's extra_args).
+CLIENT_FLAGS = ("--cli-reply-recovery",)
+
+
+def add_client_arguments(parser) -> None:
+    group = parser.add_argument_group("claude-cli client options (off by default; one that is on enters the "
+                                      "protocol hash through the CLI contract)")
+    group.add_argument("--cli-reply-recovery", choices=[REPLY_RECOVERY], default=None,
+                       help=f"{REPLY_RECOVERY}: when the CLI cannot parse the model's StructuredOutput input, use "
+                            "it if json.loads(raw, strict=False) accepts it; after a rejected StructuredOutput "
+                            f"call, run the request's later attempts at --max-turns {RETRY_MAX_TURNS} so the CLI "
+                            "returns its rejection for one more model turn; adapter v3 (claude_cli.py)")
+
+
+def client_options_from_args(argv) -> dict:
+    """The claude-cli client options a list of runner arguments turns on ({} when none); for run_card.py."""
+    parser = argparse.ArgumentParser(add_help=False)
+    add_client_arguments(parser)
+    known, _ = parser.parse_known_args(list(argv))
+    return {"reply_recovery": known.cli_reply_recovery} if known.cli_reply_recovery else {}
+
+
+def cli_routing_contract(model: str, version: str, client_options=None) -> dict:
+    """The CLI contract recorded as a claude-cli model's routing; exactly v2's with no client option on."""
+    recovery = (client_options or {}).get("reply_recovery")
+    if recovery is None:
+        return cli_contract(model, max_turns=CLI_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version)
+    return cli_contract(model, max_turns=CLI_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version,
+                        reply_recovery=recovery)
+
+
 def model_tool_schemas(treatments: dict) -> list:
-    """The tool schemas the model is offered: the toolset's, plus check() when the oracle is on."""
-    schemas = TOOL_SCHEMAS
+    """The tool schemas the model is offered: the toolset's, plus check() when the oracle or the verifier is on,
+    then the reasoning tools when the evidence ontology is on, then the commitment tools when the commitment nudge
+    is on (the order build_tools' mixins give)."""
+    extra = []
     if "oracle" in treatments:
-        schemas = [*schemas, check_schema(treatments["oracle"]["max_calls"])]
+        extra.append(check_schema(treatments["oracle"]["max_calls"]))
+    if "verifier" in treatments:
+        extra.append(verifier_schema(treatments["verifier"]["max_calls"]))
     if "reasoning" in treatments:
-        schemas = [*schemas, *REASONING_SCHEMAS]
-    return schemas
+        extra.extend(REASONING_SCHEMAS)
+    if (treatments.get("nudge") or {}).get("name") == "commit":
+        extra.extend(commitment_schemas())
+    return [*TOOL_SCHEMAS, *extra] if extra else TOOL_SCHEMAS
 
 
 def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict, task_contracts=(), treatments=None) -> str:
@@ -605,10 +772,12 @@ def is_provider_stop(agent: dict) -> bool:
 
 
 def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, oracle_timeout_seconds=None,
-                **suite_arguments):
+                verifier_root=None, **suite_arguments):
     """The run's tool suite with each tool-level treatment that is on composed in as a mixin, and the per-run
     state object of every treatment (each has record()). With no treatment it is base_class itself. The oracle
-    runs the evaluator bundle at evaluator_root through the suite's backend."""
+    runs the evaluator bundle at evaluator_root, the verifier the bundle at verifier_root, through the suite's
+    backend. Each mixin appends its schemas after those of the classes after it in the MRO, so the commitment
+    tools (first in the list) come last, as model_tool_schemas lists them."""
     mixins, extra, state = [], {}, {}
     if "reasoning" in treatments:
         state["reasoning"] = extra["reasoning"] = EvidenceOntology(runtime, treatments["reasoning"]["mode"])
@@ -622,6 +791,15 @@ def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, o
             runtime, suite_arguments.get("backend"), evaluator_root, max_calls=treatments["oracle"]["max_calls"],
             **timeout)
         mixins.append(CheckOracleTools)
+    if "verifier" in treatments:
+        timeout = {} if oracle_timeout_seconds is None else {"timeout_seconds": oracle_timeout_seconds}
+        state["verifier"] = extra["oracle"] = ReproTestVerifier(
+            runtime, suite_arguments.get("backend"), verifier_root, max_calls=treatments["verifier"]["max_calls"],
+            **timeout)
+        mixins.append(CheckOracleTools)
+    if (treatments.get("nudge") or {}).get("name") == "commit":
+        state["commitment"] = extra["commitment"] = CommitmentLog(runtime)
+        mixins.insert(0, CommitmentTools)
     tool_class = type(f"Treated{base_class.__name__}", (*mixins, base_class), {}) if mixins else base_class
     return tool_class(runtime, **suite_arguments, **extra), state
 
@@ -629,8 +807,11 @@ def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, o
 def build_interventions(runtime, treatments: dict, state: dict) -> list:
     """The agent-loop treatments that are on, for the controller; each one's state is added to state."""
     interventions = []
-    if "nudge" in treatments:
+    if (treatments.get("nudge") or {}).get("name") == "midpoint":
         state["nudge"] = MidpointNudge(SourceEditTracker(runtime.workspace), treatments["nudge"]["fraction"])
+        interventions.append(state["nudge"])
+    elif (treatments.get("nudge") or {}).get("name") == "commit":
+        state["nudge"] = CommitmentNudge(treatments["nudge"]["fraction"])
         interventions.append(state["nudge"])
     return interventions
 
@@ -874,11 +1055,15 @@ def main() -> None:
                         help="stop a run after three identical observation calls without a workspace change")
     parser.add_argument("--dry-run", action="store_true")
     add_treatment_arguments(parser)
+    add_client_arguments(parser)
     args = parser.parse_args()
     treatments = treatments_record(args)
+    client_options = ({"reply_recovery": args.cli_reply_recovery}
+                      if args.cli_reply_recovery and args.client == "claude-cli" else {})
 
     task_file, tasks = load_tasks(args.tasks)
     contracts = [c for c in (task_contract(t) for t in tasks) if c is not None]
+    verifier_manifest = load_verifier_manifest(treatments) if "verifier" in treatments and not args.dry_run else None
     live = args.client in ("openrouter", "claude-cli")
     if live:
         if not args.models:
@@ -902,8 +1087,7 @@ def main() -> None:
             if problem:  # a dry run may still plan an alias, so the hashes of runs made before the rule replay
                 print(f"warning: {problem}; a live run would refuse it")
         version = cli_version()
-        routing = {model: cli_contract(model, max_turns=CLI_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version)
-                   for model in models}
+        routing = {model: cli_routing_contract(model, version, client_options) for model in models}
     else:
         routing = {model: ({"order": [pins[model]], "allow_fallbacks": False, "require_parameters": True}
                            if model in pins else dict(UNPINNED_ROUTING)) for model in models}
@@ -993,6 +1177,12 @@ def main() -> None:
         print("treatments (in the protocol hash): " + "; ".join(
             f"{surface} {value['name']} {value['version']}" + (f" mode={value['mode']}" if "mode" in value else "")
             for surface, value in sorted(treatments.items())))
+    if client_options:
+        print(f"claude-cli reply recovery {client_options['reply_recovery']} (adapter "
+              f"{routing[models[0]]['adapter_version']}: --max-turns {CLI_MAX_TURNS}, {RETRY_MAX_TURNS} on retries "
+              f"after a rejected StructuredOutput call; in the protocol hash)")
+    elif args.cli_reply_recovery:
+        print(f"--cli-reply-recovery applies to the claude-cli client only; the {args.client} client ignores it")
     if args.dry_run:
         return
 
@@ -1024,6 +1214,10 @@ def main() -> None:
         workspace, bundle = run_root / "workspace", run_root / "evaluator"
         materialize_workspace(task, repo, workspace)
         version = build_evaluator(task, repo, bundle, args.pytest_timeout, execution["guest_python"])
+        verifier_root = None
+        if verifier_manifest is not None:
+            verifier_root = build_task_verifier(verifier_manifest, task["task_id"], run_root / "verifier",
+                                                execution["guest_python"], args.pytest_timeout)
         runtime = LocalRuntime(run_root / "session", workspace)
         initial_revision = runtime.workspace.revision()
         src = workspace / "src"
@@ -1034,6 +1228,7 @@ def main() -> None:
         tools, treatment_state = build_tools(
             runtime, treatments, RepeatGuardTools if args.stop_on_repeats else ToolSuite,
             evaluator_root=bundle, oracle_timeout_seconds=args.pytest_timeout + 120,  # as final acceptance
+            verifier_root=verifier_root,
             interpreter=execution["guest_python"], backend=backend, environment={
                 "PYTHONPATH": python_path, "PYTHONIOENCODING": "utf-8"})
         interventions = build_interventions(runtime, treatments, treatment_state)
@@ -1049,7 +1244,8 @@ def main() -> None:
             inner = OpenRouterClient(api_key, model, calls_path, run_id, budget, args.max_tokens, routing[model])
         elif args.client == "claude-cli":
             inner = ClaudeCliClient(model, calls_path, run_id, budget, max_attempts=MAX_ATTEMPTS,
-                                    timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS)
+                                    timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS,
+                                    **({"reply_recovery": client_options["reply_recovery"]} if client_options else {}))
         else:
             inner = scripted_client(args.client, task, repo)
         client = GuardedClient(inner, tools, args.stop_on_repeats)
@@ -1082,6 +1278,8 @@ def main() -> None:
         record["reported_cost_usd"] = round(sum(costs), 8) if costs else None
         if treatments:  # absent for an incumbent run, whose record is unchanged
             record["treatments"] = {surface: state.record() for surface, state in treatment_state.items()}
+        if client_options:  # absent unless reply recovery is on: what it did in this run's attempts
+            record["cli_reply_recovery"] = inner.recovery_summary()
         run_calls = read_jsonl(calls_path)[attempts_before:]
         record["http_attempts"] = len(run_calls)
         if args.client == "claude-cli":  # every model ID the CLI reported for this run (one, unless drifted)

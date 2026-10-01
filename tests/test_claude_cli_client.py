@@ -322,7 +322,8 @@ class ModelPinTests(ClaudeCliTestCase):
                 client = claude_cli.ClaudeCliClient(MODEL, self.calls_path, "run-x", run_pilot.CallBudget(100, 0),
                                                     backoff_seconds=0, workdir=self.root / "cli-cwd")
                 with self.assertRaisesRegex(run_pilot.ModelClientError,
-                                            r"^model_mismatch: requested claude-stub, the CLI reported "
+                                            r"^model_mismatch \(model_pin_violation\): requested claude-stub, "
+                                            r"the CLI reported "
                                             r"\['claude-sonnet-5-5', 'claude-stub'\]$"):
                     client.complete([{"role": "user", "content": "x"}], [])
                 self.assertEqual(len(self.stub_calls()), 1, "a model mismatch is not retried")

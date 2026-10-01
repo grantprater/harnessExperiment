@@ -248,6 +248,7 @@ class EndToEndTests(MutationWiringTestCase):
             patcher.start()
             self.addCleanup(patcher.stop)
 
+    @unittest.skipUnless(os.name == "nt", "the native arm's transcript audit knows Windows paths only (native_control.py, PORTABILITY); not ported to POSIX")
     def test_one_stub_run_end_to_end(self):
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(driver.execute(), driver.EXIT_OK)

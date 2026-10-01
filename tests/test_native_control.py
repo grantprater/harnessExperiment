@@ -5,6 +5,7 @@ import contextlib
 import difflib
 import io
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -56,6 +57,7 @@ class NativeControlTests(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
+    @unittest.skipUnless(os.name == "nt", "the native arm's transcript audit knows Windows paths only (native_control.py, PORTABILITY); not ported to POSIX")
     def test_summary_counts_responses_first_actions_and_audit_flags(self):
         stream = [
             {"type": "system", "subtype": "init", "tools": ["Bash", "Read"], "model": "m", "apiKeySource": "none"},

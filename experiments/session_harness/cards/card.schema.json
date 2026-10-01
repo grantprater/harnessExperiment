@@ -84,6 +84,7 @@
             "max_runs": {"type": "integer", "minimum": 1},
             "max_model_attempts": {"anyOf": [{"type": "integer", "minimum": 1}, {"type": "null"}]},
             "monetary_cap_usd": {"anyOf": [{"type": "number", "minimum": 0}, {"type": "null"}]},
+            "list_price_cap_usd": {"anyOf": [{"type": "number", "exclusiveMinimum": 0}, {"type": "null"}]},
             "note": {"type": "string"}
           }
         }
@@ -144,7 +145,7 @@
           "type": "object",
           "additionalProperties": false,
           "required": ["kind"],
-          "properties": {"kind": {"const": "trusted-local"}}
+          "properties": {"kind": {"const": "trusted-local"}, "isolation": {"enum": ["host", "vm-sandbox"]}}
         },
         {
           "type": "object",

@@ -1,0 +1,6 @@
+# The host's .runtime/test-venv (uv pip freeze, Python 3.13.15, 2026-09-28): the reticle package's dependencies
+# (pyproject.toml). The unit tests run with it from the repository root (reticle is imported from the checkout).
+numpy==2.5.3
+opencv-python==5.0.0.93
+pillow==12.3.0
+pyyaml==6.0.3

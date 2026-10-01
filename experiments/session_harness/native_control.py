@@ -15,7 +15,9 @@ v1 (card 006) ran one upstream P6 task. v2 (card 018) runs any task of a task fi
 The CLI (`claude -p`, stream-json) runs on the host with v1's flags (bypassPermissions, --setting-sources "",
 --no-session-persistence, --safe-mode, --strict-mcp-config, --disable-slash-commands) and `--tools` NATIVE_TOOLS.
 Its init event is checked as it arrives: a tool outside NATIVE_TOOLS (WebFetch, WebSearch, Agent, ...), an MCP server,
-an API key, or another permission mode kills the CLI at once (stop `isolation_abort`).
+an API key or auth token from the environment (claude_cli.auth_problem), another permission mode, or, when --model is a
+full id (claude-...), another model (claude_cli.model_problem) kills the CLI at once (stop `isolation_abort`). The
+models the CLI reported (init, assistant messages, result modelUsage) are recorded in result.json under model_pin.
 
 CONFINEMENT: every CLI run gets `--settings <scratch>/cli-settings.json` (cli_settings), recorded verbatim with its
 sha256 in config.json under "confinement":
@@ -61,6 +63,11 @@ Usage (from the repo root):
       sqlparse-mut-001 --backend oci --scripted gold --run-name c018-control-gold
   python experiments/session_harness/native_control.py --tasks sqlparse-865 --backend oci --run-name pc-native-2
 
+PORTABILITY: the task interpreter resolves on POSIX (interpreters.task_python) and PowerShell is offered only on
+Windows, but the transcript audit's path patterns are Windows' (drive letters, Git Bash /c/ paths, %TEMP%): on a
+POSIX host it misses absolute paths outside the workspace and flags every path under /tmp as an escape. The native
+arm is not ported to POSIX; no cloud card uses it.
+
 Exit codes: 0 scored (whatever the outcome); 2 existing run name or bad selection; 3 refused by a leak check.
 """
 
@@ -88,7 +95,10 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "experiments" / "p6_pilot"))
 
 import run_pilot  # noqa: E402
-from claude_cli import child_environment, cli_version, resolve_executable  # noqa: E402
+from claude_cli import (  # noqa: E402
+    auth_problem, child_environment, cli_version, model_problem, pins_model, reported_models, resolve_executable,
+)
+from interpreters import task_python  # noqa: E402
 from reticle.evaluation import AcceptanceRunner  # noqa: E402
 from reticle.runtime import LocalRuntime  # noqa: E402
 from reticle.runtime.source_edits import SOURCE_RULE_VERSION, is_source_path  # noqa: E402
@@ -100,7 +110,8 @@ EXIT_OK, EXIT_INVALID, EXIT_REFUSED = 0, 2, 3
 # The CLI's coding tools. Excluded from its default set: Agent and other session/scheduling tools (sub-agents would
 # spend model calls outside the matched turn budget), WebFetch/WebSearch (the most direct route to the upstream code),
 # notebooks, worktrees, and skills. The init check (init_problem) enforces the set at run time.
-NATIVE_TOOLS = "Bash,PowerShell,Read,Edit,Write,Glob,Grep"
+# PowerShell is a Windows tool of the CLI; a POSIX host (a cloud VM) offers the same set without it.
+NATIVE_TOOLS = "Bash,PowerShell,Read,Edit,Write,Glob,Grep" if os.name == "nt" else "Bash,Read,Edit,Write,Glob,Grep"
 EDIT_TOOLS = {"Edit", "Write", "NotebookEdit"}
 COMMAND_TOOLS = {"Bash", "PowerShell"}
 PATH_KEYS = ("file_path", "path", "notebook_path")
@@ -177,8 +188,7 @@ def checkout_roots() -> List[Path]:
 
 def task_interpreter() -> Path:
     """The runner's task interpreter (.runtime/bugs-venv) of this checkout, else of the main checkout."""
-    candidates = [run_pilot.TASK_PYTHON] + [root / ".runtime" / "bugs-venv" / "Scripts" / "python.exe"
-                                            for root in checkout_roots()[1:]]
+    candidates = [run_pilot.TASK_PYTHON] + [task_python(root) for root in checkout_roots()[1:]]
     return next((path for path in candidates if path.exists()), run_pilot.TASK_PYTHON)
 
 
@@ -313,18 +323,39 @@ def sandbox_problem(status: Optional[dict]) -> Optional[str]:
     return None
 
 
-def init_problem(init: dict) -> Optional[str]:
-    """Why the CLI's init event shows a configuration other than the arm's, or None."""
+def init_problem(init: dict, model: Optional[str] = None) -> Optional[str]:
+    """Why the CLI's init event shows a configuration other than the arm's, or None. With a full model id, the init
+    event must report exactly that model (an alias is not checked)."""
     tools, allowed = set(init.get("tools") or []), set(NATIVE_TOOLS.split(","))
     if tools != allowed:
         return f"CLI tools {sorted(tools)} are not {sorted(allowed)}"
     if init.get("mcp_servers"):
         return f"MCP servers present: {init.get('mcp_servers')}"
-    if init.get("apiKeySource") not in (None, "none"):
-        return f"apiKeySource {init.get('apiKeySource')!r}: the run would bill an API account"
+    problem = auth_problem(init)
+    if problem:
+        return problem
     if init.get("permissionMode") not in (None, "bypassPermissions"):
         return f"permission mode {init.get('permissionMode')!r}"
+    if model is not None:
+        return model_problem(model, reported_models(init, None))
     return None
+
+
+def stream_models(events: list) -> dict:
+    """The models a recorded stream reports (claude_cli.reported_models over the init, assistant and result events)."""
+    init = result = None
+    messages: List[str] = []
+    for record in events:
+        event = record.get("event") or {}
+        if event.get("type") == "system" and event.get("subtype") == "init":
+            init = event
+        elif event.get("type") == "result":
+            result = event
+        elif event.get("type") == "assistant":
+            name = (event.get("message") or {}).get("model")
+            if name and name not in messages:
+                messages.append(name)
+    return reported_models(init, result, messages)
 
 
 def _within(path: Path, root: Path) -> bool:
@@ -734,7 +765,10 @@ def remove_tree(path: Path, attempts: int = 3) -> Optional[str]:
         if not path.exists():
             return None
         try:
-            shutil.rmtree(path, onexc=clear_readonly)
+            if sys.version_info >= (3, 12):
+                shutil.rmtree(path, onexc=clear_readonly)
+            else:  # Python 3.11 (a cloud VM's python3): onexc is 3.12+; onerror passes the same three arguments
+                shutil.rmtree(path, onerror=clear_readonly)
         except OSError as exc:
             error = repr(exc)
             time.sleep(1 + attempt)
@@ -823,7 +857,8 @@ def main(argv=None) -> int:
             "enforced_by": "the CLI (--settings); pattern deny is best-effort; the transcript audit stays on",
             "confirmed": "not observable before a denial; see result.json confinement",
         },
-        "init_check": "tools == allowed_tools, no MCP server, apiKeySource none, bypassPermissions; else killed",
+        "init_check": ("tools == allowed_tools, no MCP server, apiKeySource not a key or token from the environment, "
+                       "bypassPermissions" + (", model == --model" if pins_model(args.model) else "") + "; else killed"),
         "budgets": {"max_turns": args.max_turns, "wall_seconds": args.wall_seconds, "enforcement":
                     "--max-turns in the CLI; hard kill of the CLI process tree at the wall cap"},
         "scratch_base": str(base), "workspace": str(workspace), "execution": execution,
@@ -890,7 +925,8 @@ def main(argv=None) -> int:
         print(f"running the CLI in {workspace} (wall cap {args.wall_seconds:.0f} s, max turns {args.max_turns})",
               flush=True)
         run = run_cli([executable, *arguments], prompt, workspace, environment, args.wall_seconds,
-                      record_dir / "stream.jsonl", record_dir / "stderr.txt", check_init=init_problem)
+                      record_dir / "stream.jsonl", record_dir / "stderr.txt",
+                      check_init=lambda event: init_problem(event, args.model))
     summary = summarize_stream(run["events"], workspace, base_files, allowed_roots=interpreter_roots(interpreter),
                                markers=tuple(leak_markers()))
     stop = stop_for(run, summary, args.scripted)
@@ -910,6 +946,9 @@ def main(argv=None) -> int:
         "aborted": run["aborted"], "stop": stop, "cli_failure": stop in CLI_FAILURE_STOPS,
         "turns_used": (summary["result"] or {}).get("num_turns"), "removed_environment": removed, **summary,
         "cost_estimate_usd": (summary["result"] or {}).get("total_cost_usd"),
+        "model_pin": None if args.scripted else {
+            "requested": args.model, "pinned": pins_model(args.model), "reported": stream_models(run["events"]),
+            "violation": model_problem(args.model, stream_models(run["events"]))},
         "confinement": {"layers": confinement_layers(args.sandbox),
                         "settings_sha256": sha256_text(settings_text(settings)),
                         "denials": len(summary["denied_calls"]) + len(summary["permission_denials"]),
