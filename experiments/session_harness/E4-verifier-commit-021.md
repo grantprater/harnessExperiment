@@ -4,6 +4,8 @@ Date: 2026-09-29 (UTC)
 Status: running; approved by the owner through experiments/cloud/RUN_IN_CLOUD-021.md, launched in a cloud session 2026-09-29 07:13 UTC  
 Stage: S6 (tool use + agent loop) on cloud compute. Machine-readable card: [`cards/021.json`](cards/021.json).  
 
+Integrity audit (2026-10-01): contaminated; exclude `c021-sqlparse-mut-001-r1-verifier-commit` (read the hidden test) and `c021-sqlparse-mut-061-r1-verifier-commit` (downloaded the healthy file from PyPI), giving hard 2/13 vs 0/15 (one-sided Fisher p = 0.21); the card-020 numbers below also include an excluded run ([audit](../cloud/INTEGRITY_AUDIT_019-021.md)).
+
 ## Where we are
 
 | Evidence | Finding |

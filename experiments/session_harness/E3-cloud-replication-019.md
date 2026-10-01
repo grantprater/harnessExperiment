@@ -4,6 +4,8 @@ Date: 2026-09-28
 Status: running; approved by the owner through experiments/cloud/RUN_IN_CLOUD.md, launched in a cloud session 2026-09-28 22:37 UTC  
 Stage: S6 infrastructure. Machine-readable card: [`cards/019.json`](cards/019.json).
 
+Integrity audit (2026-10-01): result stands with a caveat; no accepted run read outside content, three rejected runs searched outside the workspace ([audit](../cloud/INTEGRITY_AUDIT_019-021.md)).
+
 ## Purpose
 
 Replicate [card 007](E3-calibration-007.md) in a cloud VM to measure the environment effect before any treatment
