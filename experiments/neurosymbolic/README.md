@@ -142,7 +142,7 @@ prior task graphs into confirmation runs. A new live campaign remains pending.
 
 ### Proposed amendments (2026-09-30, owner-approved for drafting; `injected` implemented offline but not run; `notes` deferred and not implemented)
 
-**Owner decision (2026-09-30).** "2. Let's do 3 arms". The first live run uses the original
+**Owner decision (2026-09-30).** "2. Let's do 3 arms" (extended to 4 arms on 2026-10-01; see below). The first live run uses the original
 3 arms: incumbent, `--reasoning memory` and `--reasoning symbolic`. The `notes` and `injected`
 arms are deferred; `injected` becomes the planned follow-up if the memory/symbolic arms show
 low tool use. The task set comes from the card 010 bank's eval split once calibrated. The
@@ -154,7 +154,15 @@ The model/provider is not yet chosen.
 full ID, `claude-sonnet-5` via the Claude CLI, after the alias `sonnet` drifted to `claude-sonnet-5-5` with CLI
 2.1.286 (card 010's alias drift note).
 
-**Planned next step.** After the 3-arm pilot on the card 010 bank (Sonnet 5), move to harder tasks to test whether
+**Owner decision (2026-10-01), fourth arm.** Asked whether to add card 021's verifier-commit
+treatment as a 4th arm (about +60 runs), replace `memory` with it, or keep 3 arms, the owner
+answered "4. Yes", i.e. add it as a 4th arm. The pilot is now incumbent, `--reasoning memory`,
+`--reasoning symbolic` and verifier-commit. Verifier-commit needs one frozen reproduction test per
+task (card 021's `repro_verifiers.py generate`, 1-3 headless calls per task); those calls and the
+final pilot size and spend are confirmed with the owner at launch. The arm's code comes from the
+integration branch (cloud-card branches merged with this one; same decision message, "3. Yes").
+
+**Planned next step.** After the pilot on the card 010 bank (Sonnet 5), move to harder tasks to test whether
 the comparison extends and generalizes. Not yet designed.
 
 **Owner decision (2026-09-30), injection mechanism.** "Yes option A makes sense, do that."

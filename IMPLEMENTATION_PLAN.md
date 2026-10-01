@@ -841,6 +841,8 @@ records and decisions exist.
 
 **Current execution (2026-09-30):** card 007 and card 018 are complete. The owner chose to design card 010 (harder mutation bank) first; it is being designed on branch `card/010-difficulty-calibration`. The evidence-ontology live run ([protocol](experiments/neurosymbolic/README.md)) follows on the card 010 bank.
 
+**Owner decisions (2026-10-01):** "1. $144. 2. Yes. 3. Yes. 4. Yes", answering: (1) cloud credit balance is $144 (expires 2026-11-05); (2) launch card 023 (boltons calibration, $40 nested cap) in the cloud (launched 2026-10-01 as one-shot routine `trig_015orL1bg5GH8rm6TpZuaZz7` with the prompt in `experiments/cloud/RUN_IN_CLOUD-023.md`, results to branch `cloud-results-023`); (3) build an integration branch merging the cloud-card branches with the 2026-09-30 branches (not master); (4) add card 021's verifier-commit as a 4th arm of the evidence-ontology pilot (`experiments/neurosymbolic/README.md`).
+
 **Implementation choices before any E3 model run in OCI** (from
 `experiments/session_harness/S2b-oci-boundaries-controls.md`):
 
