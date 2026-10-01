@@ -322,10 +322,10 @@ class CloudCardTests(unittest.TestCase):
     def test_card_019_is_card_007_on_the_cloud_backend(self):
         card, plan = self.plan("019")
         c007 = run_card.load_card(CARDS / "007.json")
-        self.assertEqual(card["status"], "proposed")
-        self.assertEqual(len(plan.blockers), 2)
-        self.assertTrue(plan.blockers[0].startswith("card status is 'proposed'"))
-        self.assertTrue(plan.blockers[1].startswith("prerequisite not done: owner approval"))
+        # cloud-results-019 set the card running with its approval prerequisite done (2026-09-28); the test still
+        # asserted the proposed card (a failure on that branch, fixed on integration/2026-10)
+        self.assertEqual(card["status"], "running")
+        self.assertEqual(plan.blockers, [])
         self.assertEqual(card["tasks"], {**c007["tasks"], "sets": {
             "calibration": c007["tasks"]["sets"]["calibration"],
             "controls": dict(c007["tasks"]["sets"]["controls"], note=card["tasks"]["sets"]["controls"]["note"])}})
@@ -351,8 +351,9 @@ class CloudCardTests(unittest.TestCase):
     def test_card_020_pairs_card_015s_arms_on_the_cloud_backend(self):
         card, plan = self.plan("020")
         c015 = run_card.load_card(CARDS / "015.json")
-        self.assertEqual(card["status"], "proposed")
-        self.assertEqual(len(plan.blockers), 2)
+        # cloud-results-020 set the card running with its prerequisites done (2026-09-29); see card 019's test
+        self.assertEqual(card["status"], "running")
+        self.assertEqual(plan.blockers, [])
         self.assertEqual([a["name"] for a in card["arms"]], [a["name"] for a in c015["arms"]])
         # Card 015's extra_args plus the same CLI reply recovery in both arms (card 019's restarts).
         self.assertEqual([a["extra_args"] for a in card["arms"]],
