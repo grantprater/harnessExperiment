@@ -12,7 +12,7 @@
     "runner_version": 8
   },
   "environment": {
-    "claude_cli_version": "2.1.284 (Claude Code)"
+    "claude_cli_version": "2.1.286 (Claude Code)"
   },
   "prerequisites": [
     {
@@ -169,7 +169,7 @@
     "sets_path": "experiments/session_harness/E3-calibration-023.sets.json"
   },
   "notes": [
-    "Card 007's design (20 tasks by card 007's selection rule, 2 rollouts, one invocation per task and rollout named c023-<task>-r<n>, --max-total-calls 24, the same per-run budgets and retry rules) on the boltons bank, on card 019's cloud backend (trusted-local, isolation vm-sandbox, CLI 2.1.284, model pinned as claude-sonnet-5), with card 020's --cli-reply-recovery lenient-json+second-turn-on-retry.",
+    "Card 007's design (20 tasks by card 007's selection rule, 2 rollouts, one invocation per task and rollout named c023-<task>-r<n>, --max-total-calls 24, the same per-run budgets and retry rules) on the boltons bank, on card 019's cloud backend (trusted-local, isolation vm-sandbox, CLI 2.1.286 (re-pinned from 2.1.284 by the owner on 2026-10-01; the cloud VM now ships 2.1.286), model pinned as claude-sonnet-5), with card 020's --cli-reply-recovery lenient-json+second-turn-on-retry.",
     "The selection seed is the card number (23), as card 007 used 7; the selector ran once, before any run.",
     "The bank was generated on the Windows host; every task's failing set was re-measured on Linux in the pinned image before the card (linux_check.boltons.json), because the cloud VM is Linux.",
     "The boltons workspace keeps the library's doctests (they live in the source files the model can read and run); acceptance uses only the hidden tests/ suite. Whether a run executed doctests is reported from the trajectory review.",
