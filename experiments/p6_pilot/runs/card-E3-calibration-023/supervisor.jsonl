@@ -2,3 +2,4 @@
 {"time": "2026-10-01T01:57:24.935460+00:00", "event": "commit", "runs_finished": 10, "result": "committed and pushed"}
 {"time": "2026-10-01T02:18:29.909135+00:00", "event": "commit", "runs_finished": 20, "result": "committed and pushed"}
 {"time": "2026-10-01T03:00:41.368558+00:00", "event": "commit", "runs_finished": 30, "result": "committed and pushed"}
+{"time": "2026-10-01T03:27:56.304155+00:00", "event": "end", "exit_code": 0, "detail": "run_card exited 0", "finished_at": "2026-10-01T03:27:53.614879+00:00", "commit": "committed and pushed", "status": {"card": "E3-calibration-023", "runs_planned": 40, "runs_finished": 40, "runs_accepted": 36, "failed_attempts": 0, "controls": {"gold": "ok", "noop": "ok"}, "nested_cost_usd": 19.655909, "nested_calls": 443, "wall_seconds": 6690.0, "last_stop": {"time": "2026-10-01T03:27:52+00:00", "event": "campaign_end", "reason": "campaign complete: 42 invocations"}, "spend_cap_usd": 40}}
