@@ -17,6 +17,7 @@ Structure: [`card.schema.json`](card.schema.json) (JSON Schema keywords, checked
 | `013.json` | [E4-finish-guard-013](../E4-finish-guard-013.md) | `proposed`; incumbent vs `--completion finish-guard` (v2, fail-then-pass), card 007's evolution set + 3 solved-twice tasks, 2 rollouts, seeded order; blocked only on approval |
 | `014.json` | [E4-midpoint-nudge-014](../E4-midpoint-nudge-014.md) | `proposed`; incumbent vs `--nudge midpoint`, same tasks; blocked only on approval |
 | `015.json` | [E4-check-oracle-015](../E4-check-oracle-015.md) | `proposed`; incumbent vs `--oracle hidden-tests:3` (task-changing arm), same tasks; blocked only on approval |
+| `024.json` | [E3-ontology-pilot-024](../E3-ontology-pilot-024.md) | `proposed` (draft); incumbent, `--reasoning memory`, `--reasoning symbolic`, verifier-commit on card 010's 31 eval tasks, r = 2, 248 runs; blocked on approval and on the verifier-commit arm's unresolved runner |
 
 ## Commands
 
