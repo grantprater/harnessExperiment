@@ -20,6 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+subscription = ["PyJWT[crypto]>=2.10,<3"]
 reasoning = ["rdflib>=7.1,<8", "pyshacl>=0.30,<1"]
 
 [project.scripts]
