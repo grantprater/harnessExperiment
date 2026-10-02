@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import shutil
 import stat
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -578,6 +579,24 @@ class GenerationTests(VerifierFixture):
         entry = json.loads((self.out / "manifest.json").read_text(encoding="utf-8"))["tasks"]["synthetic-mut-001"]
         self.assertEqual((entry["status"], entry["attempts"]), ("unavailable", 2))
         self.assertNotIn("file", entry)
+
+    def test_a_hung_call_is_a_failed_attempt_charged_its_budget(self):
+        real_run = subprocess.run
+
+        def hang(argv, *args, **kwargs):
+            if "-p" in argv:
+                raise subprocess.TimeoutExpired(argv, kwargs.get("timeout"), output=b"")
+            return real_run(argv, *args, **kwargs)
+
+        with mock.patch.object(repro_verifiers.subprocess, "run", side_effect=hang):
+            code, output = self.generate("--max-attempts", "2", "--attempt-budget-usd", "0.25")
+        self.assertEqual(code, 0, output)
+        entry = json.loads((self.out / "manifest.json").read_text(encoding="utf-8"))["tasks"]["synthetic-mut-001"]
+        self.assertEqual((entry["status"], entry["attempts"]), ("unavailable", 2))
+        self.assertAlmostEqual(entry["cost_usd"], 0.50)
+        generation = json.loads((self.out / "synthetic-mut-001" / "generation.json").read_text(encoding="utf-8"))
+        self.assertTrue(all(a["cost_estimated"] and a["cli_exit_code"] == repro_verifiers.CLI_TIMEOUT_EXIT
+                            for a in generation["attempt_log"]))
 
     def test_a_task_past_the_spend_cap_is_unavailable_without_a_call(self):
         self.replies(reply_with(VALID_TEST))

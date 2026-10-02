@@ -87,6 +87,7 @@ MAX_ATTEMPTS = 3
 MAX_TURNS = 30
 ATTEMPT_BUDGET_USD = 0.60
 CLI_TIMEOUT_SECONDS = 900
+CLI_TIMEOUT_EXIT = 124  # run_cli's exit code for a call killed at CLI_TIMEOUT_SECONDS
 PRE_EDIT_TIMEOUT_SECONDS = 300
 DEFAULT_OCI_IMAGE = "localhost/reticle-p6-task:py313-v1"  # card 024's image (id 8b74015e5079...)
 GUEST_ROOT = "/workspace"  # IsolatedOCIBackend mounts the request's working directory here
@@ -334,8 +335,12 @@ def run_cli(arguments: List[str], prompt: str, cwd: Path, timeout: float) -> Tup
         raise SystemExit("claude is not on PATH")
     environment, _ = child_environment(PINNED_CLI_ENVIRONMENT)
     started = time.time()
-    completed = subprocess.run([executable, *arguments], input=prompt.encode("utf-8"), cwd=cwd, env=environment,
-                               capture_output=True, timeout=timeout)  # bytes: no newline translation of the prompt
+    try:
+        completed = subprocess.run([executable, *arguments], input=prompt.encode("utf-8"), cwd=cwd, env=environment,
+                                   capture_output=True, timeout=timeout)  # bytes: no newline translation of the prompt
+    except subprocess.TimeoutExpired as error:  # a hung call is a failed attempt, not a crashed generation
+        return (CLI_TIMEOUT_EXIT, (error.stdout or b"").decode("utf-8", "replace"),
+                f"claude timed out after {timeout} s", round(time.time() - started, 1))
     return (completed.returncode, completed.stdout.decode("utf-8", "replace"),
             completed.stderr.decode("utf-8", "replace"), round(time.time() - started, 1))
 
@@ -454,6 +459,9 @@ def generate_task(task: dict, *, out_dir: Path, repos: Path, model: str, python:
             parsed = parse_generation_stream(stdout)
             result = parsed["result"] or {}
             attempt_cost = float(result.get("total_cost_usd") or 0.0)
+            cost_estimated = code_rc == CLI_TIMEOUT_EXIT and not result
+            if cost_estimated:  # no result event, so no reported cost: charge the attempt's whole budget
+                attempt_cost = attempt_budget
             cost += attempt_cost
             record = {"attempt": number, "cli_exit_code": code_rc, "seconds": seconds, "cost_usd": attempt_cost,
                       "num_turns": result.get("num_turns"), "result_subtype": result.get("subtype"),
@@ -464,6 +472,8 @@ def generate_task(task: dict, *, out_dir: Path, repos: Path, model: str, python:
                                      if u.get("name") != "StructuredOutput" else "<reply>"}
                                     for u in parsed["tool_uses"]],
                       "stderr_tail": stderr[-500:] if code_rc else ""}
+            if cost_estimated:
+                record["cost_estimated"] = "timed out with no result event; charged the attempt budget"
             problem = attempt_problem(parsed, model, workspace, expected_cli_version)
             if problem:
                 record["problem"] = problem
