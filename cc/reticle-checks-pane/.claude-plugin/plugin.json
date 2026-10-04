@@ -1,0 +1,7 @@
+{
+  "name": "reticle-checks-pane",
+  "version": "0.1.0",
+  "description": "Read-only view of reticle-checks events: a status line and a /checks pane with the exact injected text.",
+  "author": { "name": "Grant" },
+  "types": "./types/index.d.ts"
+}

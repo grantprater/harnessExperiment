@@ -294,7 +294,8 @@ def run_command(root, config):
         except (subprocess.TimeoutExpired, OSError, ValueError):
             data = b''
         timed_out = True
-    return {'rc': process.returncode, 'output': (data or b'').decode('utf-8', 'replace'),
+    text = (data or b'').decode('utf-8', 'replace').replace('\r\n', '\n')
+    return {'rc': process.returncode, 'output': text,
             'timed_out': timed_out, 'launch_error': None,
             'duration_s': round(time.monotonic() - started, 4)}
 

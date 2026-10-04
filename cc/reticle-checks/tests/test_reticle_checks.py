@@ -307,6 +307,7 @@ class Modes(unittest.TestCase):
         self.assertIn('mode=full (output shown whole up to 8000 bytes)', text)
         self.assertIn('test_one (test_src.T', text)
         self.assertIn('Ran 2 tests', text)
+        self.assertNotIn('\r', text)  # Windows child output is normalised to \n
 
     def test_full_mode_caps_middle(self):
         script = "for i in range(400): print('row %03d ' % i + 'x' * 40)\n"
