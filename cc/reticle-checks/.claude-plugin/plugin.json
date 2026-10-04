@@ -1,0 +1,6 @@
+{
+  "name": "reticle-checks",
+  "version": "0.1.0",
+  "description": "Reticle-style post-edit checks: runs the project's fixed tests after a source-changing Edit/Write and injects a full, selective or delta observation.",
+  "author": { "name": "Grant" }
+}
