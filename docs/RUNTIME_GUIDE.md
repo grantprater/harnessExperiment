@@ -89,7 +89,12 @@ The historical `--context-policy pressure-v4` uses the cache-oriented
 comes last, and old transcript exchanges are removed in stable pages. Cache hits
 still depend on the provider; the token display uses reported cache usage.
 
-Coding tools now include `apply_patch(path, patch)` for single-file unified diffs
+Two toolsets exist. `reticle/tools/primitives.py` is reticle-tools-v3, the default and
+the one every run card pins. `reticle/tools/toolset_v4.py` (`ToolSuiteV4`) is v4, opt-in;
+the interactive harness (`reticle/interactive.py`) and check hooks select it. The rest
+of this section describes v4.
+
+The v4 coding tools include `apply_patch(path, patch)` for single-file unified diffs
 alongside `replace_text`. All patch hunks must match before the file changes.
 `search_text` and `search_output` accept `regex=true` and `context_lines` (0–100),
 with literal matching as the default. `run` accepts a workspace-relative `cwd` and

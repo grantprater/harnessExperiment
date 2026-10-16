@@ -27,7 +27,7 @@ generality. Vary the proposed conditions and retain counterexamples.
 | Journal/artifacts | Authoritative exact history and evidence, `reticle/runtime/session.py` and storage |
 | Ontology | Explicit model assertions, provenance and advisory rules, `runtime/reasoning.py` |
 | Knowledge | Immutable cross-session snapshots and dependency rechecking, `runtime/knowledge.py` |
-| Tools/representations | AST, exact source, search, patches, output retrieval, `tools/primitives.py` |
+| Tools/representations | AST, exact source, search, patches, output retrieval; `tools/primitives.py` is reticle-tools-v3, the default that run cards pin; `tools/toolset_v4.py` (`ToolSuiteV4`) is v4, opt-in, used by the interactive harness and check hooks |
 | Checks | Blender geometry, raster/CSS measurements and the experimental post-edit unittest hook |
 | Self-modification | Generated extension staging plus supervised between-turn runtime activation |
 | Comparison | Frozen fixtures/protocols, provider usage and independent acceptance |
@@ -125,8 +125,9 @@ contains the reproducible protocol and commands. The older
 
 No experiment is pending. The latest live comparison completed all 18 runs.
 No new experiments or commits were requested by the wrap-up instruction.
-The checkout has extensive pre-existing modified/untracked code and result files;
-preserve them. Artifacts include prompts/generated code; do not blanket-publish
+On 2026-10-15 all of this work was committed (0a309b0) and merged into master
+with every other branch; card 021's invalidated data was removed from master
+(preserved at tag `archive/c021-data`). Artifacts include prompts/generated code; do not blanket-publish
 session directories or protected login files. Use the existing Reticle subscription
 and exact model `gpt-6.1-sol` for authorized future experiments.
 
