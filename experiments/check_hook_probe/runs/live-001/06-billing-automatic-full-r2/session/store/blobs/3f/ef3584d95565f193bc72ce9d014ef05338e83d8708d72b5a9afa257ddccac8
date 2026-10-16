@@ -1,0 +1,1 @@
+{"content": null, "role": "assistant", "tool_calls": [{"function": {"arguments": "{\"summary\":\"Fixed pricing.py to calculate sales tax using the post-discount subtotal rather than the original subtotal. Existing discount, shipping, and checkout logic is unchanged. All 6 contract tests pass.\"}", "name": "finish"}, "id": "call_Oyp8yVVMRPfdp9fDrjORVzHe", "type": "function"}]}

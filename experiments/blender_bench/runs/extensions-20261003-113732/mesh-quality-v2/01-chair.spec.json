@@ -1,0 +1,15 @@
+{
+  "back_height": 0.9,
+  "depth": 0.48,
+  "height": 0.45,
+  "id": "01-chair",
+  "kind": "dining chair",
+  "supports": [
+    "Leg_1",
+    "Leg_2",
+    "Leg_3",
+    "Leg_4"
+  ],
+  "surface": "Seat",
+  "width": 0.48
+}

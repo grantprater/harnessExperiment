@@ -1,0 +1,6 @@
+Replaced 1 occurrence(s) in query.py. Lines 5-9 now:
+    5| def ordered(records):
+    6|     """Newest first, with ascending id for identical timestamps."""
+    7|     return sorted(records, key=lambda r: (-r.created_at, r.id))
+    8| 
+    9| def page_slice(records, page, page_size):

@@ -1,0 +1,121 @@
+{
+  "profile_version": 1,
+  "extractor_version": "style-measurements-v1",
+  "name": "Visual/UI demo target",
+  "domains": {
+    "image": {
+      "palette": [
+        [
+          224,
+          208,
+          192
+        ],
+        [
+          80,
+          128,
+          128
+        ],
+        [
+          52,
+          83,
+          92
+        ],
+        [
+          113,
+          147,
+          143
+        ],
+        [
+          201,
+          196,
+          182
+        ]
+      ],
+      "reference_count": 1,
+      "statistics": {
+        "brightness": {
+          "min": 0.6232042964244522,
+          "max": 0.6232042964244522
+        },
+        "contrast": {
+          "min": 0.21353949989375806,
+          "max": 0.21353949989375806
+        },
+        "edge_density": {
+          "min": 0.06504662218685602,
+          "max": 0.06504662218685602
+        }
+      }
+    },
+    "css": {
+      "palette": [
+        [
+          32,
+          48,
+          64
+        ],
+        [
+          224,
+          208,
+          192
+        ],
+        [
+          80,
+          128,
+          128
+        ]
+      ],
+      "reference_count": 1,
+      "font_families": [
+        "\"arial\",sans-serif"
+      ],
+      "length_tokens": {
+        "spacing": [
+          {
+            "value": 16.0,
+            "unit": "px"
+          }
+        ],
+        "radii": [
+          {
+            "value": 8.0,
+            "unit": "px"
+          }
+        ],
+        "font_sizes": [
+          {
+            "value": 16.0,
+            "unit": "px"
+          }
+        ]
+      }
+    }
+  },
+  "references": [
+    {
+      "path": "reference.css",
+      "sha256": "4e70bf8770dc455fb333c153663451a4556526f5a710fe9925b399ff9c05eb25",
+      "domain": "css",
+      "coverage": {
+        "unresolved_variables": [],
+        "unsupported_color_values": []
+      }
+    },
+    {
+      "path": "reference.png",
+      "sha256": "5d438f0e3597fd1a74f255713a828b82d47d79e96b3ad994536ec7dd2654c9ec",
+      "domain": "image",
+      "coverage": {
+        "unresolved_variables": [],
+        "unsupported_color_values": []
+      }
+    }
+  ],
+  "policy": {
+    "color_distance_rgb": 30,
+    "image_outside_palette_fraction": 0.1,
+    "length_tolerance": 0.01,
+    "statistics": "advisory"
+  },
+  "limitations": "Reference-derived palette/tokens and coarse image statistics; not a semantic or artistic style judgment."
+}

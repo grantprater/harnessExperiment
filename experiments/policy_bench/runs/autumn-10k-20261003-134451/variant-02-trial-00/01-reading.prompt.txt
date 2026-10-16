@@ -1,0 +1,16 @@
+Generate visual asset 1 of 2 in a shared "cozy autumn" illustration project.
+Subject: a steaming ceramic mug beside an open book, a knitted blanket and fallen autumn leaves.
+Read references/STYLE.md and references/autumn-palette.png. Use style_profile to
+inspect the pinned target; use the six reference colors as your working palette.
+Create an attractive, deliberate illustration, not a palette swatch or generic card.
+The output must be a nonblank, opaque 768x768 PNG at artifacts/01-reading.png.
+Use local Python/Pillow drawing, or SVG rendered locally if available. Pillow is
+installed. Preserve your editable generation source in this workspace. No network,
+package installation, external services or files outside this workspace.
+Build a reusable drawing vocabulary for the next asset if useful.
+You may create and stage reusable generated tools if useful; activation is between turns.
+Use style_check on the generated PNG. If it reports palette drift, fix your source
+or use style_apply to a new path and preserve the original; check again. Do not
+modify the reference files, pinned target, harness or experiment driver. A passing
+palette check does not establish theme/composition quality. Finish only after the
+requested image exists and has been checked, and report limitations honestly.

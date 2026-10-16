@@ -1,0 +1,142 @@
+{
+  "calls": [
+    {
+      "minimal_request_bytes": 13115,
+      "original_request_bytes": 15026,
+      "over_budget": false,
+      "sequence": 11,
+      "task_id": "15fad393e25e402bb2090b5d64ea2038"
+    },
+    {
+      "minimal_request_bytes": 15816,
+      "original_request_bytes": 17812,
+      "over_budget": false,
+      "sequence": 54,
+      "task_id": "15fad393e25e402bb2090b5d64ea2038"
+    },
+    {
+      "minimal_request_bytes": 17205,
+      "original_request_bytes": 19204,
+      "over_budget": false,
+      "sequence": 76,
+      "task_id": "15fad393e25e402bb2090b5d64ea2038"
+    },
+    {
+      "minimal_request_bytes": 20775,
+      "original_request_bytes": 22780,
+      "over_budget": false,
+      "sequence": 98,
+      "task_id": "15fad393e25e402bb2090b5d64ea2038"
+    },
+    {
+      "minimal_request_bytes": 25200,
+      "original_request_bytes": 27207,
+      "over_budget": false,
+      "sequence": 120,
+      "task_id": "15fad393e25e402bb2090b5d64ea2038"
+    },
+    {
+      "minimal_request_bytes": 25633,
+      "original_request_bytes": 27637,
+      "over_budget": false,
+      "sequence": 142,
+      "task_id": "15fad393e25e402bb2090b5d64ea2038"
+    },
+    {
+      "minimal_request_bytes": 27189,
+      "original_request_bytes": 31659,
+      "over_budget": false,
+      "sequence": 175,
+      "task_id": "15fad393e25e402bb2090b5d64ea2038"
+    },
+    {
+      "minimal_request_bytes": 29609,
+      "original_request_bytes": 34079,
+      "over_budget": false,
+      "sequence": 197,
+      "task_id": "15fad393e25e402bb2090b5d64ea2038"
+    },
+    {
+      "minimal_request_bytes": 30043,
+      "original_request_bytes": 34512,
+      "over_budget": false,
+      "sequence": 219,
+      "task_id": "15fad393e25e402bb2090b5d64ea2038"
+    },
+    {
+      "minimal_request_bytes": 31701,
+      "original_request_bytes": 38633,
+      "over_budget": false,
+      "sequence": 252,
+      "task_id": "15fad393e25e402bb2090b5d64ea2038"
+    },
+    {
+      "minimal_request_bytes": 15169,
+      "original_request_bytes": 40442,
+      "over_budget": false,
+      "sequence": 274,
+      "task_id": "15fad393e25e402bb2090b5d64ea2038"
+    },
+    {
+      "minimal_request_bytes": 14770,
+      "original_request_bytes": 42760,
+      "over_budget": false,
+      "sequence": 305,
+      "task_id": "e41339de7da94c2a843c351fdd9e638f"
+    },
+    {
+      "minimal_request_bytes": 26869,
+      "original_request_bytes": 55619,
+      "over_budget": false,
+      "sequence": 370,
+      "task_id": "e41339de7da94c2a843c351fdd9e638f"
+    },
+    {
+      "minimal_request_bytes": 22318,
+      "original_request_bytes": 62924,
+      "over_budget": false,
+      "sequence": 392,
+      "task_id": "e41339de7da94c2a843c351fdd9e638f"
+    },
+    {
+      "minimal_request_bytes": 22752,
+      "original_request_bytes": 63356,
+      "over_budget": false,
+      "sequence": 414,
+      "task_id": "e41339de7da94c2a843c351fdd9e638f"
+    },
+    {
+      "minimal_request_bytes": 24932,
+      "original_request_bytes": 68489,
+      "over_budget": false,
+      "sequence": 447,
+      "task_id": "e41339de7da94c2a843c351fdd9e638f"
+    },
+    {
+      "minimal_request_bytes": 26246,
+      "original_request_bytes": 72528,
+      "over_budget": false,
+      "sequence": 471,
+      "task_id": "e41339de7da94c2a843c351fdd9e638f"
+    },
+    {
+      "minimal_request_bytes": 26938,
+      "original_request_bytes": 75682,
+      "over_budget": false,
+      "sequence": 494,
+      "task_id": "e41339de7da94c2a843c351fdd9e638f"
+    },
+    {
+      "minimal_request_bytes": 29420,
+      "original_request_bytes": 78165,
+      "over_budget": false,
+      "sequence": 516,
+      "task_id": "e41339de7da94c2a843c351fdd9e638f"
+    }
+  ],
+  "measurement": "Serialized request bytes, fixed historical actions; not measured provider tokens or task quality",
+  "minimal_bytes": 445700,
+  "original_bytes": 828514,
+  "reduction_fraction": 0.462,
+  "scope": "Compact style outputs, minimal context policy, 32000-byte limit"
+}

@@ -1,0 +1,80 @@
+{
+  "task_id": "sqlparse-mut-061",
+  "arm": "codex",
+  "run_name": "c019-sqlparse-mut-061-r1-codex",
+  "evidence_class": "exploratory_pilot",
+  "equivalent_to_controlled_cards": false,
+  "pool_with_existing_cards": false,
+  "limitations": [
+    "different models and response budgets",
+    "selected known failures",
+    "parallel workloads may affect latency and cache reuse",
+    "four trials; no statistical or promotion decision"
+  ],
+  "initial_workspace_revision": "sha256:e008e0a0ba52c2190704672999b7ecec699e9ea6a8dcefcf8a1d8f56c3831624",
+  "timed_out": false,
+  "exit_code": 0,
+  "aborted": null,
+  "wall_seconds": 92.5,
+  "usage": [
+    {
+      "input_tokens": 115084,
+      "cached_input_tokens": 97792,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1766,
+      "reasoning_output_tokens": 56
+    }
+  ],
+  "errors": [],
+  "completed_items": 10,
+  "tool_actions": 7,
+  "responses": 3,
+  "first_file_change_seconds": 48.51,
+  "first_edit_metric": "file_change events only; shell-based edits may occur earlier",
+  "acceptance": {
+    "status": "accepted",
+    "criterion_outcomes": {
+      "fail-to-pass": "pass",
+      "pass-to-pass": "pass"
+    },
+    "test_counts": {
+      "fail-to-pass": {
+        "expected": 15,
+        "passed": 15,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      },
+      "pass-to-pass": {
+        "expected": 476,
+        "passed": 476,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      }
+    },
+    "final_workspace_revision": "sha256:a6702617e7bfc01e6dba48e0cceb80b73aee3e22a663509a8dc0311d9eaa2e45",
+    "criteria": {
+      "fail-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      },
+      "pass-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      }
+    },
+    "collection_errors": [],
+    "observed_test_count": 493,
+    "pytest_exit_code": 0,
+    "pytest_timed_out": false,
+    "measurement_errors": []
+  },
+  "valid": true,
+  "audit_status": "sandbox probe passed; transcript still requires review for leaks",
+  "scratch": "C:\\Users\\grant\\AppData\\Local\\Temp\\c019-sqlparse-mut-061-r1-codex-pt7k2ol9"
+}

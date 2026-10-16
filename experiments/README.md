@@ -1,5 +1,10 @@
 # Controlled reading-interface pilot
 
+This document describes the earlier reading pilot. For current observation-strategy
+work, start with [project state](../docs/PROJECT_STATE.md), the
+[experiment register](REGISTER.md), or the [post-edit check probe](check_hook_probe/README.md).
+The historical protocol and results below remain unchanged.
+
 This pilot uses fresh native Codex agents explicitly selected as `gpt-5.6-luna`
 with low reasoning effort and no conversation-history fork. It is a native-agent
 pilot, not a direct API run of the original `harness.py`.

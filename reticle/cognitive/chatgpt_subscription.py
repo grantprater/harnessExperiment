@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -11,6 +12,36 @@ import urllib.request
 
 from reticle.cognitive.chatgpt_auth import ChatGPTAuth, RESOURCE
 from reticle.runtime.controller import ModelClientError, ModelResponse
+
+
+def error_details(event):
+    """Keep classification/reset fields, never raw error messages or payloads."""
+    nested = event.get('response', {}).get('error', {}) if isinstance(event.get('response'), dict) else {}
+    sources = [event.get('error', {}), nested, event]
+    details = {}
+    known_codes = {'usage_limit_reached', 'rate_limit_exceeded', 'insufficient_quota',
+                   'quota_exceeded', 'server_error', 'invalid_request_error',
+                   'model_not_found', 'permission_denied', 'authentication_error'}
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        code = source.get('code') or source.get('type')
+        if isinstance(code, str) and code in known_codes:
+            details.setdefault('code', code)
+        for key in ('resets_at','reset_at','resets_in_seconds','retry_after_seconds'):
+            value = source.get(key)
+            if isinstance(value,(int,float)) and not isinstance(value,bool) and math.isfinite(value) and 0<=value<=10_000_000_000:
+                details.setdefault(key,value)
+    for key in ('resets_at','reset_at'):
+        if key in details:
+            details[key+'_utc'] = datetime.fromtimestamp(details[key], timezone.utc).isoformat(timespec='seconds')
+    return details
+
+
+class SubscriptionError(ModelClientError):
+    def __init__(self, message, details):
+        self.provider_details = details
+        super().__init__(message + (' (' + ', '.join(f'{k}={v}' for k,v in details.items()) + ')' if details else ''))
 
 
 def responses_payload(model, messages, tools):
@@ -75,7 +106,7 @@ def read_completed(response):
                 completed = {**completed, "output": [output_items[index] for index in sorted(output_items)]}
             return completed
         if event.get("type") in ("error", "response.failed", "response.incomplete"):
-            raise ModelClientError("Subscription stream failed: " + str(event.get("type")))
+            raise SubscriptionError("Subscription stream failed: " + str(event.get("type")), error_details(event))
     raise ModelClientError("Subscription stream ended without response.completed")
 
 
@@ -93,6 +124,7 @@ def model_response(data, request_hash):
     usage = None if reported is None else {
         "prompt_tokens": reported.get("input_tokens"), "completion_tokens": reported.get("output_tokens"),
         "total_tokens": reported.get("total_tokens"),
+        "prompt_tokens_details": reported.get("input_tokens_details") or {},
     }
     return ModelResponse({"role": "assistant", "content": "\n".join(content) or None, "tool_calls": calls},
                          usage, {"provider": "chatgpt-subscription", "model": data.get("model"),
@@ -117,7 +149,10 @@ class ChatGPTSubscriptionClient:
         request_hash = hashlib.sha256(raw).hexdigest()
         # Refresh/validate before reserving an inference attempt. No automatic retries:
         # an interrupted stream can have consumed plan usage.
-        token = self.auth.access_token()
+        try:
+            token = self.auth.access_token()
+        except (RuntimeError, OSError) as exc:
+            raise ModelClientError('Subscription authorization failed; run reticle login if renewal fails.') from None
         if self.budget:
             self.budget.check()
         self.call_index += 1
@@ -141,11 +176,19 @@ class ChatGPTSubscriptionClient:
             status = getattr(exc, "code", None)
             failure = f"http_{status}" if status else "stream_or_network_error"
             entry["error"] = failure
+            details = getattr(exc, 'provider_details', {})
+            if isinstance(exc, urllib.error.HTTPError):
+                try:
+                    details = error_details(json.loads(exc.read(4096)))
+                except (ValueError, OSError, AttributeError):
+                    details = {}
+            if details:
+                entry['provider_error'] = details
             if attempts:
-                attempts.finish(attempt_id, outcome=failure, metadata={"error": failure})
+                attempts.finish(attempt_id, outcome=failure, metadata={"error": failure, **({'provider_error':details} if details else {})})
             if isinstance(exc, ModelClientError):
                 raise
-            raise ModelClientError(f"ChatGPT subscription request failed ({failure})") from None
+            raise SubscriptionError(f"ChatGPT subscription request failed ({failure})", details) from None
         finally:
             entry["latency_s"] = round(time.monotonic() - started, 3)
             if self.calls_path:

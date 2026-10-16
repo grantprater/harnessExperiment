@@ -1,0 +1,1723 @@
+{
+  "calls": [
+    {
+      "cached_input_tokens": 0,
+      "call_index": 1,
+      "completion_tokens": 65,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_6d3d064cb47b48f9937fd0f1ea36370f",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 2414,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 14341,
+      "runtime_version": "unversioned",
+      "sequence": 16,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 2,
+      "completion_tokens": 1282,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_f227c2721b994f51a9bd24f394608939",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 3144,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 17240,
+      "runtime_version": "unversioned",
+      "sequence": 60,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 3,
+      "completion_tokens": 2032,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_6c071bd552ff44938fcf4d9b69e5b848",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 4239,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 20788,
+      "runtime_version": "unversioned",
+      "sequence": 83,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 4,
+      "completion_tokens": 22,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_62df602859c54621bcd44c88218b486b",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 5146,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 22788,
+      "runtime_version": "unversioned",
+      "sequence": 106,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 5,
+      "completion_tokens": 119,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_b1de37a8f63d4ecc8a0c4a32c34f8eee",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 3453,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 18689,
+      "runtime_version": "unversioned",
+      "sequence": 129,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 6,
+      "completion_tokens": 211,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_1c60e0196c4d439eba163de22addcc1d",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 6638,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 27899,
+      "runtime_version": "unversioned",
+      "sequence": 174,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 7,
+      "completion_tokens": 94,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_7e2e6ece0e5647719f3722f6d0cb63ef",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 7743,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 30882,
+      "runtime_version": "unversioned",
+      "sequence": 208,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 8,
+      "completion_tokens": 88,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_e6aeb622d87941b2aa0d7df94e1732db",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 2845,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 16095,
+      "runtime_version": "unversioned",
+      "sequence": 237,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 9,
+      "completion_tokens": 166,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_0f429680b2e14669bee4fdcae0dc5c9d",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 5254,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 23367,
+      "runtime_version": "unversioned",
+      "sequence": 293,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 1792,
+      "call_index": 1,
+      "completion_tokens": 121,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_5eafcc51b839451fb0feb02bba2b5227",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 2773,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 15983,
+      "runtime_version": "unversioned",
+      "sequence": 326,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 2,
+      "completion_tokens": 213,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_679c8b9d3b1f4000b7d7ac0826f0ce87",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 6753,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 28601,
+      "runtime_version": "unversioned",
+      "sequence": 392,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 3,
+      "completion_tokens": 2215,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_8ded703956fa4cc4a49b6263930032c0",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 7223,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 30072,
+      "runtime_version": "unversioned",
+      "sequence": 415,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 4,
+      "completion_tokens": 126,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_a53b5d638b3440aa96d6f3e0333f744a",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 5062,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 22326,
+      "runtime_version": "unversioned",
+      "sequence": 438,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 5,
+      "completion_tokens": 207,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_63c7f2904bdb4d3aac2813d261e57b05",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 6803,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 28610,
+      "runtime_version": "unversioned",
+      "sequence": 514,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 6,
+      "completion_tokens": 116,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_7de3415db7494e238d815fb8f12319dd",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 5539,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 24897,
+      "runtime_version": "unversioned",
+      "sequence": 569,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 7,
+      "completion_tokens": 23,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_b07a1de5e646444cbc7207a4531b5731",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 7286,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 29865,
+      "runtime_version": "unversioned",
+      "sequence": 634,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 8,
+      "completion_tokens": 193,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_6af1d8ad290a4cce940a7989c9d69761",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 7358,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 30241,
+      "runtime_version": "unversioned",
+      "sequence": 657,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 9,
+      "completion_tokens": 97,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_9235d1227cc14a2e8ddcf7a9fb58a251",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 6740,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 27286,
+      "runtime_version": "unversioned",
+      "sequence": 713,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 10,
+      "completion_tokens": 23,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_68af81e10c79490483edc913bf6f899d",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 5946,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 25913,
+      "runtime_version": "unversioned",
+      "sequence": 767,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 11,
+      "completion_tokens": 114,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_f6013b80bbc0498bba0ceb7a081f280d",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 6018,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 26290,
+      "runtime_version": "unversioned",
+      "sequence": 790,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 12,
+      "completion_tokens": 96,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_10004c05ede94f7a8a962968c9e3e685",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 6402,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 27370,
+      "runtime_version": "unversioned",
+      "sequence": 846,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 13,
+      "completion_tokens": 254,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_29b79fac1fc74b3aa8692553de489603",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 7256,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 30825,
+      "runtime_version": "unversioned",
+      "sequence": 900,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 14,
+      "completion_tokens": 143,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_8406927f09d14e5c930f707571c6d0a1",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 6144,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 25571,
+      "runtime_version": "unversioned",
+      "sequence": 955,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 15,
+      "completion_tokens": 135,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_2a0f83f8d1a64e8e83dc868d373d6b2a",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 5198,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 23615,
+      "runtime_version": "unversioned",
+      "sequence": 1010,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 16,
+      "completion_tokens": 232,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_9057f5ac0fa64722b14ef55bfbb0dd1c",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 7164,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 29564,
+      "runtime_version": "unversioned",
+      "sequence": 1075,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 17,
+      "completion_tokens": 123,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_0077bec91b244e8392c90c0c10cb9187",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 6336,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 27273,
+      "runtime_version": "unversioned",
+      "sequence": 1152,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 18,
+      "completion_tokens": 111,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_4c8e622fa0224981a0305c029b68203d",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 6302,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 27022,
+      "runtime_version": "unversioned",
+      "sequence": 1207,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 19,
+      "completion_tokens": 246,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_10dcea08e3ec4d14aa12137b748bdcd9",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 6394,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 27235,
+      "runtime_version": "unversioned",
+      "sequence": 1273,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": 1792,
+      "call_index": 20,
+      "completion_tokens": 107,
+      "context_policy_version": "decision-v1",
+      "decision_state_event_id": "evt_b632f2d153c3408c836fb1b3519d88d8",
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 6645,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 27581,
+      "runtime_version": "unversioned",
+      "sequence": 1339,
+      "status": "response",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    }
+  ],
+  "extensions": {
+    "invocations": [],
+    "turn_snapshots": [
+      {
+        "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+        "versions": {}
+      },
+      {
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "versions": {}
+      }
+    ],
+    "versions": []
+  },
+  "failed_model_calls": 0,
+  "failed_provider_attempts_recorded": 0,
+  "incomplete_model_calls": 0,
+  "journal_truncated_tail": false,
+  "measurement": "provider-reported; cached input is included in prompt_tokens; missing values are null",
+  "policy": {
+    "decision_snapshots": [
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [],
+        "escalation_reasons": [],
+        "event_id": "evt_6d3d064cb47b48f9937fd0f1ea36370f",
+        "next_step_hint": "act_or_validate",
+        "policy_version": "decision-v1",
+        "recent_observations": [],
+        "reported_total_tokens": 0,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [],
+        "escalation_reasons": [
+          "retrieval_streak_without_execution"
+        ],
+        "event_id": "evt_f227c2721b994f51a9bd24f394608939",
+        "next_step_hint": "broaden_or_replan",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_2",
+            "status": "success",
+            "tool": "style_profile"
+          },
+          {
+            "output": "out_3",
+            "status": "success",
+            "tool": "glob_files"
+          }
+        ],
+        "reported_total_tokens": 2479,
+        "routine_view_bytes": 4096,
+        "state_version": 1,
+        "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/autumn.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_6c071bd552ff44938fcf4d9b69e5b848",
+        "next_step_hint": "act_or_validate",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_3",
+            "status": "success",
+            "tool": "glob_files"
+          },
+          {
+            "output": "out_4",
+            "path": "drawing/autumn.py",
+            "status": "success",
+            "tool": "write_file"
+          }
+        ],
+        "reported_total_tokens": 6905,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/autumn.py",
+          "drawing/reading.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_62df602859c54621bcd44c88218b486b",
+        "next_step_hint": "act_or_validate",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_4",
+            "path": "drawing/autumn.py",
+            "status": "success",
+            "tool": "write_file"
+          },
+          {
+            "output": "out_5",
+            "path": "drawing/reading.py",
+            "status": "success",
+            "tool": "write_file"
+          }
+        ],
+        "reported_total_tokens": 13176,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/autumn.py",
+          "drawing/reading.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_b1de37a8f63d4ecc8a0c4a32c34f8eee",
+        "next_step_hint": "diagnose",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_5",
+            "path": "drawing/reading.py",
+            "status": "success",
+            "tool": "write_file"
+          },
+          {
+            "output": "out_6",
+            "status": "error",
+            "tool": "run"
+          }
+        ],
+        "reported_total_tokens": 18344,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+        "token_target": 5000,
+        "unresolved_failures": [
+          {
+            "output": "out_6",
+            "status": "error",
+            "tool": "run"
+          }
+        ],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/autumn.py",
+          "drawing/reading.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_1c60e0196c4d439eba163de22addcc1d",
+        "next_step_hint": "diagnose",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_8",
+            "path": "drawing/autumn.py",
+            "status": "success",
+            "tool": "read_file"
+          },
+          {
+            "output": "out_9",
+            "status": "success",
+            "tool": "run"
+          }
+        ],
+        "reported_total_tokens": 21916,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+        "token_target": 5000,
+        "unresolved_failures": [
+          {
+            "output": "out_6",
+            "status": "error",
+            "tool": "run"
+          }
+        ],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/autumn.py",
+          "drawing/reading.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_7e2e6ece0e5647719f3722f6d0cb63ef",
+        "next_step_hint": "diagnose",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_10",
+            "path": "drawing/autumn.py",
+            "status": "success",
+            "tool": "replace_text"
+          },
+          {
+            "output": "out_11",
+            "path": "drawing/reading.py",
+            "status": "success",
+            "tool": "read_file"
+          }
+        ],
+        "reported_total_tokens": 28765,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+        "token_target": 5000,
+        "unresolved_failures": [
+          {
+            "output": "out_6",
+            "status": "error",
+            "tool": "run"
+          }
+        ],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/autumn.py",
+          "drawing/reading.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_e6aeb622d87941b2aa0d7df94e1732db",
+        "next_step_hint": "diagnose",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_11",
+            "path": "drawing/reading.py",
+            "status": "success",
+            "tool": "read_file"
+          },
+          {
+            "output": "out_12",
+            "status": "success",
+            "tool": "run"
+          }
+        ],
+        "reported_total_tokens": 36602,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+        "token_target": 5000,
+        "unresolved_failures": [
+          {
+            "output": "out_6",
+            "status": "error",
+            "tool": "run"
+          }
+        ],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/autumn.py",
+          "drawing/reading.py"
+        ],
+        "escalation_reasons": [
+          "retrieval_streak_without_execution"
+        ],
+        "event_id": "evt_0f429680b2e14669bee4fdcae0dc5c9d",
+        "next_step_hint": "broaden_or_replan",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_15",
+            "status": "success",
+            "tool": "style_profile"
+          },
+          {
+            "output": "out_16",
+            "path": "drawing/reading.py",
+            "status": "success",
+            "tool": "read_file"
+          }
+        ],
+        "reported_total_tokens": 39535,
+        "routine_view_bytes": 4096,
+        "state_version": 1,
+        "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+        "token_target": 5000,
+        "unresolved_failures": [
+          {
+            "output": "out_6",
+            "status": "error",
+            "tool": "run"
+          }
+        ],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [],
+        "escalation_reasons": [],
+        "event_id": "evt_5eafcc51b839451fb0feb02bba2b5227",
+        "next_step_hint": "act_or_validate",
+        "policy_version": "decision-v1",
+        "recent_observations": [],
+        "reported_total_tokens": 0,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [],
+        "escalation_reasons": [
+          "retrieval_streak_without_execution"
+        ],
+        "event_id": "evt_679c8b9d3b1f4000b7d7ac0826f0ce87",
+        "next_step_hint": "broaden_or_replan",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_21",
+            "path": "drawing/reading.py",
+            "status": "success",
+            "tool": "read_file"
+          },
+          {
+            "output": "out_22",
+            "status": "success",
+            "tool": "read_artifact"
+          }
+        ],
+        "reported_total_tokens": 2894,
+        "routine_view_bytes": 4096,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [],
+        "escalation_reasons": [],
+        "event_id": "evt_8ded703956fa4cc4a49b6263930032c0",
+        "next_step_hint": "act_or_validate",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_22",
+            "status": "success",
+            "tool": "read_artifact"
+          },
+          {
+            "output": "out_23",
+            "status": "success",
+            "tool": "run"
+          }
+        ],
+        "reported_total_tokens": 9860,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_a53b5d638b3440aa96d6f3e0333f744a",
+        "next_step_hint": "act_or_validate",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_23",
+            "status": "success",
+            "tool": "run"
+          },
+          {
+            "output": "out_24",
+            "path": "drawing/lantern.py",
+            "status": "success",
+            "tool": "write_file"
+          }
+        ],
+        "reported_total_tokens": 19298,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_63c7f2904bdb4d3aac2813d261e57b05",
+        "next_step_hint": "act_or_validate",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_29",
+            "status": "success",
+            "tool": "run"
+          },
+          {
+            "output": "out_30",
+            "status": "success",
+            "tool": "search_history"
+          }
+        ],
+        "reported_total_tokens": 24486,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_7de3415db7494e238d815fb8f12319dd",
+        "next_step_hint": "act_or_validate",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_33",
+            "status": "success",
+            "tool": "read_artifact"
+          },
+          {
+            "output": "out_34",
+            "status": "success",
+            "tool": "run"
+          }
+        ],
+        "reported_total_tokens": 31496,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [
+          "retrieval_streak_without_execution"
+        ],
+        "event_id": "evt_b07a1de5e646444cbc7207a4531b5731",
+        "next_step_hint": "broaden_or_replan",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_38",
+            "path": "drawing/autumn.py",
+            "status": "success",
+            "tool": "read_file"
+          },
+          {
+            "output": "out_39",
+            "status": "success",
+            "tool": "read_output"
+          }
+        ],
+        "reported_total_tokens": 37151,
+        "routine_view_bytes": 4096,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_6af1d8ad290a4cce940a7989c9d69761",
+        "next_step_hint": "act_or_validate",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_39",
+            "status": "success",
+            "tool": "read_output"
+          },
+          {
+            "output": "out_40",
+            "status": "success",
+            "tool": "run"
+          }
+        ],
+        "reported_total_tokens": 44460,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_9235d1227cc14a2e8ddcf7a9fb58a251",
+        "next_step_hint": "act_or_validate",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_43",
+            "path": "drawing/reading.py",
+            "status": "success",
+            "tool": "read_file"
+          },
+          {
+            "output": "out_44",
+            "status": "success",
+            "tool": "run"
+          }
+        ],
+        "reported_total_tokens": 52011,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [
+          "retrieval_streak_without_execution"
+        ],
+        "event_id": "evt_68af81e10c79490483edc913bf6f899d",
+        "next_step_hint": "broaden_or_replan",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_47",
+            "path": "references/STYLE.md",
+            "status": "success",
+            "tool": "read_file"
+          },
+          {
+            "output": "out_48",
+            "status": "success",
+            "tool": "read_output"
+          }
+        ],
+        "reported_total_tokens": 58848,
+        "routine_view_bytes": 4096,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_f6013b80bbc0498bba0ceb7a081f280d",
+        "next_step_hint": "act_or_validate",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_48",
+            "status": "success",
+            "tool": "read_output"
+          },
+          {
+            "output": "out_49",
+            "status": "success",
+            "tool": "run"
+          }
+        ],
+        "reported_total_tokens": 64817,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [
+          "retrieval_streak_without_execution"
+        ],
+        "event_id": "evt_10004c05ede94f7a8a962968c9e3e685",
+        "next_step_hint": "broaden_or_replan",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_52",
+            "path": "drawing/autumn.py",
+            "status": "success",
+            "tool": "read_file"
+          },
+          {
+            "output": "out_53",
+            "status": "success",
+            "tool": "read_artifact"
+          }
+        ],
+        "reported_total_tokens": 70949,
+        "routine_view_bytes": 4096,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [
+          "retrieval_streak_without_execution"
+        ],
+        "event_id": "evt_29b79fac1fc74b3aa8692553de489603",
+        "next_step_hint": "broaden_or_replan",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_56",
+            "status": "success",
+            "tool": "style_profile"
+          },
+          {
+            "output": "out_57",
+            "status": "success",
+            "tool": "search_history"
+          }
+        ],
+        "reported_total_tokens": 77447,
+        "routine_view_bytes": 4096,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_8406927f09d14e5c930f707571c6d0a1",
+        "next_step_hint": "act_or_validate",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_60",
+            "status": "success",
+            "tool": "run"
+          },
+          {
+            "check_scope": "style measurements only",
+            "measured_check_passed": true,
+            "output": "out_61",
+            "path": "artifacts/02-lantern.png",
+            "status": "success",
+            "tool": "style_check"
+          }
+        ],
+        "reported_total_tokens": 84957,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [
+          "retrieval_streak_without_execution"
+        ],
+        "event_id": "evt_2a0f83f8d1a64e8e83dc868d373d6b2a",
+        "next_step_hint": "broaden_or_replan",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_64",
+            "path": "drawing/lantern.py",
+            "status": "success",
+            "tool": "read_file"
+          },
+          {
+            "output": "out_65",
+            "status": "rejected",
+            "tool": "search_history"
+          }
+        ],
+        "reported_total_tokens": 91244,
+        "routine_view_bytes": 4096,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [
+          {
+            "output": "out_65",
+            "status": "rejected",
+            "tool": "search_history"
+          }
+        ],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [
+          "retrieval_streak_without_execution"
+        ],
+        "event_id": "evt_9057f5ac0fa64722b14ef55bfbb0dd1c",
+        "next_step_hint": "broaden_or_replan",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_69",
+            "status": "success",
+            "tool": "search_history"
+          },
+          {
+            "output": "out_70",
+            "status": "success",
+            "tool": "read_artifact"
+          }
+        ],
+        "reported_total_tokens": 96577,
+        "routine_view_bytes": 4096,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [
+          {
+            "output": "out_65",
+            "status": "rejected",
+            "tool": "search_history"
+          }
+        ],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_0077bec91b244e8392c90c0c10cb9187",
+        "next_step_hint": "diagnose",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_75",
+            "path": "drawing/autumn.py",
+            "status": "success",
+            "tool": "read_file"
+          },
+          {
+            "output": "out_76",
+            "status": "success",
+            "tool": "run"
+          }
+        ],
+        "reported_total_tokens": 103973,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [
+          {
+            "output": "out_65",
+            "status": "rejected",
+            "tool": "search_history"
+          }
+        ],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [
+          "retrieval_streak_without_execution"
+        ],
+        "event_id": "evt_4c8e622fa0224981a0305c029b68203d",
+        "next_step_hint": "broaden_or_replan",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_79",
+            "status": "success",
+            "tool": "read_artifact"
+          },
+          {
+            "output": "out_80",
+            "status": "success",
+            "tool": "search_history"
+          }
+        ],
+        "reported_total_tokens": 110432,
+        "routine_view_bytes": 4096,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [
+          {
+            "output": "out_65",
+            "status": "rejected",
+            "tool": "search_history"
+          }
+        ],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_10dcea08e3ec4d14aa12137b748bdcd9",
+        "next_step_hint": "diagnose",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_84",
+            "status": "success",
+            "tool": "run"
+          },
+          {
+            "output": "out_85",
+            "path": "drawing/autumn.py",
+            "status": "success",
+            "tool": "read_file"
+          }
+        ],
+        "reported_total_tokens": 116845,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [
+          {
+            "output": "out_65",
+            "status": "rejected",
+            "tool": "search_history"
+          }
+        ],
+        "usage_complete": true
+      },
+      {
+        "acceptance": "unverified",
+        "artifact_paths": [
+          "drawing/lantern.py"
+        ],
+        "escalation_reasons": [],
+        "event_id": "evt_b632f2d153c3408c836fb1b3519d88d8",
+        "next_step_hint": "diagnose",
+        "policy_version": "decision-v1",
+        "recent_observations": [
+          {
+            "output": "out_89",
+            "path": "drawing/lantern.py",
+            "status": "success",
+            "tool": "read_file"
+          },
+          {
+            "output": "out_90",
+            "status": "success",
+            "tool": "run"
+          }
+        ],
+        "reported_total_tokens": 123485,
+        "routine_view_bytes": 1024,
+        "state_version": 1,
+        "task_id": "0ff19be8a84649a0afcd71383a34c994",
+        "token_target": 5000,
+        "unresolved_failures": [
+          {
+            "output": "out_65",
+            "status": "rejected",
+            "tool": "search_history"
+          }
+        ],
+        "usage_complete": true
+      }
+    ],
+    "versions": [
+      "decision-v1"
+    ]
+  },
+  "provider_attempts_recorded": 29,
+  "report_version": 1,
+  "retry_usage_note": "Failed/retried provider attempts can consume tokens without a reported measurement; totals cover reported request usage only.",
+  "runtime_worker_interruptions": 0,
+  "session": "C:\\Users\\grant\\harnessExperiment\\experiments\\policy_bench\\runs\\autumn-10k-20261003-134451\\variant-01-trial-00\\workspace\\.reticle\\session",
+  "style": {
+    "applications": [],
+    "checks": [
+      {
+        "candidate": "artifacts/01-reading.png",
+        "candidate_sha256": "9012d431082067820e62982f33416c7d6f4f00c4b917a3d23e05cab4d6b709e7",
+        "complete": true,
+        "domain": "image",
+        "measured_checks_passed": true,
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "task_id": "8d25f5bef17b40899817b6f6ce0152b4"
+      },
+      {
+        "candidate": "artifacts/02-lantern.png",
+        "candidate_sha256": "f07228badc9da0976da66667c9d28372a0f4df21677e51ec7399eef0785704ec",
+        "complete": true,
+        "domain": "image",
+        "measured_checks_passed": true,
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "task_id": "0ff19be8a84649a0afcd71383a34c994"
+      },
+      {
+        "candidate": "artifacts/02-lantern.png",
+        "candidate_sha256": "f07228badc9da0976da66667c9d28372a0f4df21677e51ec7399eef0785704ec",
+        "complete": true,
+        "domain": "image",
+        "measured_checks_passed": true,
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "task_id": "0ff19be8a84649a0afcd71383a34c994"
+      },
+      {
+        "candidate": "artifacts/02-lantern.png",
+        "candidate_sha256": "f07228badc9da0976da66667c9d28372a0f4df21677e51ec7399eef0785704ec",
+        "complete": true,
+        "domain": "image",
+        "measured_checks_passed": true,
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "task_id": "0ff19be8a84649a0afcd71383a34c994"
+      },
+      {
+        "candidate": "artifacts/02-lantern.png",
+        "candidate_sha256": "f07228badc9da0976da66667c9d28372a0f4df21677e51ec7399eef0785704ec",
+        "complete": true,
+        "domain": "image",
+        "measured_checks_passed": true,
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "task_id": "0ff19be8a84649a0afcd71383a34c994"
+      },
+      {
+        "candidate": "artifacts/02-lantern.png",
+        "candidate_sha256": "f07228badc9da0976da66667c9d28372a0f4df21677e51ec7399eef0785704ec",
+        "complete": true,
+        "domain": "image",
+        "measured_checks_passed": true,
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "task_id": "0ff19be8a84649a0afcd71383a34c994"
+      },
+      {
+        "candidate": "artifacts/02-lantern.png",
+        "candidate_sha256": "f07228badc9da0976da66667c9d28372a0f4df21677e51ec7399eef0785704ec",
+        "complete": true,
+        "domain": "image",
+        "measured_checks_passed": true,
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "task_id": "0ff19be8a84649a0afcd71383a34c994"
+      }
+    ],
+    "profiles_extracted": [
+      {
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "reference_count": 1,
+        "task_id": null
+      }
+    ],
+    "turn_snapshots": [
+      {
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "task_id": "8d25f5bef17b40899817b6f6ce0152b4"
+      },
+      {
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "task_id": "0ff19be8a84649a0afcd71383a34c994"
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "model_calls": 9,
+      "provider_attempts": 9,
+      "resource_limits": {
+        "model_attempts": 20.0,
+        "model_responses": 20.0,
+        "tool_actions": 200.0
+      },
+      "stop_reason": "finish_requested",
+      "task_id": "8d25f5bef17b40899817b6f6ce0152b4",
+      "tool_calls": 17,
+      "totals": {
+        "cached_input": {
+          "missing_calls": 0,
+          "reported": 0
+        },
+        "calls": 9,
+        "completion_tokens": {
+          "missing_calls": 0,
+          "reported": 4079
+        },
+        "prompt_tokens": {
+          "missing_calls": 0,
+          "reported": 40876
+        }
+      }
+    },
+    {
+      "model_calls": 20,
+      "provider_attempts": 20,
+      "resource_limits": {
+        "model_attempts": 20.0,
+        "model_responses": 20.0,
+        "tool_actions": 200.0
+      },
+      "stop_reason": "model_call_limit",
+      "task_id": "0ff19be8a84649a0afcd71383a34c994",
+      "tool_calls": 77,
+      "totals": {
+        "cached_input": {
+          "missing_calls": 0,
+          "reported": 3584
+        },
+        "calls": 20,
+        "completion_tokens": {
+          "missing_calls": 0,
+          "reported": 4895
+        },
+        "prompt_tokens": {
+          "missing_calls": 0,
+          "reported": 125342
+        }
+      }
+    }
+  ],
+  "totals": {
+    "cached_input": {
+      "missing_calls": 0,
+      "reported": 3584
+    },
+    "calls": 29,
+    "completion_tokens": {
+      "missing_calls": 0,
+      "reported": 8974
+    },
+    "prompt_tokens": {
+      "missing_calls": 0,
+      "reported": 166218
+    }
+  }
+}

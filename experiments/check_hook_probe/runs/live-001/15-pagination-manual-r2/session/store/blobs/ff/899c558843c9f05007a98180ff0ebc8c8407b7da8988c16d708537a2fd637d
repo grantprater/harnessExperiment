@@ -1,0 +1,1 @@
+{"_reticle_output":{"handle":"out_1","status":"success","tool":"glob_files"},"content":"4 file(s) match glob '*' under '.':\nmodels.py\nquery.py\nservice.py\ntest_contract.py","role":"tool","tool_call_id":"call_8MLbdxQJLx13E7uhy7CGau30"}

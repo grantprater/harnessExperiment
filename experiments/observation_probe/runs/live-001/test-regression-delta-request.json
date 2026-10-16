@@ -1,0 +1,48 @@
+[
+  {
+    "content": "Interpret tool observations. Return only JSON with changed_keys (sorted array) and next_action (string). Choose exactly one of: investigate_check_19, repair_asset_07_palette_and_outline, accept, investigate_check_03. A delta replaces listed records against the identified baseline; omitted records are unchanged.",
+    "role": "system"
+  },
+  {
+    "content": "After a code edit, choose the next action. Current failed checks require investigation. Passed checks need no action. Identify every changed record.",
+    "role": "user"
+  },
+  {
+    "content": null,
+    "role": "assistant",
+    "tool_calls": [
+      {
+        "function": {
+          "arguments": "{}",
+          "name": "observe"
+        },
+        "id": "baseline_call",
+        "type": "function"
+      }
+    ]
+  },
+  {
+    "content": "{\"kind\":\"baseline\",\"records\":{\"check_00\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_00\",\"status\":\"passed\"},\"check_01\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_01\",\"status\":\"passed\"},\"check_02\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_02\",\"status\":\"passed\"},\"check_03\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_03\",\"status\":\"failed\"},\"check_04\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_04\",\"status\":\"passed\"},\"check_05\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_05\",\"status\":\"passed\"},\"check_06\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_06\",\"status\":\"passed\"},\"check_07\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_07\",\"status\":\"passed\"},\"check_08\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_08\",\"status\":\"passed\"},\"check_09\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_09\",\"status\":\"passed\"},\"check_10\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_10\",\"status\":\"passed\"},\"check_11\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_11\",\"status\":\"passed\"},\"check_12\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_12\",\"status\":\"passed\"},\"check_13\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_13\",\"status\":\"passed\"},\"check_14\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_14\",\"status\":\"passed\"},\"check_15\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_15\",\"status\":\"passed\"},\"check_16\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_16\",\"status\":\"passed\"},\"check_17\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_17\",\"status\":\"passed\"},\"check_18\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_18\",\"status\":\"passed\"},\"check_19\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_19\",\"status\":\"passed\"},\"check_20\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_20\",\"status\":\"passed\"},\"check_21\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_21\",\"status\":\"passed\"},\"check_22\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_22\",\"status\":\"passed\"},\"check_23\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_23\",\"status\":\"passed\"}},\"sha256\":\"9aa5a0653a0b4dc41c64602254010c3528e30acb31c11450ffc0a2ec1a0c9efb\"}",
+    "role": "tool",
+    "tool_call_id": "baseline_call"
+  },
+  {
+    "content": null,
+    "role": "assistant",
+    "tool_calls": [
+      {
+        "function": {
+          "arguments": "{}",
+          "name": "observe"
+        },
+        "id": "current_call",
+        "type": "function"
+      }
+    ]
+  },
+  {
+    "content": "{\"baseline_sha256\":\"9aa5a0653a0b4dc41c64602254010c3528e30acb31c11450ffc0a2ec1a0c9efb\",\"changes\":[{\"after\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_03\",\"status\":\"passed\"},\"before\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_03\",\"status\":\"failed\"},\"key\":\"check_03\",\"removed\":false},{\"after\":{\"details\":\"Duplicate delivery after restart; replay lacks deduplication.\",\"scope\":\"module_19\",\"status\":\"failed\"},\"before\":{\"details\":\"Existing compatibility contract remains satisfied.\",\"scope\":\"module_19\",\"status\":\"passed\"},\"key\":\"check_19\",\"removed\":false}],\"current_sha256\":\"e6bfceebf5ff35fe21e477556f4a1ebd7f0291dfde6893d620f047a73e1b45f1\",\"kind\":\"delta\"}",
+    "role": "tool",
+    "tool_call_id": "current_call"
+  }
+]

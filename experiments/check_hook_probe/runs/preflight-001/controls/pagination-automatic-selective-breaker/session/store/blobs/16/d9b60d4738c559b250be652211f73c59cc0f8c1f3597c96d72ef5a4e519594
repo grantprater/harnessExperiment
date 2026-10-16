@@ -1,0 +1,1 @@
+{"_reticle_output":{"handle":"out_3","status":"success","tool":"write_file"},"content":"Overwrote models.py (27 bytes, 1 lines).\nCheck error; tests=unknown; source=85b17a042467; full evidence=out_2.\nCheck execution error: ValueError: Check process exited without a valid test result","role":"tool","tool_call_id":"control_0"}

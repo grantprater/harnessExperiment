@@ -1,0 +1,8 @@
+Replaced 1 occurrence(s) in models.py. Lines 12-18 now:
+   12|     def is_expired(self, now: Optional[float] = None) -> bool:
+   13|         """Returns True if entry has an expiration timestamp and current time >= expires_at."""
+   14|         if self.expires_at is None:
+   15|             return False
+   16|         if now is None:
+   17|             now = time.time()
+   18|         return now >= self.expires_at

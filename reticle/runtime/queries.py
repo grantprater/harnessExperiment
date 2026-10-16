@@ -25,7 +25,8 @@ MODEL_VISIBLE_KINDS = {
     "tool_output",
     "transcript_message",
 }
-RETRIEVAL_TOOLS = {"history", "search_history", "read_artifact", "read_output", "search_output"}
+RETRIEVAL_TOOLS = {"history", "search_history", "read_artifact", "read_output", "search_output",
+                   "knowledge_search", "knowledge_check"}
 SENSITIVE_KEYS = {
     "api_key", "apikey", "authorization", "cookie", "credential", "credentials",
     "password", "secret", "token",

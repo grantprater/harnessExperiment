@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 import json
+import os
+import hashlib
 from time import monotonic
 from typing import Any, Dict, List, Optional, Protocol, Sequence
 from uuid import uuid4
@@ -95,6 +97,7 @@ class AgentController:
         limits: AgentLimits,
         policy: Optional[ContextPolicy] = None,
         interventions: Sequence[Any] = (),
+        expose_usage: bool = False,
     ):
         self.runtime = runtime
         self.task = task
@@ -104,6 +107,7 @@ class AgentController:
         self.policy = policy or BaselineContextPolicy()
         # Agent-loop treatments (reticle.runtime.nudges); none by default, and then the loop is unchanged.
         self.interventions = tuple(interventions)
+        self.expose_usage = expose_usage
 
     @staticmethod
     def _normalize(message: Dict[str, Any], call_index: int) -> Dict[str, Any]:
@@ -162,6 +166,9 @@ class AgentController:
             status["attempt_cost_reservation_usd"] = float(reservation)
         if "cost_usd" in snapshot.limits:
             status["cost_unknown_billing_attempts"] = budget.unknown_billing_count()
+        if self.expose_usage:
+            from reticle.runtime.telemetry import model_token_usage
+            status['model_token_usage'] = model_token_usage(self.runtime, self.task.task_id)
         return status
 
     def _intervene(self, transcript: TranscriptStore, budget: TaskBudgetLedger, model_calls: int) -> None:
@@ -264,6 +271,12 @@ class AgentController:
     def _run_owned(self) -> AgentRunResult:
         self.runtime.repair_model_response_publications()
         self.runtime.repair_completed_action_publications()
+        extensions = getattr(self.tools, 'extensions', None)
+        if extensions:
+            extensions.begin_turn(self.task.task_id)
+        style = getattr(self.tools, 'style', None)
+        if style:
+            style.begin_turn(self.task.task_id)
         transcript = TranscriptStore(self.runtime)
         builder = ContextBuilder(self.policy)
         self.runtime.persist_task_contract(self.task)
@@ -399,11 +412,26 @@ class AgentController:
                 self._record_budget_stop(exc)
                 break
             request_ref = {
+                "task_id": self.task.task_id,
                 "call_index": model_calls + 1,
                 "attempt_id": request_id,
                 "request_artifact_id": built.manifest.materialized_request_artifact_id,
                 "request_hash": built.manifest.materialized_request_hash,
                 "context_over_budget": built.over_budget,
+                "runtime_version": os.environ.get('RETICLE_RUNTIME_VERSION', 'unversioned'),
+                "extension_versions": getattr(self.tools, 'extensions', None).versions()
+                    if getattr(self.tools, 'extensions', None) else {},
+                "style_profile_id": getattr(self.tools, 'style', None).target_id
+                    if getattr(self.tools, 'style', None) else None,
+                "context_policy_version": built.manifest.policy_version,
+                "request_bytes": built.manifest.request_bytes,
+                "decision_state_event_id": next((item.get('state_event_id') for item in built.manifest.selected_items
+                                                   if item.get('kind') == 'decision_state'), None),
+                "token_target": self.task.budgets.get('token_target'),
+                "usage_feedback_enabled": self.expose_usage,
+                "tool_schema_hash": hashlib.sha256(json.dumps(
+                    built.tools, sort_keys=True, separators=(',', ':'), ensure_ascii=False
+                ).encode('utf-8')).hexdigest(),
             }
             try:
                 response_operation = budget.reserve("model_responses", 1)

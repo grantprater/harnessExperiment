@@ -1,0 +1,1 @@
+{"_reticle_attempt_id":"resource:kv-automatic-selective-breaker:model_attempts:2","content":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"summary\": \"breaker control\"}","name":"finish"},"id":"control_1","type":"function"}]}

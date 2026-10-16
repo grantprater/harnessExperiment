@@ -1,0 +1,1 @@
+{"content": null, "role": "assistant", "tool_calls": [{"function": {"arguments": "{\"path\":\"engine.py\"}", "name": "read_file"}, "id": "call_m7GDiWPY0ymuAuMtA3Y6HXMx", "type": "function"}, {"function": {"arguments": "{\"path\":\"test_contract.py\"}", "name": "read_file"}, "id": "call_engPWFrsWemtpD8lGLOMMWRk", "type": "function"}]}

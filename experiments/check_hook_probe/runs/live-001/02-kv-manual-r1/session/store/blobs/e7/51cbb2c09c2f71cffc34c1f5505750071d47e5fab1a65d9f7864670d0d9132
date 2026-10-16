@@ -1,0 +1,11 @@
+Check passed; tests=5; source=b63dcc6fc834; full evidence=out_6.
+test_basic_set_and_get (test_contract.TestKVStore.test_basic_set_and_get) ... ok
+test_delete_key (test_contract.TestKVStore.test_delete_key) ... ok
+test_json_export_and_import (test_contract.TestKVStore.test_json_export_and_import) ... ok
+test_models_is_expired_method (test_contract.TestKVStore.test_models_is_expired_method) ... ok
+test_ttl_expiration (test_contract.TestKVStore.test_ttl_expiration) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.231s
+
+OK

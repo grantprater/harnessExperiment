@@ -1,0 +1,681 @@
+{
+  "client": "chatgpt-subscription",
+  "condition": "persistent-generated-extensions",
+  "finished_at": "2026-10-03T17:46:42.053147+00:00",
+  "model": "gpt-6.1-sol",
+  "model_usage_feedback": false,
+  "run_dir": "C:\\Users\\grant\\harnessExperiment\\experiments\\blender_bench\\runs\\extensions-20261003-113732",
+  "runtime_source_modification": false,
+  "started_at": "2026-10-03T17:37:32.365077+00:00",
+  "status": "complete",
+  "tasks": [
+    {
+      "duration_seconds": 180.77,
+      "exit_code": 0,
+      "id": "01-chair",
+      "usage": {
+        "model_calls": 10,
+        "provider_attempts": 10,
+        "resource_limits": {
+          "model_attempts": 30.0,
+          "model_responses": 30.0,
+          "tool_actions": 300.0
+        },
+        "stop_reason": "finish_requested",
+        "task_id": "334fcf83fd6d4efaa29c2a931b693600",
+        "tool_calls": 10,
+        "totals": {
+          "cached_input": {
+            "missing_calls": 0,
+            "reported": 0
+          },
+          "calls": 10,
+          "completion_tokens": {
+            "missing_calls": 0,
+            "reported": 3964
+          },
+          "prompt_tokens": {
+            "missing_calls": 0,
+            "reported": 58213
+          }
+        }
+      },
+      "verification": {
+        "all_passed": true,
+        "bounds": {
+          "Back": {
+            "max": [
+              0.23999999463558197,
+              0.2329999953508377,
+              0.9000000357627869
+            ],
+            "min": [
+              -0.23999999463558197,
+              0.19300000369548798,
+              0.6800000071525574
+            ]
+          },
+          "Leg_1": {
+            "max": [
+              -0.17249998450279236,
+              -0.17249998450279236,
+              0.4000000059604645
+            ],
+            "min": [
+              -0.2175000011920929,
+              -0.2175000011920929,
+              0.0
+            ]
+          },
+          "Leg_2": {
+            "max": [
+              0.2175000011920929,
+              -0.17249998450279236,
+              0.4000000059604645
+            ],
+            "min": [
+              0.17249998450279236,
+              -0.2175000011920929,
+              0.0
+            ]
+          },
+          "Leg_3": {
+            "max": [
+              -0.17249998450279236,
+              0.2175000011920929,
+              0.4000000059604645
+            ],
+            "min": [
+              -0.2175000011920929,
+              0.17249998450279236,
+              0.0
+            ]
+          },
+          "Leg_4": {
+            "max": [
+              0.2175000011920929,
+              0.2175000011920929,
+              0.4000000059604645
+            ],
+            "min": [
+              0.17249998450279236,
+              0.17249998450279236,
+              0.0
+            ]
+          },
+          "Seat": {
+            "dimensions": [
+              0.47999998927116394,
+              0.47999998927116394,
+              0.050000011920928955
+            ],
+            "max": [
+              0.23999999463558197,
+              0.23999999463558197,
+              0.45000001788139343
+            ],
+            "min": [
+              -0.23999999463558197,
+              -0.23999999463558197,
+              0.4000000059604645
+            ]
+          }
+        },
+        "checks": {
+          "Leg_1_ground_contact": true,
+          "Leg_1_mesh": true,
+          "Leg_1_surface_contact": true,
+          "Leg_2_ground_contact": true,
+          "Leg_2_mesh": true,
+          "Leg_2_surface_contact": true,
+          "Leg_3_ground_contact": true,
+          "Leg_3_mesh": true,
+          "Leg_3_surface_contact": true,
+          "Leg_4_ground_contact": true,
+          "Leg_4_mesh": true,
+          "Leg_4_surface_contact": true,
+          "back_height": true,
+          "back_mesh": true,
+          "back_width": true,
+          "blend_exists": true,
+          "camera": true,
+          "metric_units": true,
+          "render_dimensions": true,
+          "render_exists": true,
+          "render_nonblank": true,
+          "surface_depth": true,
+          "surface_height": true,
+          "surface_material": true,
+          "surface_mesh": true,
+          "surface_thickness": true,
+          "surface_width": true
+        },
+        "passed": 27,
+        "total": 27
+      }
+    },
+    {
+      "duration_seconds": 82.34,
+      "exit_code": 0,
+      "id": "02-stool",
+      "usage": {
+        "model_calls": 4,
+        "provider_attempts": 4,
+        "resource_limits": {
+          "model_attempts": 30.0,
+          "model_responses": 30.0,
+          "tool_actions": 300.0
+        },
+        "stop_reason": "finish_requested",
+        "task_id": "64ad6c00478b41878055288b37e96584",
+        "tool_calls": 5,
+        "totals": {
+          "cached_input": {
+            "missing_calls": 0,
+            "reported": 0
+          },
+          "calls": 4,
+          "completion_tokens": {
+            "missing_calls": 0,
+            "reported": 1956
+          },
+          "prompt_tokens": {
+            "missing_calls": 0,
+            "reported": 44069
+          }
+        }
+      },
+      "verification": {
+        "all_passed": true,
+        "bounds": {
+          "Leg_1": {
+            "max": [
+              -0.12000000476837158,
+              -0.12000000476837158,
+              0.6000000238418579
+            ],
+            "min": [
+              -0.1599999964237213,
+              -0.1599999964237213,
+              0.0
+            ]
+          },
+          "Leg_2": {
+            "max": [
+              0.1599999964237213,
+              -0.12000000476837158,
+              0.6000000238418579
+            ],
+            "min": [
+              0.12000000476837158,
+              -0.1599999964237213,
+              0.0
+            ]
+          },
+          "Leg_3": {
+            "max": [
+              -0.12000000476837158,
+              0.1599999964237213,
+              0.6000000238418579
+            ],
+            "min": [
+              -0.1599999964237213,
+              0.12000000476837158,
+              0.0
+            ]
+          },
+          "Leg_4": {
+            "max": [
+              0.1599999964237213,
+              0.1599999964237213,
+              0.6000000238418579
+            ],
+            "min": [
+              0.12000000476837158,
+              0.12000000476837158,
+              0.0
+            ]
+          },
+          "Seat": {
+            "dimensions": [
+              0.36000001430511475,
+              0.36000001430511475,
+              0.04999995231628418
+            ],
+            "max": [
+              0.18000000715255737,
+              0.18000000715255737,
+              0.6499999761581421
+            ],
+            "min": [
+              -0.18000000715255737,
+              -0.18000000715255737,
+              0.6000000238418579
+            ]
+          }
+        },
+        "checks": {
+          "Leg_1_ground_contact": true,
+          "Leg_1_mesh": true,
+          "Leg_1_surface_contact": true,
+          "Leg_2_ground_contact": true,
+          "Leg_2_mesh": true,
+          "Leg_2_surface_contact": true,
+          "Leg_3_ground_contact": true,
+          "Leg_3_mesh": true,
+          "Leg_3_surface_contact": true,
+          "Leg_4_ground_contact": true,
+          "Leg_4_mesh": true,
+          "Leg_4_surface_contact": true,
+          "blend_exists": true,
+          "camera": true,
+          "metric_units": true,
+          "no_back": true,
+          "render_dimensions": true,
+          "render_exists": true,
+          "render_nonblank": true,
+          "surface_depth": true,
+          "surface_height": true,
+          "surface_material": true,
+          "surface_mesh": true,
+          "surface_thickness": true,
+          "surface_width": true
+        },
+        "passed": 25,
+        "total": 25
+      }
+    },
+    {
+      "duration_seconds": 79.53,
+      "exit_code": 0,
+      "id": "03-bench",
+      "usage": {
+        "model_calls": 4,
+        "provider_attempts": 4,
+        "resource_limits": {
+          "model_attempts": 30.0,
+          "model_responses": 30.0,
+          "tool_actions": 300.0
+        },
+        "stop_reason": "finish_requested",
+        "task_id": "373d07a289294cc580ba87faa53ad085",
+        "tool_calls": 4,
+        "totals": {
+          "cached_input": {
+            "missing_calls": 0,
+            "reported": 0
+          },
+          "calls": 4,
+          "completion_tokens": {
+            "missing_calls": 0,
+            "reported": 1864
+          },
+          "prompt_tokens": {
+            "missing_calls": 0,
+            "reported": 59889
+          }
+        }
+      },
+      "verification": {
+        "all_passed": true,
+        "bounds": {
+          "Back": {
+            "max": [
+              0.6000000238418579,
+              0.19749999046325684,
+              0.8500000238418579
+            ],
+            "min": [
+              -0.6000000238418579,
+              0.1525000035762787,
+              0.6000000238418579
+            ]
+          },
+          "Seat": {
+            "dimensions": [
+              1.2000000476837158,
+              0.4000000059604645,
+              0.050000011920928955
+            ],
+            "max": [
+              0.6000000238418579,
+              0.20000000298023224,
+              0.45000001788139343
+            ],
+            "min": [
+              -0.6000000238418579,
+              -0.20000000298023224,
+              0.4000000059604645
+            ]
+          },
+          "Support_1": {
+            "max": [
+              -0.4724999964237213,
+              0.18000000715255737,
+              0.4000000059604645
+            ],
+            "min": [
+              -0.5475000143051147,
+              -0.18000000715255737,
+              0.0
+            ]
+          },
+          "Support_2": {
+            "max": [
+              0.5475000143051147,
+              0.18000000715255737,
+              0.4000000059604645
+            ],
+            "min": [
+              0.4724999964237213,
+              -0.18000000715255737,
+              0.0
+            ]
+          }
+        },
+        "checks": {
+          "Support_1_ground_contact": true,
+          "Support_1_mesh": true,
+          "Support_1_surface_contact": true,
+          "Support_2_ground_contact": true,
+          "Support_2_mesh": true,
+          "Support_2_surface_contact": true,
+          "back_height": true,
+          "back_mesh": true,
+          "back_width": true,
+          "blend_exists": true,
+          "camera": true,
+          "metric_units": true,
+          "render_dimensions": true,
+          "render_exists": true,
+          "render_nonblank": true,
+          "surface_depth": true,
+          "surface_height": true,
+          "surface_material": true,
+          "surface_mesh": true,
+          "surface_thickness": true,
+          "surface_width": true
+        },
+        "passed": 21,
+        "total": 21
+      }
+    },
+    {
+      "duration_seconds": 124.53,
+      "exit_code": 0,
+      "id": "04-curved-chair",
+      "usage": {
+        "model_calls": 5,
+        "provider_attempts": 5,
+        "resource_limits": {
+          "model_attempts": 30.0,
+          "model_responses": 30.0,
+          "tool_actions": 300.0
+        },
+        "stop_reason": "finish_requested",
+        "task_id": "a9075b9e569d425083655ffcbae9ca3e",
+        "tool_calls": 5,
+        "totals": {
+          "cached_input": {
+            "missing_calls": 0,
+            "reported": 0
+          },
+          "calls": 5,
+          "completion_tokens": {
+            "missing_calls": 0,
+            "reported": 2971
+          },
+          "prompt_tokens": {
+            "missing_calls": 0,
+            "reported": 94697
+          }
+        }
+      },
+      "verification": {
+        "all_passed": true,
+        "bounds": {
+          "Back": {
+            "max": [
+              0.25999999046325684,
+              0.2874999940395355,
+              0.949999988079071
+            ],
+            "min": [
+              -0.25999999046325684,
+              0.15326257050037384,
+              0.6899999976158142
+            ]
+          },
+          "Leg_1": {
+            "max": [
+              -0.19249999523162842,
+              -0.18250000476837158,
+              0.4099999964237213
+            ],
+            "min": [
+              -0.23750001192092896,
+              -0.22749999165534973,
+              0.0
+            ]
+          },
+          "Leg_2": {
+            "max": [
+              0.23750001192092896,
+              -0.18250000476837158,
+              0.4099999964237213
+            ],
+            "min": [
+              0.19249999523162842,
+              -0.22749999165534973,
+              0.0
+            ]
+          },
+          "Leg_3": {
+            "max": [
+              -0.19249999523162842,
+              0.22749999165534973,
+              0.4099999964237213
+            ],
+            "min": [
+              -0.23750001192092896,
+              0.18250000476837158,
+              0.0
+            ]
+          },
+          "Leg_4": {
+            "max": [
+              0.23750001192092896,
+              0.22749999165534973,
+              0.4099999964237213
+            ],
+            "min": [
+              0.19249999523162842,
+              0.18250000476837158,
+              0.0
+            ]
+          },
+          "Seat": {
+            "dimensions": [
+              0.5199999809265137,
+              0.5,
+              0.050000011920928955
+            ],
+            "max": [
+              0.25999999046325684,
+              0.25,
+              0.46000000834465027
+            ],
+            "min": [
+              -0.25999999046325684,
+              -0.25,
+              0.4099999964237213
+            ]
+          }
+        },
+        "checks": {
+          "Leg_1_ground_contact": true,
+          "Leg_1_mesh": true,
+          "Leg_1_surface_contact": true,
+          "Leg_2_ground_contact": true,
+          "Leg_2_mesh": true,
+          "Leg_2_surface_contact": true,
+          "Leg_3_ground_contact": true,
+          "Leg_3_mesh": true,
+          "Leg_3_surface_contact": true,
+          "Leg_4_ground_contact": true,
+          "Leg_4_mesh": true,
+          "Leg_4_surface_contact": true,
+          "back_curvature_heuristic": true,
+          "back_height": true,
+          "back_mesh": true,
+          "back_width": true,
+          "blend_exists": true,
+          "camera": true,
+          "metric_units": true,
+          "render_dimensions": true,
+          "render_exists": true,
+          "render_nonblank": true,
+          "surface_depth": true,
+          "surface_height": true,
+          "surface_material": true,
+          "surface_mesh": true,
+          "surface_thickness": true,
+          "surface_width": true
+        },
+        "passed": 28,
+        "total": 28
+      }
+    },
+    {
+      "duration_seconds": 74.12,
+      "exit_code": 0,
+      "id": "05-table",
+      "usage": {
+        "model_calls": 4,
+        "provider_attempts": 4,
+        "resource_limits": {
+          "model_attempts": 30.0,
+          "model_responses": 30.0,
+          "tool_actions": 300.0
+        },
+        "stop_reason": "finish_requested",
+        "task_id": "56e0abcc6f97493c97a116b671d74225",
+        "tool_calls": 4,
+        "totals": {
+          "cached_input": {
+            "missing_calls": 0,
+            "reported": 0
+          },
+          "calls": 4,
+          "completion_tokens": {
+            "missing_calls": 0,
+            "reported": 1785
+          },
+          "prompt_tokens": {
+            "missing_calls": 0,
+            "reported": 92911
+          }
+        }
+      },
+      "verification": {
+        "all_passed": true,
+        "bounds": {
+          "Leg_1": {
+            "max": [
+              -0.47999998927116394,
+              -0.22999998927116394,
+              0.699999988079071
+            ],
+            "min": [
+              -0.5399999618530273,
+              -0.28999999165534973,
+              0.0
+            ]
+          },
+          "Leg_2": {
+            "max": [
+              0.5399999618530273,
+              -0.22999998927116394,
+              0.699999988079071
+            ],
+            "min": [
+              0.47999998927116394,
+              -0.28999999165534973,
+              0.0
+            ]
+          },
+          "Leg_3": {
+            "max": [
+              -0.47999998927116394,
+              0.28999999165534973,
+              0.699999988079071
+            ],
+            "min": [
+              -0.5399999618530273,
+              0.22999998927116394,
+              0.0
+            ]
+          },
+          "Leg_4": {
+            "max": [
+              0.5399999618530273,
+              0.28999999165534973,
+              0.699999988079071
+            ],
+            "min": [
+              0.47999998927116394,
+              0.22999998927116394,
+              0.0
+            ]
+          },
+          "Tabletop": {
+            "dimensions": [
+              1.2000000476837158,
+              0.699999988079071,
+              0.04999995231628418
+            ],
+            "max": [
+              0.6000000238418579,
+              0.3499999940395355,
+              0.75
+            ],
+            "min": [
+              -0.6000000238418579,
+              -0.3499999940395355,
+              0.7000000476837158
+            ]
+          }
+        },
+        "checks": {
+          "Leg_1_ground_contact": true,
+          "Leg_1_mesh": true,
+          "Leg_1_surface_contact": true,
+          "Leg_2_ground_contact": true,
+          "Leg_2_mesh": true,
+          "Leg_2_surface_contact": true,
+          "Leg_3_ground_contact": true,
+          "Leg_3_mesh": true,
+          "Leg_3_surface_contact": true,
+          "Leg_4_ground_contact": true,
+          "Leg_4_mesh": true,
+          "Leg_4_surface_contact": true,
+          "blend_exists": true,
+          "camera": true,
+          "metric_units": true,
+          "no_back": true,
+          "render_dimensions": true,
+          "render_exists": true,
+          "render_nonblank": true,
+          "surface_depth": true,
+          "surface_height": true,
+          "surface_material": true,
+          "surface_mesh": true,
+          "surface_thickness": true,
+          "surface_width": true
+        },
+        "passed": 25,
+        "total": 25
+      }
+    }
+  ]
+}

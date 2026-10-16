@@ -1,5 +1,12 @@
 # Reticle: durable sessions, replaceable harnesses, fast experiments
 
+> Resume pointer, updated 2026-10-03: current direction and evidence are in
+> [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md); the short handoff is
+> [NEXT_SESSION.md](NEXT_SESSION.md). This document preserves the earlier stage
+> ledger and protocols. Its dated status and next-step text are historical;
+> they do not replace the current handoff. Existing implementation contracts remain
+> relevant when working on those components.
+
 Date: 2026-09-15.
 Status: S1/S2 mechanics delivered; one E2 live fixture accepted. E3 (one session): runner
 accounting and no-API controls passed. Run 1 stopped on provider HTTP 429; an endpoint probe returned

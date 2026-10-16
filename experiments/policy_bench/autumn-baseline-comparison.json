@@ -1,0 +1,45 @@
+{
+  "report_version": 1,
+  "runs": [
+    {
+      "run_dir": "C:\\Users\\grant\\harnessExperiment\\experiments\\style_tools\\runs\\cozy-autumn-20261003-124743",
+      "condition": "pressure-recent-v4",
+      "model": "gpt-6.1-sol",
+      "status": "complete",
+      "total_tokens": 224291,
+      "driver_exit_code": null,
+      "token_target_total": null,
+      "token_target_met": null,
+      "reported_usage_complete": true,
+      "cached_input_tokens": 1664,
+      "uncached_input_tokens": 213698,
+      "model_calls": 19,
+      "failed_model_calls": 0,
+      "escalations": 0,
+      "measured_checks_passed": true,
+      "accepted": null,
+      "acceptance_source": null,
+      "evaluation_protocol": null,
+      "unmeasured_retry_usage_possible": false
+    }
+  ],
+  "conditions": [
+    {
+      "condition": "pressure-recent-v4",
+      "model": "gpt-6.1-sol",
+      "attempts": 1,
+      "accepted_attempts": 0,
+      "acceptance_unknown": 1,
+      "evaluation_protocols": [],
+      "median_tokens_per_attempt": 224291,
+      "reported_total_tokens_all_attempts": 224291,
+      "reported_uncached_input_all_attempts": 213698,
+      "tokens_per_accepted_attempt": null,
+      "measured_passes": 1,
+      "unfinished_attempts": 0,
+      "token_target_met_attempts": 0,
+      "usage_incomplete": 0
+    }
+  ],
+  "interpretation": "All attempts count toward cost. Automated measured passes do not imply independent acceptance. Unknown usage remains unknown; cached input is included in total tokens. No automatic policy promotion."
+}

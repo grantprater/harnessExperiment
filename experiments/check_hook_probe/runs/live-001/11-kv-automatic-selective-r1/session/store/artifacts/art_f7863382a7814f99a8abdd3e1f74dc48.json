@@ -1,0 +1,13 @@
+{
+  "artifact_id": "art_f7863382a7814f99a8abdd3e1f74dc48",
+  "byte_length": 15711,
+  "content_hash": "814341fe51a7eab2b5a20e1e3bf89858b4949532e0898485506c14bbfa2f4265",
+  "created_at": "2026-10-03T22:17:19.365395Z",
+  "labels": [
+    "materialized-context-request"
+  ],
+  "media_type": "application/json",
+  "parent_artifact_ids": [],
+  "producer_event_id": "evt_4fd268bf600f4ef2bea391a0b5b49794",
+  "schema_version": 1
+}

@@ -39,12 +39,43 @@ def cmd_verify_ast(args):
         sys.exit(1)
 
 
-def main():
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    legacy = {'version', 'blender-info', 'verify-ast', 'run', 'login', 'models', 'knowledge', 'usage'}
+    if not argv or argv[0] not in legacy | {'--help', '-h'}:
+        from reticle.interactive import add_arguments, launch
+        chat = argparse.ArgumentParser(prog='reticle', description='Interactive Reticle coding harness')
+        add_arguments(chat)
+        args = chat.parse_args(argv[1:] if argv and argv[0] == 'chat' else argv)
+        try:
+            sys.exit(launch(args))
+        except (ValueError, OSError, RuntimeError) as exc:
+            chat.exit(1, f'Error: {exc}\n')
     parser = argparse.ArgumentParser(
         prog="reticle",
         description="Reticle: Cognitive Harness for AI Agents"
     )
     subparsers = parser.add_subparsers(dest="subcommand", help="Available subcommands")
+
+    from reticle.interactive import add_arguments
+    p_chat = subparsers.add_parser('chat', help='Start an interactive coding session (also the default)')
+    add_arguments(p_chat)
+
+    p_login = subparsers.add_parser('login', help='Connect your ChatGPT subscription to Reticle')
+    p_login.add_argument('--new-account', action='store_true')
+    p_login.add_argument('--no-browser', action='store_true')
+    p_login.set_defaults(func=cmd_login)
+    p_models = subparsers.add_parser('models', help='List models available through your subscription')
+    p_models.set_defaults(func=cmd_models)
+    p_knowledge = subparsers.add_parser('knowledge', help='Export evidence, inspect a snapshot, or propose experiments')
+    p_knowledge.add_argument('action', choices=['export', 'inspect', 'propose'])
+    p_knowledge.add_argument('path', help='Source session for export; snapshot file for inspect/propose')
+    p_knowledge.add_argument('--library', default='.reticle/knowledge')
+    p_knowledge.set_defaults(func=cmd_knowledge)
+    p_usage = subparsers.add_parser('usage', help='Export saved session token measurements as JSON')
+    p_usage.add_argument('session', help='Saved session directory')
+    p_usage.add_argument('--output', help='Write JSON to this file instead of stdout')
+    p_usage.set_defaults(func=cmd_usage)
 
     # version
     p_ver = subparsers.add_parser("version", help="Show Reticle version")
@@ -73,7 +104,7 @@ def main():
     p_run.add_argument("--report", default=None, help="Optional path to export execution telemetry report")
     p_run.set_defaults(func=cmd_run)
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if hasattr(args, "func"):
         args.func(args)
     else:
@@ -182,6 +213,59 @@ def cmd_run(args):
         )
         rep_path.write_text(report_content, encoding="utf-8")
         print(f"[Report] Saved detailed telemetry report to {rep_path}")
+
+
+def cmd_login(args):
+    from reticle.cognitive.chatgpt_auth import ChatGPTAuth
+    try:
+        ChatGPTAuth().login(new_account=args.new_account, open_browser=not args.no_browser)
+    except (RuntimeError, OSError) as exc:
+        raise SystemExit(str(exc)) from None
+
+
+def cmd_usage(args):
+    import json
+    from reticle.runtime.session import LocalRuntime
+    from reticle.runtime.telemetry import usage_report, write_usage_report
+    if not (Path(args.session) / 'session.json').is_file():
+        raise SystemExit('Saved session was not found: ' + args.session)
+    runtime = LocalRuntime(args.session)
+    if args.output:
+        write_usage_report(runtime, args.output)
+    else:
+        print(json.dumps(usage_report(runtime), indent=2))
+
+
+def cmd_models(args):
+    import json
+    from reticle.cognitive.chatgpt_auth import ChatGPTAuth
+    try:
+        print(json.dumps([{k: model[k] for k in ('slug', 'display_name') if k in model}
+                          for model in ChatGPTAuth().models() if model.get('visibility') == 'list'], indent=2))
+    except (RuntimeError, OSError) as exc:
+        raise SystemExit(str(exc)) from None
+
+
+def cmd_knowledge(args):
+    import json
+    from reticle.runtime.knowledge import KnowledgeLibrary, load_snapshot, propose_experiments
+    try:
+        if args.action == 'export':
+            from reticle.runtime.session import LocalRuntime
+            from reticle.runtime.reasoning import EvidenceOntology
+            if not (Path(args.path) / 'session.json').is_file():
+                raise ValueError('Saved session does not exist')
+            runtime = LocalRuntime(args.path)
+            print(KnowledgeLibrary(args.library).consolidate(runtime, EvidenceOntology(runtime, 'memory')))
+        elif args.action == 'propose':
+            print(json.dumps(propose_experiments(args.path), indent=2))
+        else:
+            data = load_snapshot(args.path)
+            print(json.dumps({'version': data['version'], 'entities': len(data['entities']),
+                              'relations': len(data['relations']), 'sessions': len(data['sessions']),
+                              'feedback': len(data['feedback'])}, indent=2))
+    except (RuntimeError, OSError, ValueError, KeyError) as exc:
+        raise SystemExit(str(exc)) from None
 
 
 if __name__ == "__main__":

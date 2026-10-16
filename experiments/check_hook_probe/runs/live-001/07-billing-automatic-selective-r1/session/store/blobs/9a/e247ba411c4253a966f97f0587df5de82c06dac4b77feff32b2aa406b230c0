@@ -1,0 +1,6 @@
+Replaced 1 occurrence(s) in pricing.py. Lines 71-75 now:
+   71|     tax_rate = get_tax_rate(state)
+   72| 
+   73|     tax_amount = round(discounted_subtotal * tax_rate, 2)
+   74| 
+   75|     shipping_fee = calculate_shipping(discounted_subtotal)

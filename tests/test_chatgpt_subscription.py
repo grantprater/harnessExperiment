@@ -28,6 +28,11 @@ def stream(data):
 
 
 class SubscriptionTests(unittest.TestCase):
+    def test_cached_input_usage_is_preserved(self):
+        data = {**COMPLETED, 'usage': {**COMPLETED['usage'], 'input_tokens_details': {'cached_tokens': 32}}}
+        response = model_response(data, 'hash')
+        self.assertEqual(response.usage['prompt_tokens_details']['cached_tokens'], 32)
+
     def test_full_tool_history_and_preview_constraints(self):
         messages = [{"role": "system", "content": "instruction"}, {"role": "user", "content": "read x"},
                     {"role": "assistant", "content": None, "tool_calls": [CALL]},
@@ -52,6 +57,31 @@ class SubscriptionTests(unittest.TestCase):
                         b'data: {"type":"response.failed"}\n\n', b'data: [DONE]\n\n'):
             with self.assertRaises(ModelClientError):
                 read_completed(io.BytesIO(payload))
+
+    def test_quota_error_preserves_reset_seconds_without_raw_message(self):
+        payload = {'type':'error','error':{'code':'usage_limit_reached','resets_at':1700000048,
+                    'resets_in_seconds':48,'message':'private bearer secret-token'}}
+        with self.assertRaises(ModelClientError) as caught:
+            read_completed(io.BytesIO(('data: '+json.dumps(payload)+'\n\n').encode()))
+        text = str(caught.exception)
+        self.assertIn('usage_limit_reached',text)
+        self.assertIn('resets_in_seconds=48',text)
+        self.assertIn('T',text)
+        self.assertNotIn('secret-token',text)
+        self.assertEqual(caught.exception.provider_details['resets_at'],1700000048)
+
+    def test_stream_error_metadata_is_logged_safely(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'calls.jsonl'
+            auth=Mock();auth.access_token.return_value='secret-token'
+            event={'type':'response.failed','response':{'error':{'code':'rate_limit_exceeded','resets_at':1700000048,'message':'secret-token'}}}
+            raw=io.BytesIO(('data: '+json.dumps(event)+'\n\n').encode())
+            with patch('urllib.request.urlopen',return_value=raw),self.assertRaises(ModelClientError):
+                ChatGPTSubscriptionClient('test-model',auth=auth,calls_path=path).complete([],[])
+            logged=path.read_text()
+            self.assertIn('rate_limit_exceeded',logged)
+            self.assertIn('1700000048',logged)
+            self.assertNotIn('secret-token',logged)
 
     def test_plan_stream_outputs_arrive_before_empty_completed_envelope(self):
         event = {"type": "response.output_item.done", "output_index": 0, "item": COMPLETED["output"][0]}

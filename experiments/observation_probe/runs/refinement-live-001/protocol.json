@@ -1,0 +1,19 @@
+{
+  "arms": [
+    "full",
+    "adaptive"
+  ],
+  "decision_rule": "Scoped support only if all twelve decisions pass and adaptive total tokens are lower.",
+  "development_domain": "checks",
+  "id": "conditional-observation-probe-v1",
+  "max_provider_attempts": 12,
+  "model": "gpt-6.1-sol",
+  "preflight": {
+    "dense_and_missing_baseline_use_identical_full_requests": true,
+    "exact_reconstruction": true,
+    "identical_pair_prefixes": true
+  },
+  "retries": 0,
+  "seed": 41,
+  "transfer_domain": "ui"
+}

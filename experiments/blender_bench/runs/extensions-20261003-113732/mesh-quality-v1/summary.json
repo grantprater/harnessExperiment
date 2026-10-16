@@ -1,0 +1,279 @@
+{
+  "assets": [
+    {
+      "all_verifier_checks_passed": false,
+      "asset_sha256": "6da4b6cc9942ca8082b81c317d502705cd4dc959010bcc0e61773deb2ede504e",
+      "asset_unchanged": true,
+      "failed_checks": [
+        "no_same_facing_coplanar_overlap"
+      ],
+      "id": "01-chair",
+      "mesh_quality_passed": false,
+      "overlapping_object_pairs": [
+        [
+          "Apron Front",
+          "Apron Left"
+        ],
+        [
+          "Apron Front",
+          "Apron Right"
+        ],
+        [
+          "Apron Left",
+          "Apron Rear"
+        ],
+        [
+          "Apron Rear",
+          "Apron Right"
+        ],
+        [
+          "Back",
+          "Back upright Left"
+        ],
+        [
+          "Back",
+          "Back upright Right"
+        ]
+      ],
+      "summary": {
+        "coplanar_face_pairs_across_both_stages": 24,
+        "objects": 13,
+        "topology_error_categories": 0,
+        "warning_categories": 24
+      }
+    },
+    {
+      "all_verifier_checks_passed": false,
+      "asset_sha256": "7bd12c7515d15967a8f26cea03df327fdf5de50f00682a116d1aea91f06154cd",
+      "asset_unchanged": true,
+      "failed_checks": [
+        "no_same_facing_coplanar_overlap"
+      ],
+      "id": "02-stool",
+      "mesh_quality_passed": false,
+      "overlapping_object_pairs": [
+        [
+          "Apron Front",
+          "Leg_1"
+        ],
+        [
+          "Apron Front",
+          "Leg_2"
+        ],
+        [
+          "Apron Left",
+          "Leg_1"
+        ],
+        [
+          "Apron Left",
+          "Leg_3"
+        ],
+        [
+          "Apron Rear",
+          "Leg_3"
+        ],
+        [
+          "Apron Rear",
+          "Leg_4"
+        ],
+        [
+          "Apron Right",
+          "Leg_2"
+        ],
+        [
+          "Apron Right",
+          "Leg_4"
+        ],
+        [
+          "Stretcher Front",
+          "Stretcher Left"
+        ],
+        [
+          "Stretcher Front",
+          "Stretcher Right"
+        ],
+        [
+          "Stretcher Left",
+          "Stretcher Rear"
+        ],
+        [
+          "Stretcher Rear",
+          "Stretcher Right"
+        ]
+      ],
+      "summary": {
+        "coplanar_face_pairs_across_both_stages": 32,
+        "objects": 14,
+        "topology_error_categories": 0,
+        "warning_categories": 26
+      }
+    },
+    {
+      "all_verifier_checks_passed": false,
+      "asset_sha256": "69eb8103d699987543d3f4e24dfebf106c2ce8f8d3067098092fd52390716a8d",
+      "asset_unchanged": true,
+      "failed_checks": [
+        "no_same_facing_coplanar_overlap"
+      ],
+      "id": "03-bench",
+      "mesh_quality_passed": false,
+      "overlapping_object_pairs": [
+        [
+          "Back",
+          "Back upright Left"
+        ],
+        [
+          "Back",
+          "Back upright Right"
+        ],
+        [
+          "Support_1",
+          "Underseat rail"
+        ],
+        [
+          "Support_2",
+          "Underseat rail"
+        ]
+      ],
+      "summary": {
+        "coplanar_face_pairs_across_both_stages": 12,
+        "objects": 8,
+        "topology_error_categories": 0,
+        "warning_categories": 13
+      }
+    },
+    {
+      "all_verifier_checks_passed": false,
+      "asset_sha256": "8da900a901ef7a3f0b065a348f549908bba1c746dc3358ee47561f9adafefd85",
+      "asset_unchanged": true,
+      "failed_checks": [
+        "no_same_facing_coplanar_overlap"
+      ],
+      "id": "04-curved-chair",
+      "mesh_quality_passed": false,
+      "overlapping_object_pairs": [
+        [
+          "Apron Front",
+          "Apron Left"
+        ],
+        [
+          "Apron Front",
+          "Apron Right"
+        ],
+        [
+          "Apron Front",
+          "Leg_1"
+        ],
+        [
+          "Apron Front",
+          "Leg_2"
+        ],
+        [
+          "Apron Left",
+          "Apron Rear"
+        ],
+        [
+          "Apron Left",
+          "Leg_1"
+        ],
+        [
+          "Apron Left",
+          "Leg_3"
+        ],
+        [
+          "Apron Rear",
+          "Apron Right"
+        ],
+        [
+          "Apron Rear",
+          "Leg_3"
+        ],
+        [
+          "Apron Rear",
+          "Leg_4"
+        ],
+        [
+          "Apron Right",
+          "Leg_2"
+        ],
+        [
+          "Apron Right",
+          "Leg_4"
+        ]
+      ],
+      "summary": {
+        "coplanar_face_pairs_across_both_stages": 32,
+        "objects": 13,
+        "topology_error_categories": 0,
+        "warning_categories": 23
+      }
+    },
+    {
+      "all_verifier_checks_passed": false,
+      "asset_sha256": "2d37f3199763ed2febe106d406f6b508178a484ce92915bd3375cff5f870cacd",
+      "asset_unchanged": true,
+      "failed_checks": [
+        "no_same_facing_coplanar_overlap"
+      ],
+      "id": "05-table",
+      "mesh_quality_passed": false,
+      "overlapping_object_pairs": [
+        [
+          "Apron Front",
+          "Apron Left"
+        ],
+        [
+          "Apron Front",
+          "Apron Right"
+        ],
+        [
+          "Apron Front",
+          "Leg_1"
+        ],
+        [
+          "Apron Front",
+          "Leg_2"
+        ],
+        [
+          "Apron Left",
+          "Apron Rear"
+        ],
+        [
+          "Apron Left",
+          "Leg_1"
+        ],
+        [
+          "Apron Left",
+          "Leg_3"
+        ],
+        [
+          "Apron Rear",
+          "Apron Right"
+        ],
+        [
+          "Apron Rear",
+          "Leg_3"
+        ],
+        [
+          "Apron Rear",
+          "Leg_4"
+        ],
+        [
+          "Apron Right",
+          "Leg_2"
+        ],
+        [
+          "Apron Right",
+          "Leg_4"
+        ]
+      ],
+      "summary": {
+        "coplanar_face_pairs_across_both_stages": 32,
+        "objects": 10,
+        "topology_error_categories": 0,
+        "warning_categories": 16
+      }
+    }
+  ],
+  "audit_version": 1
+}

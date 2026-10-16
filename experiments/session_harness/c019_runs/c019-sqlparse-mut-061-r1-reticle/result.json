@@ -1,0 +1,170 @@
+{
+  "run_id": "sqlparse-mut-061__sonnet",
+  "task_id": "sqlparse-mut-061",
+  "model": "sonnet",
+  "client": "claude-cli",
+  "arm": "pressure-recent-v4",
+  "protocol_hash": "9b3afcfbd021",
+  "started_at": "2026-10-01T18:18:37.170449+00:00",
+  "session_dir": "runs\\c019-sqlparse-mut-061-r1-reticle\\sessions\\sqlparse-mut-061__sonnet",
+  "agent": {
+    "task_id": "sqlparse-mut-061",
+    "stop_reason": "finish_requested",
+    "model_calls": 10,
+    "tool_calls": 10,
+    "final_workspace_revision": "sha256:a6702617e7bfc01e6dba48e0cceb80b73aee3e22a663509a8dc0311d9eaa2e45",
+    "usage_reported": {
+      "prompt_tokens": 59764.0,
+      "completion_tokens": 1951.0,
+      "cost": 0.0
+    },
+    "calls_missing_usage": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "cost": 10
+    },
+    "finish_summary": "In sqlparse/filters/reindent.py _process_identifierlist, the condition was missing `not` before tlist.within(sql.Values), so identifier lists were not wrapped onto new lines. Restored `and not tlist.within(sql.Values)`. A manual check with reindent=True now splits `select foo, bar, baz` across lines. I could not run the test suite because no tests directory exists in this checkout.",
+    "error": null,
+    "task_resources": {
+      "limits": {
+        "model_responses": 20.0,
+        "model_attempts": 24.0,
+        "active_seconds": 1200.0
+      },
+      "consumed": {
+        "active_seconds": 48.63305240000773,
+        "model_attempts": 10.0,
+        "model_responses": 10.0,
+        "tool_actions": 10.0
+      },
+      "reserved": {},
+      "remaining": {
+        "model_responses": 10.0,
+        "model_attempts": 14.0,
+        "active_seconds": 1151.3669475999923
+      },
+      "pending": {},
+      "adjusted": {}
+    },
+    "provider_attempts": 10
+  },
+  "invocations": [
+    {
+      "stop_reason": "finish_requested",
+      "error": null,
+      "model_calls": 10,
+      "provider_attempts": 10,
+      "tool_calls": 10
+    }
+  ],
+  "totals": {
+    "model_calls": 10,
+    "provider_attempts": 10,
+    "tool_calls": 10
+  },
+  "stop": "finish_requested",
+  "reported_cost_usd": null,
+  "http_attempts": 10,
+  "tool_results": [
+    {
+      "call_id": "cli_1_1",
+      "head": "2 match(es) for '_process_identifierlist' (exact text, case-sensitive; path 'sqlparse', file_glob '*'; 22 file(s) searched):\nsqlparse/filters/aligned_indent.py:61:     def _process_identifierlist(self, tlist):\nsqlparse/filters/reindent.py:130:     def _process_identifierlist(self, tlist):",
+      "tail": "2 match(es) for '_process_identifierlist' (exact text, case-sensitive; path 'sqlparse', file_glob '*'; 22 file(s) searched):\nsqlparse/filters/aligned_indent.py:61:     def _process_identifierlist(self, tlist):\nsqlparse/filters/reindent.py:130:     def _process_identifierlist(self, tlist):"
+    },
+    {
+      "call_id": "cli_2_1",
+      "head": "sqlparse/filters/reindent.py (lines 120-165 of 248)\n  120| \n  121|         with indent(self, 1 if is_dml_dll else 0):\n  122|             tlist.tokens.insert(0, self.nl()) if is_dml_dll else None\n  123|             with offset(self, self._get_offset(first) + 1):\n  124|                 self._process_d",
+      "tail": ".Text.Whitespace):\n  160|                                 tlist.insert_after(\n  161|                                     token, sql.Token(T.Whitespace, ' '))\n  162|                         position = 0\n  163|         else:\n  164|             # ensure whitespace\n  165|             for token in tlist:"
+    },
+    {
+      "call_id": "cli_3_1",
+      "head": "Replaced 1 occurrence(s) in sqlparse/filters/reindent.py. Lines 137-141 now:\n  137|             num_offset = 1 if self.char == '\\t' else self._get_offset(first)\n  138| \n  139|         if not tlist.within(sql.Function) and not tlist.within(sql.Values):\n  140|             with offset(self, num_offset)",
+      "tail": "filters/reindent.py. Lines 137-141 now:\n  137|             num_offset = 1 if self.char == '\\t' else self._get_offset(first)\n  138| \n  139|         if not tlist.within(sql.Function) and not tlist.within(sql.Values):\n  140|             with offset(self, num_offset):\n  141|                 position = 0"
+    },
+    {
+      "call_id": "cli_4_1",
+      "head": "$ pytest tests/test_format.py -q\nstatus: error; exit code: 4; 2162 ms\n--- stdout ---\n\nno tests ran in 0.99s\n\n--- stderr ---\nERROR: file or directory not found: tests/test_format.py\n\n",
+      "tail": "$ pytest tests/test_format.py -q\nstatus: error; exit code: 4; 2162 ms\n--- stdout ---\n\nno tests ran in 0.99s\n\n--- stderr ---\nERROR: file or directory not found: tests/test_format.py\n\n"
+    },
+    {
+      "call_id": "cli_5_1",
+      "head": "$ pytest tests/test_format.py tests -q -k reindent\nstatus: error; exit code: 4; 2116 ms\n--- stdout ---\n\nno tests ran in 0.87s\n\n--- stderr ---\nERROR: file or directory not found: tests/test_format.py\n\n",
+      "tail": "$ pytest tests/test_format.py tests -q -k reindent\nstatus: error; exit code: 4; 2116 ms\n--- stdout ---\n\nno tests ran in 0.87s\n\n--- stderr ---\nERROR: file or directory not found: tests/test_format.py\n\n"
+    },
+    {
+      "call_id": "cli_6_1",
+      "head": "$ pytest tests -q -k reindent\nstatus: error; exit code: 4; 2013 ms\n--- stdout ---\n\nno tests ran in 0.88s\n\n--- stderr ---\nERROR: file or directory not found: tests\n\n",
+      "tail": "$ pytest tests -q -k reindent\nstatus: error; exit code: 4; 2013 ms\n--- stdout ---\n\nno tests ran in 0.88s\n\n--- stderr ---\nERROR: file or directory not found: tests\n\n"
+    },
+    {
+      "call_id": "cli_7_1",
+      "head": "0 file(s) match glob 'test_*.py' under '.' (fnmatch rules, case-sensitive, matched against relative path and file name; cache/VCS directories skipped).",
+      "tail": "0 file(s) match glob 'test_*.py' under '.' (fnmatch rules, case-sensitive, matched against relative path and file name; cache/VCS directories skipped)."
+    },
+    {
+      "call_id": "cli_8_1",
+      "head": "sqlparse/filters/reindent.py (lines 162-185 of 248)\n  162|                         position = 0\n  163|         else:\n  164|             # ensure whitespace\n  165|             for token in tlist:\n  166|                 _, next_ws = tlist.token_next(\n  167|                     tlist.token_index(token)",
+      "tail": " if adjusted_offset < 0:\n  181|                     tlist.insert_before(identifiers[0], self.nl())\n  182|                 position = 0\n  183|                 for token in identifiers:\n  184|                     # Add 1 for the \",\" separator\n  185|                     position += len(token.value) + 1"
+    },
+    {
+      "call_id": "cli_9_1",
+      "head": "$ python -c \"import sqlparse;print(sqlparse.format('select foo, bar, baz from table1 where 1 = 2',reindent=True))\"\nstatus: success; exit code: 0; 1144 ms\n--- stdout ---\nselect foo,\n       bar,\n       baz\nfrom table1\nwhere 1 = 2\n",
+      "tail": "$ python -c \"import sqlparse;print(sqlparse.format('select foo, bar, baz from table1 where 1 = 2',reindent=True))\"\nstatus: success; exit code: 0; 1144 ms\n--- stdout ---\nselect foo,\n       bar,\n       baz\nfrom table1\nwhere 1 = 2\n"
+    },
+    {
+      "call_id": "cli_10_1",
+      "head": "Finish recorded. The final workspace will be evaluated independently.",
+      "tail": "Finish recorded. The final workspace will be evaluated independently."
+    }
+  ],
+  "initial_workspace_revision": "sha256:e008e0a0ba52c2190704672999b7ecec699e9ea6a8dcefcf8a1d8f56c3831624",
+  "acceptance": {
+    "status": "accepted",
+    "criterion_outcomes": {
+      "fail-to-pass": "pass",
+      "pass-to-pass": "pass"
+    },
+    "report_artifact_id": "art_982dfb4dcbbc4f94bd1ad28b63e9518d",
+    "final_workspace_revision": "sha256:a6702617e7bfc01e6dba48e0cceb80b73aee3e22a663509a8dc0311d9eaa2e45",
+    "criteria": {
+      "fail-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      },
+      "pass-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      }
+    },
+    "collection_errors": [],
+    "observed_test_count": 493,
+    "pytest_exit_code": 0,
+    "pytest_timed_out": false,
+    "measurement_errors": []
+  },
+  "elapsed_s": 56.6,
+  "arm_label": "reticle",
+  "run_name": "c019-sqlparse-mut-061-r1-reticle",
+  "evidence_class": "exploratory_pilot",
+  "equivalent_to_controlled_cards": false,
+  "pool_with_existing_cards": false,
+  "limitations": [
+    "different models and response budgets",
+    "selected known failures",
+    "parallel workloads may affect latency and cache reuse",
+    "four trials; no statistical or promotion decision"
+  ],
+  "cache_usage": {
+    "reported_calls": 10,
+    "calls": 10,
+    "complete": true,
+    "input_tokens": 20,
+    "cache_creation_input_tokens": 27784,
+    "cache_read_input_tokens": 31960,
+    "cache_read_share": 0.5347700957097918
+  }
+}

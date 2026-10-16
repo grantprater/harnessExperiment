@@ -1,0 +1,7 @@
+{
+  "status": "error",
+  "output": "Check execution error: ValueError: Check process exited without a valid test result",
+  "duration_s": 0.094,
+  "source_before": "392eeb9d4776c89b1ee96298f92f5f781e1793fc3ad417fb05864d4bf6b82bd3",
+  "source_after": "392eeb9d4776c89b1ee96298f92f5f781e1793fc3ad417fb05864d4bf6b82bd3"
+}

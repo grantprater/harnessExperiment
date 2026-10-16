@@ -1,0 +1,22 @@
+{
+  "driver": "experiments/style_tools/run_autumn_pilot.py",
+  "fixed_arguments": ["--model", "gpt-6.1-sol", "--token-target", "5000"],
+  "repetitions": 3,
+  "seed": 17,
+  "review_protocol": {
+    "protocol_id": "cozy-autumn-visual-v1",
+    "scope": "Independent visual review of both required final PNGs; measured file/palette checks remain separate",
+    "criteria": [
+      "Reading asset has a recognizable steaming mug, open book, knitted blanket and autumn leaves",
+      "Lantern asset has a recognizable lit lantern, pumpkin, knitted scarf and autumn leaves",
+      "Both are usable illustrations without severe drawing defects or missing major subjects",
+      "Pair shares a warm autumn palette and a compatible outline/shape vocabulary; composition may differ"
+    ],
+    "acceptance": "Both final assets satisfy the criteria; record reviewer source and notes, including reservations"
+  },
+  "variants": [
+    {"name": "minimal", "arguments": ["--context-policy", "minimal", "--max-context-bytes", "32000"]},
+    {"name": "decision", "arguments": ["--context-policy", "decision", "--max-context-bytes", "32000"]},
+    {"name": "pressure-v4", "arguments": ["--context-policy", "pressure-v4", "--max-context-bytes", "32000"]}
+  ]
+}

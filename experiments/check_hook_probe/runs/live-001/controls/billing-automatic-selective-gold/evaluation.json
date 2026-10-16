@@ -1,0 +1,17 @@
+{
+  "accepted": true,
+  "protocol_id": "post-edit-check-probe-v1",
+  "result": {
+    "diagnostics": [],
+    "duration_s": 0.125,
+    "errors": 0,
+    "failures": 0,
+    "output": "test_empty_cart_fails_validation (test_contract.TestBillingPipeline.test_empty_cart_fails_validation) ... ok\ntest_free_shipping_threshold (test_contract.TestBillingPipeline.test_free_shipping_threshold) ... ok\ntest_insufficient_stock_fails (test_contract.TestBillingPipeline.test_insufficient_stock_fails) ... ok\ntest_promo_discount_with_california_tax (test_contract.TestBillingPipeline.test_promo_discount_with_california_tax)\nCRITICAL: Tax must be calculated on post-discount subtotal, not raw subtotal. ... ok\ntest_standard_order_without_discounts (test_contract.TestBillingPipeline.test_standard_order_without_discounts) ... ok\ntest_tax_free_state (test_contract.TestBillingPipeline.test_tax_free_state) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.000s\n\nOK\n",
+    "skipped": 0,
+    "status": "passed",
+    "successful": true,
+    "tests_run": 6,
+    "unexpected_successes": 0
+  },
+  "source": "Fresh-snapshot original public test suite"
+}

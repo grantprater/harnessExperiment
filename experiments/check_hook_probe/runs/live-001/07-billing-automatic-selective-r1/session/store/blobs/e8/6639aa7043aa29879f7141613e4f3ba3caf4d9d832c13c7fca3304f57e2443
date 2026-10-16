@@ -1,0 +1,1 @@
+{"content": null, "role": "assistant", "tool_calls": [{"function": {"arguments": "{\"path\":\"pricing.py\"}", "name": "read_file"}, "id": "call_z9cx192s2l0hXdRUUJi1yIy2", "type": "function"}]}

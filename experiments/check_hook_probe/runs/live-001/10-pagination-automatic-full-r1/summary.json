@@ -1,0 +1,101 @@
+{
+  "automatic_checks": 2,
+  "check_duration_s": 0.218,
+  "check_events": [
+    {
+      "arm": "automatic-full",
+      "call_id": "call_cXhD5JMfR6FVTlp4yHwSoYN9",
+      "duration_s": 0.109,
+      "evidence_handle": "out_7",
+      "full_bytes": 6718,
+      "representation": "full",
+      "source_after": "7925c88e2fb8e0647000736998a5878c5b3c62665ec1fdb87e63e7b819468668",
+      "source_before": "7925c88e2fb8e0647000736998a5878c5b3c62665ec1fdb87e63e7b819468668",
+      "status": "failed",
+      "tests_run": 8,
+      "trigger": "post_edit",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 3679
+    },
+    {
+      "arm": "automatic-full",
+      "call_id": "call_nyUKJeagq1gnXhw7QgUpj2iq",
+      "duration_s": 0.109,
+      "evidence_handle": "out_10",
+      "full_bytes": 1009,
+      "representation": "full",
+      "source_after": "88196c215fb0ce341043ce559c026fc4e541eb854aace16f8468bb9714b10e73",
+      "source_before": "88196c215fb0ce341043ce559c026fc4e541eb854aace16f8468bb9714b10e73",
+      "status": "passed",
+      "tests_run": 8,
+      "trigger": "post_edit",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 688
+    }
+  ],
+  "check_full_bytes": 7727,
+  "check_invocations": 2,
+  "check_visible_bytes": 4367,
+  "context_policy": "automatic-full",
+  "final_hashes": {
+    "models.py": "25c5ec9c65befdd2fc9b1e8f6d1ee87cc4e23b8180f6ac5182c30f5c47765edb",
+    "query.py": "7330b24754b3b084af73c6e22a74abef8927c883372b437ae4744b6af9a291e1",
+    "service.py": "c4ad8f8f29ce3b4df0b2a608b44ba00af7aaed28db1bed2e6cba464caf2c730e",
+    "test_contract.py": "06b39c4c10d71acc90b644f0d7cf2dd481119386efdbc37b95f62c10e3b09b05"
+  },
+  "independent_evaluation_duration_s": 0.109,
+  "initial_hashes": {
+    "models.py": "25c5ec9c65befdd2fc9b1e8f6d1ee87cc4e23b8180f6ac5182c30f5c47765edb",
+    "query.py": "0a7e3eec425318abcda9bc77971870b034ed7e726b1877cc7f8d0a08c41fefa8",
+    "service.py": "d67493671c7ffca1897150f5873227112c3bacfc53830cd42272f20be2a77370",
+    "test_contract.py": "06b39c4c10d71acc90b644f0d7cf2dd481119386efdbc37b95f62c10e3b09b05"
+  },
+  "manual_checks": 0,
+  "model": "gpt-6.1-sol",
+  "output_retrievals": 0,
+  "result": {
+    "calls_missing_usage": {
+      "completion_tokens": 0,
+      "cost": 5,
+      "prompt_tokens": 0
+    },
+    "error": null,
+    "final_workspace_revision": "sha256:126c9077b2f0d1afaba14b5657e25946ad3f0cdf6ba1e90e17d509ce86ffc666",
+    "finish_summary": "Fixed filtering before pagination and page-independent totals in list_records. Added descending created_at / ascending id ordering, one-based pagination, and ValueError for nonpositive page parameters. Input records remain unchanged. All 8 contract tests pass.",
+    "model_calls": 5,
+    "provider_attempts": 5,
+    "stop_reason": "finish_requested",
+    "task_id": "10-pagination-automatic-full-r1",
+    "task_resources": {
+      "adjusted": {},
+      "consumed": {
+        "active_seconds": 32.45300000000134,
+        "model_attempts": 5.0,
+        "model_responses": 5.0,
+        "tool_actions": 8.0
+      },
+      "limits": {
+        "active_seconds": 240.0,
+        "model_attempts": 12.0,
+        "model_responses": 12.0,
+        "tool_actions": 48.0
+      },
+      "pending": {},
+      "remaining": {
+        "active_seconds": 207.54699999999866,
+        "model_attempts": 7.0,
+        "model_responses": 7.0,
+        "tool_actions": 40.0
+      },
+      "reserved": {}
+    },
+    "tool_calls": 8,
+    "usage_reported": {
+      "completion_tokens": 498.0,
+      "cost": 0.0,
+      "prompt_tokens": 11307.0
+    }
+  },
+  "status": "complete",
+  "task": "pagination"
+}

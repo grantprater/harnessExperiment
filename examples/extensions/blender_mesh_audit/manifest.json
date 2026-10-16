@@ -1,0 +1,17 @@
+{
+  "name": "ext_mesh_audit",
+  "description": "Read-only Blender mesh audit. Returns topology defects and same-facing coplanar overlaps with object/face IDs, checking source and evaluated geometry. Normal assembly contacts are allowed. Does not repair meshes or establish visual correctness. Full report is saved in the workspace.",
+  "parameters": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "blend_file": {"type": "string"},
+      "objects": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+      "require_closed": {"type": "boolean"}
+    },
+    "required": ["blend_file"]
+  },
+  "entrypoint": "tool.py:execute",
+  "smoke_tests": [{"arguments": {"blend_file": "fixture.blend"}, "expected": {"validation": "passed", "fixture": "closed cube"}}],
+  "timeout_seconds": 120
+}

@@ -1,0 +1,58 @@
+models.py (lines 1-57 of 57)
+    1| """Data models for the billing and order processing system."""
+    2| 
+    3| from __future__ import annotations
+    4| 
+    5| from dataclasses import dataclass, field
+    6| from typing import List, Optional
+    7| 
+    8| 
+    9| @dataclass
+   10| class CartItem:
+   11|     sku: str
+   12|     name: str
+   13|     unit_price: float
+   14|     quantity: int
+   15| 
+   16|     @property
+   17|     def line_total(self) -> float:
+   18|         return round(self.unit_price * self.quantity, 2)
+   19| 
+   20| 
+   21| @dataclass
+   22| class PromoCode:
+   23|     code: str
+   24|     discount_percent: float
+   25|     min_subtotal: float = 0.0
+   26| 
+   27|     def is_eligible(self, subtotal: float) -> bool:
+   28|         return subtotal >= self.min_subtotal
+   29| 
+   30| 
+   31| @dataclass
+   32| class Cart:
+   33|     items: List[CartItem] = field(default_factory=list)
+   34| 
+   35|     @property
+   36|     def subtotal(self) -> float:
+   37|         return round(sum(item.line_total for item in self.items), 2)
+   38| 
+   39|     @property
+   40|     def total_quantity(self) -> int:
+   41|         return sum(item.quantity for item in self.items)
+   42| 
+   43|     def add_item(self, item: CartItem) -> None:
+   44|         self.items.append(item)
+   45| 
+   46| 
+   47| @dataclass
+   48| class OrderReceipt:
+   49|     order_id: str
+   50|     subtotal: float
+   51|     discount_amount: float
+   52|     taxable_amount: float
+   53|     tax_amount: float
+   54|     shipping_fee: float
+   55|     final_total: float
+   56|     state: str
+   57|     promo_code: Optional[str] = None

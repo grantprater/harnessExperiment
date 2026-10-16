@@ -1,0 +1,14 @@
+{
+  "depth": 0.7,
+  "height": 0.75,
+  "id": "05-table",
+  "kind": "rectangular dining table",
+  "supports": [
+    "Leg_1",
+    "Leg_2",
+    "Leg_3",
+    "Leg_4"
+  ],
+  "surface": "Tabletop",
+  "width": 1.2
+}

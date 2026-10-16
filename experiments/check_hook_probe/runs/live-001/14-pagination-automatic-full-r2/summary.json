@@ -1,0 +1,101 @@
+{
+  "automatic_checks": 2,
+  "check_duration_s": 0.218,
+  "check_events": [
+    {
+      "arm": "automatic-full",
+      "call_id": "call_dGkRSgRWzSDB3xPiGVhPqjQ5",
+      "duration_s": 0.109,
+      "evidence_handle": "out_6",
+      "full_bytes": 6718,
+      "representation": "full",
+      "source_after": "966df5f40d3b9bfabbb7f4c28f47990be6f86aef8d067e9718457de87fa5afd1",
+      "source_before": "966df5f40d3b9bfabbb7f4c28f47990be6f86aef8d067e9718457de87fa5afd1",
+      "status": "failed",
+      "tests_run": 8,
+      "trigger": "post_edit",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 3679
+    },
+    {
+      "arm": "automatic-full",
+      "call_id": "call_ZWajApbBrTN57YMvNLWoNm82",
+      "duration_s": 0.109,
+      "evidence_handle": "out_9",
+      "full_bytes": 1009,
+      "representation": "full",
+      "source_after": "953fbd7a964f61562164155f0103dd9631a96bd29b67060ccedcf97febea32dc",
+      "source_before": "953fbd7a964f61562164155f0103dd9631a96bd29b67060ccedcf97febea32dc",
+      "status": "passed",
+      "tests_run": 8,
+      "trigger": "post_edit",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 687
+    }
+  ],
+  "check_full_bytes": 7727,
+  "check_invocations": 2,
+  "check_visible_bytes": 4366,
+  "context_policy": "automatic-full",
+  "final_hashes": {
+    "models.py": "25c5ec9c65befdd2fc9b1e8f6d1ee87cc4e23b8180f6ac5182c30f5c47765edb",
+    "query.py": "1a37e6b546b4a8478dcc378777da8d2385ff454d401498728b7058f134d9fce4",
+    "service.py": "c4ad8f8f29ce3b4df0b2a608b44ba00af7aaed28db1bed2e6cba464caf2c730e",
+    "test_contract.py": "06b39c4c10d71acc90b644f0d7cf2dd481119386efdbc37b95f62c10e3b09b05"
+  },
+  "independent_evaluation_duration_s": 0.125,
+  "initial_hashes": {
+    "models.py": "25c5ec9c65befdd2fc9b1e8f6d1ee87cc4e23b8180f6ac5182c30f5c47765edb",
+    "query.py": "0a7e3eec425318abcda9bc77971870b034ed7e726b1877cc7f8d0a08c41fefa8",
+    "service.py": "d67493671c7ffca1897150f5873227112c3bacfc53830cd42272f20be2a77370",
+    "test_contract.py": "06b39c4c10d71acc90b644f0d7cf2dd481119386efdbc37b95f62c10e3b09b05"
+  },
+  "manual_checks": 0,
+  "model": "gpt-6.1-sol",
+  "output_retrievals": 0,
+  "result": {
+    "calls_missing_usage": {
+      "completion_tokens": 0,
+      "cost": 5,
+      "prompt_tokens": 0
+    },
+    "error": null,
+    "final_workspace_revision": "sha256:e78fda10c033ff7b7374be13a65451c443b7b9a1c6c8f229e1d155eed2721e12",
+    "finish_summary": "Fixed filtering before pagination, descending timestamp ordering with ascending ID ties, one-based page offsets and positive pagination validation, and totals independent of the page. Input records remain unchanged. All 8 contract tests pass.",
+    "model_calls": 5,
+    "provider_attempts": 5,
+    "stop_reason": "finish_requested",
+    "task_id": "14-pagination-automatic-full-r2",
+    "task_resources": {
+      "adjusted": {},
+      "consumed": {
+        "active_seconds": 29.531000000002678,
+        "model_attempts": 5.0,
+        "model_responses": 5.0,
+        "tool_actions": 7.0
+      },
+      "limits": {
+        "active_seconds": 240.0,
+        "model_attempts": 12.0,
+        "model_responses": 12.0,
+        "tool_actions": 48.0
+      },
+      "pending": {},
+      "remaining": {
+        "active_seconds": 210.46899999999732,
+        "model_attempts": 7.0,
+        "model_responses": 7.0,
+        "tool_actions": 41.0
+      },
+      "reserved": {}
+    },
+    "tool_calls": 7,
+    "usage_reported": {
+      "completion_tokens": 484.0,
+      "cost": 0.0,
+      "prompt_tokens": 11343.0
+    }
+  },
+  "status": "complete",
+  "task": "pagination"
+}

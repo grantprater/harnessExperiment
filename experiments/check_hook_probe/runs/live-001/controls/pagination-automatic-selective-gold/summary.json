@@ -1,0 +1,101 @@
+{
+  "automatic_checks": 2,
+  "check_duration_s": 0.23399999999999999,
+  "check_events": [
+    {
+      "arm": "automatic-selective",
+      "call_id": "control_0",
+      "duration_s": 0.109,
+      "evidence_handle": "out_2",
+      "full_bytes": 6858,
+      "representation": "selective",
+      "source_after": "45a5aff155f41206331ceb2574362438485c1b8ed472c42a81618d08e4f7cc9c",
+      "source_before": "45a5aff155f41206331ceb2574362438485c1b8ed472c42a81618d08e4f7cc9c",
+      "status": "failed",
+      "tests_run": 8,
+      "trigger": "post_edit",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 2362
+    },
+    {
+      "arm": "automatic-selective",
+      "call_id": "control_1",
+      "duration_s": 0.125,
+      "evidence_handle": "out_5",
+      "full_bytes": 1009,
+      "representation": "selective",
+      "source_after": "ff5663f119fa14b22ac2c8551c53172e872cde0388f39f0270f2bdcb9cbb2ae9",
+      "source_before": "ff5663f119fa14b22ac2c8551c53172e872cde0388f39f0270f2bdcb9cbb2ae9",
+      "status": "passed",
+      "tests_run": 8,
+      "trigger": "post_edit",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 64
+    }
+  ],
+  "check_full_bytes": 7867,
+  "check_invocations": 2,
+  "check_visible_bytes": 2426,
+  "context_policy": "automatic-selective",
+  "final_hashes": {
+    "models.py": "25c5ec9c65befdd2fc9b1e8f6d1ee87cc4e23b8180f6ac5182c30f5c47765edb",
+    "query.py": "8a0509b9c3102400c00f45892358f90ff83f6398e1565f50e2116bf096ba0a44",
+    "service.py": "b57fb916144c2d063eefbcd00dbf019e5c7d742591d13597baaf6ea6cc7e2b19",
+    "test_contract.py": "06b39c4c10d71acc90b644f0d7cf2dd481119386efdbc37b95f62c10e3b09b05"
+  },
+  "independent_evaluation_duration_s": 0.109,
+  "initial_hashes": {
+    "models.py": "25c5ec9c65befdd2fc9b1e8f6d1ee87cc4e23b8180f6ac5182c30f5c47765edb",
+    "query.py": "0a7e3eec425318abcda9bc77971870b034ed7e726b1877cc7f8d0a08c41fefa8",
+    "service.py": "d67493671c7ffca1897150f5873227112c3bacfc53830cd42272f20be2a77370",
+    "test_contract.py": "06b39c4c10d71acc90b644f0d7cf2dd481119386efdbc37b95f62c10e3b09b05"
+  },
+  "manual_checks": 0,
+  "model": "offline-control",
+  "output_retrievals": 0,
+  "result": {
+    "calls_missing_usage": {
+      "completion_tokens": 3,
+      "cost": 3,
+      "prompt_tokens": 3
+    },
+    "error": null,
+    "final_workspace_revision": "sha256:909c3af17827da8638aea5114b5dd417124f113c5d123230468cd769a8c3d9f7",
+    "finish_summary": "gold control",
+    "model_calls": 3,
+    "provider_attempts": 3,
+    "stop_reason": "finish_requested",
+    "task_id": "pagination-automatic-selective-gold",
+    "task_resources": {
+      "adjusted": {},
+      "consumed": {
+        "active_seconds": 1.1409999999996217,
+        "model_attempts": 3.0,
+        "model_responses": 3.0,
+        "tool_actions": 3.0
+      },
+      "limits": {
+        "active_seconds": 240.0,
+        "model_attempts": 12.0,
+        "model_responses": 12.0,
+        "tool_actions": 48.0
+      },
+      "pending": {},
+      "remaining": {
+        "active_seconds": 238.85900000000038,
+        "model_attempts": 9.0,
+        "model_responses": 9.0,
+        "tool_actions": 45.0
+      },
+      "reserved": {}
+    },
+    "tool_calls": 3,
+    "usage_reported": {
+      "completion_tokens": 0.0,
+      "cost": 0.0,
+      "prompt_tokens": 0.0
+    }
+  },
+  "status": "complete",
+  "task": "pagination"
+}

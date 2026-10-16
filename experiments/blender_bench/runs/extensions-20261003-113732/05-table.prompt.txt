@@ -1,0 +1,27 @@
+Continue the furniture sequence. Reuse generated tools when useful; revise or build tools if this task calls for new capabilities.
+Create a rectangular dining table in Blender from a new empty scene.
+Blender executable: C:/Program Files/Blender Foundation/Blender 5.0/blender.exe
+Use headless Blender Python via commands or generated Python adapters. The harness Python itself has no bpy.
+Executable commands may use quoted absolute paths. Blender supports --background --factory-startup
+--python-exit-code 1 --python SCRIPT.py. Use --python-exit-code so Python errors fail visibly.
+Read ENVIRONMENT.md for execution details and the extension interface. You may edit your workspace and
+generated tools; do not edit the harness, experiment driver, verifier, credentials or anything outside this workspace.
+
+Requirements (all dimensions in meters, X=width, Y=depth, Z=up):
+- Use metric units, scale_length=1. Surface must be a mesh object named Tabletop.
+- Surface width=1.2, depth=0.7, thickness=0.05.
+- Surface TOP is at z=0.75; bottom is 0.05 lower.
+- Required support mesh objects: Leg_1, Leg_2, Leg_3, Leg_4. They must meet the floor at z=0
+  and reach the underside of the surface. Place them sensibly at distinct corners or bench ends.
+- There must be no object named Back.
+- Use a simple clean furniture design.
+- Give the furniture an appropriate material. Add a floor, camera and studio lighting.
+- Render a clearly framed 512x512 PNG to artifacts/05-table.png. Use Cycles CPU with 16 samples
+  to keep rendering modest; configure the camera to show the entire piece.
+- Save the completed scene to artifacts/05-table.blend. Preserve earlier artifacts and generated tools.
+- Inspect the saved scene or check your computed geometry and report what you verified.
+
+Smoke tests for an extension must work in a temporary empty workspace without external services.
+A Blender adapter may run small headless Blender smoke tests, or test argument/script construction separately
+when context['validation'] is true. A staging success does not establish furniture correctness.
+Finish only after the requested .blend and PNG exist. If blocked, report the actual problem.

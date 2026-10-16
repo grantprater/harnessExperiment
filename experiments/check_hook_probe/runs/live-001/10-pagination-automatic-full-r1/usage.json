@@ -1,0 +1,181 @@
+{
+  "calls": [
+    {
+      "cached_input_tokens": 0,
+      "call_index": 1,
+      "completion_tokens": 19,
+      "context_policy_version": "check-probe-full-transcript-v1",
+      "decision_state_event_id": null,
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 1115,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 6664,
+      "runtime_version": "unversioned",
+      "sequence": 13,
+      "status": "response",
+      "style_profile_id": null,
+      "task_id": "10-pagination-automatic-full-r1",
+      "token_target": null,
+      "tool_schema_hash": "e09f1dc72e36211941eda3d4af2e0ae1539df703c4ea77f56baedaab6d993c95",
+      "usage_feedback_enabled": false
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 2,
+      "completion_tokens": 85,
+      "context_policy_version": "check-probe-full-transcript-v1",
+      "decision_state_event_id": null,
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 1168,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 6998,
+      "runtime_version": "unversioned",
+      "sequence": 35,
+      "status": "response",
+      "style_profile_id": null,
+      "task_id": "10-pagination-automatic-full-r1",
+      "token_target": null,
+      "tool_schema_hash": "e09f1dc72e36211941eda3d4af2e0ae1539df703c4ea77f56baedaab6d993c95",
+      "usage_feedback_enabled": false
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 3,
+      "completion_tokens": 209,
+      "context_policy_version": "check-probe-full-transcript-v1",
+      "decision_state_event_id": null,
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 2197,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 10949,
+      "runtime_version": "unversioned",
+      "sequence": 91,
+      "status": "response",
+      "style_profile_id": null,
+      "task_id": "10-pagination-automatic-full-r1",
+      "token_target": null,
+      "tool_schema_hash": "e09f1dc72e36211941eda3d4af2e0ae1539df703c4ea77f56baedaab6d993c95",
+      "usage_feedback_enabled": false
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 4,
+      "completion_tokens": 122,
+      "context_policy_version": "check-probe-full-transcript-v1",
+      "decision_state_event_id": null,
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 3265,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 15841,
+      "runtime_version": "unversioned",
+      "sequence": 118,
+      "status": "response",
+      "style_profile_id": null,
+      "task_id": "10-pagination-automatic-full-r1",
+      "token_target": null,
+      "tool_schema_hash": "e09f1dc72e36211941eda3d4af2e0ae1539df703c4ea77f56baedaab6d993c95",
+      "usage_feedback_enabled": false
+    },
+    {
+      "cached_input_tokens": 0,
+      "call_index": 5,
+      "completion_tokens": 63,
+      "context_policy_version": "check-probe-full-transcript-v1",
+      "decision_state_event_id": null,
+      "extension_versions": {},
+      "model": "gpt-6.1-sol",
+      "prompt_tokens": 3562,
+      "provider": "chatgpt-subscription",
+      "reported_cost_usd": null,
+      "request_bytes": 17271,
+      "runtime_version": "unversioned",
+      "sequence": 145,
+      "status": "response",
+      "style_profile_id": null,
+      "task_id": "10-pagination-automatic-full-r1",
+      "token_target": null,
+      "tool_schema_hash": "e09f1dc72e36211941eda3d4af2e0ae1539df703c4ea77f56baedaab6d993c95",
+      "usage_feedback_enabled": false
+    }
+  ],
+  "extensions": {
+    "invocations": [],
+    "turn_snapshots": [],
+    "versions": []
+  },
+  "failed_model_calls": 0,
+  "failed_provider_attempts_recorded": 0,
+  "incomplete_model_calls": 0,
+  "journal_truncated_tail": false,
+  "measurement": "provider-reported; cached input is included in prompt_tokens; missing values are null",
+  "policy": {
+    "decision_snapshots": [],
+    "versions": [
+      "check-probe-full-transcript-v1"
+    ]
+  },
+  "provider_attempts_recorded": 5,
+  "report_version": 1,
+  "retry_usage_note": "Failed/retried provider attempts can consume tokens without a reported measurement; totals cover reported request usage only.",
+  "runtime_worker_interruptions": 0,
+  "session": "C:\\Users\\grant\\harnessExperiment\\experiments\\check_hook_probe\\runs\\live-001\\10-pagination-automatic-full-r1\\session",
+  "style": {
+    "applications": [],
+    "checks": [],
+    "profiles_extracted": [],
+    "turn_snapshots": []
+  },
+  "tasks": [
+    {
+      "model_calls": 5,
+      "provider_attempts": 5,
+      "resource_limits": {
+        "active_seconds": 240.0,
+        "model_attempts": 12.0,
+        "model_responses": 12.0,
+        "tool_actions": 48.0
+      },
+      "stop_reason": "finish_requested",
+      "task_id": "10-pagination-automatic-full-r1",
+      "tool_calls": 8,
+      "totals": {
+        "cached_input": {
+          "missing_calls": 0,
+          "reported": 0
+        },
+        "calls": 5,
+        "completion_tokens": {
+          "missing_calls": 0,
+          "reported": 498
+        },
+        "prompt_tokens": {
+          "missing_calls": 0,
+          "reported": 11307
+        }
+      }
+    }
+  ],
+  "totals": {
+    "cached_input": {
+      "missing_calls": 0,
+      "reported": 0
+    },
+    "calls": 5,
+    "completion_tokens": {
+      "missing_calls": 0,
+      "reported": 498
+    },
+    "prompt_tokens": {
+      "missing_calls": 0,
+      "reported": 11307
+    }
+  }
+}

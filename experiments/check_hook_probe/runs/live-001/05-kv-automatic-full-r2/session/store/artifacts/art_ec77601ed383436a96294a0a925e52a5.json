@@ -1,0 +1,14 @@
+{
+  "artifact_id": "art_ec77601ed383436a96294a0a925e52a5",
+  "byte_length": 340,
+  "content_hash": "a162a8abc30c14e0a0a200e56ece1c1984e2cedc376551322371606b8a24116d",
+  "created_at": "2026-10-03T22:14:24.572834Z",
+  "labels": [
+    "transcript-message",
+    "assistant"
+  ],
+  "media_type": "application/json",
+  "parent_artifact_ids": [],
+  "producer_event_id": "evt_b1371f5b914049ec874b4fdf7d48d19a",
+  "schema_version": 1
+}

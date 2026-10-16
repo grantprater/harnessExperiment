@@ -1,0 +1,82 @@
+{
+  "task_id": "sqlparse-mut-032",
+  "arm": "codex",
+  "run_name": "c019-sqlparse-mut-032-r1-codex",
+  "evidence_class": "exploratory_pilot",
+  "equivalent_to_controlled_cards": false,
+  "pool_with_existing_cards": false,
+  "limitations": [
+    "different models and response budgets",
+    "selected known failures",
+    "parallel workloads may affect latency and cache reuse",
+    "four trials; no statistical or promotion decision"
+  ],
+  "initial_workspace_revision": "sha256:24acfffa574022c0b7012e13022ef1c931cf2bb464da302bc71c8b60e4c675c7",
+  "timed_out": false,
+  "exit_code": 0,
+  "aborted": null,
+  "wall_seconds": 81.4,
+  "usage": [
+    {
+      "input_tokens": 125458,
+      "cached_input_tokens": 89984,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1413,
+      "reasoning_output_tokens": 85
+    }
+  ],
+  "errors": [],
+  "completed_items": 10,
+  "tool_actions": 7,
+  "responses": 3,
+  "first_file_change_seconds": 52.25,
+  "first_edit_metric": "file_change events only; shell-based edits may occur earlier",
+  "acceptance": {
+    "status": "rejected",
+    "criterion_outcomes": {
+      "fail-to-pass": "fail",
+      "pass-to-pass": "pass"
+    },
+    "test_counts": {
+      "fail-to-pass": {
+        "expected": 1,
+        "passed": 0,
+        "failing": 1,
+        "missing": 0,
+        "skipped": 0
+      },
+      "pass-to-pass": {
+        "expected": 490,
+        "passed": 490,
+        "failing": 0,
+        "missing": 0,
+        "skipped": 0
+      }
+    },
+    "final_workspace_revision": "sha256:d6a398c308a2b4839de6cd73c7d6a49b7ec44ca712c449b8059f28f15e3c8dc0",
+    "criteria": {
+      "fail-to-pass": {
+        "outcome": "fail",
+        "failing": [
+          "tests.test_regressions::test_format_invalid_where_clause"
+        ],
+        "missing": [],
+        "skipped": []
+      },
+      "pass-to-pass": {
+        "outcome": "pass",
+        "failing": [],
+        "missing": [],
+        "skipped": []
+      }
+    },
+    "collection_errors": [],
+    "observed_test_count": 493,
+    "pytest_exit_code": 1,
+    "pytest_timed_out": false,
+    "measurement_errors": []
+  },
+  "valid": true,
+  "audit_status": "sandbox probe passed; transcript still requires review for leaks",
+  "scratch": "C:\\Users\\grant\\AppData\\Local\\Temp\\c019-sqlparse-mut-032-r1-codex-u25w8wmm"
+}

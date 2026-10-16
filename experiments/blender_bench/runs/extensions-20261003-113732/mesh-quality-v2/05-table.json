@@ -1,0 +1,1302 @@
+{
+  "checks": {
+    "metric_units": true,
+    "camera": true,
+    "surface_mesh": true,
+    "surface_width": true,
+    "surface_depth": true,
+    "surface_height": true,
+    "surface_thickness": true,
+    "surface_material": true,
+    "Leg_1_mesh": true,
+    "Leg_1_ground_contact": true,
+    "Leg_1_surface_contact": true,
+    "Leg_2_mesh": true,
+    "Leg_2_ground_contact": true,
+    "Leg_2_surface_contact": true,
+    "Leg_3_mesh": true,
+    "Leg_3_ground_contact": true,
+    "Leg_3_surface_contact": true,
+    "Leg_4_mesh": true,
+    "Leg_4_ground_contact": true,
+    "Leg_4_surface_contact": true,
+    "no_back": true,
+    "mesh_audit_complete": true,
+    "mesh_topology_valid": true,
+    "no_same_facing_coplanar_overlap": false
+  },
+  "passed": 23,
+  "total": 24,
+  "all_passed": false,
+  "bounds": {
+    "Tabletop": {
+      "min": [
+        -0.6000000238418579,
+        -0.3499999940395355,
+        0.7000000476837158
+      ],
+      "max": [
+        0.6000000238418579,
+        0.3499999940395355,
+        0.75
+      ],
+      "dimensions": [
+        1.2000000476837158,
+        0.699999988079071,
+        0.04999995231628418
+      ]
+    },
+    "Leg_1": {
+      "min": [
+        -0.5399999618530273,
+        -0.28999999165534973,
+        0.0
+      ],
+      "max": [
+        -0.47999998927116394,
+        -0.22999998927116394,
+        0.699999988079071
+      ]
+    },
+    "Leg_2": {
+      "min": [
+        0.47999998927116394,
+        -0.28999999165534973,
+        0.0
+      ],
+      "max": [
+        0.5399999618530273,
+        -0.22999998927116394,
+        0.699999988079071
+      ]
+    },
+    "Leg_3": {
+      "min": [
+        -0.5399999618530273,
+        0.22999998927116394,
+        0.0
+      ],
+      "max": [
+        -0.47999998927116394,
+        0.28999999165534973,
+        0.699999988079071
+      ]
+    },
+    "Leg_4": {
+      "min": [
+        0.47999998927116394,
+        0.22999998927116394,
+        0.0
+      ],
+      "max": [
+        0.5399999618530273,
+        0.28999999165534973,
+        0.699999988079071
+      ]
+    }
+  },
+  "mesh_quality": {
+    "audit_version": 1,
+    "complete": true,
+    "passed": false,
+    "policy": {
+      "require_closed": true,
+      "distance_tolerance_world_units": 1e-06,
+      "acceptance_geometry": "evaluated; source findings are diagnostic",
+      "default_object_selection": "render-visible meshes; explicitly named objects override",
+      "opposite_facing_contacts": "allowed",
+      "ordinary_intersections": "not checked",
+      "self_intersections": "not comprehensively checked",
+      "visual_shading": "not established"
+    },
+    "summary": {
+      "objects": 10,
+      "topology_error_categories": 0,
+      "evaluated_topology_error_categories": 0,
+      "evaluated_coplanar_face_pairs": 16,
+      "coplanar_face_pairs_across_both_stages": 32,
+      "warning_categories": 16
+    },
+    "objects": [
+      {
+        "object": "Apron Front",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 1.0239184348816457e-08
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 1.0239184348816457e-08
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Apron Left",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 5.27644748257732e-09
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 5.27644748257732e-09
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Apron Rear",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 1.0239184348816457e-08
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 1.0239184348816457e-08
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Apron Right",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 5.27644748257732e-09
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 5.27644748257732e-09
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Floor",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 2.82842715303046e-06
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 2.82842715303046e-06
+        },
+        "modifier_warnings": []
+      },
+      {
+        "object": "Leg_1",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 7.051240904896346e-09
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 7.051240904896346e-09
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Leg_2",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 7.051240904896346e-09
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 7.051240904896346e-09
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Leg_3",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 7.051240904896346e-09
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 7.051240904896346e-09
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Leg_4",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 7.051240904896346e-09
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 7.051240904896346e-09
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Tabletop",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 1.3901439126313958e-08
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 1.3901439126313958e-08
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      }
+    ],
+    "overlaps": {
+      "source": {
+        "complete": true,
+        "triangles": 120,
+        "candidates": 268,
+        "pair_count": 16,
+        "pairs": [
+          {
+            "objects": [
+              "Apron Front",
+              "Leg_1"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.0008399999475479092,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Left",
+              "Leg_1"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.0008399999475479092,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Front",
+              "Leg_2"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.0008399999475479092,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Right",
+              "Leg_2"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.0008399999475479092,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Left",
+              "Leg_3"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.0008399999475479092,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Rear",
+              "Leg_3"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.0008399999475479092,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Rear",
+              "Leg_4"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.0008399999475479092,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Right",
+              "Leg_4"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.0008399999475479092,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Front",
+              "Apron Left"
+            ],
+            "faces": [
+              4,
+              4
+            ],
+            "overlap_area": 0.0001959999599456877,
+            "normal": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Rear",
+              "Apron Right"
+            ],
+            "faces": [
+              4,
+              4
+            ],
+            "overlap_area": 0.0001959999599456877,
+            "normal": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Front",
+              "Apron Left"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.00019599995994568076,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Left",
+              "Apron Rear"
+            ],
+            "faces": [
+              4,
+              4
+            ],
+            "overlap_area": 0.00019599995994568076,
+            "normal": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Left",
+              "Apron Rear"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.00019599995994568076,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Front",
+              "Apron Right"
+            ],
+            "faces": [
+              4,
+              4
+            ],
+            "overlap_area": 0.00019599995994568076,
+            "normal": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Front",
+              "Apron Right"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.00019599995994568076,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Rear",
+              "Apron Right"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.00019599995994568076,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          }
+        ]
+      },
+      "evaluated": {
+        "complete": true,
+        "triangles": 1704,
+        "candidates": 913,
+        "pair_count": 16,
+        "pairs": [
+          {
+            "objects": [
+              "Apron Front",
+              "Leg_1"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.0006000005841251405,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Front",
+              "Leg_2"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.0006000005841251266,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Rear",
+              "Leg_3"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.0006000005841251266,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Rear",
+              "Leg_4"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.0006000005841251266,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Left",
+              "Leg_1"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.0006000002562998041,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Right",
+              "Leg_2"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.0006000002562998041,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Left",
+              "Leg_3"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.0006000002562998041,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Right",
+              "Leg_4"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.0006000002562998041,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Front",
+              "Apron Left"
+            ],
+            "faces": [
+              92,
+              92
+            ],
+            "overlap_area": 0.00010000010728816733,
+            "normal": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Front",
+              "Apron Left"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.00010000010728816733,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Left",
+              "Apron Rear"
+            ],
+            "faces": [
+              92,
+              92
+            ],
+            "overlap_area": 0.00010000010728816733,
+            "normal": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Left",
+              "Apron Rear"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.00010000010728816733,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Rear",
+              "Apron Right"
+            ],
+            "faces": [
+              92,
+              92
+            ],
+            "overlap_area": 0.00010000010728816733,
+            "normal": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Front",
+              "Apron Right"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.00010000010728816733,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Rear",
+              "Apron Right"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.00010000010728816733,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Apron Front",
+              "Apron Right"
+            ],
+            "faces": [
+              92,
+              92
+            ],
+            "overlap_area": 0.00010000010728816039,
+            "normal": [
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          }
+        ]
+      }
+    }
+  }
+}

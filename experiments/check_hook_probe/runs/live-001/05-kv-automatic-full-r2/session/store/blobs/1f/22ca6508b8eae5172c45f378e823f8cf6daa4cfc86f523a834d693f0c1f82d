@@ -1,0 +1,1 @@
+{"content": null, "role": "assistant", "tool_calls": [{"function": {"arguments": "{\"path\":\"models.py\"}", "name": "read_file"}, "id": "call_3yzVkWbX2SskJ2r5Ji9TMgPN", "type": "function"}]}

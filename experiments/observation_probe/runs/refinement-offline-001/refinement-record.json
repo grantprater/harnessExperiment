@@ -1,0 +1,34 @@
+{
+  "evidence_artifact_id": "art_b5ef602176d04b4f90d4e4418accaded",
+  "previous_artifact_id": "art_3380d9f062fb4007a7f5e32adee8a270",
+  "record": {
+    "conditions": [
+      "Stable record IDs are explicitly declared by the observer.",
+      "Baseline hash is present in the caller supplied retained-prefix inventory.",
+      "At most 25 percent of record identities changed.",
+      "Serialized delta is smaller than a full observation."
+    ],
+    "hypothesis": "Sparse exact deltas reduce decision cost when their baseline is retained.",
+    "id": "structured-observation-delta",
+    "implementation": {
+      "source_sha256": "42754624fe737dad98639efa4ddf24c09c94816b2ac368fd8da8b0d9f9b17371",
+      "version": "structured-observation-delta-v1"
+    },
+    "limitations": [
+      "Byte savings are not guaranteed token savings.",
+      "Semantic relevance, aesthetic quality and complete dependency coverage are unknown.",
+      "Sparse threshold is a chosen parameter, not a derived optimum."
+    ],
+    "prior_evidence": {
+      "path": "experiments/observation_probe/runs/live-001/summary.json",
+      "sha256": "a780c527a9d24785e0be9568fdcea252cd33ba0135ee37d2ed10af34beef00e8"
+    },
+    "status": "proposed",
+    "verified_properties": [
+      "Exact reconstruction verified on fixtures and edge-case tests.",
+      "Full fallback when conditions do not hold."
+    ],
+    "weakness": "Repeated snapshots return unchanged records and obscure changes."
+  },
+  "version": "refinement-record-v1"
+}

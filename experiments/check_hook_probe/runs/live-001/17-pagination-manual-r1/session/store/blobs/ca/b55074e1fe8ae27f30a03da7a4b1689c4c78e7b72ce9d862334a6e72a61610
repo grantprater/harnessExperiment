@@ -1,0 +1,7 @@
+Replaced 1 occurrence(s) in query.py. Lines 10-15 now:
+   10| def page_slice(records, page, page_size):
+   11|     """Return a one-based page; reject nonpositive page or page_size."""
+   12|     if page <= 0 or page_size <= 0:
+   13|         raise ValueError("page and page_size must be positive")
+   14|     start = (page - 1) * page_size
+   15|     return records[start:start + page_size]

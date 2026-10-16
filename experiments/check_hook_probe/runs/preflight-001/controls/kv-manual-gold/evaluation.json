@@ -1,0 +1,17 @@
+{
+  "accepted": true,
+  "protocol_id": "post-edit-check-probe-v1",
+  "result": {
+    "diagnostics": [],
+    "duration_s": 0.344,
+    "errors": 0,
+    "failures": 0,
+    "output": "test_basic_set_and_get (test_contract.TestKVStore.test_basic_set_and_get) ... ok\ntest_delete_key (test_contract.TestKVStore.test_delete_key) ... ok\ntest_json_export_and_import (test_contract.TestKVStore.test_json_export_and_import) ... ok\ntest_models_is_expired_method (test_contract.TestKVStore.test_models_is_expired_method) ... ok\ntest_ttl_expiration (test_contract.TestKVStore.test_ttl_expiration) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.231s\n\nOK\n",
+    "skipped": 0,
+    "status": "passed",
+    "successful": true,
+    "tests_run": 5,
+    "unexpected_successes": 0
+  },
+  "source": "Fresh-snapshot original public test suite"
+}

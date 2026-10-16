@@ -1,0 +1,7 @@
+{
+  "protocol_id": "cozy-autumn-visual-v1",
+  "source": "Assistant visual review via view_image; separate from generating harness and automated palette checks",
+  "accepted": true,
+  "notes": "Both subjects are complete, warm and consistent. The blanket treatment is simpler than the other pairs, but knit marks are present and the illustrations are usable.",
+  "model_task_completion_separate": true
+}

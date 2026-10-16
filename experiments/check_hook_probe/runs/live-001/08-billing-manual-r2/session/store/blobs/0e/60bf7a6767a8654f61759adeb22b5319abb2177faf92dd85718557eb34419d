@@ -1,0 +1,86 @@
+pricing.py (lines 1-85 of 85)
+    1| """Pricing and tax calculation service."""
+    2| 
+    3| from __future__ import annotations
+    4| 
+    5| from typing import Dict, Optional
+    6| from models import Cart, PromoCode
+    7| 
+    8| 
+    9| STATE_TAX_RATES: Dict[str, float] = {
+   10|     "CA": 0.0825,  # 8.25%
+   11|     "NY": 0.08875, # 8.875%
+   12|     "TX": 0.0625,  # 6.25%
+   13|     "WA": 0.065,   # 6.5%
+   14|     "OR": 0.0,     # No sales tax
+   15|     "DE": 0.0,     # No sales tax
+   16| }
+   17| 
+   18| DEFAULT_TAX_RATE = 0.05
+   19| FREE_SHIPPING_THRESHOLD = 150.0
+   20| STANDARD_SHIPPING_FEE = 15.0
+   21| 
+   22| 
+   23| def get_tax_rate(state: str) -> float:
+   24|     """Returns state sales tax rate."""
+   25|     return STATE_TAX_RATES.get(state.upper(), DEFAULT_TAX_RATE)
+   26| 
+   27| 
+   28| def calculate_volume_discount(subtotal: float) -> float:
+   29|     """Applies tiered volume discount."""
+   30|     if subtotal >= 500.0:
+   31|         return 0.10  # 10% off
+   32|     elif subtotal >= 300.0:
+   33|         return 0.05  # 5% off
+   34|     return 0.0
+   35| 
+   36| 
+   37| def calculate_shipping(subtotal: float) -> float:
+   38|     """Free shipping over $150, otherwise flat fee."""
+   39|     if subtotal >= FREE_SHIPPING_THRESHOLD:
+   40|         return 0.0
+   41|     return STANDARD_SHIPPING_FEE
+   42| 
+   43| 
+   44| def compute_discount_amount(
+   45|     subtotal: float,
+   46|     promo: Optional[PromoCode] = None
+   47| ) -> float:
+   48|     """Calculates total discount dollars from volume or promo code."""
+   49|     discount_pct = 0.0
+   50|     if promo and promo.is_eligible(subtotal):
+   51|         discount_pct = max(discount_pct, promo.discount_percent)
+   52|     else:
+   53|         discount_pct = max(discount_pct, calculate_volume_discount(subtotal))
+   54| 
+   55|     return round(subtotal * discount_pct, 2)
+   56| 
+   57| 
+   58| def calculate_final_bill(
+   59|     cart: Cart,
+   60|     state: str,
+   61|     promo: Optional[PromoCode] = None
+   62| ) -> Dict[str, float]:
+   63|     """Computes full breakdown: subtotal, discount, tax, shipping, final total.
+   64| 
+   65|     Rule: Sales tax must only be assessed on the post-discount taxable amount.
+   66|     """
+   67|     subtotal = cart.subtotal
+   68|     discount_amount = compute_discount_amount(subtotal, promo)
+   69|     discounted_subtotal = round(subtotal - discount_amount, 2)
+   70| 
+   71|     tax_rate = get_tax_rate(state)
+   72| 
+   73|     tax_amount = round(subtotal * tax_rate, 2)
+   74| 
+   75|     shipping_fee = calculate_shipping(discounted_subtotal)
+   76|     final_total = round(discounted_subtotal + tax_amount + shipping_fee, 2)
+   77| 
+   78|     return {
+   79|         "subtotal": subtotal,
+   80|         "discount_amount": discount_amount,
+   81|         "taxable_amount": discounted_subtotal,
+   82|         "tax_amount": tax_amount,
+   83|         "shipping_fee": shipping_fee,
+   84|         "final_total": final_total,
+   85|     }

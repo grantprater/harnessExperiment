@@ -17,7 +17,7 @@ from reticle.runtime.contracts import TaskEnvelope
 from reticle.runtime.session import LocalRuntime
 
 
-EDIT_ACTIONS = {"write_file", "replace_text"}
+EDIT_ACTIONS = {"write_file", "replace_text", "apply_patch"}
 
 
 class _BoardRenderer(BaselineContextPolicy):

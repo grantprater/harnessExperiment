@@ -1,0 +1,1 @@
+{"_reticle_attempt_id":null,"content":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"path\":\"engine.py\"}","name":"read_file"},"id":"call_VSInoIVuMYTINXJRK0JJpBZx","type":"function"},{"function":{"arguments":"{\"path\":\"test_contract.py\"}","name":"read_file"},"id":"call_NzF1zNDJDR7BU4846theaEej","type":"function"}]}

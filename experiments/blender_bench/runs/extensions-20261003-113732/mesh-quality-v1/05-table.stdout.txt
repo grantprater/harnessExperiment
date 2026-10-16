@@ -1,0 +1,4 @@
+00:00.969  blend            | Read blend: "C:\Users\grant\harnessExperiment\experiments\blender_bench\runs\extensions-20261003-113732\workspace\artifacts\05-table.blend"
+Blender 5.0.0 (hash a37564c4df7a built 2025-11-18 11:06:54)
+
+Blender quit

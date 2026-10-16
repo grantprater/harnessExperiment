@@ -1,0 +1,15 @@
+{
+  "artifact_id": "art_a854988909e2420aab263c09b9aa8fe4",
+  "byte_length": 69,
+  "content_hash": "4fbb98e60b130800ebbd0e078d89086536687b9e3bfed45fcca344e8631059fb",
+  "created_at": "2026-10-03T22:06:30.327947Z",
+  "labels": [
+    "tool-output",
+    "finish",
+    "out_2"
+  ],
+  "media_type": "text/plain; charset=utf-8",
+  "parent_artifact_ids": [],
+  "producer_event_id": "evt_9125179b53dd412faad057d8882d99f9",
+  "schema_version": 1
+}

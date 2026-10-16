@@ -1,0 +1,38 @@
+{
+  "finished_at": "2026-10-03T20:57:21.620990+00:00",
+  "model": "gpt-6.1-sol",
+  "preflight": {
+    "exact_reconstruction": true,
+    "identical_retained_prefix": true,
+    "wrong_baseline_rejected": true
+  },
+  "scope": "One next-decision per arm and case; no end-to-end completion inference.",
+  "started_at": "2026-10-03T20:57:21.605970+00:00",
+  "status": "offline_complete",
+  "trials": [
+    {
+      "arm": "delta",
+      "case": "test-regression",
+      "latest_observation_bytes": 724,
+      "request_bytes": 4912
+    },
+    {
+      "arm": "delta",
+      "case": "generated-asset-revision",
+      "latest_observation_bytes": 521,
+      "request_bytes": 5245
+    },
+    {
+      "arm": "full",
+      "case": "test-regression",
+      "latest_observation_bytes": 2858,
+      "request_bytes": 7310
+    },
+    {
+      "arm": "full",
+      "case": "generated-asset-revision",
+      "latest_observation_bytes": 3265,
+      "request_bytes": 8331
+    }
+  ]
+}

@@ -13,13 +13,14 @@ ENTITY = {
     "type": "object", "additionalProperties": False,
     "properties": {
         "id": {"type": "string"},
-        "kind": {"type": "string", "enum": ["requirement", "hypothesis", "check", "change", "code_entity"]},
+        "kind": {"type": "string", "enum": ["requirement", "hypothesis", "check", "change", "code_entity", "procedure"]},
         "text": {"type": "string"},
         "evidence": {"type": "array", "items": {"type": "string"}},
         "cases": {"type": "array", "items": {"type": "string"}},
         "predictions": {"type": "object", "additionalProperties": {"type": "string"}},
         "observation": {"type": "string"},
         "path": {"type": "string"},
+        "conditions": {"type": "array", "items": {"type": "string"}},
     },
     "required": ["id", "kind", "text", "evidence"],
 }
@@ -35,6 +36,7 @@ REASONING_SCHEMAS = [
               "Recover durable hypotheses, checks, the authorized task description and runtime tool observations. Use "
               "evidence event IDs from observations or task requirements when adding assertions. Model scopes and "
               "semantic links are unverified claims. "
+              "Code entities record a file fingerprint at assertion time. Procedures describe reusable steps with conditions. "
               "In symbolic and injected modes, also returns advisory findings; missing evidence is unknown. "
               "Page with next_offset and as_of_sequence=high_water_sequence to keep the graph fixed. Staleness uses the current workspace.",
               {"offset": {"type": "integer"}, "limit": {"type": "integer"}, "focus": {"type": "string"},

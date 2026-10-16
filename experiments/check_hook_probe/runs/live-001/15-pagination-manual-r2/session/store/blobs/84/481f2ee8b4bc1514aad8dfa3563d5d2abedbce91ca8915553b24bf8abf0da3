@@ -1,0 +1,1 @@
+{"_reticle_attempt_id":null,"content":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"glob\":\"*\"}","name":"glob_files"},"id":"call_8MLbdxQJLx13E7uhy7CGau30","type":"function"}]}

@@ -1,0 +1,86 @@
+{
+  "automatic_checks": 0,
+  "check_duration_s": 0.125,
+  "check_events": [
+    {
+      "arm": "manual",
+      "call_id": "call_PF0vIS9TPxgslXd1wZK9IO6r",
+      "duration_s": 0.125,
+      "evidence_handle": "out_6",
+      "full_bytes": 1200,
+      "representation": "full",
+      "source_after": "869f9a13f5b53614fc7fb1a40112ef583ce9901e61641db1184a16e37182eb75",
+      "source_before": "869f9a13f5b53614fc7fb1a40112ef583ce9901e61641db1184a16e37182eb75",
+      "status": "passed",
+      "tests_run": 6,
+      "trigger": "manual_verify",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 879
+    }
+  ],
+  "check_full_bytes": 1200,
+  "check_invocations": 1,
+  "check_visible_bytes": 879,
+  "context_policy": "manual",
+  "final_hashes": {
+    "checkout.py": "80e6e0f5fa2cef4821e2d6a77eae53193f2fb3dd32b0df8f75708c52ff05bf5e",
+    "models.py": "625c69392634a6cbae8fb46f8b91162db66b5d8b7c7e8bd6971c2bce1ce48815",
+    "pricing.py": "9969d1397620c6f8a608d0ee8d8a862c3a062f8f088b0f5780bdb18f7c432bc2",
+    "test_contract.py": "9a3c57a63b9c2d09ab1eda02f211df8d50e7cc908d8ba4277f29f332205495b4"
+  },
+  "independent_evaluation_duration_s": 0.141,
+  "initial_hashes": {
+    "checkout.py": "80e6e0f5fa2cef4821e2d6a77eae53193f2fb3dd32b0df8f75708c52ff05bf5e",
+    "models.py": "625c69392634a6cbae8fb46f8b91162db66b5d8b7c7e8bd6971c2bce1ce48815",
+    "pricing.py": "0a48c25d8d479d437b5167f292b95852cbfd38c7d46da5d526585d8d2051d321",
+    "test_contract.py": "9a3c57a63b9c2d09ab1eda02f211df8d50e7cc908d8ba4277f29f332205495b4"
+  },
+  "manual_checks": 1,
+  "model": "gpt-6.1-sol",
+  "output_retrievals": 0,
+  "result": {
+    "calls_missing_usage": {
+      "completion_tokens": 0,
+      "cost": 5,
+      "prompt_tokens": 0
+    },
+    "error": null,
+    "final_workspace_revision": "sha256:c673b499f4f65657071d7294bf2780975e2f1d5e6e48fc18bc7f8eb13e93aee2",
+    "finish_summary": "Updated pricing.py to calculate sales tax using the rounded post-discount subtotal instead of the original subtotal. Preserved existing discount, shipping, and checkout behavior. All 6 tests pass.",
+    "model_calls": 5,
+    "provider_attempts": 5,
+    "stop_reason": "finish_requested",
+    "task_id": "09-billing-manual-r1",
+    "task_resources": {
+      "adjusted": {},
+      "consumed": {
+        "active_seconds": 20.40599999999904,
+        "model_attempts": 5.0,
+        "model_responses": 5.0,
+        "tool_actions": 7.0
+      },
+      "limits": {
+        "active_seconds": 240.0,
+        "model_attempts": 12.0,
+        "model_responses": 12.0,
+        "tool_actions": 48.0
+      },
+      "pending": {},
+      "remaining": {
+        "active_seconds": 219.59400000000096,
+        "model_attempts": 7.0,
+        "model_responses": 7.0,
+        "tool_actions": 41.0
+      },
+      "reserved": {}
+    },
+    "tool_calls": 7,
+    "usage_reported": {
+      "completion_tokens": 216.0,
+      "cost": 0.0,
+      "prompt_tokens": 17909.0
+    }
+  },
+  "status": "complete",
+  "task": "billing"
+}

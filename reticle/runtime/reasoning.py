@@ -17,7 +17,7 @@ from typing import Any, Dict, List
 from reticle.runtime.queries import SessionQueryService, _index_calls
 
 
-REASONING_VERSION = "evidence-ontology-v1"
+REASONING_VERSION = "evidence-ontology-v2"
 MODES = ("memory", "symbolic", "injected")
 INFERENCE_MODES = {"symbolic", "injected"}
 # Injected arm: after these tool actions the runtime appends an advisory summary to that action's result.
@@ -33,12 +33,13 @@ READ_TOOLS = ("reasoning_state", "assess_check")
 WRITE_TOOLS = ("reasoning_update",)
 MAX_ENTITIES = 200
 MAX_BATCH = 20
-KINDS = ("requirement", "hypothesis", "check", "change", "code_entity")
+KINDS = ("requirement", "hypothesis", "check", "change", "code_entity", "procedure")
 RELATIONS = {
     "supports": ({"observation"}, {"hypothesis"}),
     "contradicts": ({"observation"}, {"hypothesis"}),
     "tests": ({"check"}, {"hypothesis"}),
-    "depends_on": ({"check", "hypothesis", "requirement", "change"}, {"code_entity"}),
+    "depends_on": ({"check", "hypothesis", "requirement", "change", "procedure"},
+                   {"code_entity", "hypothesis", "check", "procedure"}),
     "addresses": ({"change", "check"}, {"requirement"}),
     "supersedes": (set(KINDS), set(KINDS)),
 }
@@ -48,7 +49,7 @@ SHAPES = '''
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 e:EntityShape a sh:NodeShape ; sh:targetClass e:Entity ;
   sh:property [ sh:path e:kind ; sh:minCount 1 ; sh:maxCount 1 ;
-    sh:in ("requirement" "hypothesis" "check" "change" "code_entity" "observation") ] ;
+    sh:in ("requirement" "hypothesis" "check" "change" "code_entity" "procedure" "observation") ] ;
   sh:property [ sh:path e:text ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
   sh:property [ sh:path e:origin ; sh:minCount 1 ; sh:maxCount 1 ;
     sh:in ("model_assertion" "runtime_observation" "runtime_contract") ] ;
@@ -116,7 +117,7 @@ class EvidenceOntology:
                 # Description is already model-visible. Never project hidden criteria or authority internals.
             if event.kind != "reasoning_update":
                 continue
-            if event.payload.get("version") != REASONING_VERSION:
+            if event.payload.get("version") not in {"evidence-ontology-v1", REASONING_VERSION}:
                 raise ValueError("Unsupported reasoning event version")
             for entity in event.payload["entities"]:
                 entities[entity["id"]] = {**entity, "assertion_event_id": event.event_id}
@@ -194,7 +195,7 @@ class EvidenceOntology:
         visible = {ref for entity in current.values() if entity["origin"] in {"runtime_observation", "runtime_contract"}
                    for ref in entity["evidence"]}
         prepared = []
-        allowed = {"id", "kind", "text", "evidence", "cases", "predictions", "observation", "path"}
+        allowed = {"id", "kind", "text", "evidence", "cases", "predictions", "observation", "path", "conditions"}
         for raw in entities:
             if not isinstance(raw, dict) or set(raw) - allowed:
                 raise ValueError("entity contains unsupported fields")
@@ -212,6 +213,8 @@ class EvidenceOntology:
                 raise ValueError("evidence must cite existing authorized tool-output or task-description event IDs")
             entity["evidence"] = evidence
             entity["origin"] = "model_assertion"
+            if "conditions" in entity:
+                entity["conditions"] = _strings(entity["conditions"], "conditions")
             if "cases" in entity:
                 if entity["kind"] not in {"check", "requirement"}:
                     raise ValueError("cases only apply to checks and requirements")
@@ -220,7 +223,11 @@ class EvidenceOntology:
                 if entity["kind"] != "code_entity":
                     raise ValueError("path only applies to code entities")
                 path = _string(entity["path"], "path", 200)
-                self.runtime.workspace._resolve(path)  # reject paths outside the workspace
+                resolved = self.runtime.workspace._resolve(path)
+                if not resolved.is_file():
+                    raise ValueError("code entity path must name an existing file")
+                entity["content_hash"] = hashlib.sha256(resolved.read_bytes()).hexdigest()
+                entity["fingerprint_origin"] = "runtime_at_assertion"
             if "observation" in entity:
                 observation = current.get(entity["observation"], {})
                 if entity["kind"] != "check" or observation.get("kind") != "observation" or observation.get("tool") != "run":

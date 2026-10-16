@@ -1,0 +1,983 @@
+{
+  "cases": [
+    {
+      "baseline": {
+        "checks_00": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_01": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_02": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_03": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_04": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_05": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_06": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_07": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        }
+      },
+      "condition": "sparse",
+      "current": {
+        "checks_00": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_01": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_02": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_03": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_04": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_05": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_06": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_07": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        }
+      },
+      "domain": "checks",
+      "expected": {
+        "failed_keys": [
+          "checks_05",
+          "checks_06"
+        ],
+        "next_action": "repair"
+      },
+      "id": "checks-sparse",
+      "original": {
+        "checks_00": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_01": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_02": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_03": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_04": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_05": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_06": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_07": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        }
+      },
+      "retained": true
+    },
+    {
+      "baseline": {
+        "checks_00": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_01": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_02": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_03": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_04": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_05": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_06": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_07": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        }
+      },
+      "condition": "dense",
+      "current": {
+        "checks_00": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 2,
+          "status": "passed"
+        },
+        "checks_01": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 2,
+          "status": "passed"
+        },
+        "checks_02": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 2,
+          "status": "passed"
+        },
+        "checks_03": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 2,
+          "status": "passed"
+        },
+        "checks_04": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 2,
+          "status": "passed"
+        },
+        "checks_05": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 2,
+          "status": "failed"
+        },
+        "checks_06": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 2,
+          "status": "failed"
+        },
+        "checks_07": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 2,
+          "status": "passed"
+        }
+      },
+      "domain": "checks",
+      "expected": {
+        "failed_keys": [
+          "checks_05",
+          "checks_06"
+        ],
+        "next_action": "repair"
+      },
+      "id": "checks-dense",
+      "original": {
+        "checks_00": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_01": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_02": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_03": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_04": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_05": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_06": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_07": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        }
+      },
+      "retained": true
+    },
+    {
+      "baseline": {
+        "checks_00": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_01": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_02": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_03": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_04": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_05": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_06": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_07": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        }
+      },
+      "condition": "missing-baseline",
+      "current": {
+        "checks_00": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_01": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_02": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_03": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_04": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_05": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_06": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_07": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        }
+      },
+      "domain": "checks",
+      "expected": {
+        "failed_keys": [
+          "checks_05",
+          "checks_06"
+        ],
+        "next_action": "repair"
+      },
+      "id": "checks-missing-baseline",
+      "original": {
+        "checks_00": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_01": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_02": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_03": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_04": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_05": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        },
+        "checks_06": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "failed"
+        },
+        "checks_07": {
+          "contract": "Restart preserves delivery identity.",
+          "revision": 1,
+          "status": "passed"
+        }
+      },
+      "retained": false
+    },
+    {
+      "baseline": {
+        "ui_00": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_01": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_02": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_03": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_04": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_05": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_06": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_07": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        }
+      },
+      "condition": "sparse",
+      "current": {
+        "ui_00": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_01": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_02": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_03": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_04": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_05": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_06": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_07": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        }
+      },
+      "domain": "ui",
+      "expected": {
+        "failed_keys": [
+          "ui_05",
+          "ui_06"
+        ],
+        "next_action": "repair"
+      },
+      "id": "ui-sparse",
+      "original": {
+        "ui_00": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_01": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_02": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_03": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_04": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_05": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_06": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_07": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        }
+      },
+      "retained": true
+    },
+    {
+      "baseline": {
+        "ui_00": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_01": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_02": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_03": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_04": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_05": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_06": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_07": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        }
+      },
+      "condition": "dense",
+      "current": {
+        "ui_00": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 2,
+          "status": "passed"
+        },
+        "ui_01": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 2,
+          "status": "passed"
+        },
+        "ui_02": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 2,
+          "status": "passed"
+        },
+        "ui_03": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 2,
+          "status": "passed"
+        },
+        "ui_04": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 2,
+          "status": "passed"
+        },
+        "ui_05": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 2,
+          "status": "failed"
+        },
+        "ui_06": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 2,
+          "status": "failed"
+        },
+        "ui_07": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 2,
+          "status": "passed"
+        }
+      },
+      "domain": "ui",
+      "expected": {
+        "failed_keys": [
+          "ui_05",
+          "ui_06"
+        ],
+        "next_action": "repair"
+      },
+      "id": "ui-dense",
+      "original": {
+        "ui_00": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_01": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_02": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_03": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_04": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_05": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_06": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_07": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        }
+      },
+      "retained": true
+    },
+    {
+      "baseline": {
+        "ui_00": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_01": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_02": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_03": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_04": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_05": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_06": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_07": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        }
+      },
+      "condition": "missing-baseline",
+      "current": {
+        "ui_00": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_01": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_02": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_03": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_04": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_05": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_06": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_07": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        }
+      },
+      "domain": "ui",
+      "expected": {
+        "failed_keys": [
+          "ui_05",
+          "ui_06"
+        ],
+        "next_action": "repair"
+      },
+      "id": "ui-missing-baseline",
+      "original": {
+        "ui_00": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_01": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_02": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_03": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_04": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_05": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        },
+        "ui_06": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "failed"
+        },
+        "ui_07": {
+          "contrast_pass": true,
+          "font": "Project Sans",
+          "radius_px": 8,
+          "revision": 1,
+          "status": "passed"
+        }
+      },
+      "retained": false
+    }
+  ],
+  "protocol_id": "conditional-observation-probe-v1"
+}

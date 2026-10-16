@@ -1,0 +1,48 @@
+[
+  {
+    "content": "Interpret tool observations. Return only JSON with changed_keys (sorted array) and next_action (string). Choose exactly one of: investigate_check_19, repair_asset_07_palette_and_outline, accept, investigate_check_03. A delta replaces listed records against the identified baseline; omitted records are unchanged.",
+    "role": "system"
+  },
+  {
+    "content": "After regenerating one illustration in a cozy autumn asset collection, choose the next action. The project requires palette_pass=true and outline_px=6. Composition may vary. Identify every changed record. These are mechanical measurements; they do not establish aesthetic quality.",
+    "role": "user"
+  },
+  {
+    "content": null,
+    "role": "assistant",
+    "tool_calls": [
+      {
+        "function": {
+          "arguments": "{}",
+          "name": "observe"
+        },
+        "id": "baseline_call",
+        "type": "function"
+      }
+    ]
+  },
+  {
+    "content": "{\"kind\":\"baseline\",\"records\":{\"asset_00\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_01\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_02\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_03\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_04\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_05\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_06\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_07\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_08\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_09\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_10\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_11\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_12\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_13\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_14\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_15\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_16\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_17\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_18\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_19\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_20\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_21\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_22\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"asset_23\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"}},\"sha256\":\"5075a288c0bfe14419009f10a8f9f18dadc22c5b126bbc616f256224de05b172\"}",
+    "role": "tool",
+    "tool_call_id": "baseline_call"
+  },
+  {
+    "content": null,
+    "role": "assistant",
+    "tool_calls": [
+      {
+        "function": {
+          "arguments": "{}",
+          "name": "observe"
+        },
+        "id": "current_call",
+        "type": "function"
+      }
+    ]
+  },
+  {
+    "content": "{\"baseline_sha256\":\"5075a288c0bfe14419009f10a8f9f18dadc22c5b126bbc616f256224de05b172\",\"changes\":[{\"after\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":12,\"outside_palette_fraction\":0.28,\"palette_pass\":false,\"source_revision\":2,\"subject_check\":\"passed\"},\"before\":{\"dimensions\":[768,768],\"opaque\":true,\"outline_px\":6,\"palette_pass\":true,\"source_revision\":1,\"subject_check\":\"passed\"},\"key\":\"asset_07\",\"removed\":false}],\"current_sha256\":\"07c78c57b00e85a40675efe2c923e859ca76af80f64b91de924a368c678aa81d\",\"kind\":\"delta\"}",
+    "role": "tool",
+    "tool_call_id": "current_call"
+  }
+]
