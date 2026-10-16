@@ -1,0 +1,28 @@
+{
+  "source_card": "E4-cloud-check-oracle-020",
+  "purpose": "subscription integration check",
+  "task": "sqlparse-mut-001",
+  "rollouts": 1,
+  "policy": "pressure-recent-v3",
+  "model": "gpt-5.6-sol",
+  "client": "chatgpt-subscription",
+  "task_file_sha256_lf": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa",
+  "image": "localhost/reticle-p6-task:py313-v1",
+  "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+  "max_live_requests": 40,
+  "differences_from_card020": [
+    "one task, one rollout instead of eight tasks with two rollouts",
+    "GPT-5.6-Sol via subscription Responses instead of Claude Sonnet 5 via CLI",
+    "local network-isolated OCI instead of cloud VM trusted-local",
+    "20 attempts per arm with no automatic inference retries instead of 24 attempts",
+    "output-token cap unavailable on the subscription preview",
+    "Claude-specific reply recovery omitted"
+  ],
+  "arm_order": [
+    "incumbent",
+    "check-oracle"
+  ],
+  "oracle_limit": 3,
+  "acceptance": "original hidden fail-to-pass and pass-to-pass evaluator",
+  "interpretation": "pipeline integration check; no treatment-effect or campaign claim"
+}

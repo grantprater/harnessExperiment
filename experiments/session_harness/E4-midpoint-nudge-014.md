@@ -1,7 +1,7 @@
 # E4 midpoint nudge 014: one harness message at half the response budget when nothing is edited
 
 Date: 2026-09-28  
-Status: proposed; awaiting owner approval  
+Status: approved; owner approved 2026-09-28 (cards/014.json, commit 52e6685); confirmed 2026-09-30: "I approved them" (supersedes the earlier "proposed; awaiting owner approval")  
 Model: pinned by full ID `claude-sonnet-5` after alias drift (2026-09-30): CLI 2.1.286 resolved the alias `sonnet` to `claude-sonnet-5-5`. CLI re-pinned from 2.1.283 to 2.1.286 (owner, 2026-09-30: "You can repin 14 and 15").  
 Stage: S6 (agent-loop module, continuation-rule surface). Machine-readable card: [`cards/014.json`](cards/014.json).
 Relation to [card 009](E4-diagnostic-commitment-009.md): the same "diagnostic commitment" weakness, addressed by a

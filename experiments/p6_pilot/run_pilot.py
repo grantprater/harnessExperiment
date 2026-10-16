@@ -1292,8 +1292,8 @@ def evaluator_details(runtime: LocalRuntime, report_artifact_id: str) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--client", required=True,
-                        choices=["openrouter", "claude-cli", "gold", "noop", "breaker", "gamer", "tester",
-                                 *FORECAST_CLIENTS])
+                        choices=["openrouter", "claude-cli", "chatgpt-subscription", "gold", "noop", "breaker", "gamer",
+                                 "tester", *FORECAST_CLIENTS])
     parser.add_argument("--backend", default="trusted-local", choices=["trusted-local", "oci"])
     parser.add_argument("--oci-image", default=DEFAULT_OCI_IMAGE)
     parser.add_argument("--sandbox", choices=[namespace_sandbox.SANDBOX_NAME, namespace_sandbox.CONFINED_NAME],
@@ -1350,7 +1350,7 @@ def main() -> None:
     if "verifier" in treatments and args.backend != "oci":
         raise SystemExit("--verifier needs --backend oci: a check() run is never trusted-local")
     verifier_manifest = load_verifier_manifest(treatments) if "verifier" in treatments and not args.dry_run else None
-    live = args.client in ("openrouter", "claude-cli")
+    live = args.client in ("openrouter", "claude-cli", "chatgpt-subscription")
     if live:
         if not args.models:
             raise SystemExit(f"--models is required for the {args.client} client")
@@ -1360,7 +1360,7 @@ def main() -> None:
     pins = {}
     for item in args.provider:
         model, _, provider_slug = item.partition("=")
-        if args.client == "claude-cli":
+        if args.client != "openrouter":
             raise SystemExit("--provider applies to the openrouter client only")
         if model not in models or not provider_slug:
             raise SystemExit(f"--provider {item!r} must be MODEL=SLUG for a model in --models")
@@ -1374,6 +1374,10 @@ def main() -> None:
                 print(f"warning: {problem}; a live run would refuse it")
         version = cli_version()
         routing = {model: cli_routing_contract(model, version, client_options) for model in models}
+    elif args.client == "chatgpt-subscription":
+        routing = {model: {"provider": "chatgpt-subscription", "endpoint": "https://api.openai.com/v1/responses",
+                           "store": False, "stream": True, "tool_namespace": "reticle", "max_attempts": 1}
+                   for model in models}
     else:
         routing = {model: ({"order": [pins[model]], "allow_fallbacks": False, "require_parameters": True}
                            if model in pins else dict(UNPINNED_ROUTING)) for model in models}
@@ -1407,6 +1411,21 @@ def main() -> None:
         config["treatments"] = treatments
 
     worst_case_per_call = {}
+    if args.client == "chatgpt-subscription":
+        if args.cost_ceiling_usd is not None:
+            raise SystemExit("ChatGPT plan usage has no reported USD cost; use attempt/call budgets instead.")
+        config.update(temperature=None, max_tokens=None, max_attempts_per_call=1,
+                      billing="shared_chatgpt_plan")
+        print(f"{len(runs)} subscription runs; usage counts toward your existing ChatGPT plan limits.")
+        print("--max-tokens is not sent: this subscription preview does not support an output-token cap.")
+        if not args.dry_run:
+            if args.max_total_calls is None:
+                raise SystemExit("--max-total-calls is required for live runs")
+            from reticle.cognitive.chatgpt_auth import ChatGPTAuth
+            subscription_auth = ChatGPTAuth()
+            available = {m["slug"] for m in subscription_auth.models()}
+            if any(model not in available for model in models):
+                raise SystemExit("A requested model is unavailable to this account; run chatgpt_auth models.")
     if args.client == "openrouter":
         catalog = fetch_catalog()
         pricing = model_pricing(catalog, models)
@@ -1551,6 +1570,10 @@ def main() -> None:
                                     timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS,
                                     expected_cli_version=routing[model]["cli_version"],
                                     **({"reply_recovery": client_options["reply_recovery"]} if client_options else {}))
+        elif args.client == "chatgpt-subscription":
+            from reticle.cognitive.chatgpt_subscription import ChatGPTSubscriptionClient
+            inner = ChatGPTSubscriptionClient(model, auth=subscription_auth, calls_path=calls_path,
+                                              run_id=run_id, budget=budget)
         else:
             inner = scripted_client(args.client, task, repo)
         client = GuardedClient(inner, tools, args.stop_on_repeats)

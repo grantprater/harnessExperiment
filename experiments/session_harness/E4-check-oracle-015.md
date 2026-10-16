@@ -1,7 +1,7 @@
 # E4 bounded check oracle 015: a `check` tool with three hidden-test counts per run
 
 Date: 2026-09-28  
-Status: proposed; awaiting owner approval  
+Status: approved; owner approved 2026-09-28 (cards/015.json, commit 52e6685); confirmed 2026-09-30: "I approved them" (supersedes the earlier "proposed; awaiting owner approval")  
 Model: pinned by full ID `claude-sonnet-5` after alias drift (2026-09-30): CLI 2.1.286 resolved the alias `sonnet` to `claude-sonnet-5-5`. CLI re-pinned from 2.1.283 to 2.1.286 (owner, 2026-09-30: "You can repin 14 and 15").  
 Stage: S6 (tool-use module). This treatment changes the task (the model gets a bounded acceptance signal), so it is
 an arm of its own and its result is not a harness improvement on the same task; it measures how much of the

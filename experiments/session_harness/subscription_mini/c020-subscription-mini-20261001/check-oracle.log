@@ -1,0 +1,5 @@
+1 subscription runs; usage counts toward your existing ChatGPT plan limits.
+--max-tokens is not sent: this subscription preview does not support an output-token cap.
+task budgets per run: {"gpt-5.6-sol": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 20, "active_seconds": 1200.0}}
+treatments (in the protocol hash): oracle hidden-tests hidden-test-oracle-v1
+sqlparse-mut-001__gpt-5.6-sol: model_call_limit -> rejected {'fail-to-pass': 'fail', 'pass-to-pass': 'pass'}
