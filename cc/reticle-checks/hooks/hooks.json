@@ -1,0 +1,44 @@
+{
+  "description": "Reticle post-edit checks. No-op unless the project has .claude/reticle-checks.json.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/reticle_checks.py", "post-tool-use"],
+            "timeout": 600,
+            "statusMessage": "reticle-checks: running post-edit check"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/reticle_checks.py", "invalidate"],
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/reticle_checks.py", "invalidate"],
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

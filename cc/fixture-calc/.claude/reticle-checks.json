@@ -1,0 +1,11 @@
+{
+  "command": ["python", "-B", "-m", "unittest", "-v", "test_calc"],
+  "source_globs": ["calc.py"],
+  "timeout_s": 30,
+  "mode": "selective",
+  "env": {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  }
+}
