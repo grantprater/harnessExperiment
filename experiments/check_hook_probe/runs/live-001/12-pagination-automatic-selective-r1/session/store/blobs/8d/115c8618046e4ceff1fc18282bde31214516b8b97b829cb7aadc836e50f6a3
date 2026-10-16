@@ -1,0 +1,9 @@
+models.py (lines 1-8 of 8)
+    1| from dataclasses import dataclass
+    2| 
+    3| @dataclass(frozen=True)
+    4| class Record:
+    5|     id: int
+    6|     owner: str
+    7|     status: str
+    8|     created_at: int

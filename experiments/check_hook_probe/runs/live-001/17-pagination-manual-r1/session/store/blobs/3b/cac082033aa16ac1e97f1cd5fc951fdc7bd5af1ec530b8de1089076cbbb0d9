@@ -1,0 +1,1 @@
+{"content": null, "role": "assistant", "tool_calls": [{"function": {"arguments": "{}", "name": "verify"}, "id": "call_GKgElnPBHLgZoWo4ALQjZ7f4", "type": "function"}]}

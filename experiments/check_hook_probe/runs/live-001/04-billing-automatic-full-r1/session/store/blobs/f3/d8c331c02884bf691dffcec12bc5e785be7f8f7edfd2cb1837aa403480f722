@@ -1,0 +1,1 @@
+{"_reticle_attempt_id":null,"content":null,"role":"assistant","tool_calls":[{"function":{"arguments":"{\"summary\":\"Fixed pricing.py to calculate sales tax using the post-discount subtotal, preserving existing discounts, shipping, rounding, and checkout behavior. All 6 contract tests pass.\"}","name":"finish"},"id":"call_lQtfzhbfrHGc0m7JJOFuRdzN","type":"function"}]}

@@ -1,0 +1,67 @@
+[
+  {
+    "content": "Interpret exact structured observations. Full observations replace the current snapshot. Delta observations replace/remove listed records against the identified retained baseline; omitted records are unchanged. Return only JSON: failed_keys (sorted array of IDs whose current status is failed), next_action (repair if any current record failed, otherwise accept).",
+    "role": "system"
+  },
+  {
+    "content": "Inspect the latest checks observation after revisions. Report current failures, including those unchanged by the latest revision. Historical failures that have passed are resolved. UI measurements do not establish aesthetic quality.",
+    "role": "user"
+  },
+  {
+    "content": null,
+    "role": "assistant",
+    "tool_calls": [
+      {
+        "function": {
+          "arguments": "{}",
+          "name": "observe"
+        },
+        "id": "prior_0",
+        "type": "function"
+      }
+    ]
+  },
+  {
+    "content": "{\"current_sha256\":\"9e452f8caf5c801b56ea3d547b3f7feb41cb50300b00ae3165d47999aa532356\",\"kind\":\"full\",\"records\":{\"checks_00\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_01\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_02\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_03\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"failed\"},\"checks_04\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_05\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_06\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"failed\"},\"checks_07\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"}},\"version\":\"structured-observation-delta-v1\"}",
+    "role": "tool",
+    "tool_call_id": "prior_0"
+  },
+  {
+    "content": null,
+    "role": "assistant",
+    "tool_calls": [
+      {
+        "function": {
+          "arguments": "{}",
+          "name": "observe"
+        },
+        "id": "prior_1",
+        "type": "function"
+      }
+    ]
+  },
+  {
+    "content": "{\"current_sha256\":\"c974a4f67048d1e8676c88e29e71d2a97815f67ffca15294ab2099be9c0e7a15\",\"kind\":\"full\",\"records\":{\"checks_00\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_01\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_02\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_03\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_04\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_05\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_06\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"failed\"},\"checks_07\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"failed\"}},\"version\":\"structured-observation-delta-v1\"}",
+    "role": "tool",
+    "tool_call_id": "prior_1"
+  },
+  {
+    "content": null,
+    "role": "assistant",
+    "tool_calls": [
+      {
+        "function": {
+          "arguments": "{}",
+          "name": "observe"
+        },
+        "id": "current",
+        "type": "function"
+      }
+    ]
+  },
+  {
+    "content": "{\"current_sha256\":\"0d7cc86c09230da3008c3d303b6decd7cb4f0deddf7e6fb8d506c24155eaae42\",\"kind\":\"full\",\"records\":{\"checks_00\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_01\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_02\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_03\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_04\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"},\"checks_05\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"failed\"},\"checks_06\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"failed\"},\"checks_07\":{\"contract\":\"Restart preserves delivery identity.\",\"revision\":1,\"status\":\"passed\"}},\"version\":\"structured-observation-delta-v1\"}",
+    "role": "tool",
+    "tool_call_id": "current"
+  }
+]

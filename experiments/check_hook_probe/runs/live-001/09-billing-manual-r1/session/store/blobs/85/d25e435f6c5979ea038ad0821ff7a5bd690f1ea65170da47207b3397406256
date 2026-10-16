@@ -1,0 +1,13 @@
+Check passed; tests=6; source=869f9a13f5b5; full evidence=out_6.
+test_empty_cart_fails_validation (test_contract.TestBillingPipeline.test_empty_cart_fails_validation) ... ok
+test_free_shipping_threshold (test_contract.TestBillingPipeline.test_free_shipping_threshold) ... ok
+test_insufficient_stock_fails (test_contract.TestBillingPipeline.test_insufficient_stock_fails) ... ok
+test_promo_discount_with_california_tax (test_contract.TestBillingPipeline.test_promo_discount_with_california_tax)
+CRITICAL: Tax must be calculated on post-discount subtotal, not raw subtotal. ... ok
+test_standard_order_without_discounts (test_contract.TestBillingPipeline.test_standard_order_without_discounts) ... ok
+test_tax_free_state (test_contract.TestBillingPipeline.test_tax_free_state) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.000s
+
+OK

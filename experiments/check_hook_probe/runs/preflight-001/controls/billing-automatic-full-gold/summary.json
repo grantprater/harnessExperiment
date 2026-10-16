@@ -1,0 +1,86 @@
+{
+  "automatic_checks": 1,
+  "check_duration_s": 0.14,
+  "check_events": [
+    {
+      "arm": "automatic-full",
+      "call_id": "control_0",
+      "duration_s": 0.14,
+      "evidence_handle": "out_2",
+      "full_bytes": 1199,
+      "representation": "full",
+      "source_after": "43d4ff7094f4bd25ef6b502ecb74b1924b2d90ec664445f54e4bc66a389d3915",
+      "source_before": "43d4ff7094f4bd25ef6b502ecb74b1924b2d90ec664445f54e4bc66a389d3915",
+      "status": "passed",
+      "tests_run": 6,
+      "trigger": "post_edit",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 879
+    }
+  ],
+  "check_full_bytes": 1199,
+  "check_invocations": 1,
+  "check_visible_bytes": 879,
+  "context_policy": "automatic-full",
+  "final_hashes": {
+    "checkout.py": "80e6e0f5fa2cef4821e2d6a77eae53193f2fb3dd32b0df8f75708c52ff05bf5e",
+    "models.py": "625c69392634a6cbae8fb46f8b91162db66b5d8b7c7e8bd6971c2bce1ce48815",
+    "pricing.py": "721e061961505ba38da213335bf4525de59e10f90dd418eab9a2f32156b0a314",
+    "test_contract.py": "9a3c57a63b9c2d09ab1eda02f211df8d50e7cc908d8ba4277f29f332205495b4"
+  },
+  "independent_evaluation_duration_s": 0.125,
+  "initial_hashes": {
+    "checkout.py": "80e6e0f5fa2cef4821e2d6a77eae53193f2fb3dd32b0df8f75708c52ff05bf5e",
+    "models.py": "625c69392634a6cbae8fb46f8b91162db66b5d8b7c7e8bd6971c2bce1ce48815",
+    "pricing.py": "0a48c25d8d479d437b5167f292b95852cbfd38c7d46da5d526585d8d2051d321",
+    "test_contract.py": "9a3c57a63b9c2d09ab1eda02f211df8d50e7cc908d8ba4277f29f332205495b4"
+  },
+  "manual_checks": 0,
+  "model": "offline-control",
+  "output_retrievals": 0,
+  "result": {
+    "calls_missing_usage": {
+      "completion_tokens": 2,
+      "cost": 2,
+      "prompt_tokens": 2
+    },
+    "error": null,
+    "final_workspace_revision": "sha256:80c25700f14a7b8722eda1887b38a18074e24d00cb24f5d03898472b36dca283",
+    "finish_summary": "gold control",
+    "model_calls": 2,
+    "provider_attempts": 2,
+    "stop_reason": "finish_requested",
+    "task_id": "billing-automatic-full-gold",
+    "task_resources": {
+      "adjusted": {},
+      "consumed": {
+        "active_seconds": 0.5940000000009604,
+        "model_attempts": 2.0,
+        "model_responses": 2.0,
+        "tool_actions": 2.0
+      },
+      "limits": {
+        "active_seconds": 240.0,
+        "model_attempts": 12.0,
+        "model_responses": 12.0,
+        "tool_actions": 48.0
+      },
+      "pending": {},
+      "remaining": {
+        "active_seconds": 239.40599999999904,
+        "model_attempts": 10.0,
+        "model_responses": 10.0,
+        "tool_actions": 46.0
+      },
+      "reserved": {}
+    },
+    "tool_calls": 2,
+    "usage_reported": {
+      "completion_tokens": 0.0,
+      "cost": 0.0,
+      "prompt_tokens": 0.0
+    }
+  },
+  "status": "complete",
+  "task": "billing"
+}

@@ -1,0 +1,29 @@
+{
+  "argv": [
+    "C:\\Users\\grant\\harnessExperiment\\.runtime\\test-venv\\Scripts\\python.exe",
+    "C:\\Users\\grant\\harnessExperiment\\experiments\\p6_pilot\\run_pilot.py",
+    "--client",
+    "claude-cli",
+    "--models",
+    "sonnet",
+    "--backend",
+    "oci",
+    "--arm",
+    "pressure-recent-v4",
+    "--tasks",
+    "C:\\Users\\grant\\harnessExperiment\\experiments\\mutation_tasks\\tasks.mutations.json",
+    "sqlparse-mut-061",
+    "--run-name",
+    "c019-sqlparse-mut-061-r1-reticle",
+    "--max-calls-per-run",
+    "20",
+    "--max-attempts-per-run",
+    "24",
+    "--max-total-calls",
+    "24",
+    "--elapsed-cap-seconds",
+    "1200",
+    "--max-tokens",
+    "4096"
+  ]
+}

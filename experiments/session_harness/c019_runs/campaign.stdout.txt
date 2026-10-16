@@ -1,0 +1,8 @@
+starting sqlparse-mut-032 reticle
+finished sqlparse-mut-032 reticle: accepted
+starting sqlparse-mut-032 codex
+finished sqlparse-mut-032 codex: rejected
+starting sqlparse-mut-061 codex
+finished sqlparse-mut-061 codex: accepted
+starting sqlparse-mut-061 reticle
+finished sqlparse-mut-061 reticle: accepted

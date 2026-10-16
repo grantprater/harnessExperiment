@@ -1,0 +1,99 @@
+{
+  "all_passed": true,
+  "bounds": {
+    "Leg_1": {
+      "max": [
+        -0.12000000476837158,
+        -0.12000000476837158,
+        0.6000000238418579
+      ],
+      "min": [
+        -0.1599999964237213,
+        -0.1599999964237213,
+        0.0
+      ]
+    },
+    "Leg_2": {
+      "max": [
+        0.1599999964237213,
+        -0.12000000476837158,
+        0.6000000238418579
+      ],
+      "min": [
+        0.12000000476837158,
+        -0.1599999964237213,
+        0.0
+      ]
+    },
+    "Leg_3": {
+      "max": [
+        -0.12000000476837158,
+        0.1599999964237213,
+        0.6000000238418579
+      ],
+      "min": [
+        -0.1599999964237213,
+        0.12000000476837158,
+        0.0
+      ]
+    },
+    "Leg_4": {
+      "max": [
+        0.1599999964237213,
+        0.1599999964237213,
+        0.6000000238418579
+      ],
+      "min": [
+        0.12000000476837158,
+        0.12000000476837158,
+        0.0
+      ]
+    },
+    "Seat": {
+      "dimensions": [
+        0.36000001430511475,
+        0.36000001430511475,
+        0.04999995231628418
+      ],
+      "max": [
+        0.18000000715255737,
+        0.18000000715255737,
+        0.6499999761581421
+      ],
+      "min": [
+        -0.18000000715255737,
+        -0.18000000715255737,
+        0.6000000238418579
+      ]
+    }
+  },
+  "checks": {
+    "Leg_1_ground_contact": true,
+    "Leg_1_mesh": true,
+    "Leg_1_surface_contact": true,
+    "Leg_2_ground_contact": true,
+    "Leg_2_mesh": true,
+    "Leg_2_surface_contact": true,
+    "Leg_3_ground_contact": true,
+    "Leg_3_mesh": true,
+    "Leg_3_surface_contact": true,
+    "Leg_4_ground_contact": true,
+    "Leg_4_mesh": true,
+    "Leg_4_surface_contact": true,
+    "blend_exists": true,
+    "camera": true,
+    "metric_units": true,
+    "no_back": true,
+    "render_dimensions": true,
+    "render_exists": true,
+    "render_nonblank": true,
+    "surface_depth": true,
+    "surface_height": true,
+    "surface_material": true,
+    "surface_mesh": true,
+    "surface_thickness": true,
+    "surface_width": true
+  },
+  "passed": 25,
+  "total": 25
+}

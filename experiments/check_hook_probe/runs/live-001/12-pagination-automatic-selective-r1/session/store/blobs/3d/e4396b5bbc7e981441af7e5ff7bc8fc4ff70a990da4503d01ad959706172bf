@@ -1,0 +1,1 @@
+{"content": null, "role": "assistant", "tool_calls": [{"function": {"arguments": "{\"glob\":\"*\"}", "name": "glob_files"}, "id": "call_rWBnd7XWreKeKV161JsonTTo", "type": "function"}]}

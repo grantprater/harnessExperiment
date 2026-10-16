@@ -1,0 +1,168 @@
+{
+  "calls": [
+    {
+      "cached_input_tokens": null,
+      "call_index": 1,
+      "completion_tokens": null,
+      "context_policy_version": "pressure-recent-v4",
+      "decision_state_event_id": null,
+      "extension_versions": {},
+      "model": null,
+      "prompt_tokens": null,
+      "provider": null,
+      "reported_cost_usd": null,
+      "request_bytes": 15129,
+      "runtime_version": "unversioned",
+      "sequence": 17,
+      "status": "failed",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "dda16fb9ba8e497aa803d2c875547976",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    },
+    {
+      "cached_input_tokens": null,
+      "call_index": 1,
+      "completion_tokens": null,
+      "context_policy_version": "pressure-recent-v4",
+      "decision_state_event_id": null,
+      "extension_versions": {},
+      "model": null,
+      "prompt_tokens": null,
+      "provider": null,
+      "reported_cost_usd": null,
+      "request_bytes": 16558,
+      "runtime_version": "unversioned",
+      "sequence": 37,
+      "status": "failed",
+      "style_profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+      "task_id": "410d0398599a4bdbb18a6f61b809d1a5",
+      "token_target": 5000,
+      "tool_schema_hash": "7610168eaf699f6c487b8e72961655b0590f29936f2d439284ad5caa647c2bb7",
+      "usage_feedback_enabled": true
+    }
+  ],
+  "extensions": {
+    "invocations": [],
+    "turn_snapshots": [
+      {
+        "task_id": "dda16fb9ba8e497aa803d2c875547976",
+        "versions": {}
+      },
+      {
+        "task_id": "410d0398599a4bdbb18a6f61b809d1a5",
+        "versions": {}
+      }
+    ],
+    "versions": []
+  },
+  "failed_model_calls": 2,
+  "failed_provider_attempts_recorded": 2,
+  "incomplete_model_calls": 0,
+  "journal_truncated_tail": false,
+  "measurement": "provider-reported; cached input is included in prompt_tokens; missing values are null",
+  "policy": {
+    "decision_snapshots": [],
+    "versions": [
+      "pressure-recent-v4"
+    ]
+  },
+  "provider_attempts_recorded": 2,
+  "report_version": 1,
+  "retry_usage_note": "Failed/retried provider attempts can consume tokens without a reported measurement; totals cover reported request usage only.",
+  "runtime_worker_interruptions": 0,
+  "session": "C:\\Users\\grant\\harnessExperiment\\experiments\\policy_bench\\runs\\autumn-10k-20261003-134451\\variant-02-trial-01\\workspace\\.reticle\\session",
+  "style": {
+    "applications": [],
+    "checks": [],
+    "profiles_extracted": [
+      {
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "reference_count": 1,
+        "task_id": null
+      }
+    ],
+    "turn_snapshots": [
+      {
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "task_id": "dda16fb9ba8e497aa803d2c875547976"
+      },
+      {
+        "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+        "task_id": "410d0398599a4bdbb18a6f61b809d1a5"
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "model_calls": 1,
+      "provider_attempts": 1,
+      "resource_limits": {
+        "model_attempts": 20.0,
+        "model_responses": 20.0,
+        "tool_actions": 200.0
+      },
+      "stop_reason": "model_error",
+      "task_id": "dda16fb9ba8e497aa803d2c875547976",
+      "tool_calls": 0,
+      "totals": {
+        "cached_input": {
+          "missing_calls": 1,
+          "reported": null
+        },
+        "calls": 1,
+        "completion_tokens": {
+          "missing_calls": 1,
+          "reported": null
+        },
+        "prompt_tokens": {
+          "missing_calls": 1,
+          "reported": null
+        }
+      }
+    },
+    {
+      "model_calls": 1,
+      "provider_attempts": 1,
+      "resource_limits": {
+        "model_attempts": 20.0,
+        "model_responses": 20.0,
+        "tool_actions": 200.0
+      },
+      "stop_reason": "model_error",
+      "task_id": "410d0398599a4bdbb18a6f61b809d1a5",
+      "tool_calls": 0,
+      "totals": {
+        "cached_input": {
+          "missing_calls": 1,
+          "reported": null
+        },
+        "calls": 1,
+        "completion_tokens": {
+          "missing_calls": 1,
+          "reported": null
+        },
+        "prompt_tokens": {
+          "missing_calls": 1,
+          "reported": null
+        }
+      }
+    }
+  ],
+  "totals": {
+    "cached_input": {
+      "missing_calls": 2,
+      "reported": null
+    },
+    "calls": 2,
+    "completion_tokens": {
+      "missing_calls": 2,
+      "reported": null
+    },
+    "prompt_tokens": {
+      "missing_calls": 2,
+      "reported": null
+    }
+  }
+}

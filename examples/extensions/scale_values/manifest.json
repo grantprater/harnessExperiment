@@ -1,0 +1,19 @@
+{
+  "name": "ext_scale_values",
+  "description": "Multiply each numeric value by a factor.",
+  "parameters": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "values": {"type": "array", "items": {"type": "number"}, "maxItems": 1000},
+      "factor": {"type": "number"}
+    },
+    "required": ["values", "factor"]
+  },
+  "entrypoint": "tool.py:execute",
+  "smoke_tests": [
+    {"arguments": {"values": [1, 2], "factor": 3}, "expected": [3, 6]},
+    {"arguments": {"values": [], "factor": 2}, "expected": []}
+  ],
+  "timeout_seconds": 10
+}

@@ -1,0 +1,214 @@
+{
+  "controls": [
+    {
+      "accepted": true,
+      "arm": "manual",
+      "checks": 0,
+      "control": "gold",
+      "task": "billing"
+    },
+    {
+      "accepted": false,
+      "arm": "manual",
+      "checks": 0,
+      "control": "noop",
+      "task": "billing"
+    },
+    {
+      "accepted": false,
+      "arm": "manual",
+      "checks": 0,
+      "control": "breaker",
+      "task": "billing"
+    },
+    {
+      "accepted": true,
+      "arm": "automatic-full",
+      "checks": 1,
+      "control": "gold",
+      "task": "billing"
+    },
+    {
+      "accepted": false,
+      "arm": "automatic-full",
+      "checks": 0,
+      "control": "noop",
+      "task": "billing"
+    },
+    {
+      "accepted": false,
+      "arm": "automatic-full",
+      "checks": 1,
+      "control": "breaker",
+      "task": "billing"
+    },
+    {
+      "accepted": true,
+      "arm": "automatic-selective",
+      "checks": 1,
+      "control": "gold",
+      "task": "billing"
+    },
+    {
+      "accepted": false,
+      "arm": "automatic-selective",
+      "checks": 0,
+      "control": "noop",
+      "task": "billing"
+    },
+    {
+      "accepted": false,
+      "arm": "automatic-selective",
+      "checks": 1,
+      "control": "breaker",
+      "task": "billing"
+    },
+    {
+      "accepted": true,
+      "arm": "manual",
+      "checks": 0,
+      "control": "gold",
+      "task": "kv"
+    },
+    {
+      "accepted": false,
+      "arm": "manual",
+      "checks": 0,
+      "control": "noop",
+      "task": "kv"
+    },
+    {
+      "accepted": false,
+      "arm": "manual",
+      "checks": 0,
+      "control": "breaker",
+      "task": "kv"
+    },
+    {
+      "accepted": true,
+      "arm": "automatic-full",
+      "checks": 2,
+      "control": "gold",
+      "task": "kv"
+    },
+    {
+      "accepted": false,
+      "arm": "automatic-full",
+      "checks": 0,
+      "control": "noop",
+      "task": "kv"
+    },
+    {
+      "accepted": false,
+      "arm": "automatic-full",
+      "checks": 1,
+      "control": "breaker",
+      "task": "kv"
+    },
+    {
+      "accepted": true,
+      "arm": "automatic-selective",
+      "checks": 2,
+      "control": "gold",
+      "task": "kv"
+    },
+    {
+      "accepted": false,
+      "arm": "automatic-selective",
+      "checks": 0,
+      "control": "noop",
+      "task": "kv"
+    },
+    {
+      "accepted": false,
+      "arm": "automatic-selective",
+      "checks": 1,
+      "control": "breaker",
+      "task": "kv"
+    },
+    {
+      "accepted": true,
+      "arm": "manual",
+      "checks": 0,
+      "control": "gold",
+      "task": "pagination"
+    },
+    {
+      "accepted": false,
+      "arm": "manual",
+      "checks": 0,
+      "control": "noop",
+      "task": "pagination"
+    },
+    {
+      "accepted": false,
+      "arm": "manual",
+      "checks": 0,
+      "control": "breaker",
+      "task": "pagination"
+    },
+    {
+      "accepted": true,
+      "arm": "automatic-full",
+      "checks": 2,
+      "control": "gold",
+      "task": "pagination"
+    },
+    {
+      "accepted": false,
+      "arm": "automatic-full",
+      "checks": 0,
+      "control": "noop",
+      "task": "pagination"
+    },
+    {
+      "accepted": false,
+      "arm": "automatic-full",
+      "checks": 1,
+      "control": "breaker",
+      "task": "pagination"
+    },
+    {
+      "accepted": true,
+      "arm": "automatic-selective",
+      "checks": 2,
+      "control": "gold",
+      "task": "pagination"
+    },
+    {
+      "accepted": false,
+      "arm": "automatic-selective",
+      "checks": 0,
+      "control": "noop",
+      "task": "pagination"
+    },
+    {
+      "accepted": false,
+      "arm": "automatic-selective",
+      "checks": 1,
+      "control": "breaker",
+      "task": "pagination"
+    }
+  ],
+  "fixture_hashes": {
+    "billing": {
+      "checkout.py": "80e6e0f5fa2cef4821e2d6a77eae53193f2fb3dd32b0df8f75708c52ff05bf5e",
+      "models.py": "625c69392634a6cbae8fb46f8b91162db66b5d8b7c7e8bd6971c2bce1ce48815",
+      "pricing.py": "0a48c25d8d479d437b5167f292b95852cbfd38c7d46da5d526585d8d2051d321",
+      "test_contract.py": "9a3c57a63b9c2d09ab1eda02f211df8d50e7cc908d8ba4277f29f332205495b4"
+    },
+    "kv": {
+      "engine.py": "95f55f7cd8742d21278942747b6bcab26ae51dc600cf70c2ec8cd58733d89d55",
+      "models.py": "7c32a9a5c907f743d4d6e2e720ddee9fc28e0b2e700a3503a5dc6a66c66b0d31",
+      "test_contract.py": "02acf737dcf299ab9cd4da4c43800374bc687a98a9c6608b9f9ed03b8a47259c"
+    },
+    "pagination": {
+      "models.py": "25c5ec9c65befdd2fc9b1e8f6d1ee87cc4e23b8180f6ac5182c30f5c47765edb",
+      "query.py": "0a7e3eec425318abcda9bc77971870b034ed7e726b1877cc7f8d0a08c41fefa8",
+      "service.py": "d67493671c7ffca1897150f5873227112c3bacfc53830cd42272f20be2a77370",
+      "test_contract.py": "06b39c4c10d71acc90b644f0d7cf2dd481119386efdbc37b95f62c10e3b09b05"
+    }
+  },
+  "original_fixtures_unchanged": true,
+  "status": "passed"
+}

@@ -1,0 +1,1 @@
+{"content": null, "role": "assistant", "tool_calls": [{"function": {"arguments": "{\"path\":\"pricing.py\",\"old_text\":\"    tax_amount = round(subtotal * tax_rate, 2)\",\"new_text\":\"    tax_amount = round(discounted_subtotal * tax_rate, 2)\"}", "name": "replace_text"}, "id": "call_ngUqh5rB8F32wsgU3fzSL2NC", "type": "function"}]}

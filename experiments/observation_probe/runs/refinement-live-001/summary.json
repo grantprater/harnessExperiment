@@ -1,0 +1,360 @@
+{
+  "decision": "scoped_support",
+  "final_record_artifact": "art_a6afc6e7d0d1480fab8a28bca089fec0",
+  "finished_at": "2026-10-03T21:39:33.410178+00:00",
+  "proposed_record_artifact": "art_8d266ec231674fc5bef9c4431ec9dd11",
+  "started_at": "2026-10-03T21:38:36.212338+00:00",
+  "status": "complete",
+  "trials": [
+    {
+      "accepted": true,
+      "arm": "adaptive",
+      "case": "ui-dense",
+      "condition": "dense",
+      "domain": "ui",
+      "latest_observation_bytes": 939,
+      "request_bytes": 4456,
+      "response": {
+        "content": "{\"failed_keys\":[\"ui_05\",\"ui_06\"],\"next_action\":\"repair\"}",
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "selection": {
+        "baseline_sha256": "d3f018b147fe069927e2fde2b178a91c65ea88caacd1416d367322d277c1b7d8",
+        "changed_fraction": 1.0,
+        "delta_bytes": 1281,
+        "full_bytes": 939,
+        "policy_version": "structured-observation-delta-v1",
+        "reason": "changes_not_sparse",
+        "selected": "full"
+      },
+      "usage": {
+        "completion_tokens": 22,
+        "prompt_tokens": 1031,
+        "prompt_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 1053
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "full",
+      "case": "checks-sparse",
+      "condition": "sparse",
+      "domain": "checks",
+      "latest_observation_bytes": 915,
+      "request_bytes": 4292,
+      "response": {
+        "content": "{\"failed_keys\":[\"checks_05\",\"checks_06\"],\"next_action\":\"repair\"}",
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "selection": {
+        "reason": "control",
+        "selected": "full"
+      },
+      "usage": {
+        "completion_tokens": 22,
+        "prompt_tokens": 840,
+        "prompt_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 862
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "adaptive",
+      "case": "checks-sparse",
+      "condition": "sparse",
+      "domain": "checks",
+      "latest_observation_bytes": 495,
+      "request_bytes": 3816,
+      "response": {
+        "content": "{\"failed_keys\":[\"checks_05\",\"checks_06\"],\"next_action\":\"repair\"}",
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "selection": {
+        "baseline_sha256": "c974a4f67048d1e8676c88e29e71d2a97815f67ffca15294ab2099be9c0e7a15",
+        "changed_fraction": 0.25,
+        "delta_bytes": 495,
+        "full_bytes": 915,
+        "policy_version": "structured-observation-delta-v1",
+        "reason": "retained_sparse_smaller",
+        "selected": "delta"
+      },
+      "usage": {
+        "completion_tokens": 22,
+        "prompt_tokens": 782,
+        "prompt_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 804
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "adaptive",
+      "case": "ui-sparse",
+      "condition": "sparse",
+      "domain": "ui",
+      "latest_observation_bytes": 501,
+      "request_bytes": 3938,
+      "response": {
+        "content": "{\"failed_keys\":[\"ui_05\",\"ui_06\"],\"next_action\":\"repair\"}",
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "selection": {
+        "baseline_sha256": "d3f018b147fe069927e2fde2b178a91c65ea88caacd1416d367322d277c1b7d8",
+        "changed_fraction": 0.25,
+        "delta_bytes": 501,
+        "full_bytes": 939,
+        "policy_version": "structured-observation-delta-v1",
+        "reason": "retained_sparse_smaller",
+        "selected": "delta"
+      },
+      "usage": {
+        "completion_tokens": 22,
+        "prompt_tokens": 921,
+        "prompt_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 943
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "full",
+      "case": "ui-dense",
+      "condition": "dense",
+      "domain": "ui",
+      "latest_observation_bytes": 939,
+      "request_bytes": 4456,
+      "response": {
+        "content": "{\"failed_keys\":[\"ui_05\",\"ui_06\"],\"next_action\":\"repair\"}",
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "selection": {
+        "reason": "control",
+        "selected": "full"
+      },
+      "usage": {
+        "completion_tokens": 22,
+        "prompt_tokens": 1031,
+        "prompt_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 1053
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "full",
+      "case": "ui-missing-baseline",
+      "condition": "missing-baseline",
+      "domain": "ui",
+      "latest_observation_bytes": 939,
+      "request_bytes": 1920,
+      "response": {
+        "content": "{\"failed_keys\":[\"ui_05\",\"ui_06\"],\"next_action\":\"repair\"}",
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "selection": {
+        "reason": "control",
+        "selected": "full"
+      },
+      "usage": {
+        "completion_tokens": 109,
+        "prompt_tokens": 415,
+        "prompt_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 524
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "full",
+      "case": "checks-missing-baseline",
+      "condition": "missing-baseline",
+      "domain": "checks",
+      "latest_observation_bytes": 915,
+      "request_bytes": 1868,
+      "response": {
+        "content": "{\"failed_keys\":[\"checks_05\",\"checks_06\"],\"next_action\":\"repair\"}",
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "selection": {
+        "reason": "control",
+        "selected": "full"
+      },
+      "usage": {
+        "completion_tokens": 82,
+        "prompt_tokens": 351,
+        "prompt_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 433
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "adaptive",
+      "case": "ui-missing-baseline",
+      "condition": "missing-baseline",
+      "domain": "ui",
+      "latest_observation_bytes": 939,
+      "request_bytes": 1920,
+      "response": {
+        "content": "\n{\"failed_keys\":[\"ui_05\",\"ui_06\"],\"next_action\":\"repair\"}",
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "selection": {
+        "changed_fraction": null,
+        "full_bytes": 939,
+        "policy_version": "structured-observation-delta-v1",
+        "reason": "baseline_not_retained",
+        "selected": "full"
+      },
+      "usage": {
+        "completion_tokens": 183,
+        "prompt_tokens": 415,
+        "prompt_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 598
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "full",
+      "case": "checks-dense",
+      "condition": "dense",
+      "domain": "checks",
+      "latest_observation_bytes": 915,
+      "request_bytes": 4292,
+      "response": {
+        "content": "{\"failed_keys\":[\"checks_05\",\"checks_06\"],\"next_action\":\"repair\"}",
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "selection": {
+        "reason": "control",
+        "selected": "full"
+      },
+      "usage": {
+        "completion_tokens": 22,
+        "prompt_tokens": 837,
+        "prompt_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 859
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "adaptive",
+      "case": "checks-dense",
+      "condition": "dense",
+      "domain": "checks",
+      "latest_observation_bytes": 915,
+      "request_bytes": 4292,
+      "response": {
+        "content": "{\"failed_keys\":[\"checks_05\",\"checks_06\"],\"next_action\":\"repair\"}",
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "selection": {
+        "baseline_sha256": "c974a4f67048d1e8676c88e29e71d2a97815f67ffca15294ab2099be9c0e7a15",
+        "changed_fraction": 1.0,
+        "delta_bytes": 1257,
+        "full_bytes": 915,
+        "policy_version": "structured-observation-delta-v1",
+        "reason": "changes_not_sparse",
+        "selected": "full"
+      },
+      "usage": {
+        "completion_tokens": 22,
+        "prompt_tokens": 837,
+        "prompt_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 859
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "adaptive",
+      "case": "checks-missing-baseline",
+      "condition": "missing-baseline",
+      "domain": "checks",
+      "latest_observation_bytes": 915,
+      "request_bytes": 1868,
+      "response": {
+        "content": "{\"failed_keys\":[\"checks_05\",\"checks_06\"],\"next_action\":\"repair\"}",
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "selection": {
+        "changed_fraction": null,
+        "full_bytes": 915,
+        "policy_version": "structured-observation-delta-v1",
+        "reason": "baseline_not_retained",
+        "selected": "full"
+      },
+      "usage": {
+        "completion_tokens": 84,
+        "prompt_tokens": 351,
+        "prompt_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 435
+      }
+    },
+    {
+      "accepted": true,
+      "arm": "full",
+      "case": "ui-sparse",
+      "condition": "sparse",
+      "domain": "ui",
+      "latest_observation_bytes": 939,
+      "request_bytes": 4456,
+      "response": {
+        "content": "{\"failed_keys\":[\"ui_05\",\"ui_06\"],\"next_action\":\"repair\"}",
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "selection": {
+        "reason": "control",
+        "selected": "full"
+      },
+      "usage": {
+        "completion_tokens": 22,
+        "prompt_tokens": 1031,
+        "prompt_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 1053
+      }
+    }
+  ]
+}

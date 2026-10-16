@@ -1,0 +1,86 @@
+{
+  "automatic_checks": 0,
+  "check_duration_s": 0.109,
+  "check_events": [
+    {
+      "arm": "manual",
+      "call_id": "call_GKgElnPBHLgZoWo4ALQjZ7f4",
+      "duration_s": 0.109,
+      "evidence_handle": "out_8",
+      "full_bytes": 1009,
+      "representation": "full",
+      "source_after": "f1832cf8839249026a514711022679c15cb0e97152c427b0b613bfe5bf6a62d1",
+      "source_before": "f1832cf8839249026a514711022679c15cb0e97152c427b0b613bfe5bf6a62d1",
+      "status": "passed",
+      "tests_run": 8,
+      "trigger": "manual_verify",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 687
+    }
+  ],
+  "check_full_bytes": 1009,
+  "check_invocations": 1,
+  "check_visible_bytes": 687,
+  "context_policy": "manual",
+  "final_hashes": {
+    "models.py": "25c5ec9c65befdd2fc9b1e8f6d1ee87cc4e23b8180f6ac5182c30f5c47765edb",
+    "query.py": "a99a673b9508b792fbee9b335fcdf6c212a2b64e1d5d016c02100e0414411371",
+    "service.py": "6d6a272b1d62b4d70f817217fc063a005a4c9de7bc24ed64852cafb1c8ed0dfa",
+    "test_contract.py": "06b39c4c10d71acc90b644f0d7cf2dd481119386efdbc37b95f62c10e3b09b05"
+  },
+  "independent_evaluation_duration_s": 0.125,
+  "initial_hashes": {
+    "models.py": "25c5ec9c65befdd2fc9b1e8f6d1ee87cc4e23b8180f6ac5182c30f5c47765edb",
+    "query.py": "0a7e3eec425318abcda9bc77971870b034ed7e726b1877cc7f8d0a08c41fefa8",
+    "service.py": "d67493671c7ffca1897150f5873227112c3bacfc53830cd42272f20be2a77370",
+    "test_contract.py": "06b39c4c10d71acc90b644f0d7cf2dd481119386efdbc37b95f62c10e3b09b05"
+  },
+  "manual_checks": 1,
+  "model": "gpt-6.1-sol",
+  "output_retrievals": 0,
+  "result": {
+    "calls_missing_usage": {
+      "completion_tokens": 0,
+      "cost": 6,
+      "prompt_tokens": 0
+    },
+    "error": null,
+    "final_workspace_revision": "sha256:7c695bc12e1ee7017da3b824a2f23462664e897917d852fc11e46e4c64563dd3",
+    "finish_summary": "Fixed list_records to filter before ordering and pagination and return the full matching count. Ordering now uses descending created_at and ascending id ties. Pagination is one-based and rejects nonpositive page or page_size with ValueError. Input records remain unchanged. All 8 tests pass.",
+    "model_calls": 6,
+    "provider_attempts": 6,
+    "stop_reason": "finish_requested",
+    "task_id": "17-pagination-manual-r1",
+    "task_resources": {
+      "adjusted": {},
+      "consumed": {
+        "active_seconds": 32.34400000000096,
+        "model_attempts": 6.0,
+        "model_responses": 6.0,
+        "tool_actions": 9.0
+      },
+      "limits": {
+        "active_seconds": 240.0,
+        "model_attempts": 12.0,
+        "model_responses": 12.0,
+        "tool_actions": 48.0
+      },
+      "pending": {},
+      "remaining": {
+        "active_seconds": 207.65599999999904,
+        "model_attempts": 6.0,
+        "model_responses": 6.0,
+        "tool_actions": 39.0
+      },
+      "reserved": {}
+    },
+    "tool_calls": 9,
+    "usage_reported": {
+      "completion_tokens": 441.0,
+      "cost": 0.0,
+      "prompt_tokens": 12822.0
+    }
+  },
+  "status": "complete",
+  "task": "pagination"
+}

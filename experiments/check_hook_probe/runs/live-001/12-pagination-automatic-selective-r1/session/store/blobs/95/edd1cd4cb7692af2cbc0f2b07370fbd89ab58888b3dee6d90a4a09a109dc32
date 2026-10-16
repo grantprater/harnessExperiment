@@ -1,0 +1,14 @@
+{
+  "tests_run": 8,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "unexpected_successes": 0,
+  "successful": true,
+  "output": "test_empty_page (test_contract.Contract.test_empty_page) ... ok\ntest_filter_then_page (test_contract.Contract.test_filter_then_page) ... ok\ntest_invalid (test_contract.Contract.test_invalid) ... ok\ntest_missing_owner (test_contract.Contract.test_missing_owner) ... ok\ntest_no_status (test_contract.Contract.test_no_status) ... ok\ntest_preserves_input (test_contract.Contract.test_preserves_input) ... ok\ntest_second_page (test_contract.Contract.test_second_page) ... ok\ntest_total (test_contract.Contract.test_total) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.000s\n\nOK\n",
+  "diagnostics": [],
+  "status": "passed",
+  "duration_s": 0.11,
+  "source_before": "88196c215fb0ce341043ce559c026fc4e541eb854aace16f8468bb9714b10e73",
+  "source_after": "88196c215fb0ce341043ce559c026fc4e541eb854aace16f8468bb9714b10e73"
+}

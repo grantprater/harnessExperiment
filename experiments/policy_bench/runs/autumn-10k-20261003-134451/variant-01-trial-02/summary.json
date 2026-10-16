@@ -1,0 +1,92 @@
+{
+  "all_measured_checks_passed": false,
+  "automated_scope": "Palette and artifact validity; theme/composition/style require visual review",
+  "condition": "two-turn-cozy-autumn-with-pinned-style-tools",
+  "context_policy": "decision",
+  "finished_at": "2026-10-03T20:11:26.719692+00:00",
+  "max_context_bytes": 32000,
+  "model": "gpt-6.1-sol",
+  "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+  "started_at": "2026-10-03T20:11:17.989174+00:00",
+  "status": "complete",
+  "tasks": [
+    {
+      "duration_seconds": 5.5,
+      "exit_code": 1,
+      "id": "01-reading",
+      "subject": "a steaming ceramic mug beside an open book, a knitted blanket and fallen autumn leaves",
+      "usage": {
+        "model_calls": 1,
+        "provider_attempts": 1,
+        "resource_limits": {
+          "model_attempts": 20.0,
+          "model_responses": 20.0,
+          "tool_actions": 200.0
+        },
+        "stop_reason": "model_error",
+        "task_id": "9aa4c7d7ff004e18b2fa9c4cd4653202",
+        "tool_calls": 0,
+        "totals": {
+          "cached_input": {
+            "missing_calls": 1,
+            "reported": null
+          },
+          "calls": 1,
+          "completion_tokens": {
+            "missing_calls": 1,
+            "reported": null
+          },
+          "prompt_tokens": {
+            "missing_calls": 1,
+            "reported": null
+          }
+        }
+      },
+      "verification": {
+        "checks_passed": false,
+        "exists": false,
+        "target_unchanged": true
+      }
+    },
+    {
+      "duration_seconds": 3.2,
+      "exit_code": 1,
+      "id": "02-lantern",
+      "subject": "a glowing lantern beside a pumpkin, a folded knitted scarf and fallen autumn leaves",
+      "usage": {
+        "model_calls": 1,
+        "provider_attempts": 1,
+        "resource_limits": {
+          "model_attempts": 20.0,
+          "model_responses": 20.0,
+          "tool_actions": 200.0
+        },
+        "stop_reason": "model_error",
+        "task_id": "d7af7afb0ce5417f9334932b3d01bfd3",
+        "tool_calls": 0,
+        "totals": {
+          "cached_input": {
+            "missing_calls": 1,
+            "reported": null
+          },
+          "calls": 1,
+          "completion_tokens": {
+            "missing_calls": 1,
+            "reported": null
+          },
+          "prompt_tokens": {
+            "missing_calls": 1,
+            "reported": null
+          }
+        }
+      },
+      "verification": {
+        "checks_passed": false,
+        "exists": false,
+        "target_unchanged": true
+      }
+    }
+  ],
+  "token_target_per_task": 5000,
+  "token_target_total": 10000
+}

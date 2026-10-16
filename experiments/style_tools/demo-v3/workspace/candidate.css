@@ -1,0 +1,4 @@
+/* Deliberate drift from the reference */
+:root { --ink: #60203f; --paper: #dbeda8; --accent: #408fa0; --space: 23px; --radius: 19px; }
+body { background: var(--paper); color: var(--ink); font-family: Georgia, serif; padding: var(--space); }
+.card { background: var(--accent); padding: 23px; border-radius: var(--radius); font-size: 21px; }

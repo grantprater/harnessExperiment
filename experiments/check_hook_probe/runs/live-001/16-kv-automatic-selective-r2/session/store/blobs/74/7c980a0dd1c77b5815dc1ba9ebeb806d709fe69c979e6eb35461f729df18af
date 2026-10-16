@@ -1,0 +1,68 @@
+test_contract.py (lines 1-67 of 67)
+    1| """Unit test contract for the Key-Value store."""
+    2| 
+    3| import sys
+    4| import time
+    5| import unittest
+    6| from pathlib import Path
+    7| 
+    8| # Ensure local imports resolve
+    9| sys.path.insert(0, str(Path(__file__).parent))
+   10| 
+   11| from models import KVEntry
+   12| from engine import KVStore
+   13| 
+   14| 
+   15| class TestKVStore(unittest.TestCase):
+   16|     def setUp(self):
+   17|         self.store = KVStore()
+   18| 
+   19|     def test_basic_set_and_get(self):
+   20|         self.store.set("user:101", "Alice")
+   21|         self.assertEqual(self.store.get("user:101"), "Alice")
+   22|         self.assertIsNone(self.store.get("missing_key"))
+   23| 
+   24|     def test_delete_key(self):
+   25|         self.store.set("temp", "value")
+   26|         self.assertTrue(self.store.delete("temp"))
+   27|         self.assertFalse(self.store.delete("temp")) # Second delete returns False
+   28|         self.assertIsNone(self.store.get("temp"))
+   29| 
+   30|     def test_ttl_expiration(self):
+   31|         # Short TTL of 0.1 seconds
+   32|         self.store.set("ephemeral", "flash_data", ttl_seconds=0.1)
+   33|         self.assertEqual(self.store.get("ephemeral"), "flash_data")
+   34|         time.sleep(0.15)
+   35|         # Should now be expired and return None
+   36|         self.assertIsNone(self.store.get("ephemeral"))
+   37| 
+   38|     def test_models_is_expired_method(self):
+   39|         now = 1000.0
+   40|         active_entry = KVEntry(key="k1", value="v1", expires_at=1050.0)
+   41|         expired_entry = KVEntry(key="k2", value="v2", expires_at=950.0)
+   42|         permanent_entry = KVEntry(key="k3", value="v3", expires_at=None)
+   43| 
+   44|         self.assertFalse(active_entry.is_expired(now=now))
+   45|         self.assertTrue(expired_entry.is_expired(now=now))
+   46|         self.assertFalse(permanent_entry.is_expired(now=now))
+   47| 
+   48|     def test_json_export_and_import(self):
+   49|         self.store.set("k1", "v1")
+   50|         self.store.set("k2", "v2")
+   51|         self.store.set("k_expired", "old", ttl_seconds=0.05)
+   52|         time.sleep(0.08)
+   53| 
+   54|         json_export = self.store.export_json()
+   55|         
+   56|         # Fresh store instance imports exported snapshot
+   57|         new_store = KVStore()
+   58|         count = new_store.import_json(json_export)
+   59| 
+   60|         self.assertEqual(count, 2)
+   61|         self.assertEqual(new_store.get("k1"), "v1")
+   62|         self.assertEqual(new_store.get("k2"), "v2")
+   63|         self.assertIsNone(new_store.get("k_expired"))
+   64| 
+   65| 
+   66| if __name__ == "__main__":
+   67|     unittest.main()

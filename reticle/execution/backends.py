@@ -37,6 +37,8 @@ class ExecutionRequest:
     # mutates_workspace. Set it for a private copy (e.g. an evaluation root) whose writes
     # are not mutations of the session workspace.
     writable_mount: Optional[bool] = None
+    # Keep the full workspace mounted while selecting a subdirectory as cwd.
+    workspace_root: Optional[str | Path] = None
 
     def __post_init__(self) -> None:
         if not self.command or not all(isinstance(part, str) and part for part in self.command):
@@ -393,7 +395,12 @@ class IsolatedOCIBackend:
         return ["--user", "65534:65534"]
 
     def build_command(self, request: ExecutionRequest, container_name: str) -> List[str]:
-        workspace = Path(request.working_directory).resolve()
+        cwd = Path(request.working_directory).resolve()
+        workspace = Path(request.workspace_root or cwd).resolve()
+        relative = cwd.relative_to(workspace)
+        if not cwd.is_dir():
+            raise ValueError(f"Working directory is not a directory: {cwd}")
+        guest_cwd = "/workspace" + ("/" + relative.as_posix() if relative.parts else "")
         mount = f"type=bind,src={workspace},dst=/workspace"
         writable = request.mutates_workspace if request.writable_mount is None else request.writable_mount
         if not writable:
@@ -401,6 +408,7 @@ class IsolatedOCIBackend:
         command = [
             self.engine,
             "run",
+            "--pull", "never",
             "--rm",
             "--name", container_name,
             "--network", "none",
@@ -412,7 +420,7 @@ class IsolatedOCIBackend:
             *self.user_arguments(),
             "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
             "--mount", mount,
-            "--workdir", "/workspace",
+            "--workdir", guest_cwd,
         ]
         for name, value in request.environment.items():
             if not isinstance(name, str) or not isinstance(value, str) or "=" in name or "\x00" in name:

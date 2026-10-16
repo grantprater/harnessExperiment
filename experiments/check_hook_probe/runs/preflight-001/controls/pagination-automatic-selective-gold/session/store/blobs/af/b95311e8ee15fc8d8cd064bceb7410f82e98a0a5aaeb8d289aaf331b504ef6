@@ -1,0 +1,53 @@
+Overwrote query.py (665 bytes, 14 lines).
+Check failed; tests=8; source=45a5aff155f4; full evidence=out_2.
+test_empty_page (test_contract.Contract.test_empty_page)
+Traceback (most recent call last):
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\preflight-001\controls\pagination-automatic-selective-gold\workspace\test_contract.py", line 19, in test_empty_page
+    self.assertEqual(list_records(self.rows,'a',page=9)['total'],4)
+AssertionError: 0 != 4
+test_filter_then_page (test_contract.Contract.test_filter_then_page)
+Traceback (most recent call last):
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\preflight-001\controls\pagination-automatic-selective-gold\workspace\test_contract.py", line 10, in test_filter_then_page
+    self.assertEqual([r.id for r in result['items']], [1,3])
+AssertionError: Lists differ: [] != [1, 3]
+
+Second list contains 2 additional elements.
+First extra element 0:
+1
+
+- []
++ [1, 3]
+test_no_status (test_contract.Contract.test_no_status)
+Traceback (most recent call last):
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\preflight-001\controls\pagination-automatic-selective-gold\workspace\test_contract.py", line 16, in test_no_status
+    self.assertEqual([r.id for r in list_records(self.rows,'a',page_size=4)['items']],[2,1,3,4])
+AssertionError: Lists differ: [2, 1, 3] != [2, 1, 3, 4]
+
+Second list contains 1 additional elements.
+First extra element 3:
+4
+
+- [2, 1, 3]
++ [2, 1, 3, 4]
+?         +++
+
+test_second_page (test_contract.Contract.test_second_page)
+Traceback (most recent call last):
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\preflight-001\controls\pagination-automatic-selective-gold\workspace\test_contract.py", line 14, in test_second_page
+    self.assertEqual([r.id for r in list_records(self.rows,'a','open',2,2)['items']],[4])
+AssertionError: Lists differ: [1, 3] != [4]
+[middle omitted; retrieve full evidence]
+1
+4
+
+First list contains 1 additional elements.
+First extra element 1:
+3
+
+- [1, 3]
++ [4]
+test_total (test_contract.Contract.test_total)
+Traceback (most recent call last):
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\preflight-001\controls\pagination-automatic-selective-gold\workspace\test_contract.py", line 12, in test_total
+    self.assertEqual(list_records(self.rows,'a','open',2,2)['total'],3)
+AssertionError: 2 != 3

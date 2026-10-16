@@ -1,0 +1,128 @@
+{
+  "context_policy": "check-probe-full-transcript-v1",
+  "decision_rule": "Report accepted completion and all-attempt cost; no automatic promotion.",
+  "fixture_hashes": {
+    "billing": {
+      "checkout.py": "80e6e0f5fa2cef4821e2d6a77eae53193f2fb3dd32b0df8f75708c52ff05bf5e",
+      "models.py": "625c69392634a6cbae8fb46f8b91162db66b5d8b7c7e8bd6971c2bce1ce48815",
+      "pricing.py": "0a48c25d8d479d437b5167f292b95852cbfd38c7d46da5d526585d8d2051d321",
+      "test_contract.py": "9a3c57a63b9c2d09ab1eda02f211df8d50e7cc908d8ba4277f29f332205495b4"
+    },
+    "kv": {
+      "engine.py": "95f55f7cd8742d21278942747b6bcab26ae51dc600cf70c2ec8cd58733d89d55",
+      "models.py": "7c32a9a5c907f743d4d6e2e720ddee9fc28e0b2e700a3503a5dc6a66c66b0d31",
+      "test_contract.py": "02acf737dcf299ab9cd4da4c43800374bc687a98a9c6608b9f9ed03b8a47259c"
+    },
+    "pagination": {
+      "models.py": "25c5ec9c65befdd2fc9b1e8f6d1ee87cc4e23b8180f6ac5182c30f5c47765edb",
+      "query.py": "0a7e3eec425318abcda9bc77971870b034ed7e726b1877cc7f8d0a08c41fefa8",
+      "service.py": "d67493671c7ffca1897150f5873227112c3bacfc53830cd42272f20be2a77370",
+      "test_contract.py": "06b39c4c10d71acc90b644f0d7cf2dd481119386efdbc37b95f62c10e3b09b05"
+    }
+  },
+  "hook_version": "post-edit-check-v1",
+  "instructions": "Work through the provided tools to repair the project according to the task.\nExisting source files may be edited; tests are read-only. outline provides Python\nstructure; read_file provides exact numbered source. verify runs the fixed tests\nand returns full results in every condition. finish ends your attempt; acceptance\nis evaluated separately on a fresh snapshot using the original tests.\nAutomatic conditions run those same tests synchronously after each successful\nsource-changing edit. Check receipts and failures describe the check, not task\nacceptance. An unchanged edit or rejected edit does not run a hook. An execution\nerror, timeout or stale check must be investigated. Full evidence handles can be\nretrieved through read_output/search_output. Choose economical steps; finish once\nyou have evidence your implementation satisfies the task.\n",
+  "jobs": [
+    {
+      "arm": "automatic-full",
+      "repeat": 1,
+      "task": "kv"
+    },
+    {
+      "arm": "manual",
+      "repeat": 2,
+      "task": "kv"
+    },
+    {
+      "arm": "manual",
+      "repeat": 1,
+      "task": "kv"
+    },
+    {
+      "arm": "automatic-selective",
+      "repeat": 2,
+      "task": "pagination"
+    },
+    {
+      "arm": "automatic-full",
+      "repeat": 1,
+      "task": "billing"
+    },
+    {
+      "arm": "automatic-full",
+      "repeat": 2,
+      "task": "kv"
+    },
+    {
+      "arm": "automatic-full",
+      "repeat": 2,
+      "task": "billing"
+    },
+    {
+      "arm": "automatic-selective",
+      "repeat": 1,
+      "task": "billing"
+    },
+    {
+      "arm": "manual",
+      "repeat": 2,
+      "task": "billing"
+    },
+    {
+      "arm": "manual",
+      "repeat": 1,
+      "task": "billing"
+    },
+    {
+      "arm": "automatic-full",
+      "repeat": 1,
+      "task": "pagination"
+    },
+    {
+      "arm": "automatic-selective",
+      "repeat": 1,
+      "task": "kv"
+    },
+    {
+      "arm": "automatic-selective",
+      "repeat": 1,
+      "task": "pagination"
+    },
+    {
+      "arm": "automatic-selective",
+      "repeat": 2,
+      "task": "billing"
+    },
+    {
+      "arm": "automatic-full",
+      "repeat": 2,
+      "task": "pagination"
+    },
+    {
+      "arm": "manual",
+      "repeat": 2,
+      "task": "pagination"
+    },
+    {
+      "arm": "automatic-selective",
+      "repeat": 2,
+      "task": "kv"
+    },
+    {
+      "arm": "manual",
+      "repeat": 1,
+      "task": "pagination"
+    }
+  ],
+  "max_calls_per_attempt": 12,
+  "max_context_bytes": 200000,
+  "max_provider_attempts": 216,
+  "model": "gpt-6.1-sol",
+  "protocol_id": "post-edit-check-probe-v1",
+  "seed": 53,
+  "source_hashes": {
+    "experiments/check_hook_probe/run_probe.py": "96dd9fd877380a2dc1985225ff20450651842f96739f488dea2e2263236ccd66",
+    "reticle/runtime/check_hooks.py": "826a51fd16d2b8551ed6c164ed8876df466796437bc9635fd2458c419ab59b04",
+    "reticle/tools/check_hooks.py": "15fd0f75c3c27db974bc5c2860fd0160e96bf624961d42b426fd5385747d1d03"
+  }
+}

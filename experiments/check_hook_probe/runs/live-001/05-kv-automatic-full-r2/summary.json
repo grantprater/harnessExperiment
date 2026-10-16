@@ -1,0 +1,99 @@
+{
+  "automatic_checks": 2,
+  "check_duration_s": 0.484,
+  "check_events": [
+    {
+      "arm": "automatic-full",
+      "call_id": "call_ModKQePoG2BIR8aNgqA7U6aL",
+      "duration_s": 0.109,
+      "evidence_handle": "out_5",
+      "full_bytes": 6143,
+      "representation": "full",
+      "source_after": "b3a96812a531dbe1f2964503c751a73f410e92381d9b4960e2646603995a8fc0",
+      "source_before": "b3a96812a531dbe1f2964503c751a73f410e92381d9b4960e2646603995a8fc0",
+      "status": "failed",
+      "tests_run": 5,
+      "trigger": "post_edit",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 3262
+    },
+    {
+      "arm": "automatic-full",
+      "call_id": "call_Q6uyAMQoHtTbdeakQeP5iYmQ",
+      "duration_s": 0.375,
+      "evidence_handle": "out_8",
+      "full_bytes": 891,
+      "representation": "full",
+      "source_after": "307f85ba82c00a7e481924ee76bebbf3c0b47edd06f905f0c8a349b2606da484",
+      "source_before": "307f85ba82c00a7e481924ee76bebbf3c0b47edd06f905f0c8a349b2606da484",
+      "status": "passed",
+      "tests_run": 5,
+      "trigger": "post_edit",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 572
+    }
+  ],
+  "check_full_bytes": 7034,
+  "check_invocations": 2,
+  "check_visible_bytes": 3834,
+  "context_policy": "automatic-full",
+  "final_hashes": {
+    "engine.py": "681ad79cf566a106690ac3d7c24442ec7b839b245f73194dadf98bedeaf6a0df",
+    "models.py": "c5402ccc63054f64b048f6821bff0c518387258305a6bc0dfd5a7c2e929f684b",
+    "test_contract.py": "02acf737dcf299ab9cd4da4c43800374bc687a98a9c6608b9f9ed03b8a47259c"
+  },
+  "independent_evaluation_duration_s": 0.391,
+  "initial_hashes": {
+    "engine.py": "95f55f7cd8742d21278942747b6bcab26ae51dc600cf70c2ec8cd58733d89d55",
+    "models.py": "7c32a9a5c907f743d4d6e2e720ddee9fc28e0b2e700a3503a5dc6a66c66b0d31",
+    "test_contract.py": "02acf737dcf299ab9cd4da4c43800374bc687a98a9c6608b9f9ed03b8a47259c"
+  },
+  "manual_checks": 0,
+  "model": "gpt-6.1-sol",
+  "output_retrievals": 0,
+  "result": {
+    "calls_missing_usage": {
+      "completion_tokens": 0,
+      "cost": 5,
+      "prompt_tokens": 0
+    },
+    "error": null,
+    "final_workspace_revision": "sha256:ca943568172ec8bc69d9ea292abf4b01623b6edf13a8cfee65361506fea50b9a",
+    "finish_summary": "Implemented KVEntry expiration checks and all KVStore methods. TTL handles zero and negative durations, get removes expired entries, delete reports physical key removal, export omits expired entries, and validated JSON imports merge string mappings without TTL. All 5 contract tests pass.",
+    "model_calls": 5,
+    "provider_attempts": 5,
+    "stop_reason": "finish_requested",
+    "task_id": "05-kv-automatic-full-r2",
+    "task_resources": {
+      "adjusted": {},
+      "consumed": {
+        "active_seconds": 41.92199999999866,
+        "model_attempts": 5.0,
+        "model_responses": 5.0,
+        "tool_actions": 6.0
+      },
+      "limits": {
+        "active_seconds": 240.0,
+        "model_attempts": 12.0,
+        "model_responses": 12.0,
+        "tool_actions": 48.0
+      },
+      "pending": {},
+      "remaining": {
+        "active_seconds": 198.07800000000134,
+        "model_attempts": 7.0,
+        "model_responses": 7.0,
+        "tool_actions": 42.0
+      },
+      "reserved": {}
+    },
+    "tool_calls": 6,
+    "usage_reported": {
+      "completion_tokens": 821.0,
+      "cost": 0.0,
+      "prompt_tokens": 12909.0
+    }
+  },
+  "status": "complete",
+  "task": "kv"
+}

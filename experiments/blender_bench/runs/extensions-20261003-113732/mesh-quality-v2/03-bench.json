@@ -1,0 +1,829 @@
+{
+  "checks": {
+    "metric_units": true,
+    "camera": true,
+    "surface_mesh": true,
+    "surface_width": true,
+    "surface_depth": true,
+    "surface_height": true,
+    "surface_thickness": true,
+    "surface_material": true,
+    "Support_1_mesh": true,
+    "Support_1_ground_contact": true,
+    "Support_1_surface_contact": true,
+    "Support_2_mesh": true,
+    "Support_2_ground_contact": true,
+    "Support_2_surface_contact": true,
+    "back_mesh": true,
+    "back_height": true,
+    "back_width": true,
+    "mesh_audit_complete": true,
+    "mesh_topology_valid": true,
+    "no_same_facing_coplanar_overlap": false
+  },
+  "passed": 19,
+  "total": 20,
+  "all_passed": false,
+  "bounds": {
+    "Seat": {
+      "min": [
+        -0.6000000238418579,
+        -0.20000000298023224,
+        0.4000000059604645
+      ],
+      "max": [
+        0.6000000238418579,
+        0.20000000298023224,
+        0.45000001788139343
+      ],
+      "dimensions": [
+        1.2000000476837158,
+        0.4000000059604645,
+        0.050000011920928955
+      ]
+    },
+    "Support_1": {
+      "min": [
+        -0.5475000143051147,
+        -0.18000000715255737,
+        0.0
+      ],
+      "max": [
+        -0.4724999964237213,
+        0.18000000715255737,
+        0.4000000059604645
+      ]
+    },
+    "Support_2": {
+      "min": [
+        0.4724999964237213,
+        -0.18000000715255737,
+        0.0
+      ],
+      "max": [
+        0.5475000143051147,
+        0.18000000715255737,
+        0.4000000059604645
+      ]
+    },
+    "Back": {
+      "min": [
+        -0.6000000238418579,
+        0.1525000035762787,
+        0.6000000238418579
+      ],
+      "max": [
+        0.6000000238418579,
+        0.19749999046325684,
+        0.8500000238418579
+      ]
+    }
+  },
+  "mesh_quality": {
+    "audit_version": 1,
+    "complete": true,
+    "passed": false,
+    "policy": {
+      "require_closed": true,
+      "distance_tolerance_world_units": 1e-06,
+      "acceptance_geometry": "evaluated; source findings are diagnostic",
+      "default_object_selection": "render-visible meshes; explicitly named objects override",
+      "opposite_facing_contacts": "allowed",
+      "ordinary_intersections": "not checked",
+      "self_intersections": "not comprehensively checked",
+      "visual_shading": "not established"
+    },
+    "summary": {
+      "objects": 8,
+      "topology_error_categories": 0,
+      "evaluated_topology_error_categories": 0,
+      "evaluated_coplanar_face_pairs": 6,
+      "coplanar_face_pairs_across_both_stages": 12,
+      "warning_categories": 13
+    },
+    "objects": [
+      {
+        "object": "Back",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 1.226590850529162e-08
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 1.226590850529162e-08
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Back upright Left",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 3.908324358240321e-09
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 3.908324358240321e-09
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Back upright Right",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 3.908324358240321e-09
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 3.908324358240321e-09
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Floor",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 2.82842715303046e-06
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 2.82842715303046e-06
+        },
+        "modifier_warnings": []
+      },
+      {
+        "object": "Seat",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 1.2658989372314828e-08
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 1.2658989372314828e-08
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Support_1",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 5.433461286464543e-09
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 5.433461286464543e-09
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Support_2",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 5.433461286464543e-09
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 24,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [
+            "nonplanar_faces"
+          ],
+          "examples": {
+            "nonplanar_faces": [
+              0,
+              2,
+              4,
+              7,
+              9,
+              11,
+              14,
+              16,
+              18,
+              21,
+              23,
+              25
+            ]
+          },
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 5.433461286464543e-09
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      },
+      {
+        "object": "Underseat rail",
+        "source": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 8,
+          "faces": 6,
+          "connected_components": 1,
+          "length_tolerance": 1.0230591189863257e-08
+        },
+        "evaluated": {
+          "counts": {
+            "boundary_edges": 0,
+            "wire_edges": 0,
+            "nonmanifold_edges": 0,
+            "inconsistent_winding_edges": 0,
+            "zero_length_edges": 0,
+            "zero_area_faces": 0,
+            "nonplanar_faces": 0,
+            "duplicate_faces": 0,
+            "duplicate_vertices": 0,
+            "inward_closed_shells": 0,
+            "zero_volume_closed_shells": 0
+          },
+          "errors": [],
+          "warnings": [],
+          "examples": {},
+          "vertices": 96,
+          "faces": 98,
+          "connected_components": 1,
+          "length_tolerance": 1.0230591189863257e-08
+        },
+        "modifier_warnings": [
+          "weighted_normals_without_source_smooth_faces"
+        ]
+      }
+    ],
+    "overlaps": {
+      "source": {
+        "complete": true,
+        "triangles": 96,
+        "candidates": 112,
+        "pair_count": 6,
+        "pairs": [
+          {
+            "objects": [
+              "Back",
+              "Back upright Left"
+            ],
+            "faces": [
+              1,
+              1
+            ],
+            "overlap_area": 0.011749994233251087,
+            "normal": [
+              0.0,
+              0.9999999403953552,
+              0.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Back",
+              "Back upright Right"
+            ],
+            "faces": [
+              3,
+              3
+            ],
+            "overlap_area": 0.011749994233251087,
+            "normal": [
+              0.0,
+              -0.9999999403953552,
+              0.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Back",
+              "Back upright Left"
+            ],
+            "faces": [
+              3,
+              3
+            ],
+            "overlap_area": 0.011749994233251083,
+            "normal": [
+              0.0,
+              -0.9999999403953552,
+              0.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Back",
+              "Back upright Right"
+            ],
+            "faces": [
+              1,
+              1
+            ],
+            "overlap_area": 0.011749994233251083,
+            "normal": [
+              0.0,
+              0.9999999403953552,
+              0.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Support_2",
+              "Underseat rail"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.0016874997988343132,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Support_1",
+              "Underseat rail"
+            ],
+            "faces": [
+              5,
+              5
+            ],
+            "overlap_area": 0.0016874997988343098,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          }
+        ]
+      },
+      "evaluated": {
+        "complete": true,
+        "triangles": 1328,
+        "candidates": 506,
+        "pair_count": 6,
+        "pairs": [
+          {
+            "objects": [
+              "Back",
+              "Back upright Left"
+            ],
+            "faces": [
+              94,
+              94
+            ],
+            "overlap_area": 0.009988004004476636,
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Back",
+              "Back upright Left"
+            ],
+            "faces": [
+              96,
+              96
+            ],
+            "overlap_area": 0.009988004004476636,
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Back",
+              "Back upright Right"
+            ],
+            "faces": [
+              94,
+              94
+            ],
+            "overlap_area": 0.009988004004476636,
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Back",
+              "Back upright Right"
+            ],
+            "faces": [
+              96,
+              96
+            ],
+            "overlap_area": 0.009988004004476636,
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Support_1",
+              "Underseat rail"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.0013325009676812272,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          },
+          {
+            "objects": [
+              "Support_2",
+              "Underseat rail"
+            ],
+            "faces": [
+              95,
+              95
+            ],
+            "overlap_area": 0.0013325009676812272,
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "kind": "same_facing_coplanar_overlap"
+          }
+        ]
+      }
+    }
+  }
+}

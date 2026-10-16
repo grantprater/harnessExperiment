@@ -1,5 +1,9 @@
 # Design critique: `IMPLEMENTATION_PLAN.md`
 
+> Historical critique of the September 15 plan. For the current research direction,
+> evidence and integration gaps, read [project state](docs/PROJECT_STATE.md) and
+> [the handoff](NEXT_SESSION.md).
+
 Date: 2026-09-15  
 Scope: Review of Reticle's current implementation plan as a foundation for durable, experimentally validated, and eventually self-improving agent harnesses.
 

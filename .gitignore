@@ -32,6 +32,7 @@ ENV/
 
 # Runtime / temporary outputs
 .runtime/
+.reticle/
 corpus_cache/
 spatial_cache/
 experiments/comparison_general/
@@ -64,3 +65,9 @@ mc_trace_*.json
 !experiments/**/*.png
 
 
+
+# Claude Code agent worktrees
+.claude/worktrees/
+
+# Nested pristine git checkouts inside copied run dirs (git would record them as gitlinks)
+experiments/session_harness/c019_runs/*/pristine/

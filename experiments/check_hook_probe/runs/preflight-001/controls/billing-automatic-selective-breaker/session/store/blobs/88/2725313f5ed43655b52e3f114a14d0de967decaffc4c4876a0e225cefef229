@@ -1,0 +1,3 @@
+Overwrote checkout.py (27 bytes, 1 lines).
+Check error; tests=unknown; source=4a77c3c10680; full evidence=out_2.
+Check execution error: ValueError: Check process exited without a valid test result

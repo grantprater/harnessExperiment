@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -16,7 +17,10 @@ class StaleWorkspaceError(RuntimeError):
 
 # Tool caches are outside source revision scope: running tests must not look like a source
 # edit, and evaluator snapshots must not inherit candidate bytecode or cached test state.
-CACHE_DIRECTORY_NAMES = frozenset({"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".hypothesis"})
+CACHE_DIRECTORY_NAMES = frozenset({
+    "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".hypothesis",
+    ".git", ".venv", "venv", "node_modules", ".runtime", ".claude", ".reticle",
+})
 
 
 @dataclass(frozen=True)
@@ -59,10 +63,13 @@ class WorkspaceTracker:
 
     def revision(self) -> str:
         digest = hashlib.sha256()
-        files = sorted(
-            path for path in self.root.rglob("*")
-            if path.is_file() and not self._is_excluded(path)
-        )
+        files = []
+        for directory, children, names in os.walk(self.root):
+            children[:] = [name for name in children
+                           if not self._is_excluded(Path(directory) / name)]
+            files.extend(Path(directory) / name for name in names
+                         if not self._is_excluded(Path(directory) / name))
+        files.sort()
         for path in files:
             relative = path.relative_to(self.root).as_posix().encode("utf-8")
             content = path.read_bytes()

@@ -1,0 +1,1 @@
+{"content": null, "role": "assistant", "tool_calls": [{"function": {"arguments": "{\"summary\":\"Updated pricing.py to calculate sales tax using the rounded post-discount subtotal instead of the original subtotal. Preserved existing discount, shipping, and checkout behavior. All 6 tests pass.\"}", "name": "finish"}, "id": "call_Q0IB2t0iYpdc1t1mN71d9aOk", "type": "function"}]}

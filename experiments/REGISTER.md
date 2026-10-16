@@ -1,5 +1,23 @@
 # Experiment register
 
+## Current observation-strategy work (2026-10-03)
+
+Start with [project state](../docs/PROJECT_STATE.md) for current direction and
+integration gaps. The tables below preserve the earlier candidate backlog.
+
+| Candidate | Current evidence | Next limit to test |
+|---|---|---|
+| Retained-baseline exact deltas | [Four-call probe](observation_probe/runs/live-001/summary.json): all correct, 33.9% less input | End-to-end cost rather than simple decision accuracy |
+| Conditional delta/full selection | [Twelve-call probe](observation_probe/runs/refinement-live-001/REPORT.md): all correct, 9% sparse input saving; 1.9% total saving overall | Real observer use and recovery reads |
+| Automatic post-edit checks and representation | [Eighteen-run probe](check_hook_probe/runs/live-001/REPORT.md): all accepted; 19.1% full / 21.1% selective token saving versus manual | Genuine failure diagnosis and one applicability contrast |
+| Minimal/decision/cache-oriented context | [Autumn comparison](policy_bench/runs/autumn-10k-20261003-134451/REPORT.md): missed 10k target, provider failures | No ranking established; preserve continuity/evidence before more compaction |
+
+No candidate was automatically promoted. The next comparison is a recommendation,
+not a queued run. [Refinement design](observation_probe/REFINEMENT_DESIGN.md) and
+[check protocol](check_hook_probe/README.md) document the implemented mechanisms.
+
+## Earlier register
+
 Candidate backlog; sequencing and gates live in [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md).
 Keep one working baseline and one active challenger initially. A row is a hypothesis, not a
 commitment to build it. Flesh out a run card only when activating a candidate; link its report

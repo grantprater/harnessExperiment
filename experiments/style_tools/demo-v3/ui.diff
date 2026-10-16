@@ -1,0 +1,10 @@
+--- candidate.css
++++ aligned.css
+@@ -1,4 +1,4 @@
+ /* Deliberate drift from the reference */
+-:root { --ink: #60203f; --paper: #dbeda8; --accent: #408fa0; --space: 23px; --radius: 19px; }
+-body { background: var(--paper); color: var(--ink); font-family: Georgia, serif; padding: var(--space); }
+-.card { background: var(--accent); padding: 23px; border-radius: var(--radius); font-size: 21px; }
++:root { --ink: #203040; --paper: #e0d0c0; --accent: #508080; --space: 16px; --radius: 8px; }
++body { background: var(--paper); color: var(--ink); font-family: "arial",sans-serif; padding: var(--space); }
++.card { background: var(--accent); padding: 16px; border-radius: var(--radius); font-size: 16px; }

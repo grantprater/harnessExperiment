@@ -1,0 +1,13 @@
+diff --git a/sqlparse/filters/reindent.py b/sqlparse/filters/reindent.py
+index 3259369..ea41ac6 100644
+--- a/sqlparse/filters/reindent.py
++++ b/sqlparse/filters/reindent.py
+@@ -104,6 +104,8 @@ class ReindentFilter:
+ 
+     def _process_where(self, tlist):
+         tidx, token = tlist.token_next_by(m=(T.Keyword, 'WHERE'))
++        if not token:
++            return
+         # issue121, errors in statement fixed??
+         tlist.insert_before(tidx, self.nl())
+         with indent(self):

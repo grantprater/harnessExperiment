@@ -1,0 +1,32 @@
+{
+  "status": "completed",
+  "order": [
+    [
+      "sqlparse-mut-032",
+      "reticle"
+    ],
+    [
+      "sqlparse-mut-032",
+      "codex"
+    ],
+    [
+      "sqlparse-mut-061",
+      "codex"
+    ],
+    [
+      "sqlparse-mut-061",
+      "reticle"
+    ]
+  ],
+  "evidence_class": "exploratory_pilot",
+  "equivalent_to_controlled_cards": false,
+  "pool_with_existing_cards": false,
+  "limitations": [
+    "different models and response budgets",
+    "selected known failures",
+    "parallel workloads may affect latency and cache reuse",
+    "four trials; no statistical or promotion decision"
+  ],
+  "parallel_with_other_campaigns": true,
+  "finished_at": "2026-10-01T18:19:34.968859+00:00"
+}

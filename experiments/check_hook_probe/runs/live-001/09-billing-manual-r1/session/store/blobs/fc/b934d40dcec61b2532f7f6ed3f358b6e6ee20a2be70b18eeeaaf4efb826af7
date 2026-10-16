@@ -1,0 +1,83 @@
+test_contract.py (lines 1-82 of 82)
+    1| """Comprehensive unit test suite for billing and checkout."""
+    2| 
+    3| import sys
+    4| from pathlib import Path
+    5| sys.path.insert(0, str(Path(__file__).parent))
+    6| 
+    7| import unittest
+    8| from models import Cart, CartItem, PromoCode
+    9| from checkout import CheckoutService
+   10| 
+   11| 
+   12| class TestBillingPipeline(unittest.TestCase):
+   13|     def setUp(self):
+   14|         self.service = CheckoutService(inventory={"SKU-1": 100, "SKU-2": 50, "SKU-3": 20})
+   15| 
+   16|     def test_empty_cart_fails_validation(self):
+   17|         cart = Cart()
+   18|         with self.assertRaises(ValueError):
+   19|             self.service.process_order(cart, state="CA")
+   20| 
+   21|     def test_standard_order_without_discounts(self):
+   22|         cart = Cart()
+   23|         cart.add_item(CartItem(sku="SKU-1", name="Widget A", unit_price=25.0, quantity=2)) # $50.00
+   24|         # State WA: tax 6.5% of 50.00 = 3.25. Shipping = 15.0. Total = 68.25
+   25|         receipt = self.service.process_order(cart, state="WA")
+   26|         self.assertEqual(receipt.subtotal, 50.0)
+   27|         self.assertEqual(receipt.discount_amount, 0.0)
+   28|         self.assertEqual(receipt.tax_amount, 3.25)
+   29|         self.assertEqual(receipt.shipping_fee, 15.0)
+   30|         self.assertEqual(receipt.final_total, 68.25)
+   31| 
+   32|     def test_tax_free_state(self):
+   33|         cart = Cart()
+   34|         cart.add_item(CartItem(sku="SKU-1", name="Widget A", unit_price=100.0, quantity=1)) # $100.00
+   35|         # Oregon (OR) has 0% tax. Shipping = 15.0. Total = 115.00
+   36|         receipt = self.service.process_order(cart, state="OR")
+   37|         self.assertEqual(receipt.tax_amount, 0.0)
+   38|         self.assertEqual(receipt.final_total, 115.0)
+   39| 
+   40|     def test_free_shipping_threshold(self):
+   41|         cart = Cart()
+   42|         cart.add_item(CartItem(sku="SKU-2", name="Widget B", unit_price=80.0, quantity=2)) # $160.00
+   43|         # Oregon: 0% tax. Free shipping threshold is $150. Shipping = 0. Total = 160.00
+   44|         receipt = self.service.process_order(cart, state="OR")
+   45|         self.assertEqual(receipt.shipping_fee, 0.0)
+   46|         self.assertEqual(receipt.final_total, 160.0)
+   47| 
+   48|     def test_insufficient_stock_fails(self):
+   49|         cart = Cart()
+   50|         cart.add_item(CartItem(sku="SKU-3", name="Widget C", unit_price=10.0, quantity=999))
+   51|         with self.assertRaises(ValueError):
+   52|             self.service.process_order(cart, state="DE")
+   53| 
+   54|     def test_promo_discount_with_california_tax(self):
+   55|         """CRITICAL: Tax must be calculated on post-discount subtotal, not raw subtotal."""
+   56|         cart = Cart()
+   57|         cart.add_item(CartItem(sku="SKU-1", name="Widget A", unit_price=50.0, quantity=4)) # $200.00
+   58|         promo = PromoCode(code="FALL20", discount_percent=0.20, min_subtotal=100.0) # 20% off
+   59| 
+   60|         # Subtotal: $200.00
+   61|         # Discount (20%): $40.00 -> Taxable: $160.00
+   62|         # CA Tax (8.25% of $160.00): $13.20
+   63|         # Shipping (Over $150): $0.00
+   64|         # Expected Total: 160.00 + 13.20 = $173.20
+   65|         receipt = self.service.process_order(cart, state="CA", promo=promo)
+   66| 
+   67|         self.assertEqual(receipt.discount_amount, 40.0)
+   68|         self.assertEqual(receipt.taxable_amount, 160.0)
+   69|         self.assertEqual(
+   70|             receipt.tax_amount,
+   71|             13.20,
+   72|             f"Tax must be assessed on post-discount amount ($160 * 8.25% = $13.20). Got: {receipt.tax_amount}"
+   73|         )
+   74|         self.assertEqual(
+   75|             receipt.final_total,
+   76|             173.20,
+   77|             f"Final total mismatch: expected 173.20, got {receipt.final_total}"
+   78|         )
+   79| 
+   80| 
+   81| if __name__ == "__main__":
+   82|     unittest.main()

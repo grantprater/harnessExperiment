@@ -1,0 +1,29 @@
+[
+  {
+    "content": "Interpret exact structured observations. Full observations replace the current snapshot. Delta observations replace/remove listed records against the identified retained baseline; omitted records are unchanged. Return only JSON: failed_keys (sorted array of IDs whose current status is failed), next_action (repair if any current record failed, otherwise accept).",
+    "role": "system"
+  },
+  {
+    "content": "Inspect the latest ui observation after revisions. Report current failures, including those unchanged by the latest revision. Historical failures that have passed are resolved. UI measurements do not establish aesthetic quality.",
+    "role": "user"
+  },
+  {
+    "content": null,
+    "role": "assistant",
+    "tool_calls": [
+      {
+        "function": {
+          "arguments": "{}",
+          "name": "observe"
+        },
+        "id": "current",
+        "type": "function"
+      }
+    ]
+  },
+  {
+    "content": "{\"current_sha256\":\"6eca77f7421e1842ebca135922358ba8698d1bdfa084a4a2d1b0c3a4943b4fa0\",\"kind\":\"full\",\"records\":{\"ui_00\":{\"contrast_pass\":true,\"font\":\"Project Sans\",\"radius_px\":8,\"revision\":1,\"status\":\"passed\"},\"ui_01\":{\"contrast_pass\":true,\"font\":\"Project Sans\",\"radius_px\":8,\"revision\":1,\"status\":\"passed\"},\"ui_02\":{\"contrast_pass\":true,\"font\":\"Project Sans\",\"radius_px\":8,\"revision\":1,\"status\":\"passed\"},\"ui_03\":{\"contrast_pass\":true,\"font\":\"Project Sans\",\"radius_px\":8,\"revision\":1,\"status\":\"passed\"},\"ui_04\":{\"contrast_pass\":true,\"font\":\"Project Sans\",\"radius_px\":8,\"revision\":1,\"status\":\"passed\"},\"ui_05\":{\"contrast_pass\":true,\"font\":\"Project Sans\",\"radius_px\":8,\"revision\":1,\"status\":\"failed\"},\"ui_06\":{\"contrast_pass\":true,\"font\":\"Project Sans\",\"radius_px\":8,\"revision\":1,\"status\":\"failed\"},\"ui_07\":{\"contrast_pass\":true,\"font\":\"Project Sans\",\"radius_px\":8,\"revision\":1,\"status\":\"passed\"}},\"version\":\"structured-observation-delta-v1\"}",
+    "role": "tool",
+    "tool_call_id": "current"
+  }
+]

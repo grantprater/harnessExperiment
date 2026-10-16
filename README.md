@@ -1,54 +1,87 @@
-# Reticle: The Cognitive Harness Framework
+# Reticle: observational and belief refinement
 
-Reticle is a durable session runtime for coding agents: the session records what happened,
-context is a replaceable, per-invocation view over that history, the harness policy decides
-how to continue, and actual execution happens in a separate, swappable backend (trusted-local
-or a pinned, network-isolated OCI image). Harness policies (context management, tool
-interfaces, continuation logic) are compared against each other through short, discriminating
-experiments rather than folded permanently into the runtime. See
-[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) section 1 for the full objective and
-operating rule.
+Reticle is a durable agent runtime and experiment framework. The research goal is
+an agent that improves how it acquires evidence, updates beliefs and chooses
+actions, with demonstrated transfer to future tasks. Recursive self-improvement
+is the longer-term objective; current probes test smaller conditional procedures.
 
-## Documents
+Representation depends on the substrate, goal and progress. AST outlines, exact
+source, test results, deltas and visual observations serve different decisions.
+The task loop observes, revises beliefs, acts and checks. The refinement loop
+proposes a versioned procedure, tests its applicability conditions and retains,
+restricts or rejects its scope.
 
-- [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) - the current plan and work ledger.
-- [IMPLEMENTATION_PLAN_CRITIQUE.md](IMPLEMENTATION_PLAN_CRITIQUE.md) - the current critique.
-- [experiments/REGISTER.md](experiments/REGISTER.md) - the experiment register.
-- [Evidence ontology experiment](experiments/neurosymbolic/README.md) - optional structured memory and advisory symbolic reasoning, fixtures, and comparison protocol.
-- [experiments/session_harness/](experiments/session_harness/) - run cards, reports, and
-  delivery records.
+## Start here
 
-Earlier, superseded planning documents (the pre-September-15 prototype README,
-`ARCHITECTURE.md`, `ACTIVE_EPISTEMIC_BOARD.md`, and the 2026-09-14 plan) are kept for history
-in [archive/docs/](archive/docs/). The harness's self-refactoring loop, retired for
-optimizing a complexity metric rather than task outcomes, is described in
-[archive/RETIRED.md](archive/RETIRED.md).
+- [NEXT_SESSION.md](NEXT_SESSION.md): short handoff and the next useful decision.
+- [Project state](docs/PROJECT_STATE.md): current design, evidence and integration gaps.
+- [Runtime guide](docs/RUNTIME_GUIDE.md): CLI, context policies, extensions, runtime updates, style and knowledge tools.
+- [Latest check-hook results](experiments/check_hook_probe/runs/live-001/REPORT.md): the completed 18-run comparison.
 
-## Current empirical status
+## Latest findings
 
-Four live E3 repair-control runs on `sqlparse-865` with weak free models produced no accepted
-repair (each stopped on rate limits, response budgets, or a failed fail-to-pass test); toolset
-v3 passed its offline gates (244 tests, 4 OCI skipped). A positive control with a capable
-model is the next step.
+All 18 post-edit check attempts passed fresh-snapshot evaluation against the
+original public tests. Automatic full reporting used **19.1% fewer total tokens**
+than manual verification; automatic selective reporting used **21.1% fewer**.
+Selective reporting added 2.4% savings over automatic full reporting. Three small
+tasks, two repetitions per condition: descriptive evidence, not broad reliability.
 
-## Running the tests
+Earlier probes found that exact deltas preserve simple decisions with retained
+baselines, but savings depend on observation size and history overhead. The autumn
+context-policy comparison missed the 10k target and had provider failures; it did
+not establish a winning context policy. See [project state](docs/PROJECT_STATE.md)
+for the evidence map and limitations.
 
-Test interpreter: `C:\Users\grant\harnessExperiment\.runtime\test-venv\Scripts\python.exe`.
-Run from the repo root:
+## Run the harness
 
+From a configured checkout/environment:
+
+```powershell
+& ./.venv/Scripts/python.exe -m reticle.cli --help
+reticle
+reticle "Run the tests and fix the failure" --once
+reticle --resume PATH_TO_SESSION
+reticle --check
 ```
-python -m unittest discover -s tests -q
+
+If the `reticle` command is not installed, use
+`powershell -ExecutionPolicy Bypass -File tools/install-cli.ps1`, then open a new
+terminal. The existing Reticle subscription connection defaults to `gpt-6.1-sol`.
+`--check` checks local setup without an inference request. Multi-turn sessions
+show intermediate tool activity and provider token usage. See the runtime guide
+for provider setup, model feedback, isolation and runtime activation.
+
+The CLI defaults to `minimal` context at 32,000 bytes including schemas. The
+experimental `decision` policy remains opt-in. Delta selection and post-edit hooks
+are experimental components, not default CLI behavior. Candidate activation and
+demonstrated improvement are separate.
+
+## Reproduce the current probes
+
+- [Observation/delta probes](experiments/observation_probe/README.md).
+- [Refinement records and conditional selector](experiments/observation_probe/REFINEMENT_DESIGN.md).
+- [Post-edit check protocol and commands](experiments/check_hook_probe/README.md).
+
+The check probe validates offline by default. Its live 18-run comparison requires
+`--execute` and a fresh output directory. Full requests, evidence and reported
+usage are retained; failed or unreported usage is not imputed as zero. New runs
+should answer a specific question rather than repeat saturated fixtures.
+
+## Validation and historical work
+
+Use the checkout's Python environment for focused tests:
+
+```powershell
+& ./.venv/Scripts/python.exe -m unittest tests.test_check_hooks tests.test_observation_refinements tests.test_toolset_v4
 ```
 
-## Running the pilot runner
+The older [implementation ledger](IMPLEMENTATION_PLAN.md) and
+[experiment register](experiments/REGISTER.md) preserve stage history, controls and
+reports. They are not the current resume checklist. The earlier reading pilot is
+in [experiments/README.md](experiments/README.md); modality prototypes and superseded
+plans remain in [archive](archive/). The retired self-refactoring loop optimized a
+complexity metric rather than task outcomes; see [archive/RETIRED.md](archive/RETIRED.md).
 
-From the repo root (see the docstring at the top of
-[experiments/p6_pilot/run_pilot.py](experiments/p6_pilot/run_pilot.py) for client, backend,
-and arm options):
-
-```
-python experiments/p6_pilot/run_pilot.py --client gold --run-name gold-check
-python experiments/p6_pilot/run_pilot.py --client openrouter --models qwen/qwen3.5-9b \
-    --provider qwen/qwen3.5-9b=venice --tasks humanize-329 --run-name pilot-a \
-    --max-total-calls 30 --dry-run
-```
+This working checkout includes substantial uncommitted implementation and result
+files. Preserve existing work when resuming. Sessions and raw experiment data are
+local research artifacts, not a publication bundle.

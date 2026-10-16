@@ -1,0 +1,97 @@
+{
+  "calls": [
+    {
+      "cached_input_tokens": null,
+      "call_index": 1,
+      "completion_tokens": null,
+      "context_policy_version": "check-probe-full-transcript-v1",
+      "decision_state_event_id": null,
+      "extension_versions": {},
+      "model": null,
+      "prompt_tokens": null,
+      "provider": null,
+      "reported_cost_usd": null,
+      "request_bytes": 6635,
+      "runtime_version": "unversioned",
+      "sequence": 11,
+      "status": "response",
+      "style_profile_id": null,
+      "task_id": "kv-automatic-selective-noop",
+      "token_target": null,
+      "tool_schema_hash": "e09f1dc72e36211941eda3d4af2e0ae1539df703c4ea77f56baedaab6d993c95",
+      "usage_feedback_enabled": false
+    }
+  ],
+  "extensions": {
+    "invocations": [],
+    "turn_snapshots": [],
+    "versions": []
+  },
+  "failed_model_calls": 0,
+  "failed_provider_attempts_recorded": 0,
+  "incomplete_model_calls": 0,
+  "journal_truncated_tail": false,
+  "measurement": "provider-reported; cached input is included in prompt_tokens; missing values are null",
+  "policy": {
+    "decision_snapshots": [],
+    "versions": [
+      "check-probe-full-transcript-v1"
+    ]
+  },
+  "provider_attempts_recorded": 0,
+  "report_version": 1,
+  "retry_usage_note": "Failed/retried provider attempts can consume tokens without a reported measurement; totals cover reported request usage only.",
+  "runtime_worker_interruptions": 0,
+  "session": "C:\\Users\\grant\\harnessExperiment\\experiments\\check_hook_probe\\runs\\preflight-001\\controls\\kv-automatic-selective-noop\\session",
+  "style": {
+    "applications": [],
+    "checks": [],
+    "profiles_extracted": [],
+    "turn_snapshots": []
+  },
+  "tasks": [
+    {
+      "model_calls": 1,
+      "provider_attempts": 1,
+      "resource_limits": {
+        "active_seconds": 240.0,
+        "model_attempts": 12.0,
+        "model_responses": 12.0,
+        "tool_actions": 48.0
+      },
+      "stop_reason": "finish_requested",
+      "task_id": "kv-automatic-selective-noop",
+      "tool_calls": 1,
+      "totals": {
+        "cached_input": {
+          "missing_calls": 1,
+          "reported": null
+        },
+        "calls": 1,
+        "completion_tokens": {
+          "missing_calls": 1,
+          "reported": null
+        },
+        "prompt_tokens": {
+          "missing_calls": 1,
+          "reported": null
+        }
+      }
+    }
+  ],
+  "totals": {
+    "cached_input": {
+      "missing_calls": 1,
+      "reported": null
+    },
+    "calls": 1,
+    "completion_tokens": {
+      "missing_calls": 1,
+      "reported": null
+    },
+    "prompt_tokens": {
+      "missing_calls": 1,
+      "reported": null
+    }
+  }
+}

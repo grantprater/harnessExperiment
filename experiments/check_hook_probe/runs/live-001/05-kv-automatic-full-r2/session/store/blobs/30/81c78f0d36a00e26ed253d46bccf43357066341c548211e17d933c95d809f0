@@ -1,0 +1,59 @@
+Replaced 1 occurrence(s) in models.py. Lines 12-18 now:
+   12|     def is_expired(self, now: Optional[float] = None) -> bool:
+   13|         """Returns True if entry has an expiration timestamp and current time >= expires_at."""
+   14|         if self.expires_at is None:
+   15|             return False
+   16|         if now is None:
+   17|             now = time.time()
+   18|         return now >= self.expires_at
+Check failed; tests=5; source=b3a96812a531; full evidence=out_5.
+test_basic_set_and_get (test_contract.TestKVStore.test_basic_set_and_get) ... ERROR
+test_delete_key (test_contract.TestKVStore.test_delete_key) ... ERROR
+test_json_export_and_import (test_contract.TestKVStore.test_json_export_and_import) ... ERROR
+test_models_is_expired_method (test_contract.TestKVStore.test_models_is_expired_method) ... ok
+test_ttl_expiration (test_contract.TestKVStore.test_ttl_expiration) ... ERROR
+
+======================================================================
+ERROR: test_basic_set_and_get (test_contract.TestKVStore.test_basic_set_and_get)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\live-001\05-kv-automatic-full-r2\workspace\test_contract.py", line 20, in test_basic_set_and_get
+    self.store.set("user:101", "Alice")
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\live-001\05-kv-automatic-full-r2\workspace\engine.py", line 17, in set
+    raise NotImplementedError
+NotImplementedError
+
+======================================================================
+ERROR: test_delete_key (test_contract.TestKVStore.test_delete_key)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\live-001\05-kv-automatic-full-r2\workspace\test_contract.py", line 25, in test_delete_key
+    self.store.set("temp", "value")
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\live-001\05-kv-automatic-full-r2\workspace\engine.py", line 17, in set
+    raise NotImplementedError
+NotImplementedError
+
+======================================================================
+ERROR: test_json_export_and_import (test_contract.TestKVStore.test_json_export_and_import)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\live-001\05-kv-automatic-full-r2\workspace\test_contract.py", line 49, in test_json_export_and_import
+    self.store.set("k1", "v1")
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\live-001\05-kv-automatic-full-r2\workspace\engine.py", line 17, in set
+    raise NotImplementedError
+NotImplementedError
+
+======================================================================
+ERROR: test_ttl_expiration (test_contract.TestKVStore.test_ttl_expiration)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\live-001\05-kv-automatic-full-r2\workspace\test_contract.py", line 32, in test_ttl_expiration
+    self.store.set("ephemeral", "flash_data", ttl_seconds=0.1)
+  File "C:\Users\grant\harnessExperiment\experiments\check_hook_probe\runs\live-001\05-kv-automatic-full-r2\workspace\engine.py", line 17, in set
+    raise NotImplementedError
+NotImplementedError
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+FAILED (errors=4)

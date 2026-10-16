@@ -1,0 +1,13 @@
+{
+  "back_height": 0.85,
+  "depth": 0.4,
+  "height": 0.45,
+  "id": "03-bench",
+  "kind": "bench with two solid end supports",
+  "supports": [
+    "Support_1",
+    "Support_2"
+  ],
+  "surface": "Seat",
+  "width": 1.2
+}

@@ -1,0 +1,99 @@
+{
+  "automatic_checks": 2,
+  "check_duration_s": 0.5780000000000001,
+  "check_events": [
+    {
+      "arm": "automatic-full",
+      "call_id": "control_0",
+      "duration_s": 0.203,
+      "evidence_handle": "out_2",
+      "full_bytes": 8485,
+      "representation": "full",
+      "source_after": "5e622f916902d0cb03a3cc67927138a5d0e87890abb0340d7cc1af7bf87ce837",
+      "source_before": "5e622f916902d0cb03a3cc67927138a5d0e87890abb0340d7cc1af7bf87ce837",
+      "status": "failed",
+      "tests_run": 5,
+      "trigger": "post_edit",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 4381
+    },
+    {
+      "arm": "automatic-full",
+      "call_id": "control_1",
+      "duration_s": 0.375,
+      "evidence_handle": "out_5",
+      "full_bytes": 891,
+      "representation": "full",
+      "source_after": "b993be4f27f4d40dc9067c4ef5aeedc5e55580277465a84cc281cbace2f0baa8",
+      "source_before": "b993be4f27f4d40dc9067c4ef5aeedc5e55580277465a84cc281cbace2f0baa8",
+      "status": "passed",
+      "tests_run": 5,
+      "trigger": "post_edit",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 572
+    }
+  ],
+  "check_full_bytes": 9376,
+  "check_invocations": 2,
+  "check_visible_bytes": 4953,
+  "context_policy": "automatic-full",
+  "final_hashes": {
+    "engine.py": "8578d0ac827b46f3d2afe07007e3fe6573985a130cffd52317ee44e1bf2b10d2",
+    "models.py": "3af1083396857b149ec2b0cd1107f0aed23c623b7d5dbeae6607fdfd30bb2140",
+    "test_contract.py": "02acf737dcf299ab9cd4da4c43800374bc687a98a9c6608b9f9ed03b8a47259c"
+  },
+  "independent_evaluation_duration_s": 0.36,
+  "initial_hashes": {
+    "engine.py": "95f55f7cd8742d21278942747b6bcab26ae51dc600cf70c2ec8cd58733d89d55",
+    "models.py": "7c32a9a5c907f743d4d6e2e720ddee9fc28e0b2e700a3503a5dc6a66c66b0d31",
+    "test_contract.py": "02acf737dcf299ab9cd4da4c43800374bc687a98a9c6608b9f9ed03b8a47259c"
+  },
+  "manual_checks": 0,
+  "model": "offline-control",
+  "output_retrievals": 0,
+  "result": {
+    "calls_missing_usage": {
+      "completion_tokens": 3,
+      "cost": 3,
+      "prompt_tokens": 3
+    },
+    "error": null,
+    "final_workspace_revision": "sha256:5beef4b19ecb1e4f791701410bf43afa46b496bc3d26c8b7e27af0d22317412c",
+    "finish_summary": "gold control",
+    "model_calls": 3,
+    "provider_attempts": 3,
+    "stop_reason": "finish_requested",
+    "task_id": "kv-automatic-full-gold",
+    "task_resources": {
+      "adjusted": {},
+      "consumed": {
+        "active_seconds": 1.7030000000013388,
+        "model_attempts": 3.0,
+        "model_responses": 3.0,
+        "tool_actions": 3.0
+      },
+      "limits": {
+        "active_seconds": 240.0,
+        "model_attempts": 12.0,
+        "model_responses": 12.0,
+        "tool_actions": 48.0
+      },
+      "pending": {},
+      "remaining": {
+        "active_seconds": 238.29699999999866,
+        "model_attempts": 9.0,
+        "model_responses": 9.0,
+        "tool_actions": 45.0
+      },
+      "reserved": {}
+    },
+    "tool_calls": 3,
+    "usage_reported": {
+      "completion_tokens": 0.0,
+      "cost": 0.0,
+      "prompt_tokens": 0.0
+    }
+  },
+  "status": "complete",
+  "task": "kv"
+}

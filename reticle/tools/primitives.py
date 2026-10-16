@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 import fnmatch
 import json
+import re
 import shlex
 from typing import Any, Callable, Dict, Iterator, List, Optional
 from uuid import uuid4
@@ -23,6 +24,7 @@ from reticle.runtime.workspace import StaleWorkspaceError
 
 SKIPPED_DIRECTORIES = {
     ".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".venv", "node_modules",
+    ".reticle", ".runtime", ".claude",
 }
 PYTHON_ALIASES = {"python", "python3", "py"}
 SHELL_OPERATORS = {"|", "||", "&", "&&", ";", ">", ">>", "<", "2>", "2>&1"}
@@ -84,11 +86,13 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
     ),
     _function(
         "search_text",
-        "Search file contents for exact text (literal characters, case-sensitive; not a regex). Returns one line "
-        "per match as path:line: text, with 1-based line numbers, and states the scope searched. file_glob only "
+        "Search case-sensitive literal text by default, or Python regex with regex=true. Returns one line "
+        "per matching line as path:line: text, with 1-based line numbers; context_lines adds surrounding lines. file_glob only "
         "selects which files are searched.",
         {
-            "query": {"type": "string", "description": "Required. The exact text to find, e.g. 'def get_real_name('."},
+            "query": {"type": "string", "description": "Required. Literal text, or a Python pattern when regex=true."},
+            "regex": {"type": "boolean"},
+            "context_lines": {"type": "integer", "minimum": 0, "maximum": 100},
             "path": {
                 "type": "string",
                 "description": "File or directory to search, relative to the workspace root. Default '.'.",
@@ -103,7 +107,9 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
     ),
     _function(
         "replace_text",
-        "Replace exact text in a file. Fails without changing the file if old_text is absent, or if it occurs "
+        "Replace literal text in a file, treating LF and CRLF line endings as equivalent. Preserve existing "
+        "bytes outside the replacement and use local line endings for new_text. Other whitespace must match "
+        "exactly. Fails without changing the file if old_text is absent, or if it occurs "
         "more than once while replace_all is false; set replace_all to replace every occurrence. Reports how many "
         "occurrences were replaced and shows the edited lines.",
         {
@@ -115,6 +121,14 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
         ["path", "old_text", "new_text"],
     ),
     _function(
+        "apply_patch",
+        "Apply a single-file unified diff to an existing file. Exact line positions and context must match; "
+        "all hunks are validated before writing. LF/CRLF differences are tolerated and local endings preserved. "
+        "Supply path and patch (optional ---/+++ headers followed by @@ hunks). Use write_file to create files.",
+        {"path": {"type": "string"}, "patch": {"type": "string"}},
+        ["path", "patch"],
+    ),
+    _function(
         "write_file",
         "Create a file, or overwrite it completely if it already exists, with the given content. Missing parent "
         "directories are created. Paths are relative to the workspace root.",
@@ -123,16 +137,21 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
     ),
     _function(
         "run",
-        "Run one command in the workspace root without a shell: no pipes, redirection, chaining (&&, ;), cd, or "
+        "Run command or commands in sequence (stopping on failure by default). cwd selects a workspace directory. "
+        "Without a shell: no pipes, redirection, chaining (&&, ;), cd, or "
         "variable expansion; use workspace-relative paths with forward slashes. 'python' and 'pytest' use the "
         "task's Python environment. Shows the command, status (including timeout), exit code, stdout, and stderr; "
         "long output is shown partially with an output id for paging. A successful exit does not mean the task "
         "is accepted.",
         {
             "command": {"type": "string", "description": "For example: pytest tests/test_example.py -q"},
+            "commands": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 50,
+                         "description": "Supply command or commands, not both. Each runs in a separate process."},
+            "cwd": {"type": "string", "description": "Workspace-relative working directory; default '.'"},
+            "stop_on_error": {"type": "boolean", "description": "Default true for command sequences."},
             "timeout_seconds": {"type": "integer"},
         },
-        ["command"],
+        [],
     ),
     _function(
         "read_output",
@@ -150,8 +169,9 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
     ),
     _function(
         "search_output",
-        "Find lines containing a literal string (plain text, not a regex) in an earlier tool result by its output id.",
-        {"id": {"type": "string"}, "query": {"type": "string", "description": "Required. The literal text to find."}},
+        "Search an earlier output for literal text or optional Python regex, with surrounding context.",
+        {"id": {"type": "string"}, "query": {"type": "string"}, "regex": {"type": "boolean"},
+         "context_lines": {"type": "integer", "minimum": 0, "maximum": 100}},
         ["id", "query"],
     ),
     _function(
@@ -239,18 +259,27 @@ LEGACY_TOOL_SCHEMAS: List[Dict[str, Any]] = [
 ]
 LEGACY_TOOL_NAMES = {"list_files": "glob_files", "search": "search_text"}
 
+RUNTIME_UPDATE_SCHEMA = _function(
+    'activate_runtime',
+    'Snapshot and validate an edited harness, then queue activation after this user turn completes. '
+    'The current turn keeps its existing version. Only available in supervised runtime-update mode. '
+    'Protected core files must match the initial runtime. Continue working and call finish normally.',
+    {'source_root': {'type': 'string', 'description': 'Workspace-relative repository containing reticle; default dot.'},
+     'reason': {'type': 'string'}}, [],
+)
+
 # v2: `file_glob` naming, argument guidance with examples, notes for ignored arguments, literal-match note.
 # v3: `glob_files(glob, path)` and `search_text(query, path, file_glob)` replace list_files/search (legacy
 # dispatch kept); unknown arguments to schema tools are rejected with guidance instead of ignored; results
 # state matching mode and scope; globs are case-sensitive on every platform; `run` rejections explain chaining
 # and `cd` and show the command to run instead; tool descriptions state line-range, overwrite, parent-directory,
 # no-shell, and acceptance semantics. Regex matching is not offered.
-TOOLSET_VERSION = "reticle-tools-v3"
+# v4: single-file unified diffs, optional regex/context, cwd, and command sequences.
+TOOLSET_VERSION = "reticle-tools-v4"
 ARGUMENT_ALIASES = {"search": {"pattern": "file_glob"}, "list_files": {"pattern": "file_glob"}}
 UNKNOWN_ARGUMENT_HINTS = {
     ("search_text", "pattern"): " 'pattern' is not a search_text argument: put the text to find in query and "
                                 "select files with file_glob.",
-    ("search_text", "regex"): " Regex matching is not available in this toolset: query is always matched as exact text.",
     ("search_text", "glob"): " search_text selects files with file_glob.",
     ("glob_files", "pattern"): " 'pattern' is not a glob_files argument: pass the glob as glob.",
     ("glob_files", "file_glob"): " glob_files takes the glob as glob.",
@@ -264,6 +293,7 @@ TOOL_EXAMPLES = {
     "outline": {"path": "src/module.py"},
     "search": {"query": "def get_real_name", "file_glob": "*.py"},
     "replace_text": {"path": "src/module.py", "old_text": "return a", "new_text": "return b"},
+    "apply_patch": {"path": "src/module.py", "patch": "@@ -1 +1 @@\n-old\n+new\n"},
     "write_file": {"path": "notes/plan.txt", "content": "..."},
     "run": {"command": "pytest tests/test_example.py -q"},
     "read_output": {"id": "out_3", "start_line": 1, "end_line": 60},
@@ -275,7 +305,8 @@ TOOL_EXAMPLES = {
     "finish": {"summary": "Fixed ..."},
 }
 _TOOL_PARAMETERS = {
-    schema["function"]["name"]: schema["function"]["parameters"] for schema in [*TOOL_SCHEMAS, *LEGACY_TOOL_SCHEMAS]
+    schema["function"]["name"]: schema["function"]["parameters"]
+    for schema in [*TOOL_SCHEMAS, *LEGACY_TOOL_SCHEMAS, RUNTIME_UPDATE_SCHEMA]
 }
 
 
@@ -328,6 +359,7 @@ class ToolSuite:
         self.observations = ObservationService(runtime)
         self.queries = SessionQueryService(runtime)
         self._next_handle: Optional[int] = None
+        self.runtime_updates = None
         self._handlers: Dict[str, Callable[[Dict[str, Any]], ToolOutcome]] = {
             "glob_files": self._glob_files,
             "search_text": self._search_text,
@@ -336,6 +368,7 @@ class ToolSuite:
             "outline": self._outline,
             "search": self._search,
             "replace_text": self._replace_text,
+            "apply_patch": self._apply_patch,
             "write_file": self._write_file,
             "read_output": self._read_output,
             "search_output": self._search_output,
@@ -345,10 +378,20 @@ class ToolSuite:
             "note": self._note,
             "read_note": self._read_note,
             "finish": self._finish,
+            "activate_runtime": self._activate_runtime,
         }
 
     def schemas(self) -> List[Dict[str, Any]]:
-        return json.loads(json.dumps(TOOL_SCHEMAS))
+        return json.loads(json.dumps([*TOOL_SCHEMAS, *([RUNTIME_UPDATE_SCHEMA] if self.runtime_updates else [])]))
+
+    def _activate_runtime(self, arguments):
+        if self.runtime_updates is None:
+            raise ToolArgumentError('runtime updates require --runtime-updates')
+        source = self.runtime.workspace._resolve(self._text(arguments, 'source_root', '.'))
+        reason = self._text(arguments, 'reason', '')
+        version = self.runtime_updates.request(str(source), reason)
+        return ToolOutcome(f'Runtime {version} validated and queued for the next user turn. '
+                           'This turn continues with its existing runtime.', 'success')
 
     def dispatch(self, name: str, arguments: Any, call_id: str) -> ToolOutcome:
         outcome = self._dispatch(name, arguments, call_id)
@@ -423,13 +466,15 @@ class ToolSuite:
         before = self.runtime.workspace.revision()
         self.runtime.begin_action(operation_id, name, {"call_id": call_id, "arguments": arguments})
         effect_class = (
-            "workspace_mutation" if name in {"replace_text", "write_file"}
-            else "session_mutation" if name in {"note", "finish", "reasoning_update"}
+            "workspace_mutation" if name in {"replace_text", "write_file", "apply_patch", "run_sequence", "style_apply"}
+            else "session_mutation" if name in {"note", "finish", "reasoning_update", "activate_runtime",
+                                                "extension_stage", "extension_rollback", "style_extract"}
             else "read_only"
         )
         try:
             workspace_tool = name in {
-                "glob_files", "list_files", "outline", "read_file", "replace_text", "search", "search_text", "write_file"
+                "glob_files", "list_files", "outline", "read_file", "replace_text", "search", "search_text", "write_file", "apply_patch",
+                "style_extract", "style_check", "style_apply"
             }
             if workspace_tool:
                 with ExecutionController.workspace_boundary(
@@ -533,24 +578,56 @@ class ToolSuite:
         file_glob = self._text(arguments, "file_glob", "*")
         files = self._files(path, file_glob, case_sensitive=True)
         root = self.runtime.workspace.root
-        needle = query.encode("utf-8")
+        matcher, context = self._search_options(arguments, query)
         matches: List[str] = []
+        count = 0
         binary = 0
         for relative in files:
             raw = (root / relative).read_bytes()
             if b"\x00" in raw:
                 binary += 1
                 continue
-            if needle not in raw:
-                continue
-            for number, line in enumerate(raw.decode("utf-8", errors="replace").splitlines(), 1):
-                if query in line:
-                    matches.append(f"{relative}:{number}: {line.rstrip()}")
-        scope = (f"exact text, case-sensitive; path {path!r}, file_glob {file_glob!r}; {len(files)} file(s) searched"
+            lines = raw.decode("utf-8", errors="replace").splitlines()
+            hits = {i for i, line in enumerate(lines) if matcher(line)}
+            count += len(hits)
+            selected = sorted({j for i in hits for j in range(max(0, i-context), min(len(lines), i+context+1))})
+            previous = -2
+            for i in selected:
+                if context and previous >= 0 and i > previous + 1:
+                    matches.append("--")
+                separator = ":" if i in hits else "-"
+                matches.append(f"{relative}:{i+1}{separator} {lines[i].rstrip()}")
+                previous = i
+        mode = "Python regex" if self._bool(arguments, "regex") else "exact text"
+        scope = (f"{mode}, case-sensitive; path {path!r}, file_glob {file_glob!r}; {len(files)} file(s) searched"
                  + (f", {binary} binary file(s) skipped" if binary else ""))
         if not matches:
             return ToolOutcome(f"0 match(es) for {query!r} ({scope}).", "success")
-        return ToolOutcome(f"{len(matches)} match(es) for {query!r} ({scope}):\n" + "\n".join(matches), "success")
+        return ToolOutcome(f"{count} match(es) for {query!r} ({scope}):\n" + "\n".join(matches), "success")
+
+    def _search_options(self, arguments, query):
+        context = self._int(arguments, "context_lines") or 0
+        if not 0 <= context <= 100:
+            raise ToolArgumentError("context_lines must be between 0 and 100")
+        if self._bool(arguments, "regex"):
+            try:
+                pattern = re.compile(query)
+            except re.error as exc:
+                raise ToolArgumentError(f"invalid regex: {exc}") from None
+            return lambda line: pattern.search(line) is not None, context
+        return lambda line: query in line, context
+
+    def _apply_patch(self, arguments):
+        from reticle.tools.patching import apply_unified_diff
+        path = self._text(arguments, "path", required=True)
+        patch = self._text(arguments, "patch", required=True)
+        observation = self.runtime.workspace.read(path)
+        try:
+            updated = apply_unified_diff(observation.content, patch)
+        except ValueError as exc:
+            raise ToolArgumentError(str(exc)) from None
+        self.runtime.workspace.write(path, updated, expected_content_hash=observation.content_hash)
+        return ToolOutcome(f"Applied patch to {path} ({len(updated)} bytes).", "success")
 
     def _file_glob(self, arguments: Dict[str, Any]) -> tuple[str, str]:
         """The file-name glob and a note when the pre-v2 name `pattern` was used for it."""
@@ -620,7 +697,11 @@ class ToolSuite:
         replace_all = self._bool(arguments, "replace_all")
         observation = self.runtime.workspace.read(path)
         text = observation.content.decode("utf-8")
-        count = text.count(old)
+        # Match only newline differences; indentation and all other characters remain literal.
+        # Match against the original text so untouched spans retain their exact bytes.
+        pattern = re.compile(r"\r?\n".join(re.escape(part) for part in old.replace("\r\n", "\n").split("\n")))
+        matches = list(pattern.finditer(text))
+        count = len(matches)
         if count == 0:
             return ToolOutcome(
                 f"ERROR: old_text was not found in {path}; no change made. Re-read the file and copy "
@@ -628,14 +709,28 @@ class ToolSuite:
                 "error",
             )
         if count > 1 and not replace_all:
-            lines = sorted({text.count("\n", 0, index) + 1 for index in _occurrences(text, old)})
+            lines = sorted({text.count("\n", 0, match.start()) + 1 for match in matches})
             return ToolOutcome(
                 f"ERROR: old_text occurs {count} times in {path} (at lines {lines[:20]}); no change made. "
                 "Include more surrounding text, or set replace_all.",
                 "error",
             )
-        first_index = text.index(old)
-        updated = text.replace(old, new) if replace_all else text.replace(old, new, 1)
+        first_index = matches[0].start()
+        pieces = []
+        cursor = 0
+        for match in matches if replace_all else matches[:1]:
+            # Prefer the matched region's convention, then the containing line, then
+            # the preceding line. A file with no line endings defaults to LF.
+            newline = re.search(r"\r?\n", match.group()) or re.search(r"\r?\n", text[match.start():])
+            if newline is None:
+                preceding = list(re.finditer(r"\r?\n", text[:match.start()]))
+                newline = preceding[-1] if preceding else None
+            ending = newline.group() if newline else "\n"
+            replacement = new.replace("\r\n", "\n").replace("\n", ending)
+            pieces.extend((text[cursor:match.start()], replacement))
+            cursor = match.end()
+        pieces.append(text[cursor:])
+        updated = "".join(pieces)
         self.runtime.workspace.write(path, updated.encode("utf-8"), expected_content_hash=observation.content_hash)
         updated_lines = updated.splitlines()
         start_line = updated.count("\n", 0, first_index) + 1
@@ -684,9 +779,11 @@ class ToolSuite:
         if not query:
             raise ToolArgumentError("query must not be empty")
         lines = self._resolve_output(handle).decode("utf-8", errors="replace").splitlines()
-        matches = [f"L{number}: {line}" for number, line in enumerate(lines, 1) if query in line]
-        body = "\n".join(matches) if matches else "(no matches)"
-        return ToolOutcome(f"{len(matches)} match(es) for {query!r} in {handle} ({len(lines)} lines):\n{body}", "success")
+        matcher, context = self._search_options(arguments, query)
+        hits = {i for i, line in enumerate(lines) if matcher(line)}
+        selected = sorted({j for i in hits for j in range(max(0, i-context), min(len(lines), i+context+1))})
+        body = "\n".join(f"L{i+1}{':' if i in hits else '-'} {lines[i]}" for i in selected) or "(no matches)"
+        return ToolOutcome(f"{len(hits)} match(es) for {query!r} in {handle} ({len(lines)} lines):\n{body}", "success")
 
     @staticmethod
     def _history_kinds(arguments: Dict[str, Any]) -> Optional[List[str]]:
@@ -743,13 +840,12 @@ class ToolSuite:
             message = (f"shell operator(s) {' '.join(operators)} are not supported: run executes a single command "
                        "without a shell (no chaining, pipes, or redirection)")
             if len(argv) > 3 and argv[0] == "cd" and argv[2] == "&&" and not any(t in SHELL_OPERATORS for t in argv[3:]):
-                message += (f"; commands already run in the workspace root, so 'cd {argv[1]} &&' is not needed. "
-                            f"Run instead: {json.dumps({'command': shlex.join(argv[3:])})}")
+                message += ("; choose a workspace directory with cwd instead of cd. "
+                            f"Run instead: {json.dumps({'command': shlex.join(argv[3:]), 'cwd': argv[1]})}")
             raise ToolArgumentError(message)
         if argv[0] == "cd":
             raise ToolArgumentError(
-                "cd is not available: commands already run in the workspace root; use workspace-relative paths "
-                "in the command itself"
+                "cd is not available: use the cwd argument to choose a workspace directory"
             )
         head = argv[0].lower()
         if head in PYTHON_ALIASES:
@@ -763,21 +859,37 @@ class ToolSuite:
         try:
             if unknown:
                 raise ToolArgumentError(f"unknown argument(s) {', '.join(unknown)}")
-            command = self._text(arguments, "command", required=True)
-            argv = self._argv(command)
+            cwd = self.runtime.workspace._resolve(self._text(arguments, "cwd", "."))
+            if not cwd.is_dir():
+                raise ToolArgumentError("cwd must be an existing workspace directory")
+            sequence = arguments.get("commands")
+            if sequence is not None:
+                if "command" in arguments:
+                    raise ToolArgumentError("supply command or commands, not both")
+                if not isinstance(sequence, list) or not 1 <= len(sequence) <= 50 or any(not isinstance(c, str) for c in sequence):
+                    raise ToolArgumentError("commands must contain 1 to 50 command strings")
+                for item in sequence:
+                    self._argv(item)
+            else:
+                command = self._text(arguments, "command", required=True)
+                argv = self._argv(command)
             requested_timeout = self._int(arguments, "timeout_seconds")
-        except ToolArgumentError as exc:
+        except (ToolArgumentError, ValueError) as exc:
             detail = str(exc)
             # A rejection that already shows the command to run instead needs no second example.
             guidance = "" if "Run instead:" in detail else argument_guidance("run")
             message = f"ERROR: {detail}; nothing was run.{guidance}"
             return self._journaled(call_id, "run", arguments, lambda: ToolOutcome(message, "rejected"))
+        if sequence is not None:
+            return self._journaled(call_id, "run_sequence", arguments,
+                                   lambda: self._run_commands(arguments, call_id))
         timeout = float(requested_timeout) if requested_timeout and requested_timeout > 0 else self.default_timeout_seconds
         timeout = min(timeout, self.max_timeout_seconds)
         record = ExecutionController(self.runtime, self.backend).execute(
             ExecutionRequest(
                 command=argv,
-                working_directory=self.runtime.workspace.root,
+                working_directory=cwd,
+                workspace_root=self.runtime.workspace.root,
                 timeout_seconds=timeout,
                 output_limit_bytes=self.output_limit_bytes,
                 environment=self.environment,
@@ -786,7 +898,8 @@ class ToolSuite:
             call_id=call_id,
         )
         execution, result = record.execution, record.tool_result
-        parts = [f"$ {command}", f"status: {execution.status}; exit code: {execution.exit_code}; {execution.duration_ms} ms"]
+        parts = [f"$ {command}", f"status: {execution.status}; exit code: {execution.exit_code}; {execution.duration_ms} ms",
+                 f"cwd: {cwd.relative_to(self.runtime.workspace.root).as_posix()}"]
         if execution.diagnostic:
             parts.append(f"diagnostic: {execution.diagnostic}")
         if execution.output_truncated:
@@ -795,6 +908,21 @@ class ToolSuite:
             if data:
                 parts.append(f"--- {label} ---\n{data.decode('utf-8', errors='replace')}")
         return ToolOutcome("\n".join(parts), result.status)
+
+    def _run_commands(self, arguments, call_id):
+        sequence = arguments['commands']
+        stop = self._bool({'stop': arguments.get('stop_on_error', True)}, 'stop')
+        outcomes = []
+        for index, command in enumerate(sequence, 1):
+            single = {k: v for k, v in {**arguments, 'command': command}.items()
+                      if k not in {'commands', 'stop_on_error'}}
+            outcome = self._run(single, f'{call_id}-{index}')
+            outcomes.append(outcome)
+            if outcome.status != 'success' and stop:
+                break
+        failed = next((o.status for o in outcomes if o.status != 'success'), 'success')
+        return ToolOutcome(f'Executed {len(outcomes)} of {len(sequence)} commands.\n' +
+                           '\n'.join(o.content for o in outcomes), failed)
 
     def _note(self, arguments: Dict[str, Any]) -> ToolOutcome:
         name = self._text(arguments, "name", required=True).strip()

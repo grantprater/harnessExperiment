@@ -1,0 +1,6 @@
+Replaced 1 occurrence(s) in service.py. Lines 3-7 now:
+    3| def list_records(records, owner, status=None, page=1, page_size=2):
+    4|     """Return {'items': list[Record], 'total': matching count} without changing input."""
+    5|     selected = matching(records, owner, status)
+    6|     items = page_slice(ordered(selected), page, page_size)
+    7|     return {"items": items, "total": len(selected)}

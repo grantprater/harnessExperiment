@@ -1,0 +1,84 @@
+{
+  "automatic_checks": 0,
+  "check_duration_s": 0.375,
+  "check_events": [
+    {
+      "arm": "manual",
+      "call_id": "call_3QidZiqJux1dF2knXRPQY6UH",
+      "duration_s": 0.375,
+      "evidence_handle": "out_6",
+      "full_bytes": 891,
+      "representation": "full",
+      "source_after": "361ed7e4b768a534788fd9a6b6b8da020ea416c7744695a1958ea18ec65d1a9a",
+      "source_before": "361ed7e4b768a534788fd9a6b6b8da020ea416c7744695a1958ea18ec65d1a9a",
+      "status": "passed",
+      "tests_run": 5,
+      "trigger": "manual_verify",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 572
+    }
+  ],
+  "check_full_bytes": 891,
+  "check_invocations": 1,
+  "check_visible_bytes": 572,
+  "context_policy": "manual",
+  "final_hashes": {
+    "engine.py": "5eb8d27c00a393f21ec1e86f05327556820bc1768d14e3d667ae6a2e03fd9253",
+    "models.py": "c5402ccc63054f64b048f6821bff0c518387258305a6bc0dfd5a7c2e929f684b",
+    "test_contract.py": "02acf737dcf299ab9cd4da4c43800374bc687a98a9c6608b9f9ed03b8a47259c"
+  },
+  "independent_evaluation_duration_s": 0.344,
+  "initial_hashes": {
+    "engine.py": "95f55f7cd8742d21278942747b6bcab26ae51dc600cf70c2ec8cd58733d89d55",
+    "models.py": "7c32a9a5c907f743d4d6e2e720ddee9fc28e0b2e700a3503a5dc6a66c66b0d31",
+    "test_contract.py": "02acf737dcf299ab9cd4da4c43800374bc687a98a9c6608b9f9ed03b8a47259c"
+  },
+  "manual_checks": 1,
+  "model": "gpt-6.1-sol",
+  "output_retrievals": 0,
+  "result": {
+    "calls_missing_usage": {
+      "completion_tokens": 0,
+      "cost": 7,
+      "prompt_tokens": 0
+    },
+    "error": null,
+    "final_workspace_revision": "sha256:0d3fb84e03657997e733db75076673019c3a3da7a733020951b2b6a9e154231d",
+    "finish_summary": "Implemented KVEntry expiration checks and all KVStore methods. TTL deadlines use explicit None checks; get removes expired entries, delete reports physical deletion, export excludes expired entries, and validated JSON imports merge string mappings without TTL. All 5 contract tests pass.",
+    "model_calls": 7,
+    "provider_attempts": 7,
+    "stop_reason": "finish_requested",
+    "task_id": "01-kv-manual-r2",
+    "task_resources": {
+      "adjusted": {},
+      "consumed": {
+        "active_seconds": 41.76599999999962,
+        "model_attempts": 7.0,
+        "model_responses": 7.0,
+        "tool_actions": 7.0
+      },
+      "limits": {
+        "active_seconds": 240.0,
+        "model_attempts": 12.0,
+        "model_responses": 12.0,
+        "tool_actions": 48.0
+      },
+      "pending": {},
+      "remaining": {
+        "active_seconds": 198.23400000000038,
+        "model_attempts": 5.0,
+        "model_responses": 5.0,
+        "tool_actions": 41.0
+      },
+      "reserved": {}
+    },
+    "tool_calls": 7,
+    "usage_reported": {
+      "completion_tokens": 788.0,
+      "cost": 0.0,
+      "prompt_tokens": 16534.0
+    }
+  },
+  "status": "complete",
+  "task": "kv"
+}

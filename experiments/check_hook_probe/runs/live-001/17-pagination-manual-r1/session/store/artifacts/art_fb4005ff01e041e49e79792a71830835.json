@@ -1,0 +1,14 @@
+{
+  "artifact_id": "art_fb4005ff01e041e49e79792a71830835",
+  "byte_length": 1446,
+  "content_hash": "06b39c4c10d71acc90b644f0d7cf2dd481119386efdbc37b95f62c10e3b09b05",
+  "created_at": "2026-10-03T22:20:24.368097Z",
+  "labels": [
+    "workspace-observation",
+    "test_contract.py"
+  ],
+  "media_type": "application/octet-stream",
+  "parent_artifact_ids": [],
+  "producer_event_id": "evt_76d300246e9c4cb6994a7e1afcde1db1",
+  "schema_version": 1
+}

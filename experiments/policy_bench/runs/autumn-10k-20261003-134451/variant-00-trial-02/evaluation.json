@@ -1,0 +1,7 @@
+{
+  "protocol_id": "cozy-autumn-visual-v1",
+  "source": "Assistant visual review via view_image; separate from generating harness and automated palette checks",
+  "accepted": false,
+  "notes": "Required final PNG pair is missing following model-service errors; no usable pair to accept.",
+  "model_task_completion_separate": true
+}

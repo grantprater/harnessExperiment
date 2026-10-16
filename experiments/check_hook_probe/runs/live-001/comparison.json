@@ -1,0 +1,267 @@
+{
+  "arms": [
+    {
+      "accepted": 6,
+      "arm": "manual",
+      "attempts": 6,
+      "runs": [
+        {
+          "accepted": true,
+          "automatic_checks": 0,
+          "check_duration_s": 0.375,
+          "manual_checks": 1,
+          "model_calls": 7,
+          "output_retrievals": 0,
+          "run": "01-kv-manual-r2",
+          "stop_reason": "finish_requested",
+          "task": "kv",
+          "tokens": 17322,
+          "tool_calls": 7
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 0,
+          "check_duration_s": 0.343,
+          "manual_checks": 1,
+          "model_calls": 6,
+          "output_retrievals": 0,
+          "run": "02-kv-manual-r1",
+          "stop_reason": "finish_requested",
+          "task": "kv",
+          "tokens": 15646,
+          "tool_calls": 7
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 0,
+          "check_duration_s": 0.125,
+          "manual_checks": 1,
+          "model_calls": 5,
+          "output_retrievals": 0,
+          "run": "08-billing-manual-r2",
+          "stop_reason": "finish_requested",
+          "task": "billing",
+          "tokens": 18125,
+          "tool_calls": 7
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 0,
+          "check_duration_s": 0.125,
+          "manual_checks": 1,
+          "model_calls": 5,
+          "output_retrievals": 0,
+          "run": "09-billing-manual-r1",
+          "stop_reason": "finish_requested",
+          "task": "billing",
+          "tokens": 18125,
+          "tool_calls": 7
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 0,
+          "check_duration_s": 0.109,
+          "manual_checks": 1,
+          "model_calls": 6,
+          "output_retrievals": 0,
+          "run": "15-pagination-manual-r2",
+          "stop_reason": "finish_requested",
+          "task": "pagination",
+          "tokens": 13270,
+          "tool_calls": 10
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 0,
+          "check_duration_s": 0.109,
+          "manual_checks": 1,
+          "model_calls": 6,
+          "output_retrievals": 0,
+          "run": "17-pagination-manual-r1",
+          "stop_reason": "finish_requested",
+          "task": "pagination",
+          "tokens": 13263,
+          "tool_calls": 9
+        }
+      ],
+      "tokens_per_accepted": 15958.5,
+      "total_tokens": 95751
+    },
+    {
+      "accepted": 6,
+      "arm": "automatic-full",
+      "attempts": 6,
+      "runs": [
+        {
+          "accepted": true,
+          "automatic_checks": 2,
+          "check_duration_s": 0.45399999999999996,
+          "manual_checks": 0,
+          "model_calls": 5,
+          "output_retrievals": 0,
+          "run": "00-kv-automatic-full-r1",
+          "stop_reason": "finish_requested",
+          "task": "kv",
+          "tokens": 13651,
+          "tool_calls": 6
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 1,
+          "check_duration_s": 0.171,
+          "manual_checks": 0,
+          "model_calls": 4,
+          "output_retrievals": 0,
+          "run": "04-billing-automatic-full-r1",
+          "stop_reason": "finish_requested",
+          "task": "billing",
+          "tokens": 13211,
+          "tool_calls": 6
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 2,
+          "check_duration_s": 0.484,
+          "manual_checks": 0,
+          "model_calls": 5,
+          "output_retrievals": 0,
+          "run": "05-kv-automatic-full-r2",
+          "stop_reason": "finish_requested",
+          "task": "kv",
+          "tokens": 13730,
+          "tool_calls": 6
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 1,
+          "check_duration_s": 0.125,
+          "manual_checks": 0,
+          "model_calls": 4,
+          "output_retrievals": 0,
+          "run": "06-billing-automatic-full-r2",
+          "stop_reason": "finish_requested",
+          "task": "billing",
+          "tokens": 13215,
+          "tool_calls": 6
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 2,
+          "check_duration_s": 0.218,
+          "manual_checks": 0,
+          "model_calls": 5,
+          "output_retrievals": 0,
+          "run": "10-pagination-automatic-full-r1",
+          "stop_reason": "finish_requested",
+          "task": "pagination",
+          "tokens": 11805,
+          "tool_calls": 8
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 2,
+          "check_duration_s": 0.218,
+          "manual_checks": 0,
+          "model_calls": 5,
+          "output_retrievals": 0,
+          "run": "14-pagination-automatic-full-r2",
+          "stop_reason": "finish_requested",
+          "task": "pagination",
+          "tokens": 11827,
+          "tool_calls": 7
+        }
+      ],
+      "tokens_per_accepted": 12906.5,
+      "total_tokens": 77439
+    },
+    {
+      "accepted": 6,
+      "arm": "automatic-selective",
+      "attempts": 6,
+      "runs": [
+        {
+          "accepted": true,
+          "automatic_checks": 2,
+          "check_duration_s": 0.235,
+          "manual_checks": 0,
+          "model_calls": 5,
+          "output_retrievals": 0,
+          "run": "03-pagination-automatic-selective-r2",
+          "stop_reason": "finish_requested",
+          "task": "pagination",
+          "tokens": 11314,
+          "tool_calls": 7
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 1,
+          "check_duration_s": 0.157,
+          "manual_checks": 0,
+          "model_calls": 4,
+          "output_retrievals": 0,
+          "run": "07-billing-automatic-selective-r1",
+          "stop_reason": "finish_requested",
+          "task": "billing",
+          "tokens": 13067,
+          "tool_calls": 6
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 2,
+          "check_duration_s": 0.469,
+          "manual_checks": 0,
+          "model_calls": 5,
+          "output_retrievals": 0,
+          "run": "11-kv-automatic-selective-r1",
+          "stop_reason": "finish_requested",
+          "task": "kv",
+          "tokens": 13454,
+          "tool_calls": 6
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 2,
+          "check_duration_s": 0.235,
+          "manual_checks": 0,
+          "model_calls": 5,
+          "output_retrievals": 0,
+          "run": "12-pagination-automatic-selective-r1",
+          "stop_reason": "finish_requested",
+          "task": "pagination",
+          "tokens": 11362,
+          "tool_calls": 8
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 1,
+          "check_duration_s": 0.125,
+          "manual_checks": 0,
+          "model_calls": 4,
+          "output_retrievals": 0,
+          "run": "13-billing-automatic-selective-r2",
+          "stop_reason": "finish_requested",
+          "task": "billing",
+          "tokens": 13067,
+          "tool_calls": 6
+        },
+        {
+          "accepted": true,
+          "automatic_checks": 2,
+          "check_duration_s": 0.484,
+          "manual_checks": 0,
+          "model_calls": 5,
+          "output_retrievals": 0,
+          "run": "16-kv-automatic-selective-r2",
+          "stop_reason": "finish_requested",
+          "task": "kv",
+          "tokens": 13291,
+          "tool_calls": 6
+        }
+      ],
+      "tokens_per_accepted": 12592.5,
+      "total_tokens": 75555
+    }
+  ],
+  "interpretation": "All attempted-run costs count; incomplete usage stays unknown. Two repeats per task cannot establish broad generality.",
+  "protocol_id": "post-edit-check-probe-v1"
+}

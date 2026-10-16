@@ -1,0 +1,11 @@
+{
+  "acceptance": "Both final assets satisfy the criteria; record reviewer source and notes, including reservations",
+  "criteria": [
+    "Reading asset has a recognizable steaming mug, open book, knitted blanket and autumn leaves",
+    "Lantern asset has a recognizable lit lantern, pumpkin, knitted scarf and autumn leaves",
+    "Both are usable illustrations without severe drawing defects or missing major subjects",
+    "Pair shares a warm autumn palette and a compatible outline/shape vocabulary; composition may differ"
+  ],
+  "protocol_id": "cozy-autumn-visual-v1",
+  "scope": "Independent visual review of both required final PNGs; measured file/palette checks remain separate"
+}

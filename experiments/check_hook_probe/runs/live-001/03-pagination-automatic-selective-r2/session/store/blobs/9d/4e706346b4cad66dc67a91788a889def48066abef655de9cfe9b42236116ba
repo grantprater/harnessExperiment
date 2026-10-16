@@ -1,0 +1,8 @@
+service.py (lines 1-7 of 7)
+    1| from query import matching, ordered, page_slice
+    2| 
+    3| def list_records(records, owner, status=None, page=1, page_size=2):
+    4|     """Return {'items': list[Record], 'total': matching count} without changing input."""
+    5|     selected = page_slice(ordered(records), page, page_size)
+    6|     selected = matching(selected, owner, status)
+    7|     return {"items": selected, "total": len(selected)}

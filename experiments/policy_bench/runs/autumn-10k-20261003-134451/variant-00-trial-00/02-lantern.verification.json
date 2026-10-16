@@ -1,0 +1,151 @@
+{
+  "artifact_checks": {
+    "dimensions": true,
+    "nonblank": true,
+    "opaque": true
+  },
+  "checks_passed": true,
+  "exists": true,
+  "sha256": "dce852e145b2fa04ef479cf4db5c8eb684b1a02029f406bec81bd275b76a2278",
+  "style": {
+    "advisory": [
+      {
+        "feature": "brightness",
+        "observed": 0.8187485638786764,
+        "reference_range": {
+          "max": 0.5130514705882353,
+          "min": 0.5130514705882353
+        }
+      }
+    ],
+    "complete": true,
+    "domain": "image",
+    "findings": [
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 37.7,
+        "observed": "#978a5e",
+        "weight": 0.00067138671875
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 50.28,
+        "observed": "#ae9c87",
+        "weight": 0.00054931640625
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 37.07,
+        "observed": "#9d562f",
+        "weight": 0.00048828125
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 37.85,
+        "observed": "#9c562f",
+        "weight": 0.00048828125
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 30.41,
+        "observed": "#a25a31",
+        "weight": 0.00030517578125
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 32.82,
+        "observed": "#93885c",
+        "weight": 0.00030517578125
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 35.26,
+        "observed": "#95895d",
+        "weight": 0.00030517578125
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 39.66,
+        "observed": "#ccbda7",
+        "weight": 0.000244140625
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 35.51,
+        "observed": "#9e5730",
+        "weight": 0.000244140625
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 31.97,
+        "observed": "#a15930",
+        "weight": 0.000244140625
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 34.48,
+        "observed": "#a87552",
+        "weight": 0.000244140625
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 40.14,
+        "observed": "#998b5f",
+        "weight": 0.000244140625
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 44.25,
+        "observed": "#9c8d61",
+        "weight": 0.000244140625
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 48.72,
+        "observed": "#d5c6b0",
+        "weight": 0.00018310546875
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 37.68,
+        "observed": "#907e6c",
+        "weight": 0.00018310546875
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 33.73,
+        "observed": "#65633e",
+        "weight": 0.00018310546875
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 41.3,
+        "observed": "#625b3d",
+        "weight": 0.00018310546875
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 33.54,
+        "observed": "#666140",
+        "weight": 0.00018310546875
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 39.51,
+        "observed": "#625d3e",
+        "weight": 0.00018310546875
+      },
+      {
+        "feature": "palette",
+        "nearest_distance_rgb": 42.91,
+        "observed": "#605b3c",
+        "weight": 0.00018310546875
+      }
+    ],
+    "measured_checks_passed": true,
+    "mismatched_color_count": 874,
+    "outside_palette_fraction": 0.0668,
+    "semantic_style_assessed": false
+  },
+  "target_unchanged": true
+}

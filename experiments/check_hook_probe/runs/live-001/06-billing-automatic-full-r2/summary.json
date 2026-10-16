@@ -1,0 +1,86 @@
+{
+  "automatic_checks": 1,
+  "check_duration_s": 0.125,
+  "check_events": [
+    {
+      "arm": "automatic-full",
+      "call_id": "call_wfRap5nQMtNZDazZu8ZI1QhW",
+      "duration_s": 0.125,
+      "evidence_handle": "out_6",
+      "full_bytes": 1200,
+      "representation": "full",
+      "source_after": "869f9a13f5b53614fc7fb1a40112ef583ce9901e61641db1184a16e37182eb75",
+      "source_before": "869f9a13f5b53614fc7fb1a40112ef583ce9901e61641db1184a16e37182eb75",
+      "status": "passed",
+      "tests_run": 6,
+      "trigger": "post_edit",
+      "version": "post-edit-check-v1",
+      "visible_bytes": 879
+    }
+  ],
+  "check_full_bytes": 1200,
+  "check_invocations": 1,
+  "check_visible_bytes": 879,
+  "context_policy": "automatic-full",
+  "final_hashes": {
+    "checkout.py": "80e6e0f5fa2cef4821e2d6a77eae53193f2fb3dd32b0df8f75708c52ff05bf5e",
+    "models.py": "625c69392634a6cbae8fb46f8b91162db66b5d8b7c7e8bd6971c2bce1ce48815",
+    "pricing.py": "9969d1397620c6f8a608d0ee8d8a862c3a062f8f088b0f5780bdb18f7c432bc2",
+    "test_contract.py": "9a3c57a63b9c2d09ab1eda02f211df8d50e7cc908d8ba4277f29f332205495b4"
+  },
+  "independent_evaluation_duration_s": 0.141,
+  "initial_hashes": {
+    "checkout.py": "80e6e0f5fa2cef4821e2d6a77eae53193f2fb3dd32b0df8f75708c52ff05bf5e",
+    "models.py": "625c69392634a6cbae8fb46f8b91162db66b5d8b7c7e8bd6971c2bce1ce48815",
+    "pricing.py": "0a48c25d8d479d437b5167f292b95852cbfd38c7d46da5d526585d8d2051d321",
+    "test_contract.py": "9a3c57a63b9c2d09ab1eda02f211df8d50e7cc908d8ba4277f29f332205495b4"
+  },
+  "manual_checks": 0,
+  "model": "gpt-6.1-sol",
+  "output_retrievals": 0,
+  "result": {
+    "calls_missing_usage": {
+      "completion_tokens": 0,
+      "cost": 4,
+      "prompt_tokens": 0
+    },
+    "error": null,
+    "final_workspace_revision": "sha256:c673b499f4f65657071d7294bf2780975e2f1d5e6e48fc18bc7f8eb13e93aee2",
+    "finish_summary": "Fixed pricing.py to calculate sales tax using the post-discount subtotal rather than the original subtotal. Existing discount, shipping, and checkout logic is unchanged. All 6 contract tests pass.",
+    "model_calls": 4,
+    "provider_attempts": 4,
+    "stop_reason": "finish_requested",
+    "task_id": "06-billing-automatic-full-r2",
+    "task_resources": {
+      "adjusted": {},
+      "consumed": {
+        "active_seconds": 22.0470000000023,
+        "model_attempts": 4.0,
+        "model_responses": 4.0,
+        "tool_actions": 6.0
+      },
+      "limits": {
+        "active_seconds": 240.0,
+        "model_attempts": 12.0,
+        "model_responses": 12.0,
+        "tool_actions": 48.0
+      },
+      "pending": {},
+      "remaining": {
+        "active_seconds": 217.9529999999977,
+        "model_attempts": 8.0,
+        "model_responses": 8.0,
+        "tool_actions": 42.0
+      },
+      "reserved": {}
+    },
+    "tool_calls": 6,
+    "usage_reported": {
+      "completion_tokens": 202.0,
+      "cost": 0.0,
+      "prompt_tokens": 13013.0
+    }
+  },
+  "status": "complete",
+  "task": "billing"
+}

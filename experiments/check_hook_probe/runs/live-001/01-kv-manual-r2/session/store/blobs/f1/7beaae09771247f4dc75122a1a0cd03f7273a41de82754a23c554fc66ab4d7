@@ -1,0 +1,14 @@
+{
+  "tests_run": 5,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "unexpected_successes": 0,
+  "successful": true,
+  "output": "test_basic_set_and_get (test_contract.TestKVStore.test_basic_set_and_get) ... ok\ntest_delete_key (test_contract.TestKVStore.test_delete_key) ... ok\ntest_json_export_and_import (test_contract.TestKVStore.test_json_export_and_import) ... ok\ntest_models_is_expired_method (test_contract.TestKVStore.test_models_is_expired_method) ... ok\ntest_ttl_expiration (test_contract.TestKVStore.test_ttl_expiration) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.231s\n\nOK\n",
+  "diagnostics": [],
+  "status": "passed",
+  "duration_s": 0.375,
+  "source_before": "361ed7e4b768a534788fd9a6b6b8da020ea416c7744695a1958ea18ec65d1a9a",
+  "source_after": "361ed7e4b768a534788fd9a6b6b8da020ea416c7744695a1958ea18ec65d1a9a"
+}

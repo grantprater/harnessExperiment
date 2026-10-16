@@ -59,7 +59,7 @@ WHY_NO_PASS = ("`{failing}` failed before your first source edit, but no run sin
                "(the same command or script) and passed")
 REASONS = {"no_failing_run_before_edit": WHY_NO_FAILURE, "no_run_after_edit": WHY_NO_RERUN,
            "no_matching_pass_after_edit": WHY_NO_PASS}
-EDIT_CAPABLE_TOOLS = frozenset({"replace_text", "write_file", "run"})
+EDIT_CAPABLE_TOOLS = frozenset({"replace_text", "write_file", "apply_patch", "run"})
 UNFINISHED_RUN_STATUSES = frozenset({"timeout", "rejected", "cancelled"})
 FAILURE_MARKERS = ("Traceback (most recent call last)", "AssertionError")
 STATUS_LINE = re.compile(r"status: (\S+); exit code: (\S+);")

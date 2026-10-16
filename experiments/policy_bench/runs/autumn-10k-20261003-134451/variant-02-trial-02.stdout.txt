@@ -1,0 +1,21 @@
+=== 01-reading ===
+Reticle | chatgpt-subscription | gpt-6.1-sol | C:\Users\grant\harnessExperiment\experiments\policy_bench\runs\autumn-10k-20261003-134451\variant-02-trial-02\workspace
+Session: C:\Users\grant\harnessExperiment\experiments\policy_bench\runs\autumn-10k-20261003-134451\variant-02-trial-02\workspace\.reticle\session
+Execution: trusted-local. /exit quits; /help lists commands.
+[step 1] Thinking...
+
+Stopped: model_error (Subscription stream failed: error)
+Turn: 1 model calls, 0 tool calls, 3.0s | tokens: input 0, output 0, cached input unreported
+Session: tokens: input 0, output 0, cached input unreported
+Independent measured checks passed: False
+=== 02-lantern ===
+Reticle | chatgpt-subscription | gpt-6.1-sol | C:\Users\grant\harnessExperiment\experiments\policy_bench\runs\autumn-10k-20261003-134451\variant-02-trial-02\workspace
+Session: C:\Users\grant\harnessExperiment\experiments\policy_bench\runs\autumn-10k-20261003-134451\variant-02-trial-02\workspace\.reticle\session
+Execution: trusted-local. /exit quits; /help lists commands.
+[step 1] Thinking...
+
+Stopped: model_error (Subscription stream failed: error)
+Turn: 1 model calls, 0 tool calls, 3.3s | tokens: input 0, output 0, cached input unreported
+Session: tokens: input 0, output 0, cached input unreported
+Independent measured checks passed: False
+Pilot complete: C:\Users\grant\harnessExperiment\experiments\policy_bench\runs\autumn-10k-20261003-134451\variant-02-trial-02

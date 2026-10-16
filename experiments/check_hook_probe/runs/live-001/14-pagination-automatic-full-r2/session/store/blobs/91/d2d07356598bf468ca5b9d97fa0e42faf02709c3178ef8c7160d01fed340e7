@@ -1,0 +1,15 @@
+Overwrote service.py (366 bytes, 7 lines).
+Check passed; tests=8; source=953fbd7a964f; full evidence=out_9.
+test_empty_page (test_contract.Contract.test_empty_page) ... ok
+test_filter_then_page (test_contract.Contract.test_filter_then_page) ... ok
+test_invalid (test_contract.Contract.test_invalid) ... ok
+test_missing_owner (test_contract.Contract.test_missing_owner) ... ok
+test_no_status (test_contract.Contract.test_no_status) ... ok
+test_preserves_input (test_contract.Contract.test_preserves_input) ... ok
+test_second_page (test_contract.Contract.test_second_page) ... ok
+test_total (test_contract.Contract.test_total) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.000s
+
+OK

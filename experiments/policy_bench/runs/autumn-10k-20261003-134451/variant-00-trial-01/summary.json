@@ -1,0 +1,384 @@
+{
+  "all_measured_checks_passed": true,
+  "automated_scope": "Palette and artifact validity; theme/composition/style require visual review",
+  "condition": "two-turn-cozy-autumn-with-pinned-style-tools",
+  "context_policy": "minimal",
+  "finished_at": "2026-10-03T19:53:35.192383+00:00",
+  "max_context_bytes": 32000,
+  "model": "gpt-6.1-sol",
+  "profile_id": "d2f4543198b745a5c8758b22758d78a9765f8f6aa99c58160c2b99e3c87e4f56",
+  "started_at": "2026-10-03T19:44:51.724635+00:00",
+  "status": "complete",
+  "tasks": [
+    {
+      "duration_seconds": 250.75,
+      "exit_code": 1,
+      "id": "01-reading",
+      "subject": "a steaming ceramic mug beside an open book, a knitted blanket and fallen autumn leaves",
+      "usage": {
+        "model_calls": 20,
+        "provider_attempts": 20,
+        "resource_limits": {
+          "model_attempts": 20.0,
+          "model_responses": 20.0,
+          "tool_actions": 200.0
+        },
+        "stop_reason": "model_call_limit",
+        "task_id": "c8182d878e1741e888f1834e2840cb9b",
+        "tool_calls": 39,
+        "totals": {
+          "cached_input": {
+            "missing_calls": 0,
+            "reported": 3584
+          },
+          "calls": 20,
+          "completion_tokens": {
+            "missing_calls": 0,
+            "reported": 5039
+          },
+          "prompt_tokens": {
+            "missing_calls": 0,
+            "reported": 96439
+          }
+        }
+      },
+      "verification": {
+        "artifact_checks": {
+          "dimensions": true,
+          "nonblank": true,
+          "opaque": true
+        },
+        "checks_passed": true,
+        "exists": true,
+        "sha256": "a79444b0368d2bc3aac3e030358dcdbc2fba0b812661ecf60cc9d540bec1e746",
+        "style": {
+          "advisory": [
+            {
+              "feature": "brightness",
+              "observed": 0.8176027784160539,
+              "reference_range": {
+                "max": 0.5130514705882353,
+                "min": 0.5130514705882353
+              }
+            }
+          ],
+          "complete": true,
+          "domain": "image",
+          "findings": [
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 42.77,
+              "observed": "#e8cfac",
+              "weight": 0.00115966796875
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 39.82,
+              "observed": "#e9d1ae",
+              "weight": 0.000732421875
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 31.54,
+              "observed": "#ebd5b5",
+              "weight": 0.0006103515625
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 41.44,
+              "observed": "#e8d0ad",
+              "weight": 0.0006103515625
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 39.03,
+              "observed": "#e9d1af",
+              "weight": 0.0006103515625
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 44.25,
+              "observed": "#9c8d61",
+              "weight": 0.00054931640625
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 46.51,
+              "observed": "#e7cda9",
+              "weight": 0.00048828125
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 32.34,
+              "observed": "#ebd5b4",
+              "weight": 0.00048828125
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 44.1,
+              "observed": "#e8ceab",
+              "weight": 0.00042724609375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 44.9,
+              "observed": "#e6cca7",
+              "weight": 0.00042724609375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 45.18,
+              "observed": "#e7ceaa",
+              "weight": 0.00042724609375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 34.58,
+              "observed": "#584c34",
+              "weight": 0.0003662109375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 37.7,
+              "observed": "#e9d2b0",
+              "weight": 0.0003662109375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 35.26,
+              "observed": "#95895d",
+              "weight": 0.0003662109375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 40.14,
+              "observed": "#998b5f",
+              "weight": 0.0003662109375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 37.7,
+              "observed": "#978a5e",
+              "weight": 0.0003662109375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 40.36,
+              "observed": "#e9d0ae",
+              "weight": 0.0003662109375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 33.67,
+              "observed": "#ebd4b3",
+              "weight": 0.0003662109375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 32.88,
+              "observed": "#ebd4b4",
+              "weight": 0.0003662109375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 49.61,
+              "observed": "#a09063",
+              "weight": 0.00030517578125
+            }
+          ],
+          "measured_checks_passed": true,
+          "mismatched_color_count": 914,
+          "outside_palette_fraction": 0.0775,
+          "semantic_style_assessed": false
+        },
+        "target_unchanged": true
+      }
+    },
+    {
+      "duration_seconds": 272.67,
+      "exit_code": 1,
+      "id": "02-lantern",
+      "subject": "a glowing lantern beside a pumpkin, a folded knitted scarf and fallen autumn leaves",
+      "usage": {
+        "model_calls": 20,
+        "provider_attempts": 20,
+        "resource_limits": {
+          "model_attempts": 20.0,
+          "model_responses": 20.0,
+          "tool_actions": 200.0
+        },
+        "stop_reason": "model_call_limit",
+        "task_id": "395b7c50799b4516913869be5b8f8941",
+        "tool_calls": 69,
+        "totals": {
+          "cached_input": {
+            "missing_calls": 0,
+            "reported": 10752
+          },
+          "calls": 20,
+          "completion_tokens": {
+            "missing_calls": 0,
+            "reported": 5023
+          },
+          "prompt_tokens": {
+            "missing_calls": 0,
+            "reported": 110523
+          }
+        }
+      },
+      "verification": {
+        "artifact_checks": {
+          "dimensions": true,
+          "nonblank": true,
+          "opaque": true
+        },
+        "checks_passed": true,
+        "exists": true,
+        "sha256": "709c10159eaeb38320a0cbab71c65a5b8d65cb0aca1abb35ec6fb32a507edc47",
+        "style": {
+          "advisory": [
+            {
+              "feature": "brightness",
+              "observed": 0.8010165345435049,
+              "reference_range": {
+                "max": 0.5130514705882353,
+                "min": 0.5130514705882353
+              }
+            }
+          ],
+          "complete": true,
+          "domain": "image",
+          "findings": [
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 31.84,
+              "observed": "#8d6241",
+              "weight": 0.0009765625
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 34.13,
+              "observed": "#98532e",
+              "weight": 0.00079345703125
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 36.48,
+              "observed": "#9a542f",
+              "weight": 0.00067138671875
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 34.93,
+              "observed": "#99532e",
+              "weight": 0.0006103515625
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 50.73,
+              "observed": "#a8855f",
+              "weight": 0.00054931640625
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 32.76,
+              "observed": "#97522e",
+              "weight": 0.00048828125
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 49.61,
+              "observed": "#a09063",
+              "weight": 0.00048828125
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 31.14,
+              "observed": "#92875b",
+              "weight": 0.00042724609375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 38.69,
+              "observed": "#5a4f36",
+              "weight": 0.00042724609375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 37.07,
+              "observed": "#9d562f",
+              "weight": 0.0003662109375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 34.13,
+              "observed": "#9f5830",
+              "weight": 0.0003662109375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 35.69,
+              "observed": "#99542f",
+              "weight": 0.0003662109375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 36.51,
+              "observed": "#955931",
+              "weight": 0.0003662109375
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 36.4,
+              "observed": "#c4b4a0",
+              "weight": 0.00030517578125
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 31.38,
+              "observed": "#96512e",
+              "weight": 0.00030517578125
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 37.85,
+              "observed": "#9c562f",
+              "weight": 0.00030517578125
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 37.85,
+              "observed": "#9b552f",
+              "weight": 0.00030517578125
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 31.97,
+              "observed": "#a15930",
+              "weight": 0.00030517578125
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 37.23,
+              "observed": "#955a31",
+              "weight": 0.00030517578125
+            },
+            {
+              "feature": "palette",
+              "nearest_distance_rgb": 47.94,
+              "observed": "#9f8f62",
+              "weight": 0.00030517578125
+            }
+          ],
+          "measured_checks_passed": true,
+          "mismatched_color_count": 786,
+          "outside_palette_fraction": 0.0666,
+          "semantic_style_assessed": false
+        },
+        "target_unchanged": true
+      }
+    }
+  ],
+  "token_target_per_task": 5000,
+  "token_target_total": 10000
+}

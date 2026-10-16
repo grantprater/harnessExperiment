@@ -1,0 +1,20 @@
+{
+  "name": "ext_blender_runner",
+  "description": "Run a workspace Python script in headless Blender 5.0 with factory startup and visible Python failure exit codes. Reusable furniture helpers are in tools/furniture_helpers.py. dry_run previews command construction without Blender.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "script": {"type": "string"},
+      "args": {"type": "array", "items": {"type": "string"}},
+      "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 540},
+      "dry_run": {"type": "boolean"}
+    },
+    "required": ["script"],
+    "additionalProperties": false
+  },
+  "entrypoint": "tool.py:execute",
+  "timeout_seconds": 600,
+  "smoke_tests": [
+    {"arguments": {"script": "tools/example.py", "dry_run": true, "args": ["chair"]}, "expected": {"flags": ["--background", "--factory-startup", "--python-exit-code", "1", "--python"], "script": "tools/example.py", "args": ["chair"]}}
+  ]
+}

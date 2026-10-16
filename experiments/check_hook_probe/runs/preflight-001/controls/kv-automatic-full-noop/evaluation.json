@@ -1,0 +1,38 @@
+{
+  "accepted": false,
+  "protocol_id": "post-edit-check-probe-v1",
+  "result": {
+    "diagnostics": [
+      {
+        "test": "test_basic_set_and_get (test_contract.TestKVStore.test_basic_set_and_get)",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\test_contract.py\", line 20, in test_basic_set_and_get\n    self.store.set(\"user:101\", \"Alice\")\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\engine.py\", line 17, in set\n    raise NotImplementedError\nNotImplementedError\n"
+      },
+      {
+        "test": "test_delete_key (test_contract.TestKVStore.test_delete_key)",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\test_contract.py\", line 25, in test_delete_key\n    self.store.set(\"temp\", \"value\")\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\engine.py\", line 17, in set\n    raise NotImplementedError\nNotImplementedError\n"
+      },
+      {
+        "test": "test_json_export_and_import (test_contract.TestKVStore.test_json_export_and_import)",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\test_contract.py\", line 49, in test_json_export_and_import\n    self.store.set(\"k1\", \"v1\")\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\engine.py\", line 17, in set\n    raise NotImplementedError\nNotImplementedError\n"
+      },
+      {
+        "test": "test_models_is_expired_method (test_contract.TestKVStore.test_models_is_expired_method)",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\test_contract.py\", line 44, in test_models_is_expired_method\n    self.assertFalse(active_entry.is_expired(now=now))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\models.py\", line 14, in is_expired\n    raise NotImplementedError\nNotImplementedError\n"
+      },
+      {
+        "test": "test_ttl_expiration (test_contract.TestKVStore.test_ttl_expiration)",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\test_contract.py\", line 32, in test_ttl_expiration\n    self.store.set(\"ephemeral\", \"flash_data\", ttl_seconds=0.1)\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\engine.py\", line 17, in set\n    raise NotImplementedError\nNotImplementedError\n"
+      }
+    ],
+    "duration_s": 0.11,
+    "errors": 5,
+    "failures": 0,
+    "output": "test_basic_set_and_get (test_contract.TestKVStore.test_basic_set_and_get) ... ERROR\ntest_delete_key (test_contract.TestKVStore.test_delete_key) ... ERROR\ntest_json_export_and_import (test_contract.TestKVStore.test_json_export_and_import) ... ERROR\ntest_models_is_expired_method (test_contract.TestKVStore.test_models_is_expired_method) ... ERROR\ntest_ttl_expiration (test_contract.TestKVStore.test_ttl_expiration) ... ERROR\n\n======================================================================\nERROR: test_basic_set_and_get (test_contract.TestKVStore.test_basic_set_and_get)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\test_contract.py\", line 20, in test_basic_set_and_get\n    self.store.set(\"user:101\", \"Alice\")\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\engine.py\", line 17, in set\n    raise NotImplementedError\nNotImplementedError\n\n======================================================================\nERROR: test_delete_key (test_contract.TestKVStore.test_delete_key)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\test_contract.py\", line 25, in test_delete_key\n    self.store.set(\"temp\", \"value\")\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\engine.py\", line 17, in set\n    raise NotImplementedError\nNotImplementedError\n\n======================================================================\nERROR: test_json_export_and_import (test_contract.TestKVStore.test_json_export_and_import)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\test_contract.py\", line 49, in test_json_export_and_import\n    self.store.set(\"k1\", \"v1\")\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\engine.py\", line 17, in set\n    raise NotImplementedError\nNotImplementedError\n\n======================================================================\nERROR: test_models_is_expired_method (test_contract.TestKVStore.test_models_is_expired_method)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\test_contract.py\", line 44, in test_models_is_expired_method\n    self.assertFalse(active_entry.is_expired(now=now))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\models.py\", line 14, in is_expired\n    raise NotImplementedError\nNotImplementedError\n\n======================================================================\nERROR: test_ttl_expiration (test_contract.TestKVStore.test_ttl_expiration)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\test_contract.py\", line 32, in test_ttl_expiration\n    self.store.set(\"ephemeral\", \"flash_data\", ttl_seconds=0.1)\n  File \"C:\\Users\\grant\\AppData\\Local\\Temp\\check-probe-eval-019_twj1\\engine.py\", line 17, in set\n    raise NotImplementedError\nNotImplementedError\n\n----------------------------------------------------------------------\nRan 5 tests in 0.002s\n\nFAILED (errors=5)\n",
+    "skipped": 0,
+    "status": "failed",
+    "successful": false,
+    "tests_run": 5,
+    "unexpected_successes": 0
+  },
+  "source": "Fresh-snapshot original public test suite"
+}

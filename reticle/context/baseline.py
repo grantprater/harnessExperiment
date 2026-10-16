@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 import json
+import re
 from typing import Any, Dict, Iterable, List, Optional, Protocol
 
 from reticle._schema import SCHEMA_VERSION
@@ -29,7 +30,8 @@ def _kb(byte_length: int) -> str:
     return f"{byte_length / 1000:.1f} KB"
 
 
-def render_output_view(text: str, handle: str, budget: int, tail_heavy: bool) -> tuple[str, Dict[str, Any]]:
+def render_output_view(text: str, handle: str, budget: int, tail_heavy: bool,
+                       relevant: bool = True) -> tuple[str, Dict[str, Any]]:
     """Render a bounded, line-based view of a tool output and say exactly how to get the rest.
 
     Whole lines are shown from the start, or mostly from the end for command output
@@ -40,6 +42,29 @@ def render_output_view(text: str, handle: str, budget: int, tail_heavy: bool) ->
     if len(raw) <= budget:
         return text, {"rendering": "full", "source_bytes": len(raw)}
     lines = text.splitlines(keepends=True)
+    if tail_heavy and relevant and budget >= 1024:
+        # Preserve diagnostics buried between a command's header and final summary.
+        # These are exact, numbered excerpts, never a generated summary.
+        diagnostic = re.compile(r'\b(?:error|failed|failure|traceback|exception|fatal)\b', re.IGNORECASE)
+        hits = [i for i, line in enumerate(lines) if diagnostic.search(line)]
+        excerpt_budget = budget // 3
+        excerpts = []
+        selected = []
+        used = len('\nDiagnostic excerpts (original output lines):\n'.encode())
+        candidates = sorted({j for i in hits[:20] for j in range(max(0, i-2), min(len(lines), i+4))})
+        for i in candidates:
+            line = f'L{i+1}: {lines[i].rstrip(chr(10))}\n'
+            size = len(line.encode('utf-8'))
+            if used + size > excerpt_budget:
+                continue
+            excerpts.append(line)
+            selected.append(i+1)
+            used += size
+        if excerpts:
+            view, rendering = render_output_view(text, handle, budget-used, tail_heavy, relevant=False)
+            return view + '\nDiagnostic excerpts (original output lines):\n' + ''.join(excerpts), {
+                **rendering, 'diagnostic_lines': selected,
+            }
     total = len(lines)
     content_budget = max(0, budget - VIEW_NOTE_RESERVE_BYTES)
     head_budget = content_budget // 4 if tail_heavy else content_budget
@@ -836,6 +861,9 @@ def render_resource_status(status: Dict[str, Any], labeled_limits: bool = False)
                 text += (f", after charging {unknown} attempt(s) with no reported cost at their reservation "
                          "(actual billing unknown)")
             parts.append(text)
+    if status.get('model_token_usage'):
+        from reticle.runtime.telemetry import render_model_token_usage
+        parts.append(render_model_token_usage(status['model_token_usage']))
     if not parts:
         return None
     reservation = status.get("attempt_cost_reservation_usd")
