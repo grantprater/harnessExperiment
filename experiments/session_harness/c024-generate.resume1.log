@@ -1,0 +1,45 @@
+sqlparse-mut-064-nm: already in the manifest (available); kept
+sqlparse-mut-015: already in the manifest (available); kept
+sqlparse-mut-016-nm attempt 1: $0.536, pre-edit {'collected': 3, 'passed': 0, 'failed': 3, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-016-nm: available after 1 attempt(s), $0.536
+sqlparse-mut-050 attempt 1: $0.396, pre-edit {'collected': 3, 'passed': 0, 'failed': 3, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-050: available after 1 attempt(s), $0.396
+sqlparse-mut-012 attempt 1: $0.267, pre-edit {'collected': 4, 'passed': 1, 'failed': 3, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-012: available after 1 attempt(s), $0.267
+sqlparse-mut-052-nm attempt 1: $0.641, pre-edit {'collected': 2, 'passed': 2, 'failed': 0, 'skipped': 0, 'collection_error': False, 'timed_out': False}, no_failure
+sqlparse-mut-052-nm attempt 2: $0.640, pre-edit {'collected': 2, 'passed': 2, 'failed': 0, 'skipped': 0, 'collection_error': False, 'timed_out': False}, no_failure
+sqlparse-mut-052-nm attempt 3: $0.601, pre-edit None, no_structured_output
+sqlparse-mut-052-nm: unavailable after 3 attempt(s), $1.883
+sqlparse-mut-041 attempt 1: $0.567, pre-edit {'collected': 2, 'passed': 1, 'failed': 1, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-041: available after 1 attempt(s), $0.567
+sqlparse-mut-045-nm attempt 1: $0.573, pre-edit {'collected': 3, 'passed': 0, 'failed': 3, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-045-nm: available after 1 attempt(s), $0.573
+sqlparse-mut-059 attempt 1: $0.133, pre-edit {'collected': 3, 'passed': 0, 'failed': 3, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-059: available after 1 attempt(s), $0.133
+sqlparse-mut-020 attempt 1: $0.640, pre-edit None, no_structured_output
+sqlparse-mut-020 attempt 2: $0.575, pre-edit {'collected': 3, 'passed': 2, 'failed': 1, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-020: available after 2 attempt(s), $1.215
+sqlparse-mut-062-nm attempt 1: $0.908, pre-edit {'collected': 2, 'passed': 2, 'failed': 0, 'skipped': 0, 'collection_error': False, 'timed_out': False}, no_failure
+sqlparse-mut-062-nm attempt 2: $0.635, pre-edit {'collected': 2, 'passed': 1, 'failed': 1, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-062-nm: available after 2 attempt(s), $1.544
+sqlparse-mut-005 attempt 1: $0.497, pre-edit None, no_structured_output
+sqlparse-mut-005 attempt 2: $0.645, pre-edit {'collected': 4, 'passed': 4, 'failed': 0, 'skipped': 0, 'collection_error': False, 'timed_out': False}, no_failure
+sqlparse-mut-005 attempt 3: $0.508, pre-edit None, no_structured_output
+sqlparse-mut-005: unavailable after 3 attempt(s), $1.650
+sqlparse-mut-154 attempt 1: $0.367, pre-edit {'collected': 3, 'passed': 0, 'failed': 3, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-154: available after 1 attempt(s), $0.367
+sqlparse-mut-310-nm attempt 1: $0.537, pre-edit {'collected': 3, 'passed': 0, 'failed': 3, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-310-nm: available after 1 attempt(s), $0.537
+sqlparse-mut-172-nm attempt 1: $0.591, pre-edit {'collected': 3, 'passed': 0, 'failed': 3, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-172-nm: available after 1 attempt(s), $0.591
+sqlparse-mut-186-nm attempt 1: $0.373, pre-edit {'collected': 3, 'passed': 0, 'failed': 3, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-186-nm: available after 1 attempt(s), $0.373
+sqlparse-mut-111 attempt 1: $0.059, pre-edit {'collected': 3, 'passed': 1, 'failed': 2, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-111: available after 1 attempt(s), $0.059
+sqlparse-mut-143-nm attempt 1: $0.629, pre-edit {'collected': 2, 'passed': 0, 'failed': 2, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-143-nm: available after 1 attempt(s), $0.629
+sqlparse-mut-151 attempt 1: $0.429, pre-edit {'collected': 2, 'passed': 1, 'failed': 1, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-151: available after 1 attempt(s), $0.429
+sqlparse-mut-125-nm attempt 1: $0.631, pre-edit None, no_structured_output
+sqlparse-mut-125-nm attempt 2: $0.356, pre-edit {'collected': 2, 'passed': 0, 'failed': 2, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-125-nm: available after 2 attempt(s), $0.987

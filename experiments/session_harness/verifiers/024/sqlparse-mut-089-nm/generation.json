@@ -1,0 +1,446 @@
+{
+  "task_id": "sqlparse-mut-089-nm",
+  "status": "available",
+  "attempts": 3,
+  "cost_usd": 1.842975,
+  "statement_sha256": "956aa269b4478b68b9b80e4704359ea91c5ff9463a1e1653bc8235e0f1e7e9bf",
+  "generated_at": "2026-10-02T03:14:07.587812+00:00",
+  "file": "sqlparse-mut-089-nm/test_reticle_repro.py",
+  "sha256_lf": "2267c279b194cd15354ba6c9265276468439e0cc14b2543149afd551139dd350",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 0,
+    "failed": 3,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 1,
+      "seconds": 315.9,
+      "cost_usd": 0.7278865999999999,
+      "num_turns": 20,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\filters\\others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\filters\\reindent.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "preserves whitespace|identifier list with functions",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\lexer.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\keywords.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Whitespace",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\CHANGELOG",
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\AGENTS.md"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\filters\\tokens.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\engine\\statement_splitter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\engine\\filter_stack.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\__init__.py"
+          }
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": null,
+      "rationale": null,
+      "pre_edit": null,
+      "rejected_because": "no_structured_output"
+    },
+    {
+      "attempt": 2,
+      "cli_exit_code": 124,
+      "seconds": 900.4,
+      "cost_usd": 0.6,
+      "num_turns": null,
+      "result_subtype": null,
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": []
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\filters\\others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\filters\\reindent.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\filters\\__init__.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\lexer.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\engine\\statement_splitter.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "strip comments|identifier list|wrap_after|comma_first",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\AGENTS.md"
+          }
+        }
+      ],
+      "stderr_tail": "claude timed out after 900 s",
+      "cost_estimated": "timed out with no result event; charged the attempt budget",
+      "code_sha256_lf": null,
+      "rationale": null,
+      "pre_edit": null,
+      "rejected_because": "no_structured_output"
+    },
+    {
+      "attempt": 3,
+      "cli_exit_code": 0,
+      "seconds": 174.3,
+      "cost_usd": 0.5150886,
+      "num_turns": 17,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\filters\\others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\filters\\reindent.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\tokens.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\lexer.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\keywords.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "strip_comments|preserves whitespace|identifier list with functions",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\engine\\filter_stack.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\engine\\statement_splitter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-77zq07vv\\workspace\\sqlparse\\__init__.py"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "2267c279b194cd15354ba6c9265276468439e0cc14b2543149afd551139dd350",
+      "rationale": "The regression's single root cause is the typo `r'\\s+?'` (lazy quantifier) for `tokens.Whitespace` in keywords.SQL_REGEX: because the lexer uses re.match, a lazy `+?` always matches just one character, so every run of 2+ plain whitespace characters is split into that many separate one-character Whitespace tokens instead of a single token. Filters such as StripWhitespaceFilter._stripws_identifierlist (documented for issue140 as removing all whitespace/newlines before a comma) only remove the single token adjacent to the comma, so with the fragmented tokens the rest of the run leaks through, producing wrong output (\"a , b\" instead of \"a, b\") \u2014 this is exactly the class of formatting/reindent regressions described in the report. The first test pins down the root cause directly (a run of spaces must lex as one token, consistent with every other greedy rule in SQL_REGEX and with how the rest of the codebase already assumes whitespace runs are single tokens); the next two tests check the user-visible, documented behavior (format/reindent must fully strip whitespace before commas) that breaks as a direct consequence, and which is restored once the regex is fixed to `r'\\s+'`.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 0,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

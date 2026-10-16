@@ -1,0 +1,61 @@
+{
+  "task_id": "sqlparse-mut-102",
+  "status": "unavailable",
+  "attempts": 3,
+  "cost_usd": 0.0,
+  "statement_sha256": "f961d2327f6a326025ae83764058863fd9556d51ac4cd77e38fdbd2e0ef0ff78",
+  "generated_at": "2026-10-02T03:33:18.414033+00:00",
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 3221225794,
+      "seconds": 0.8,
+      "cost_usd": 0.0,
+      "num_turns": null,
+      "result_subtype": null,
+      "api_key_source": null,
+      "reported_model": {
+        "init": null,
+        "messages": [],
+        "result": []
+      },
+      "tool_uses": [],
+      "stderr_tail": "",
+      "problem": "no init event"
+    },
+    {
+      "attempt": 2,
+      "cli_exit_code": 3221225794,
+      "seconds": 1.0,
+      "cost_usd": 0.0,
+      "num_turns": null,
+      "result_subtype": null,
+      "api_key_source": null,
+      "reported_model": {
+        "init": null,
+        "messages": [],
+        "result": []
+      },
+      "tool_uses": [],
+      "stderr_tail": "",
+      "problem": "no init event"
+    },
+    {
+      "attempt": 3,
+      "cli_exit_code": 3221225794,
+      "seconds": 0.4,
+      "cost_usd": 0.0,
+      "num_turns": null,
+      "result_subtype": null,
+      "api_key_source": null,
+      "reported_model": {
+        "init": null,
+        "messages": [],
+        "result": []
+      },
+      "tool_uses": [],
+      "stderr_tail": "",
+      "problem": "no init event"
+    }
+  ]
+}

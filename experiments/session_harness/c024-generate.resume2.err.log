@@ -1,0 +1,29 @@
+Traceback (most recent call last):
+  File "C:\Users\grant\harnessExperiment\.claude\worktrees\ontology-pilot\experiments\p6_pilot\repro_verifiers.py", line 699, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "C:\Users\grant\harnessExperiment\.claude\worktrees\ontology-pilot\experiments\p6_pilot\repro_verifiers.py", line 694, in main
+    return {"generate": generate, "score": score, "agree": agree}[args.command](args)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\grant\harnessExperiment\.claude\worktrees\ontology-pilot\experiments\p6_pilot\repro_verifiers.py", line 557, in generate
+    entry = generate_task(task, out_dir=out_dir, repos=Path(args.repos), model=args.model, python=python,
+                          max_attempts=args.max_attempts, attempt_budget=args.attempt_budget_usd,
+                          spend_left=spend_left, backend=backend, expected_cli_version=version_number(version))
+  File "C:\Users\grant\harnessExperiment\.claude\worktrees\ontology-pilot\experiments\p6_pilot\repro_verifiers.py", line 445, in generate_task
+    workspace = materialize(task, repos, temp / "workspace").resolve()
+                ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\grant\harnessExperiment\.claude\worktrees\ontology-pilot\experiments\p6_pilot\repro_verifiers.py", line 429, in materialize
+    run_pilot.materialize_workspace(source, repo, destination)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\grant\harnessExperiment\.claude\worktrees\ontology-pilot\experiments\p6_pilot\run_pilot.py", line 582, in materialize_workspace
+    exported = io.BytesIO(git(repo, "archive", "--format=tar", task["base_commit"]))
+                          ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\grant\harnessExperiment\.claude\worktrees\ontology-pilot\experiments\p6_pilot\run_pilot.py", line 499, in git
+    return subprocess.run(["git", "-c", "core.autocrlf=false", "-C", str(repo), *args],
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                          capture_output=True, check=True).stdout
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\grant\harnessExperiment\.runtime\python\cpython-3.13.15-windows-x86_64-none\Lib\subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['git', '-c', 'core.autocrlf=false', '-C', 'C:\\Users\\grant\\harnessExperiment\\.claude\\worktrees\\ontology-pilot\\.runtime\\bug-mining\\repos\\sqlparse', 'archive', '--format=tar', 'f66d12c245412f28c58f045b646eb53c0e691b8b']' returned non-zero exit status 3221225794.

@@ -1,0 +1,129 @@
+{
+  "task_id": "sqlparse-mut-111",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.058671,
+  "statement_sha256": "ce9dda6be3dccdd2cd28c65aaa2bdb927ca0fece1338b3221b5d08a671ea60d9",
+  "generated_at": "2026-10-02T01:19:25.126826+00:00",
+  "file": "sqlparse-mut-111/test_reticle_repro.py",
+  "sha256_lf": "4a3b3a9e7b6a612d6f1ca1d7261f0a3762f180e086335c1a9a9426b25d49a997",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 1,
+    "failed": 2,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 31.4,
+      "cost_usd": 0.058671,
+      "num_turns": 9,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_functions",
+            "path": "sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class Function",
+            "path": "sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 360,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 600,
+            "limit": 70
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def token_next_by",
+            "path": "sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 10
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "_token_matching",
+            "path": "sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true,
+            "-B": 2,
+            "-A": 15
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "get_parameters",
+            "path": "sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "4a3b3a9e7b6a612d6f1ca1d7261f0a3762f180e086335c1a9a9426b25d49a997",
+      "rationale": "The regression is in sqlparse.sql.Function.get_parameters(), which calls self.token_next_by(i=Parenthesis)[2] -- but token_next_by (via _token_matching) always returns a 2-tuple (idx, token), so indexing [2] raises \"IndexError: tuple index out of range\" for every call, matching the reported traceback. The tests exercise exactly the named failing behaviors (function grouping still works, but get_parameters() must return the literal/identifier parameters of a parsed function call with one or several arguments), with expected values taken from the method's docstring (\"Return a list of parameters\") and the evident intended logic of iterating the parenthesis tokens; they fail on the buggy tuple index and pass once it is corrected to [1].",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 1,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

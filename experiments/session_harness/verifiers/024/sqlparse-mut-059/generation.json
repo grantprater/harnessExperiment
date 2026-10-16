@@ -1,0 +1,93 @@
+{
+  "task_id": "sqlparse-mut-059",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.132985,
+  "statement_sha256": "81ed528f7be8296e5c34857048390e5448dea9c0b26211b511d38d46f87c9cee",
+  "generated_at": "2026-10-02T00:21:33.236615+00:00",
+  "file": "sqlparse-mut-059/test_reticle_repro.py",
+  "sha256_lf": "e390fa30230266a9aa95417b726162da8bf1fee7b4b4ed343eabc01ea6adaccf",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 0,
+    "failed": 3,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 70.2,
+      "cost_usd": 0.13298519999999997,
+      "num_turns": 7,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-w8w6nrgt\\workspace\\sqlparse\\filters\\others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-w8w6nrgt\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-w8w6nrgt\\workspace\\sqlparse\\formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-w8w6nrgt\\workspace\\sqlparse\\__init__.py"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "e390fa30230266a9aa95417b726162da8bf1fee7b4b4ed343eabc01ea6adaccf",
+      "rationale": "The report shows that sqlparse.format(sql, strip_whitespace=True) is destroying necessary single spaces (e.g. \"select (select 2)\" becomes \"select(select2)\"); tracing this to StripWhitespaceFilter._stripws_default in sqlparse/filters/others.py shows its ternary is inverted (`' ' if last_was_ws or is_first_char else ''` instead of the correct `'' if last_was_ws or is_first_char else ' '`), so every lone, needed whitespace token is wiped out instead of leading/duplicate whitespace. The expected values in the tests come directly from the bug report's own assertion (`'select (select 2)'`) and from sqlparse's documented intent that strip_whitespace collapses redundant/leading/trailing whitespace while preserving single meaningful separators, which is evident from the surrounding logic (`is_first_char`/`last_was_ws` tracking) and the top-level `process()` which explicitly strips a trailing whitespace token at depth 0.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 0,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

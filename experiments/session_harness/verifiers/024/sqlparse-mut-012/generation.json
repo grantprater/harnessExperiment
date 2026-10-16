@@ -1,0 +1,298 @@
+{
+  "task_id": "sqlparse-mut-012",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.266605,
+  "statement_sha256": "1e94f5a66ec1165c28ca9546fdcad7d3d12ea4545275641f957a344fe8feae3a",
+  "generated_at": "2026-10-01T23:55:14.961018+00:00",
+  "file": "sqlparse-mut-012/test_reticle_repro.py",
+  "sha256_lf": "092612651d1506e940a7c2fd193458808ea7045537390371f2c15ec51c79f659",
+  "collected": 4,
+  "pre_edit": {
+    "collected": 4,
+    "passed": 1,
+    "failed": 3,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 125.7,
+      "cost_usd": 0.2666054,
+      "num_turns": 27,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "get_real_name|get_name\\b",
+            "path": "sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "create table",
+            "path": ".",
+            "output_mode": "files_with_matches",
+            "-i": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 360,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "create table|CREATE TABLE",
+            "path": "CHANGELOG",
+            "-i": true,
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_functions|def group_identifier|def group_as|def group_period|class Function|class Parenthesis",
+            "path": "sqlparse",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 360,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group\\(|group_functions|group_period|group_identifier\\b",
+            "path": "sqlparse/engine/grouping.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 160,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 430,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "CREATE TABLE",
+            "path": "examples",
+            "-n": true,
+            "-i": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "get_real_name|real_name",
+            "path": "sqlparse/sql.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "examples/column_defs_lowlevel.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "create_table|CREATE TABLE",
+            "path": ".",
+            "-n": true,
+            "-i": true,
+            "glob": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 620,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\bTABLE\\b",
+            "path": "sqlparse/keywords.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def token_next\\b|def token_next_by\\b|def token_matching\\b",
+            "path": "sqlparse/sql.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "TABLE",
+            "path": "sqlparse/keywords.py",
+            "-n": true,
+            "-i": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 260,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "'TABLE'",
+            "path": "sqlparse/keywords.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "'TABLE'",
+            "path": "sqlparse/keywords.py",
+            "-n": true,
+            "output_mode": "content",
+            "-C": 2
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def match\\(\" -A 15\" sqlparse/sql.py",
+            "path": "sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 15
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def match\\(self",
+            "path": "sqlparse/sql.py",
+            "-n": true,
+            "-A": 15,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 244,
+            "limit": 30
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "092612651d1506e940a7c2fd193458808ea7045537390371f2c15ec51c79f659",
+      "rationale": "The tests reproduce the exact scenario from the report (`create table db.tbl (a string)`), checking that the table-name token's string value is `db.tbl` rather than the buggy `db.tbl (a string)`, and that the column-definition parenthesis stays a separate top-level token (as required by the documented `examples/column_defs_lowlevel.py`, which locates it via `token_next_by(i=Parenthesis)` directly on the statement). These expectations come from the report's own expected value and from the library's documented example, not from the current buggy output; an unqualified-name case and a round-trip check guard against the fix breaking other grouping behavior.",
+      "pre_edit": {
+        "collected": 4,
+        "passed": 1,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

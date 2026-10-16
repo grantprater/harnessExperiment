@@ -1,0 +1,293 @@
+{
+  "task_id": "sqlparse-mut-152",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.615428,
+  "statement_sha256": "99175faa93077ae052a567e5071fba969bb74add910231af2619294147cbb769",
+  "generated_at": "2026-10-02T03:20:14.865712+00:00",
+  "file": "sqlparse-mut-152/test_reticle_repro.py",
+  "sha256_lf": "8be14fefc6f58c10e3f83b86a8bc6adabeeb5861f67f9fc93144406d060afc26",
+  "collected": 2,
+  "pre_edit": {
+    "collected": 2,
+    "passed": 0,
+    "failed": 2,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 1,
+      "seconds": 363.3,
+      "cost_usd": 0.6154279999999999,
+      "num_turns": 29,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "aligned",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\filters\\aligned_indent.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "align",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\CHANGELOG",
+            "-i": true,
+            "-C": 3
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def str\\(",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "-i align",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\CHANGELOG",
+            "output_mode": "content",
+            "-i": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\CHANGELOG",
+            "limit": 80
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class TokenList|def __init__|self\\.value|_pprint_tree|def __str__",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\sql.py",
+            "offset": 150,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent_aligned|SQLREGEX|group by",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace",
+            "-i": true,
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*reindent*"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent_aligned|aligned",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\docs",
+            "-i": true,
+            "output_mode": "content",
+            "-C": 5
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/site-packages/sqlparse/**",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "aligned",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\AGENTS.md",
+            "-i": true,
+            "-C": 10
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "FROM|SELECT",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\README.rst",
+            "-C": 3
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/README*"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\README.rst"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class indent|class offset|def indent|def offset|contextmanager",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\utils.py",
+            "-n": true,
+            "-A": 10
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "_max_kwd_len|AlignedIndentFilter|max_kwd",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "max_kwd|AlignedIndentFilter|aligned",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\filters\\__init__.py",
+            "-n": true,
+            "-C": 3
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "max_kwd|aligned",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\formatter.py",
+            "-n": true,
+            "-C": 3
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Aligned",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\filters\\__init__.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Aligned",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\formatter.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\filters\\others.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "SerializerUnicode|postprocess|def run\" ",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-s3pof8tg\\workspace\\sqlparse\\engine\\filter_stack.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "8be14fefc6f58c10e3f83b86a8bc6adabeeb5861f67f9fc93144406d060afc26",
+      "rationale": "Both tests exercise sqlparse.format(..., reindent_aligned=True), which uses AlignedIndentFilter._split_kwds to right-align split keywords (FROM/JOIN/GROUP BY, etc.) within a fixed-width column sized to len('select'). The filter's own comment (\"only consider the first word as aligner\") and the pre-existing GROUP/ORDER BY compensation hack (offset_ = 3) show the intended design uses only the first word of a multi-word keyword (e.g. \"LEFT\" of \"LEFT JOIN\", \"GROUP\" of \"GROUP BY\") to compute padding; the regression instead uses the whole phrase, producing a negative/zero pad for anything longer than \"select\" and misaligning those lines by exactly the amount shown. The expected strings were derived by hand-tracing the documented algorithm (max keyword width 6, offset_ = 3 hack for GROUP/ORDER BY) rather than from the buggy code's current output.",
+      "pre_edit": {
+        "collected": 2,
+        "passed": 0,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

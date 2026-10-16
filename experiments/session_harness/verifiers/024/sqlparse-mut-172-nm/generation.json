@@ -1,0 +1,240 @@
+{
+  "task_id": "sqlparse-mut-172-nm",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.5905,
+  "statement_sha256": "9601f1ef755ae4f0e8ed53d1125de87a4d2c25d9ac7fbfa8851f2ae4f1aee3da",
+  "generated_at": "2026-10-02T01:15:39.203553+00:00",
+  "file": "sqlparse-mut-172-nm/test_reticle_repro.py",
+  "sha256_lf": "c5deda91fc6e3094e16534ca7b3f1c7f4ba6df53dccf5a906a3d254a17dab89a",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 0,
+    "failed": 3,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 797.6,
+      "cost_usd": 0.5905001999999999,
+      "num_turns": 24,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\filters\\reindent.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\CHANGELOG",
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\engine\\statement_splitter.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\AGENTS.md"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ORDER\\s*BY|GROUP\\s*BY|UNION|HAVING|LIMIT|BETWEEN",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\keywords.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ORDER|GROUP|UNION|HAVING|LIMIT|BETWEEN|STRAIGHT_JOIN|JOIN|SET|VALUES|EXCEPT",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\keywords.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\filters\\others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\tokens.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Keyword\\.Order|ASC|DESC",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\keywords.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\keywords.py",
+            "limit": 135
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\lexer.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "indent_after_first",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "indent_after_first",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\sqlparse\\cli.py",
+            "-n": true,
+            "output_mode": "content",
+            "-A": 8
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "indent_after_first",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\docs",
+            "-n": true,
+            "output_mode": "content",
+            "-B": 2,
+            "-A": 8
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "indent_after_first",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-xe7d4uef\\workspace\\README.rst",
+            "-n": true,
+            "output_mode": "content",
+            "-B": 2,
+            "-A": 5
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "c5deda91fc6e3094e16534ca7b3f1c7f4ba6df53dccf5a906a3d254a17dab89a",
+      "rationale": "The regression lives in sqlparse/filters/reindent.py's ReindentFilter.__init__: `self.indent = 0 if indent_after_first else 1` is inverted. By default indent_after_first=False, so self.indent starts at 1 instead of 0, which (via leading_ws = offset + indent*width) injects a spurious one-level (width-sized) indent on every continuation line produced by reindent=True, even though indent_after_first is documented/CLI-described as only adding indentation when explicitly enabled. This single off-by-one corrupts virtually all reindent output, matching the report of ~27 failing 'format reindent: *' checks. I simulated the ReindentFilter/_process_where/_process_parenthesis/_split_kwds logic by hand for three representative inputs (plain keyword splitting, BETWEEN/AND which must stay on one line, and nested parenthesis indentation) assuming the correct self.indent starting value of 0, deriving the expected strings from the documented algorithm rather than from the current buggy output. All three currently fail because of the extra 2-space indent injected by the bug, and all three will pass once `self.indent` correctly defaults to 0 (and becomes 1 only when indent_after_first=True).",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 0,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

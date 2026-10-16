@@ -1,0 +1,96 @@
+{
+  "task_id": "sqlparse-mut-015",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.275459,
+  "statement_sha256": "b8e131e427422d47de01217481de535830506b54f1ce48d00fa4efc57b797a52",
+  "generated_at": "2026-10-01T23:39:23.129040+00:00",
+  "file": "sqlparse-mut-015/test_reticle_repro.py",
+  "sha256_lf": "43da7f550547388d8e754665ddf3e655f97dbd9b244b058e4bfcc56f7347f4d6",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 1,
+    "failed": 2,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 130.5,
+      "cost_usd": 0.2754586,
+      "num_turns": 7,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-9qi0tdbx\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-9qi0tdbx\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-9qi0tdbx\\workspace\\CHANGELOG"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "get_alias|_get_first_name|NameAliasMixin",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-9qi0tdbx\\workspace",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "43da7f550547388d8e754665ddf3e655f97dbd9b244b058e4bfcc56f7347f4d6",
+      "rationale": "The report points to NameAliasMixin.get_real_name()/get_alias() producing wrong results; tracing sql.py shows the dot_idx-finding loop in get_real_name() inverts its condition (`if not tok.match(Punctuation, '.')`), so it always ends up pointing at the last token of the identifier (usually the alias) rather than at the last top-level dot (or None when there is none, per the method's own docstring \"a.b.c -> real name is the component after the last dot\"). This makes get_real_name() return the alias instead of the real object name whenever an identifier has an alias, which is exactly the class of failures described ('grouping alias', 'aliased column without as', etc.). The expected values in the tests (real name 'foo'/'bar', alias 'bar'/'baz') come directly from the documented semantics of get_real_name/get_alias/get_parent_name, not from the current buggy output, and the third test guards that the already-correct simple case keeps working after the fix.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 1,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

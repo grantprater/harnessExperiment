@@ -1,0 +1,1150 @@
+{
+  "task_id": "sqlparse-mut-005",
+  "status": "unavailable",
+  "attempts": 3,
+  "cost_usd": 1.649668,
+  "statement_sha256": "083416bf942492ed14a647598449e4d5749a605dfefcca5666aa66116445f0e3",
+  "generated_at": "2026-10-02T00:56:24.853836+00:00",
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 1,
+      "seconds": 260.8,
+      "cost_usd": 0.49709679999999995,
+      "num_turns": 31,
+      "result_subtype": "error_max_turns",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ILIKE|LIKE",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comparison",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class Comparison|is_comparison|Comparison",
+            "path": "sqlparse/sql.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comparison",
+            "path": "sqlparse/engine/grouping.py",
+            "-n": true,
+            "-C": 8
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comparison",
+            "path": "sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comparison",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 200,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ilike|IsLike|is_like|like",
+            "path": "sqlparse/sql.py",
+            "-n": true,
+            "-i": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ilike|comparison",
+            "path": "CHANGELOG",
+            "-n": true,
+            "-i": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ilike|comparison",
+            "path": "CHANGELOG",
+            "-n": true,
+            "-i": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "like",
+            "path": "sqlparse/sql.py",
+            "-n": true,
+            "-i": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/keywords.py",
+            "offset": 60,
+            "limit": 110
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/keywords.py",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "CHANGELOG",
+            "offset": 1,
+            "limit": 70
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "token_not_matching|def value|_token_matching",
+            "path": "sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 230,
+            "limit": 90
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 520,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "SQL_REGEX|re.compile|IGNORECASE|FLAGS",
+            "path": "sqlparse/lexer.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def _group\\b",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 40
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def imt\\b",
+            "path": "sqlparse/utils.py",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 30
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class TokenList|def __init__|_pprint_tree|def value|self\\.value|def normalized|def match\\b|def ttype\" ",
+            "path": "sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 1,
+            "limit": 160
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "LIKE|ILIKE|is_keyword|Operator.Comparison",
+            "path": "sqlparse/filters",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/tokens.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "LIKE|ILIKE",
+            "output_mode": "content",
+            "-n": true,
+            "-i": false
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "T_NUMERICAL|T_STRING|T_NAME",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group\\(|group_functions|group_comparison|group_identifier\\b|group_operator|group_typecasts|GROUP_FUNCTIONS|group_order|def group\\b\" ",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 437,
+            "limit": 36
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 287,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "LIKE",
+            "path": "docs",
+            "output_mode": "content",
+            "-n": true,
+            "-i": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_where\" ",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 557,
+            "limit": 15
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 494,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/keywords.py",
+            "offset": 295,
+            "limit": 20
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/keywords.py",
+            "offset": 690,
+            "limit": 15
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/keywords.py",
+            "offset": 980,
+            "limit": 10
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/lexer.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comparison|Operator",
+            "path": "sqlparse/filters",
+            "output_mode": "content",
+            "-n": true
+          }
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": null,
+      "rationale": null,
+      "pre_edit": null,
+      "rejected_because": "no_structured_output"
+    },
+    {
+      "attempt": 2,
+      "cli_exit_code": 1,
+      "seconds": 212.3,
+      "cost_usd": 0.6450660000000001,
+      "num_turns": 33,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ILIKE|LIKE",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "LIKE",
+            "path": "sqlparse/keywords.py",
+            "-n": true,
+            "-i": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comparison|Operator",
+            "path": "sqlparse/engine/grouping.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\keywords.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\lexer.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ILIKE|LIKE",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\CHANGELOG",
+            "-n": true,
+            "-C": 3
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comparison",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\sql.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "LIKE",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\CHANGELOG",
+            "output_mode": "content",
+            "-n": true,
+            "-C": 3
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ilike",
+            "output_mode": "content",
+            "-n": true,
+            "-i": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comparison",
+            "path": "sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true,
+            "-C": 5
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comparison|group_comparison|def group_as|Operator",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 220,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "T_NUMERICAL|T_STRING|T_NAME =",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\CHANGELOG",
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "like_and_ilike|LIKE.*ILIKE|ilike.*comparison",
+            "-i": true,
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.rst"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 420,
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 280,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def imt",
+            "path": "sqlparse/utils.py",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 20
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\utils.py",
+            "offset": 99,
+            "limit": 15
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\tokens.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 1,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 494,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "LIKE",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_where|class Where",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 15
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\engine\\statement_splitter.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_keyword|normalized",
+            "path": "sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\sql.py",
+            "offset": 1,
+            "limit": 135
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-nushaifw\\workspace\\sqlparse\\filters\\tokens.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_tokens|def __init__|class TokenList",
+            "path": "sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 40
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "56ddee13a2ccae9c1b1550711fca696202353d3667db6e90e708d3c97becf1df",
+      "rationale": "The SQL_REGEX table in sqlparse/keywords.py deliberately classifies LIKE, ILIKE and the NOT-prefixed variants with the single rule `(NOT\\s+)?(LIKE|ILIKE|RLIKE)\\b -> tokens.Operator.Comparison`, i.e. the library's documented/intended behavior is that LIKE and ILIKE (with or without NOT) are tokenized identically as Operator.Comparison and are therefore grouped by sqlparse.engine.grouping.group_comparison into a single sqlparse.sql.Comparison node, exactly like any other comparison operator (=, <, etc.). The test reproduces the reported \"like and ilike comparison\" regression by parsing simple `x LIKE y` / `x ILIKE y` / `x NOT LIKE y` / `x NOT ILIKE y` expressions and asserting that (a) the statement groups into exactly one sqlparse.sql.Comparison token and (b) the middle operator token's type is tokens.Operator.Comparison - both of which follow directly from the SQL_REGEX rule shown in the source and from the Comparison class docstring (\"A comparison used for example in WHERE clauses\"). If the regression breaks LIKE/ILIKE classification or grouping, these assertions fail with AssertionError (assert False), matching the report; once the underlying rule/grouping is restored, they pass without touching any other documented behavior.",
+      "pre_edit": {
+        "collected": 4,
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": "no_failure"
+    },
+    {
+      "attempt": 3,
+      "cli_exit_code": 1,
+      "seconds": 176.3,
+      "cost_usd": 0.5075056,
+      "num_turns": 31,
+      "result_subtype": "error_max_turns",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "LIKE",
+            "path": "sqlparse/keywords.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comparison",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/keywords.py",
+            "offset": 1,
+            "limit": 140
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ILIKE|RLIKE",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 200,
+            "limit": 70
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ilike|like and ilike|LIKE",
+            "path": "CHANGELOG",
+            "-i": true,
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "re\\.compile|IGNORECASE|flags",
+            "path": "sqlparse/keywords.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "sqlparse/lexer.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/lexer.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ilike|LIKE",
+            "path": "sqlparse/sql.py",
+            "-i": true,
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/test_regressions*"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.cfg"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "LIKE|ilike",
+            "path": "sqlparse/sql.py",
+            "-i": true,
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comparison",
+            "path": "sqlparse",
+            "-n": true,
+            "output_mode": "content",
+            "-i": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 530,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comparison\\.(left|right)|\\.left\\b|\\.right\\b",
+            "path": "CHANGELOG",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "T_NUMERICAL|T_STRING|T_NAME",
+            "path": "sqlparse/engine/grouping.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 1,
+            "limit": 70
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class KeywordCaseFilter|class IdentifierCaseFilter|ttype in|Keyword",
+            "path": "sqlparse/filters/others.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class.*CaseFilter",
+            "path": "sqlparse",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/filters/tokens.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 70,
+            "limit": 130
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "^def _group\\(",
+            "path": "sqlparse/engine/grouping.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def _group\\(\" -A 60",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def _group\\(",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content",
+            "-A": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ilike|LIKE",
+            "path": ".",
+            "-i": true,
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "AGENTS.md"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/keywords.py",
+            "offset": 280,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/keywords.py",
+            "offset": 680,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/keywords.py",
+            "offset": 970,
+            "limit": 25
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "LIKE",
+            "path": "sqlparse/engine/statement_splitter.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "LIKE",
+            "path": "sqlparse/utils.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "LIKE",
+            "path": "sqlparse/__init__.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "like",
+            "path": "sqlparse/utils.py",
+            "-n": true,
+            "-i": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "like",
+            "path": "sqlparse/__init__.py",
+            "-n": true,
+            "-i": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "like",
+            "path": "sqlparse/engine/statement_splitter.py",
+            "-n": true,
+            "-i": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "CHANGELOG",
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class TokenList|def __init__|def group_tokens|_WHITESPACE_REGEX|def __str__\" -A 30",
+            "path": "sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 158,
+            "limit": 190
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/utils.py",
+            "offset": 60,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_where|def group\\(|GROUP_FUNCTIONS|def group\" -A 5",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 345,
+            "limit": 128
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py",
+            "offset": 60,
+            "limit": 100
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "keyword_case|KeywordCaseFilter\" -n -A 5",
+            "path": "sqlparse/formatter.py",
+            "output_mode": "content"
+          }
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": null,
+      "rationale": null,
+      "pre_edit": null,
+      "rejected_because": "no_structured_output"
+    }
+  ]
+}
