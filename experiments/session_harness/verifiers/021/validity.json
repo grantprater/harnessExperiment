@@ -1,0 +1,140 @@
+{
+  "scored_at": "2026-09-29T10:37:11.395010+00:00",
+  "manifest_sha256_lf": "aef36ed83f827cd35f15fff30727370c251363fbdf70021bb01870ccd27ccbd6",
+  "task_file": {
+    "path": "experiments/mutation_tasks/tasks.mutations.json",
+    "sha256_lf": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa"
+  },
+  "valid": 4,
+  "scored": 8,
+  "tasks": {
+    "sqlparse-mut-001": {
+      "status": "available",
+      "mutated": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      },
+      "gold": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      },
+      "valid": false
+    },
+    "sqlparse-mut-022": {
+      "status": "available",
+      "mutated": {
+        "status": "success",
+        "failing": 3,
+        "passing": 0,
+        "calls_left": 0
+      },
+      "gold": {
+        "status": "success",
+        "failing": 1,
+        "passing": 2,
+        "calls_left": 0
+      },
+      "valid": false
+    },
+    "sqlparse-mut-025": {
+      "status": "available",
+      "mutated": {
+        "status": "success",
+        "failing": 3,
+        "passing": 0,
+        "calls_left": 0
+      },
+      "gold": {
+        "status": "success",
+        "failing": 0,
+        "passing": 3,
+        "calls_left": 0
+      },
+      "valid": true
+    },
+    "sqlparse-mut-032": {
+      "status": "available",
+      "mutated": {
+        "status": "success",
+        "failing": 2,
+        "passing": 1,
+        "calls_left": 0
+      },
+      "gold": {
+        "status": "success",
+        "failing": 0,
+        "passing": 3,
+        "calls_left": 0
+      },
+      "valid": true
+    },
+    "sqlparse-mut-034": {
+      "status": "available",
+      "mutated": {
+        "status": "success",
+        "failing": 2,
+        "passing": 1,
+        "calls_left": 0
+      },
+      "gold": {
+        "status": "success",
+        "failing": 0,
+        "passing": 3,
+        "calls_left": 0
+      },
+      "valid": true
+    },
+    "sqlparse-mut-040": {
+      "status": "available",
+      "mutated": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      },
+      "gold": {
+        "status": "success",
+        "failing": 1,
+        "passing": 1,
+        "calls_left": 0
+      },
+      "valid": false
+    },
+    "sqlparse-mut-057": {
+      "status": "available",
+      "mutated": {
+        "status": "success",
+        "failing": 2,
+        "passing": 2,
+        "calls_left": 0
+      },
+      "gold": {
+        "status": "success",
+        "failing": 2,
+        "passing": 2,
+        "calls_left": 0
+      },
+      "valid": false
+    },
+    "sqlparse-mut-061": {
+      "status": "available",
+      "mutated": {
+        "status": "success",
+        "failing": 2,
+        "passing": 0,
+        "calls_left": 0
+      },
+      "gold": {
+        "status": "success",
+        "failing": 0,
+        "passing": 2,
+        "calls_left": 0
+      },
+      "valid": true
+    }
+  }
+}

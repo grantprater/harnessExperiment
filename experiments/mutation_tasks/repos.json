@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "note": "One entry per mutation-task bank source (generate.py --repo NAME). commit is the healthy state that is mutated (base_commit = fix_commit of every task); source_task is the P6 task (experiments/p6_pilot/tasks.json) whose fix commit it is, and generate.py checks that its repo, repo_url and fix_commit agree. The test command is fixed by the evaluator (experiments/p6_pilot/evaluate_task.py): `python -m pytest -q -p no:cacheprovider --junitxml=... <test files: test_root/test_glob>` with PYTHONPATH = <workspace>/src for a src layout, else the workspace; pythonpath must say which. excluded_tests are baseline tests left out of every task's fail_to_pass and pass_to_pass (and allowed to fail in the generator's baseline), each with its reason. test_requirements are the test dependencies beyond pytest; each must be pinned in experiments/cloud/bugs-venv.requirements.txt and experiments/p6_pilot/oci/requirements.lock (tests/test_mutation_repos.py checks this and the clone pins in experiments/cloud/setup_cloud.sh). prefilter_unexecuted drops, before scheduling, candidates whose smallest enclosing statement never executed in a probed healthy run (see generate.py); it is off for sqlparse, whose bank predates it.",
+  "repos": {
+    "sqlparse": {
+      "repo": "sqlparse",
+      "repo_url": "https://github.com/andialbrecht/sqlparse",
+      "commit": "f66d12c245412f28c58f045b646eb53c0e691b8b",
+      "source_task": "sqlparse-865",
+      "package": "sqlparse",
+      "library_root": "sqlparse",
+      "test_root": "tests",
+      "test_glob": "**/test_*.py",
+      "pythonpath": ".",
+      "prefilter_unexecuted": false,
+      "seed": 865,
+      "task_prefix": "sqlparse-mut",
+      "tasks_file": "tasks.mutations.json",
+      "log_file": "generation_log.json",
+      "excluded_tests": {},
+      "test_requirements": []
+    },
+    "boltons": {
+      "repo": "boltons",
+      "repo_url": "https://github.com/mahmoud/boltons",
+      "commit": "45a251181fba4c5a4ecc05e838da1c394e1ed0e4",
+      "source_task": "boltons-475",
+      "package": "boltons",
+      "library_root": "boltons",
+      "test_root": "tests",
+      "test_glob": "**/test_*.py",
+      "pythonpath": ".",
+      "prefilter_unexecuted": true,
+      "seed": 475,
+      "task_prefix": "boltons-mut",
+      "tasks_file": "tasks.boltons.json",
+      "log_file": "generation_log.boltons.json",
+      "excluded_tests": {
+        "tests.test_jsonutils::test_reverse_iter_lines": "platform-dependent: reads an LF data file in text mode and compares with a binary read, so it fails on Windows (text mode translates newlines) and passes on Linux; measured 2026-09-28 on the host bugs-venv and in localhost/reticle-p6-task:py313-v1"
+      },
+      "test_requirements": []
+    }
+  }
+}

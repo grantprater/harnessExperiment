@@ -1,0 +1,297 @@
+{
+  "task_id": "sqlparse-mut-022",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.611792,
+  "statement_sha256": "8b5a927646bf0abc765732fe6588bccc6fb00a57091d327fc6384e375a733102",
+  "generated_at": "2026-09-29T06:50:10.438259+00:00",
+  "file": "sqlparse-mut-022/test_reticle_repro.py",
+  "sha256_lf": "21d8a2c969c10e41e904ec429613fd23df1f38e370058356c63c46a18cd32aa9",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 0,
+    "failed": 3,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 1,
+      "seconds": 190.0,
+      "cost_usd": 0.6117916000000001,
+      "num_turns": 32,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/engine/statement_splitter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/lexer.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\+=",
+            "path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/cli.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "return None|-> None|None:",
+            "path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/engine/grouping.py",
+            "offset": 1,
+            "limit": 90
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/utils.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "*.rst"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/CHANGELOG",
+            "limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/engine/grouping.py",
+            "offset": 280,
+            "limit": 260
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "return",
+            "path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/engine/statement_splitter.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "845|issue845",
+            "path": "/tmp/repro-gen-vd80fk67/workspace",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/engine/filter_stack.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\.level\\b",
+            "path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/tokens.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/filters/reindent.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/filters/output.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/sql.py",
+            "offset": 1,
+            "limit": 120
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/engine/__init__.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/__init__.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/engine/grouping.py",
+            "offset": 90,
+            "limit": 190
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/filters/right_margin.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/filters/aligned_indent.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/filters/others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/sql.py",
+            "offset": 200,
+            "limit": 180
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/sql.py",
+            "offset": 379,
+            "limit": 100
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-vd80fk67/workspace/sqlparse/sql.py",
+            "offset": 120,
+            "limit": 80
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "21d8a2c969c10e41e904ec429613fd23df1f38e370058356c63c46a18cd32aa9",
+      "rationale": "The report says a regression makes basic sqlparse operations raise TypeError: unsupported operand type(s) for +=: 'NoneType' and 'int', naming 'valid args', 'cli multiple files with inplace', and normal-SQL DoS-prevention checks as failing among 41 total. Since the crashing code path (StatementSplitter, used by parse/format/split and hence by the CLI and formatter.validate_options pipeline) underlies virtually every public entry point, I wrote three tests that each exercise one of the named failing behaviours through the library's own documented API: validate_options + format with ordinary valid options, the sqlformat CLI's documented --in-place/multi-file support, and plain parse()/format() of an everyday SELECT statement. Expected values (option values passed through unchanged, exit code 0 with files rewritten to contain 'SELECT', statement type 'SELECT', keywords upper-cased) come directly from the functions' docstrings/CLI help text and obvious intended behavior, not from any current buggy output, so the tests fail while the regression is present and pass once statement splitting/DoS-prevention is fixed correctly.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 0,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

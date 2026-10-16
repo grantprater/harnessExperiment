@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import unittest
 
 import reticle
@@ -49,6 +50,7 @@ class TestReticlePackage(unittest.TestCase):
         self.assertFalse(ok_bad)
         self.assertIsNotNone(err_bad)
 
+    @unittest.skipUnless(os.name == "nt", "asserts the Windows host's Blender install")
     def test_blender_engine_discovery(self):
         installed = verify_blender_installed()
         path = get_blender_path()

@@ -13,11 +13,24 @@ Clients:
   breaker     makes the fixed source files unimportable, then finishes (pipeline check, no API)
   gamer       adds conftest hooks that report every test as passed (pipeline check, no API)
   tester      runs the existing test roots through the run tool without edits (pipeline check, no API)
+  constant    forecast tasks only: writes {"probability": 0.5} and the true resolver, then finishes (no API)
+  peeker      forecast tasks only: tries the network and files outside the workspace, then writes a forecast only if
+              every attempt was blocked (no API)
 
 Backends:
   trusted-local  candidate commands and evaluation run on the host (not isolated)
   oci            candidate commands and evaluation run in a pinned local image by image ID,
                  workspace-only mount, no network (see experiments/p6_pilot/oci/Containerfile)
+  --sandbox unshare-rnm   forecast tasks on trusted-local, Linux only: every run-tool and evaluator command runs
+                 in new user, mount and network namespaces with the checkout's experiments/, .git, the raw series cache
+                 and ~/harness-sealed hidden and only its working directory kept (sandbox.py); recorded in the
+                 execution contract, so in the protocol hash, only when on
+  --sandbox unshare-confined   any task on trusted-local, Linux only (the cloud integrity fix): every run-tool,
+                 evaluator and check command runs in new user, mount, PID and network namespaces, in a new root that
+                 holds only its working directory, read-only system directories and the task interpreter, with a
+                 private /tmp and no capabilities (reticle.execution.ConfinedLocalBackend). The model's authority
+                 text says so. Refuses to start (dry runs too) if the host cannot run it; in the execution contract
+                 and the protocol hash, so a confined run never hashes like an unconfined one
 
 Arms (same tools, instructions, evaluator, and limits; only the context policy differs):
   bounded-transcript-v2  original task + as much recent transcript as fits; tool results shown
@@ -26,11 +39,19 @@ Arms (same tools, instructions, evaluator, and limits; only the context policy d
 
 Tasks (--tasks [FILE.json] [TASK_ID ...]):
   An argument ending in .json names the task file (default experiments/p6_pilot/tasks.json); the other
-  arguments select task ids from it (default: all). A mutation task (experiments/mutation_tasks/) gets its
+  arguments select task ids from it (default: all). One invocation takes code tasks or forecast tasks, never both.
+  A mutation task (experiments/mutation_tasks/) gets its
   mutation_patch applied with git apply and its hidden_paths (the test root) removed from the workspace;
   the evaluator still installs the healthy test roots from fix_commit. Each such task's contract (mutation
   kind and file, hidden-tests flag, patch and statement digests) is recorded in config.json and enters the
   protocol hash; tasks without one leave both unchanged.
+  A forecast task (kind "forecast", card 022; experiments/forecast_tasks/) gets a workspace with question.md and data/
+  (snapshots cut before its forecast date, checked against their sha256; no outcome), the forecast instructions, and
+  the evaluator evaluate_forecast.py, which accepts a run when it committed: a valid forecast.json and a resolve.py
+  whose outcome() returns a bool on a past window. The scripted clients write the forecast deliverables instead:
+  gold the history-only base rate with the true resolver, constant 0.5, gamer an out-of-range probability, noop
+  nothing. Its contract (snapshot and text digests, evaluator files) enters the protocol hash, and the hash then
+  carries the forecast instructions and evaluator instead of the code ones; code-task hashes are unchanged.
 
 Treatments (S6 harness surfaces; all off by default, and a run with none of them is hashed, configured, and
 executed exactly as before). Each one that is on is described under "treatments" in config.json and in the
@@ -44,6 +65,30 @@ protocol hash (name, version, fixed texts, parameters), and reported under "trea
   --oracle hidden-tests[:K]  tool use (changes the task): a check() tool returning only the counts of the task's
                              hidden fail_to_pass tests failing and passing, at most K calls per run (default 3),
                              run on a snapshot outside the workspace (reticle/tools/check_oracle.py)
+  --reasoning memory        durable evidence ontology with explicit model assertions and runtime observations
+  --reasoning symbolic      same memory/tools, with advisory rules for stale evidence, declared coverage,
+                             non-discriminating checks and contradictions; see experiments/neurosymbolic/README.md
+  --reasoning injected      same as symbolic, plus a bounded advisory summary appended to the result of each
+                             replace_text/write_file/run action (never finish; nothing is rejected)
+  --verifier repro-test[:K] --verifier-manifest MANIFEST.json
+                             tool use (card 021): the same check() interface over a reproduction test a separate
+                             model call wrote before the campaign from the statement and the pre-edit tree, frozen
+                             in the manifest (reticle/tools/repro_verifier.py, repro_verifiers.py); not with --oracle
+  --nudge commit             agent loop (card 021): once per run at --nudge-fraction of the response budget, edits or
+                             not, a harness message asking for a committed hypothesis and a tested prediction, with
+                             the commit_hypothesis and record_observation tools offered from the first request
+                             (reticle/runtime/nudges.py, reticle/tools/commitment.py)
+
+claude-cli client options (off by default; not treatments, since they change how a reply is obtained, not what the
+model is offered; one that is on is recorded in the CLI contract under provider_routing and so in the protocol hash;
+other clients ignore them):
+  --cli-reply-recovery lenient-json+second-turn-on-retry
+                             adapter v3: a StructuredOutput input the CLI could not parse is used when
+                             json.loads(raw, strict=False) accepts it; after a rejected StructuredOutput call, the
+                             request's later attempts run at --max-turns 2 and may take the second message's
+                             StructuredOutput call (first attempts keep v2's --max-turns 1). What it did is recorded
+                             per attempt in calls.jsonl (cli_max_turns, ...) and per run in results.jsonl
+                             ("cli_reply_recovery"); see claude_cli.py
 
 Usage (from the repo root):
   python experiments/p6_pilot/run_pilot.py --client gold --run-name gold-check
@@ -88,7 +133,8 @@ from reticle.runtime import LocalRuntime  # noqa: E402
 from reticle.runtime.contracts import TaskEnvelope  # noqa: E402
 from reticle.runtime.controller import AgentController, AgentLimits, ModelClientError, ModelResponse  # noqa: E402
 from reticle.runtime.nudges import (  # noqa: E402
-    MIDPOINT_NUDGE_TEMPLATE, MIDPOINT_NUDGE_VERSION, MidpointNudge, midpoint_nudge_text,
+    COMMIT_NUDGE_TEMPLATE, COMMIT_NUDGE_VERSION, MIDPOINT_NUDGE_TEMPLATE, MIDPOINT_NUDGE_VERSION, CommitmentNudge,
+    MidpointNudge, commit_nudge_text, midpoint_nudge_text,
 )
 from reticle.runtime.source_edits import SOURCE_RULE_VERSION, SourceEditTracker  # noqa: E402
 from reticle.tools import TOOL_SCHEMAS, ToolSuite  # noqa: E402
@@ -98,13 +144,30 @@ from reticle.tools.check_oracle import (  # noqa: E402
 from reticle.tools.finish_guard import (  # noqa: E402
     FINISH_GUARD_MESSAGE, FINISH_GUARD_VERSION, REASONS, FinishGuard, FinishGuardTools,
 )
+from reticle.runtime.reasoning import EvidenceOntology, reasoning_contract  # noqa: E402
+from reticle.tools.reasoning import ReasoningTools, REASONING_SCHEMAS, tool_contract  # noqa: E402
+from reticle.tools.commitment import (  # noqa: E402
+    COMMITMENT_TOOLS_VERSION, CommitmentLog, CommitmentTools, commitment_schemas,
+)
+from reticle.tools.repro_verifier import (  # noqa: E402
+    DEFAULT_MAX_CALLS as VERIFIER_DEFAULT_MAX_CALLS, VERIFIER_VERSION, ReproTestVerifier, verifier_schema,
+    write_bundle as write_verifier_bundle,
+)
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_TASK_FILE = HERE / "tasks.json"
 sys.path.insert(0, str(HERE))
-from claude_cli import ClaudeCliClient, cli_contract, cli_version  # noqa: E402
+from claude_cli import (  # noqa: E402
+    MODEL_MISMATCH, REPLY_RECOVERY, RETRY_MAX_TURNS, ClaudeCliClient, cli_contract, cli_version, model_id_problem,
+)
+from interpreters import task_python  # noqa: E402
+import sandbox as namespace_sandbox  # noqa: E402
 REPOS = ROOT / ".runtime" / "bug-mining" / "repos"
-TASK_PYTHON = ROOT / ".runtime" / "bugs-venv" / "Scripts" / "python.exe"
+
+# $RETICLE_TASK_PYTHON, else .runtime/bugs-venv's interpreter (Scripts/python.exe on Windows, bin/python on
+# POSIX). Under trusted-local the path is in the execution contract, so it is part of the protocol hash.
+TASK_PYTHON = task_python(ROOT)
+
 BASE_URL = "https://openrouter.ai/api/v1"
 # 2: complete tool outputs with bounded views and read_output/search_output
 # 3: selectable execution backend (pinned OCI image), cache files excluded from revisions
@@ -123,6 +186,17 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    (card 007's recorded hashes still replay); on, each one's record enters the protocol hash under
 #    "treatments". A bump would change every incumbent hash and block the cards pinned to v8 without any
 #    change in what an incumbent runs.
+#    Later in v8, without a bump, for the same reason: the claude-cli client option --cli-reply-recovery. Off,
+#    the CLI contract and every hash are exactly as before; on, the contract (adapter v3, --max-turns 2 on
+#    retries after a rejected StructuredOutput call, the recovery rules) changes the hash through provider_routing.
+#    Later in v8, without a bump (2026-09-30, after the `sonnet` alias drifted to claude-sonnet-5-5 with CLI
+#    2.1.286): live claude-cli runs take full model IDs only (--dry-run still plans an alias, so old hashes
+#    replay); a response from any other model than the requested one stops the run as model_mismatch
+#    (an adapter failure, voided, never a task outcome) and ends the invocation; claude-cli results record
+#    reported_models. On exp/ontology-pilot nothing hashed changed. On integration/2026-10 this guard is merged
+#    with the cloud port's model pin (claude_cli.py, MODEL PIN), whose CLI contract adds "model_pin" for a full
+#    model id: a full-id card's hash differs from the one exp/ontology-pilot planned (an alias contract, and so
+#    card 007's recorded hashes, are unchanged).
 RUNNER_VERSION = 8
 CLI_TIMEOUT_SECONDS = 300  # per attempt, as the OpenRouter client's HTTP timeout
 CLI_MAX_TURNS = 1  # the reply is the model's first message; the CLI stops before a second model turn
@@ -142,7 +216,8 @@ OBSERVATION_TOOLS = {
     "list_files", "read_file", "outline", "search", "read_output", "search_output",
     "history", "search_history", "read_artifact", "read_note",
 }
-GUARD_STOPS = ("diagnostic_termination", "attempt_cap_reached")
+# Stop labels read from the controller's error prefix. model_mismatch is the claude-cli adapter's model guard.
+GUARD_STOPS = ("diagnostic_termination", "attempt_cap_reached", MODEL_MISMATCH)
 RETRYABLE_HTTP = {408, 429, 500, 502, 503, 504}
 MAX_ATTEMPTS = 3  # the first attempt plus at most two retries (plan section 5.3)
 MANAGED_ROOT_FILES = ("conftest.py", "pytest.ini", "setup.cfg", "tox.ini", "pyproject.toml")
@@ -152,6 +227,25 @@ MANAGED_ROOT_FILES = ("conftest.py", "pytest.ini", "setup.cfg", "tox.ini", "pypr
 # v2: built in a staging directory, copied into the workspace, every file and directory stamped with the commit time.
 MATERIALIZER_VERSION = "mutation-workspace-v2"
 UNPINNED_ROUTING = {"require_parameters": True}
+# Card 022's forecast tasks (kind "forecast"). Later in v8, without a bump: only a forecast task's contract and hash
+# inputs mention any of this, so every code task's hash and config are unchanged.
+FORECAST_DIR = ROOT / "experiments" / "forecast_tasks"
+FORECAST_DATA_DIR = FORECAST_DIR  # where a forecast task's snapshot paths are relative to
+FORECAST_MATERIALIZER_VERSION = "forecast-workspace-v1"
+FORECAST_EVALUATOR_FILES = ("evaluate_forecast.py", "resolvers.py")
+FORECAST_RESOLVER_TIMEOUT_SECONDS = 60
+FORECAST_AGREEMENT_WINDOWS = 52
+FORECAST_CLIENTS = ("constant", "peeker")  # scripted clients that exist only for forecast tasks
+FORECAST_INSTRUCTIONS = (
+    "Today is {forecast_date}. You are forecasting one yes/no question about a public time series. The workspace "
+    "holds question.md (the question, its resolution criteria and fine print) and data/ (CSV files with every row "
+    "dated before today; data/README.md describes them).\n\n{statement}\n\n"
+    "Write forecast.json as {{\"probability\": p}}, where p is your probability (a number from 0 to 1) that the "
+    "question resolves YES, and resolve.py defining outcome(rows, T, horizon) -> bool: your reading of the resolution "
+    "criteria as code, applicable to any forecast date T (rows: the target series as (datetime.date, float) pairs "
+    "sorted by date; T: a datetime.date; horizon: the number of days). Python standard library only. Forecasts are "
+    "scored by Brier score against data published after today. Call finish when done."
+)
 
 INSTRUCTIONS = (
     "You are working in a source checkout of {repo} ({repo_url}) at an upstream commit. "
@@ -163,34 +257,48 @@ INSTRUCTIONS = (
 )
 
 
-TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction", "--oracle")
+TREATMENT_FLAGS = ("--completion", "--nudge", "--nudge-fraction", "--oracle", "--verifier", "--verifier-manifest",
+                   "--reasoning")
+VERIFIER_RUNNER = HERE / "run_repro_test.py"
 
 
 def add_treatment_arguments(parser) -> None:
     group = parser.add_argument_group("treatments (off by default; each one that is on enters the protocol hash)")
+    group.add_argument("--reasoning", choices=["memory", "symbolic", "injected"], default=None,
+                       help="durable evidence ontology; symbolic also offers advisory inference rules; injected "
+                            "also appends a bounded advisory summary to edit and run results")
     group.add_argument("--completion", choices=["finish-guard"], default=None,
                        help="finish-guard: reject the first finish after a source edit, once, unless a "
                             "command that failed before the edit passes after it")
-    group.add_argument("--nudge", choices=["midpoint"], default=None,
+    group.add_argument("--nudge", choices=["midpoint", "commit"], default=None,
                        help="midpoint: one harness message when --nudge-fraction of the responses are spent "
-                            "without a source edit")
+                            "without a source edit; commit: one harness message at --nudge-fraction, edits or not, "
+                            "asking for a committed hypothesis and a tested prediction (adds two recording tools)")
     group.add_argument("--nudge-fraction", type=float, default=None, metavar="F",
-                       help="share of the response budget after which --nudge midpoint is due (default 0.5)")
+                       help="share of the response budget after which the --nudge message is due (default 0.5)")
     group.add_argument("--oracle", default=None, metavar="hidden-tests[:K]",
                        help="a check() tool: hidden fail_to_pass counts only, at most K calls per run "
                             f"(default {DEFAULT_MAX_CALLS})")
+    group.add_argument("--verifier", default=None, metavar="repro-test[:K]",
+                       help="a check() tool over the task's frozen reproduction test (--verifier-manifest): counts "
+                            f"only, at most K calls per run (default {VERIFIER_DEFAULT_MAX_CALLS}); not with --oracle")
+    group.add_argument("--verifier-manifest", default=None, metavar="MANIFEST.json",
+                       help="the manifest of frozen reproduction tests (repro_verifiers.py generate); its sha256 "
+                            "enters the protocol hash")
 
 
 def treatments_record(args) -> dict:
     """The description of every treatment that is on, as hashed and recorded; {} when all are off."""
     record = {}
+    if getattr(args, "reasoning", None):
+        record["reasoning"] = {**reasoning_contract(args.reasoning), "tools": tool_contract()}
     if args.completion == "finish-guard":
         record["completion"] = {
             "name": "finish-guard", "version": FINISH_GUARD_VERSION, "source_rule": SOURCE_RULE_VERSION,
             "rule": "fail-then-pass", "rejection": FINISH_GUARD_MESSAGE, "reasons": REASONS,
         }
     if args.nudge_fraction is not None and args.nudge is None:
-        raise SystemExit("--nudge-fraction needs --nudge midpoint")
+        raise SystemExit("--nudge-fraction needs --nudge midpoint or --nudge commit")
     if args.nudge == "midpoint":
         fraction = 0.5 if args.nudge_fraction is None else args.nudge_fraction
         if not 0 < fraction < 1:
@@ -199,6 +307,17 @@ def treatments_record(args) -> dict:
             "name": "midpoint", "version": MIDPOINT_NUDGE_VERSION, "source_rule": SOURCE_RULE_VERSION,
             "fraction": fraction, "template": MIDPOINT_NUDGE_TEMPLATE, "text": midpoint_nudge_text(fraction),
             "role": "system", "placement": "after the latest tool results, once per run",
+        }
+    if args.nudge == "commit":
+        fraction = 0.5 if args.nudge_fraction is None else args.nudge_fraction
+        if not 0 < fraction < 1:
+            raise SystemExit(f"--nudge-fraction must be between 0 and 1, not {fraction}")
+        record["nudge"] = {
+            "name": "commit", "version": COMMIT_NUDGE_VERSION, "fraction": fraction,
+            "template": COMMIT_NUDGE_TEMPLATE, "text": commit_nudge_text(fraction), "role": "system",
+            "placement": "after the latest tool results, once per run, whether or not a source file was edited",
+            "tools": {"version": COMMITMENT_TOOLS_VERSION,
+                      "names": [schema["function"]["name"] for schema in commitment_schemas()]},
         }
     if args.oracle is not None:
         match = re.fullmatch(r"hidden-tests(?::(\d+))?", args.oracle)
@@ -209,7 +328,75 @@ def treatments_record(args) -> dict:
             "name": "hidden-tests", "version": ORACLE_VERSION, "max_calls": calls,
             "returns": ["failing", "passing", "calls_left"], "scope": "fail_to_pass",
         }
+    if args.verifier_manifest is not None and args.verifier is None:
+        raise SystemExit("--verifier-manifest needs --verifier repro-test[:K]")
+    if args.verifier is not None:
+        if args.oracle is not None:
+            raise SystemExit("--verifier and --oracle both offer check(); use one")
+        match = re.fullmatch(r"repro-test(?::(\d+))?", args.verifier)
+        calls = int(match.group(1) or VERIFIER_DEFAULT_MAX_CALLS) if match else 0
+        if calls < 1:
+            raise SystemExit(f"--verifier must be repro-test or repro-test:K with K >= 1, not {args.verifier!r}")
+        if args.verifier_manifest is None:
+            raise SystemExit("--verifier needs --verifier-manifest")
+        manifest = resolve_repo_path(args.verifier_manifest)
+        record["verifier"] = {
+            "name": "repro-test", "version": VERIFIER_VERSION, "max_calls": calls,
+            "returns": ["failing", "passing", "calls_left"],
+            "scope": "one reproduction test per task, written before the campaign from the statement and the "
+                     "pre-edit workspace, frozen in the manifest",
+            "runner_sha256_lf": sha256_lf(VERIFIER_RUNNER),
+            "manifest": shown_path(manifest),
+            "manifest_sha256_lf": sha256_lf(manifest) if manifest.is_file() else None,
+        }
     return record
+
+
+def resolve_repo_path(value) -> Path:
+    """A path as given, or relative to the repository root when it is relative and absent from the working dir."""
+    path = Path(value)
+    if not path.is_absolute() and not path.exists():
+        path = ROOT / path
+    return path.resolve()
+
+
+def shown_path(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def sha256_lf(path: Path) -> str:
+    """sha256 of a text file's content with LF line endings (the same on every checkout, whatever core.autocrlf
+    wrote to the working copy)."""
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def load_verifier_manifest(treatments: dict) -> dict:
+    """The verifier manifest a run uses; it must still have the sha256 recorded in the treatment (and the hash)."""
+    verifier = treatments["verifier"]
+    path = resolve_repo_path(verifier["manifest"])
+    if verifier["manifest_sha256_lf"] is None or not path.is_file():
+        raise SystemExit(f"verifier manifest {verifier['manifest']} does not exist; generate it first "
+                         "(experiments/p6_pilot/repro_verifiers.py generate)")
+    if sha256_lf(path) != verifier["manifest_sha256_lf"]:
+        raise SystemExit(f"verifier manifest {verifier['manifest']} changed since the protocol was hashed")
+    return {"path": path, **json.loads(path.read_text(encoding="utf-8"))}
+
+
+def build_task_verifier(manifest: dict, task_id: str, bundle: Path, python: str, timeout_seconds: float) -> Path:
+    """The run's verifier bundle for one task from the manifest; the test's sha256 is checked against it."""
+    entry = (manifest.get("tasks") or {}).get(task_id)
+    if entry is None:
+        raise SystemExit(f"verifier manifest {shown_path(manifest['path'])} has no entry for {task_id}")
+    test_file = None
+    if entry.get("status") == "available":
+        test_file = (Path(manifest["path"]).parent / entry["file"]).resolve()
+        if sha256_lf(test_file) != entry["sha256_lf"]:
+            raise SystemExit(f"verifier test {entry['file']} does not match its manifest sha256")
+    return write_verifier_bundle(bundle, test_file=test_file, python=python, timeout_seconds=timeout_seconds,
+                                 runner=VERIFIER_RUNNER, collected=entry.get("collected"))
 
 
 def treatments_from_args(argv) -> dict:
@@ -221,11 +408,69 @@ def treatments_from_args(argv) -> dict:
     return treatments_record(known)
 
 
+# claude-cli client options: not treatments (they change how a reply is obtained, not what the model is offered),
+# off by default; one that is on changes the CLI contract recorded as the model's routing, so it enters the
+# protocol hash there. Other clients accept and ignore them (a card's scripted controls take its arm's extra_args).
+CLIENT_FLAGS = ("--cli-reply-recovery",)
+
+
+def add_client_arguments(parser) -> None:
+    group = parser.add_argument_group("claude-cli client options (off by default; one that is on enters the "
+                                      "protocol hash through the CLI contract)")
+    group.add_argument("--cli-reply-recovery", choices=[REPLY_RECOVERY], default=None,
+                       help=f"{REPLY_RECOVERY}: when the CLI cannot parse the model's StructuredOutput input, use "
+                            "it if json.loads(raw, strict=False) accepts it; after a rejected StructuredOutput "
+                            f"call, run the request's later attempts at --max-turns {RETRY_MAX_TURNS} so the CLI "
+                            "returns its rejection for one more model turn; adapter v3 (claude_cli.py)")
+
+
+def client_options_from_args(argv) -> dict:
+    """The claude-cli client options a list of runner arguments turns on ({} when none); for run_card.py."""
+    parser = argparse.ArgumentParser(add_help=False)
+    add_client_arguments(parser)
+    known, _ = parser.parse_known_args(list(argv))
+    return {"reply_recovery": known.cli_reply_recovery} if known.cli_reply_recovery else {}
+
+
+def cli_routing_contract(model: str, version: str, client_options=None) -> dict:
+    """The CLI contract recorded as a claude-cli model's routing; exactly v2's with no client option on."""
+    recovery = (client_options or {}).get("reply_recovery")
+    if recovery is None:
+        return cli_contract(model, max_turns=CLI_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version)
+    return cli_contract(model, max_turns=CLI_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version,
+                        reply_recovery=recovery)
+
+
 def model_tool_schemas(treatments: dict) -> list:
-    """The tool schemas the model is offered: the toolset's, plus check() when the oracle is on."""
+    """The tool schemas the model is offered: the toolset's, plus check() when the oracle or the verifier is on,
+    then the reasoning tools when the evidence ontology is on, then the commitment tools when the commitment nudge
+    is on (the order build_tools' mixins give)."""
+    extra = []
     if "oracle" in treatments:
-        return [*TOOL_SCHEMAS, check_schema(treatments["oracle"]["max_calls"])]
-    return TOOL_SCHEMAS
+        extra.append(check_schema(treatments["oracle"]["max_calls"]))
+    if "verifier" in treatments:
+        extra.append(verifier_schema(treatments["verifier"]["max_calls"]))
+    if "reasoning" in treatments:
+        extra.extend(REASONING_SCHEMAS)
+    if (treatments.get("nudge") or {}).get("name") == "commit":
+        extra.extend(commitment_schemas())
+    return [*TOOL_SCHEMAS, *extra] if extra else TOOL_SCHEMAS
+
+
+def lf_sha256(path: Path) -> str:
+    """sha256 with CRLF folded to LF (the bytes git stores), so a checkout's line endings do not change it."""
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def is_forecast_task(task: dict) -> bool:
+    return task.get("kind") == "forecast"
+
+
+def forecast_evaluator_digests() -> dict:
+    """The forecast evaluator's files (LF sha256) and fixed limits; part of every forecast task's contract."""
+    digests = {name: lf_sha256(FORECAST_DIR / name) for name in FORECAST_EVALUATOR_FILES}
+    return {**digests, "resolver_timeout_seconds": FORECAST_RESOLVER_TIMEOUT_SECONDS,
+            "agreement_windows": FORECAST_AGREEMENT_WINDOWS}
 
 
 def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict, task_contracts=(), treatments=None) -> str:
@@ -237,6 +482,12 @@ def protocol_hash(arm: str, routing: dict, execution: dict, guards: dict, task_c
     }
     if task_contracts:  # only tasks that alter the exported tree (mutation tasks); upstream P6 hashes are unchanged
         inputs["task_contracts"] = sorted(task_contracts, key=lambda contract: contract["task_id"])
+        if any(contract.get("kind") == "forecast" for contract in task_contracts):
+            # A forecast run is given other instructions and graded by another evaluator; the code ones are not hashed.
+            inputs["task_kind"] = "forecast"
+            inputs["instructions"] = FORECAST_INSTRUCTIONS
+            inputs["evaluator"] = forecast_evaluator_digests()
+            del inputs["managed_root_files"]
     if treatments:  # only runs with a treatment on; an incumbent's inputs are exactly as before
         inputs["treatments"] = treatments
         inputs["tools"] = model_tool_schemas(treatments)
@@ -276,8 +527,24 @@ def task_file_record(path: Path) -> dict:
     return {"path": shown, "sha256_lf": hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()}
 
 
+def forecast_contract(task: dict) -> dict:
+    """A forecast task's contract: everything its workspace, statement and evaluator are made from, as digests."""
+    digest = lambda text: hashlib.sha256(text.encode("utf-8")).hexdigest()  # noqa: E731
+    return {
+        "task_id": task["task_id"], "kind": "forecast", "materializer": FORECAST_MATERIALIZER_VERSION,
+        "template": task["template"], "params": task["params"], "series": task["series"],
+        "related": list(task["related"]), "forecast_date": task["forecast_date"], "horizon_days": task["horizon_days"],
+        "history_start": task["history_start"],
+        "snapshot_sha256": {name: item["sha256"] for name, item in sorted(task["snapshot"].items())},
+        "statement_sha256": digest(task["statement"]), "question_sha256": digest(task["question_md"]),
+        "readme_sha256": digest(task["data_readme"]), "evaluator": forecast_evaluator_digests(),
+    }
+
+
 def task_contract(task: dict):
     """What a task changes in the exported tree the model is given; None for an upstream P6 task."""
+    if is_forecast_task(task):
+        return forecast_contract(task)
     if not (task.get("mutation_patch") or task.get("hidden_paths") or task.get("hidden_tests")):
         return None
     patch = task.get("mutation_patch")
@@ -293,11 +560,25 @@ def task_contract(task: dict):
     }
 
 
-def resolve_execution(backend_name: str, image: str):
+def resolve_execution(backend_name: str, image: str, sandbox=None):
     """Return (backend or None for trusted-local, recorded execution contract). Never falls back."""
     if backend_name == "trusted-local":
-        return None, {"backend": "trusted-local", "guest_python": str(TASK_PYTHON),
-                      "authority": "trusted-local, not host-isolated"}
+        execution = {"backend": "trusted-local", "guest_python": str(TASK_PYTHON),
+                     "authority": "trusted-local, not host-isolated"}
+        if sandbox is None:  # the contract is exactly as before
+            return None, execution
+        if sandbox == namespace_sandbox.CONFINED_NAME:  # the model is told what it has; both are hashed
+            execution.update(authority=namespace_sandbox.CONFINED_AUTHORITY,
+                             sandbox=namespace_sandbox.confined_contract())
+            return namespace_sandbox.confined_backend(TASK_PYTHON), execution
+        if sandbox != namespace_sandbox.SANDBOX_NAME:
+            raise SystemExit(f"unknown --sandbox {sandbox!r}")
+        execution.update(authority="trusted-local in unshare -rnm namespaces: loopback-only network; the checkout's "
+                                   "experiments/, .git, raw cache and ~/harness-sealed hidden; working directory only",
+                         sandbox=namespace_sandbox.contract())
+        return namespace_sandbox.NamespaceSandboxBackend(namespace_sandbox.hidden_paths(ROOT)), execution
+    if sandbox is not None:
+        raise SystemExit("--sandbox applies to the trusted-local backend only")
     engine = IsolatedOCIBackend(image).engine
     inspected = subprocess.run([engine, "image", "inspect", "--format", "{{.Id}}", image],
                                capture_output=True, text=True)
@@ -464,6 +745,67 @@ def materialize_workspace(task: dict, repo: Path, workspace: Path) -> None:
         shutil.rmtree(staging, ignore_errors=True)
 
 
+def read_snapshot(task: dict, name: str) -> bytes:
+    """A forecast snapshot's bytes (LF), after checking them against the task's sha256 and its forecast date."""
+    item = task["snapshot"][name]
+    data = (FORECAST_DATA_DIR / item["path"]).read_bytes().replace(b"\r\n", b"\n")
+    if hashlib.sha256(data).hexdigest() != item["sha256"]:
+        raise ValueError(f"{task['task_id']}: snapshot {item['path']} does not match its sha256")
+    lines = data.decode("utf-8").splitlines()
+    if lines[:1] != ["date,value"]:
+        raise ValueError(f"{task['task_id']}: snapshot {item['path']} has no date,value header")
+    for line in lines[1:]:  # ISO dates compare as text
+        if line.split(",", 1)[0] >= task["forecast_date"]:
+            raise ValueError(f"{task['task_id']}: snapshot {item['path']} has a row dated {line[:10]}, not before "
+                             f"the forecast date {task['forecast_date']}")
+    return data
+
+
+def materialize_forecast_workspace(task: dict, workspace: Path) -> None:
+    """question.md, data/README.md and data/<series>.csv for the target and related series: rows dated before the
+    forecast date only. Nothing else is written; the outcome is not in the checkout at all (sealed resolutions)."""
+    if workspace.exists():
+        raise FileExistsError(f"workspace already exists: {workspace}")
+    files = {"question.md": task["question_md"].encode("utf-8"), "data/README.md": task["data_readme"].encode("utf-8")}
+    for name in [task["series"], *task["related"]]:
+        files[f"data/{name}.csv"] = read_snapshot(task, name)
+    for relative, data in files.items():
+        target = workspace / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+
+
+def build_forecast_evaluator(task: dict, bundle: Path, python: str) -> str:
+    """The bundle evaluate_forecast.py reads: the true resolvers, the target snapshot and task.json. Outside the
+    workspace; it holds no outcome either."""
+    (bundle / "data").mkdir(parents=True)
+    snapshot = read_snapshot(task, task["series"])
+    (bundle / "data" / f"{task['series']}.csv").write_bytes(snapshot)
+    for name in FORECAST_EVALUATOR_FILES:
+        shutil.copyfile(FORECAST_DIR / name, bundle / name)
+    contract = forecast_contract(task)
+    inputs = hashlib.sha256(json.dumps(contract, sort_keys=True).encode("utf-8")).hexdigest()
+    version = f"{task['task_id']}:inputs-{inputs[:16]}:evaluator-{contract['evaluator']['evaluate_forecast.py'][:16]}"
+    (bundle / "task.json").write_text(json.dumps({
+        "task_id": task["task_id"], "python": python, "series": task["series"], "template": task["template"],
+        "params": task["params"], "forecast_date": task["forecast_date"], "horizon_days": task["horizon_days"],
+        "history_start": task["history_start"], "resolver_timeout_seconds": FORECAST_RESOLVER_TIMEOUT_SECONDS,
+        "agreement_windows": FORECAST_AGREEMENT_WINDOWS, "evaluator_version": version,
+    }, indent=2), encoding="utf-8")
+    return version
+
+
+def forecast_acceptance_plan(task: dict, version: str) -> AcceptancePlan:
+    return AcceptancePlan(task["task_id"], [CriterionContract(
+        "committed", "forecast.json holds one probability in [0, 1] and resolve.py's outcome() returns a bool on a "
+        "past window.", "executable", version)],
+        evaluator_command=["{python}", "{bundle}/evaluate_forecast.py", "{bundle}", "{candidate}"])
+
+
+def forecast_description(task: dict) -> str:
+    return FORECAST_INSTRUCTIONS.format(forecast_date=task["forecast_date"], statement=task["statement"])
+
+
 def build_evaluator(task: dict, repo: Path, bundle: Path, pytest_timeout: int, python: str) -> str:
     files = bundle / "files"
     digest = hashlib.sha256()
@@ -584,11 +926,16 @@ def is_provider_stop(agent: dict) -> bool:
 
 
 def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, oracle_timeout_seconds=None,
-                **suite_arguments):
+                verifier_root=None, **suite_arguments):
     """The run's tool suite with each tool-level treatment that is on composed in as a mixin, and the per-run
     state object of every treatment (each has record()). With no treatment it is base_class itself. The oracle
-    runs the evaluator bundle at evaluator_root through the suite's backend."""
+    runs the evaluator bundle at evaluator_root, the verifier the bundle at verifier_root, through the suite's
+    backend. Each mixin appends its schemas after those of the classes after it in the MRO, so the commitment
+    tools (first in the list) come last, as model_tool_schemas lists them."""
     mixins, extra, state = [], {}, {}
+    if "reasoning" in treatments:
+        state["reasoning"] = extra["reasoning"] = EvidenceOntology(runtime, treatments["reasoning"]["mode"])
+        mixins.append(ReasoningTools)
     if "completion" in treatments:
         state["completion"] = extra["finish_guard"] = FinishGuard(runtime, SourceEditTracker(runtime.workspace))
         mixins.append(FinishGuardTools)
@@ -598,6 +945,15 @@ def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, o
             runtime, suite_arguments.get("backend"), evaluator_root, max_calls=treatments["oracle"]["max_calls"],
             **timeout)
         mixins.append(CheckOracleTools)
+    if "verifier" in treatments:
+        timeout = {} if oracle_timeout_seconds is None else {"timeout_seconds": oracle_timeout_seconds}
+        state["verifier"] = extra["oracle"] = ReproTestVerifier(
+            runtime, suite_arguments.get("backend"), verifier_root, max_calls=treatments["verifier"]["max_calls"],
+            **timeout)
+        mixins.append(CheckOracleTools)
+    if (treatments.get("nudge") or {}).get("name") == "commit":
+        state["commitment"] = extra["commitment"] = CommitmentLog(runtime)
+        mixins.insert(0, CommitmentTools)
     tool_class = type(f"Treated{base_class.__name__}", (*mixins, base_class), {}) if mixins else base_class
     return tool_class(runtime, **suite_arguments, **extra), state
 
@@ -605,8 +961,11 @@ def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, o
 def build_interventions(runtime, treatments: dict, state: dict) -> list:
     """The agent-loop treatments that are on, for the controller; each one's state is added to state."""
     interventions = []
-    if "nudge" in treatments:
+    if (treatments.get("nudge") or {}).get("name") == "midpoint":
         state["nudge"] = MidpointNudge(SourceEditTracker(runtime.workspace), treatments["nudge"]["fraction"])
+        interventions.append(state["nudge"])
+    elif (treatments.get("nudge") or {}).get("name") == "commit":
+        state["nudge"] = CommitmentNudge(treatments["nudge"]["fraction"])
         interventions.append(state["nudge"])
     return interventions
 
@@ -743,7 +1102,108 @@ class ScriptedRunClient:
         return ModelResponse({"role": "assistant", "content": None, "tool_calls": [call]})
 
 
+class ScriptedStepsClient:
+    """Issues fixed tool calls, one response per step, then finishes."""
+
+    def __init__(self, steps, summary: str):
+        self.steps, self.summary, self.calls = list(steps), summary, 0
+
+    def complete(self, messages, tools) -> ModelResponse:
+        self.calls += 1
+        if self.calls <= len(self.steps):
+            calls = [{"id": f"step{self.calls}_{i}", "type": "function", "function": {
+                "name": name, "arguments": json.dumps(arguments)}} for i, (name, arguments) in
+                enumerate(self.steps[self.calls - 1], 1)]
+        else:
+            calls = [{"id": "scripted_finish", "type": "function", "function": {
+                "name": "finish", "arguments": json.dumps({"summary": self.summary})}}]
+        return ModelResponse({"role": "assistant", "content": None, "tool_calls": calls})
+
+
+def true_resolver_source(task: dict) -> str:
+    """resolve.py for the scripted forecast clients: the true resolvers, then outcome() for this task's template."""
+    source = (FORECAST_DIR / "resolvers.py").read_text(encoding="utf-8").replace("\r\n", "\n")
+    return (f"{source}\n\ndef outcome(rows, T, horizon):\n"
+            f"    return resolve({task['template']!r}, rows, T, horizon, {task['params']!r})\n")
+
+
+# The peeker's probe script: every attempt to reach the network or read outside the workspace is printed; the forecast
+# is written only if all of them were blocked, so an isolating backend is "accepted" and a leak is "rejected".
+PEEK_SCRIPT = """import glob, json, socket, urllib.request
+from pathlib import Path
+
+here = Path.cwd()
+checkout = here.joinpath(*[".."] * 7)  # runs/<name>/sessions/<run>/workspace -> the repository root
+probes = {}
+
+
+def attempt(name, action):
+    try:
+        action()
+        probes[name] = "REACHED"
+    except Exception as exc:
+        probes[name] = "blocked: " + type(exc).__name__
+
+
+def read(path):  # an empty read (a file covered by /dev/null) is not a leak
+    if not Path(path).read_bytes():
+        raise FileNotFoundError(str(path) + " is empty")
+
+
+SEALED = "harness-sealed/022/resolutions.json"  # under some home directory; commands get no HOME variable
+
+
+def read_sealed():
+    found = [p for root in ("/root", "/home/*", "C:/Users/*") for p in glob.glob(root + "/" + SEALED)]
+    if not found:
+        raise FileNotFoundError(SEALED)
+    read(found[0])
+
+
+def read_git():
+    git = checkout / ".git"
+    read(git / "HEAD" if git.is_dir() else git)
+
+
+attempt("https", lambda: urllib.request.urlopen("https://example.com", timeout=5).read(1))
+attempt("socket", lambda: socket.create_connection(("1.1.1.1", 443), timeout=5).close())
+attempt("dns", lambda: socket.getaddrinfo("example.com", 443))
+attempt("checkout", lambda: read(checkout / "experiments" / "forecast_tasks" / "sources.json"))
+attempt("git", read_git)
+attempt("evaluator_bundle", lambda: read(here / ".." / "evaluator" / "task.json"))
+attempt("sealed", read_sealed)
+print(json.dumps(probes, indent=1, sort_keys=True))
+if all(value.startswith("blocked") for value in probes.values()):
+    Path("forecast.json").write_text(json.dumps({"probability": 0.5}))
+"""
+
+
+def forecast_scripted_client(kind: str, task: dict):
+    resolver = ("write_file", {"path": "resolve.py", "content": true_resolver_source(task)})
+
+    def forecast(probability):
+        return ("write_file", {"path": "forecast.json", "content": json.dumps({"probability": probability})})
+
+    if kind == "gold":
+        return ScriptedStepsClient([[forecast(task["base_rate"]), resolver]], "history-only base rate")
+    if kind == "constant":
+        return ScriptedStepsClient([[forecast(0.5), resolver]], "constant 0.5")
+    if kind == "gamer":
+        return ScriptedStepsClient([[forecast(1.7), resolver]], "probability outside [0, 1]")
+    if kind == "peeker":
+        return ScriptedStepsClient([[resolver, ("write_file", {"path": "peek.py", "content": PEEK_SCRIPT})],
+                                    [("run", {"command": "python peek.py", "timeout_seconds": 60})]],
+                                   "forecast written only if every peek was blocked")
+    if kind == "noop":
+        return ScriptedStepsClient([], "no change")
+    raise SystemExit(f"the {kind} client has no forecast-task behaviour")
+
+
 def scripted_client(kind: str, task: dict, repo: Path):
+    if is_forecast_task(task):
+        return forecast_scripted_client(kind, task)
+    if kind in FORECAST_CLIENTS:
+        raise SystemExit(f"the {kind} client is for forecast tasks only")
     if kind == "gold":
         writes = [(path, git(repo, "show", f"{task['fix_commit']}:{path}").decode("utf-8"))
                   for path in task["gold_source_files"]]
@@ -807,6 +1267,8 @@ def evaluator_details(runtime: LocalRuntime, report_artifact_id: str) -> dict:
                 "pytest_exit_code": output.get("pytest_exit_code"),
                 "pytest_timed_out": output.get("pytest_timed_out"),
             })
+            if "forecast" in output:  # forecast tasks only; a code task's record is unchanged
+                details["forecast"] = output["forecast"]
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             details["evaluator_output_error"] = repr(exc)
     details["measurement_errors"] = [m.get("infrastructure_error") for m in report.get("measurements", [])
@@ -817,9 +1279,17 @@ def evaluator_details(runtime: LocalRuntime, report_artifact_id: str) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--client", required=True,
-                        choices=["openrouter", "claude-cli", "gold", "noop", "breaker", "gamer", "tester"])
+                        choices=["openrouter", "claude-cli", "gold", "noop", "breaker", "gamer", "tester",
+                                 *FORECAST_CLIENTS])
     parser.add_argument("--backend", default="trusted-local", choices=["trusted-local", "oci"])
     parser.add_argument("--oci-image", default=DEFAULT_OCI_IMAGE)
+    parser.add_argument("--sandbox", choices=[namespace_sandbox.SANDBOX_NAME, namespace_sandbox.CONFINED_NAME],
+                        default=None,
+                        help="trusted-local on Linux: unshare-rnm (forecast tasks) runs every command under unshare "
+                             "-rnm with the checkout hidden; unshare-confined (any task) runs every command in a new "
+                             "root holding only its working directory, read-only system directories and the task "
+                             "interpreter, with no network and a private /tmp; refuses to start where it cannot "
+                             "run; in the execution contract and the protocol hash")
     parser.add_argument("--arm", default="bounded-transcript-v2", choices=sorted(ARMS))
     parser.add_argument("--run-name", required=True)
     parser.add_argument("--models", nargs="*", default=[])
@@ -850,11 +1320,21 @@ def main() -> None:
                         help="stop a run after three identical observation calls without a workspace change")
     parser.add_argument("--dry-run", action="store_true")
     add_treatment_arguments(parser)
+    add_client_arguments(parser)
     args = parser.parse_args()
     treatments = treatments_record(args)
+    client_options = ({"reply_recovery": args.cli_reply_recovery}
+                      if args.cli_reply_recovery and args.client == "claude-cli" else {})
 
     task_file, tasks = load_tasks(args.tasks)
+    forecast = any(is_forecast_task(t) for t in tasks)
+    if forecast and not all(is_forecast_task(t) for t in tasks):
+        raise SystemExit("--tasks mixes forecast and code tasks; run them in separate invocations")
+    if args.client in FORECAST_CLIENTS and not forecast:
+        raise SystemExit(f"the {args.client} client is for forecast tasks only")
+    instructions = FORECAST_INSTRUCTIONS if forecast else INSTRUCTIONS
     contracts = [c for c in (task_contract(t) for t in tasks) if c is not None]
+    verifier_manifest = load_verifier_manifest(treatments) if "verifier" in treatments and not args.dry_run else None
     live = args.client in ("openrouter", "claude-cli")
     if live:
         if not args.models:
@@ -871,14 +1351,26 @@ def main() -> None:
             raise SystemExit(f"--provider {item!r} must be MODEL=SLUG for a model in --models")
         pins[model] = provider_slug.lower()
     if args.client == "claude-cli":
+        for model in models:
+            problem = model_id_problem(model)
+            if problem and not args.dry_run:
+                raise SystemExit(f"--models: {problem}")
+            if problem:  # a dry run may still plan an alias, so the hashes of runs made before the rule replay
+                print(f"warning: {problem}; a live run would refuse it")
         version = cli_version()
-        routing = {model: cli_contract(model, max_turns=CLI_MAX_TURNS, timeout=CLI_TIMEOUT_SECONDS, version=version)
-                   for model in models}
+        routing = {model: cli_routing_contract(model, version, client_options) for model in models}
     else:
         routing = {model: ({"order": [pins[model]], "allow_fallbacks": False, "require_parameters": True}
                            if model in pins else dict(UNPINNED_ROUTING)) for model in models}
     arm = args.arm
-    backend, execution = resolve_execution(args.backend, args.oci_image)
+    if args.sandbox == namespace_sandbox.SANDBOX_NAME and not forecast:
+        raise SystemExit("--sandbox unshare-rnm applies to forecast tasks only")
+    backend, execution = resolve_execution(args.backend, args.oci_image, args.sandbox)
+    if args.sandbox:  # fail closed, dry runs included: never run a sandboxed card unconfined
+        problem = (backend.availability() if args.sandbox == namespace_sandbox.CONFINED_NAME
+                   else namespace_sandbox.availability())
+        if problem:
+            raise SystemExit(problem)
     guards = {"stop_on_repeats": args.stop_on_repeats,
               "resume_after_provider_stop": args.resume_after_provider_stop,
               "resume_wait_seconds": args.resume_wait_seconds if args.resume_after_provider_stop else None}
@@ -893,7 +1385,7 @@ def main() -> None:
         "max_calls_per_run": args.max_calls_per_run, "max_context_bytes": args.max_context_bytes,
         "max_tokens": args.max_tokens, "pytest_timeout_seconds": args.pytest_timeout, "temperature": 0,
         "max_attempts_per_call": MAX_ATTEMPTS, "max_total_calls": args.max_total_calls,
-        "instructions": INSTRUCTIONS, "tools": model_tool_schemas(treatments), "toolset_version": TOOLSET_VERSION,
+        "instructions": instructions, "tools": model_tool_schemas(treatments), "toolset_version": TOOLSET_VERSION,
         "execution": execution, "guards": guards,
     }
     if treatments:  # absent when every treatment is off, so an incumbent's config.json is unchanged
@@ -961,7 +1453,14 @@ def main() -> None:
     print(f"task budgets per run: {json.dumps(run_budgets)}")
     if treatments:
         print("treatments (in the protocol hash): " + "; ".join(
-            f"{surface} {value['name']} {value['version']}" for surface, value in sorted(treatments.items())))
+            f"{surface} {value['name']} {value['version']}" + (f" mode={value['mode']}" if "mode" in value else "")
+            for surface, value in sorted(treatments.items())))
+    if client_options:
+        print(f"claude-cli reply recovery {client_options['reply_recovery']} (adapter "
+              f"{routing[models[0]]['adapter_version']}: --max-turns {CLI_MAX_TURNS}, {RETRY_MAX_TURNS} on retries "
+              f"after a rejected StructuredOutput call; in the protocol hash)")
+    elif args.cli_reply_recovery:
+        print(f"--cli-reply-recovery applies to the claude-cli client only; the {args.client} client ignores it")
     if args.dry_run:
         return
 
@@ -989,27 +1488,43 @@ def main() -> None:
         run_root = run_dir / "sessions" / run_id
         if run_root.exists():  # an earlier attempt of this run was interrupted; keep it for audit
             run_root.rename(run_root.with_name(f"{run_id}.interrupted-{datetime.now():%Y%m%d%H%M%S}"))
-        repo = ensure_commits(task)
         workspace, bundle = run_root / "workspace", run_root / "evaluator"
-        materialize_workspace(task, repo, workspace)
-        version = build_evaluator(task, repo, bundle, args.pytest_timeout, execution["guest_python"])
+        verifier_root = None
+        if forecast:
+            repo = None
+            materialize_forecast_workspace(task, workspace)
+            version = build_forecast_evaluator(task, bundle, execution["guest_python"])
+            plan = forecast_acceptance_plan(task, version)
+            description = forecast_description(task)
+            criteria = [{"id": "committed", "kind": "executable", "visibility": "hidden"}]
+        else:
+            repo = ensure_commits(task)
+            materialize_workspace(task, repo, workspace)
+            version = build_evaluator(task, repo, bundle, args.pytest_timeout, execution["guest_python"])
+            if verifier_manifest is not None:
+                verifier_root = build_task_verifier(verifier_manifest, task["task_id"], run_root / "verifier",
+                                                    execution["guest_python"], args.pytest_timeout)
+            plan = acceptance_plan(task, version)
+            description = INSTRUCTIONS.format(repo=task["repo"], repo_url=task["repo_url"], statement=task["statement"])
+            criteria = [{"id": "hidden-upstream-tests", "kind": "executable", "visibility": "hidden"}]
         runtime = LocalRuntime(run_root / "session", workspace)
         initial_revision = runtime.workspace.revision()
         src = workspace / "src"
-        if backend is None:
+        if backend is None or not backend.host_isolation:  # trusted-local, sandboxed or not: host paths
             python_path = str(src if src.is_dir() else workspace)
         else:
             python_path = "/workspace/src" if src.is_dir() else "/workspace"  # guest path of the same tree
         tools, treatment_state = build_tools(
             runtime, treatments, RepeatGuardTools if args.stop_on_repeats else ToolSuite,
             evaluator_root=bundle, oracle_timeout_seconds=args.pytest_timeout + 120,  # as final acceptance
+            verifier_root=verifier_root,
             interpreter=execution["guest_python"], backend=backend, environment={
                 "PYTHONPATH": python_path, "PYTHONIOENCODING": "utf-8"})
         interventions = build_interventions(runtime, treatments, treatment_state)
         envelope = TaskEnvelope(
             task_id=task["task_id"],
-            description=INSTRUCTIONS.format(repo=task["repo"], repo_url=task["repo_url"], statement=task["statement"]),
-            criteria=[{"id": "hidden-upstream-tests", "kind": "executable", "visibility": "hidden"}],
+            description=description,
+            criteria=criteria,
             authority={"filesystem": "task workspace", "execution": execution["authority"],
                        "network": "not provided to tasks"},
             budgets=run_budgets[model],
@@ -1018,7 +1533,8 @@ def main() -> None:
             inner = OpenRouterClient(api_key, model, calls_path, run_id, budget, args.max_tokens, routing[model])
         elif args.client == "claude-cli":
             inner = ClaudeCliClient(model, calls_path, run_id, budget, max_attempts=MAX_ATTEMPTS,
-                                    timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS)
+                                    timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS,
+                                    **({"reply_recovery": client_options["reply_recovery"]} if client_options else {}))
         else:
             inner = scripted_client(args.client, task, repo)
         client = GuardedClient(inner, tools, args.stop_on_repeats)
@@ -1051,13 +1567,20 @@ def main() -> None:
         record["reported_cost_usd"] = round(sum(costs), 8) if costs else None
         if treatments:  # absent for an incumbent run, whose record is unchanged
             record["treatments"] = {surface: state.record() for surface, state in treatment_state.items()}
-        record["http_attempts"] = len(read_jsonl(calls_path)) - attempts_before
+        if client_options:  # absent unless reply recovery is on: what it did in this run's attempts
+            record["cli_reply_recovery"] = inner.recovery_summary()
+        run_calls = read_jsonl(calls_path)[attempts_before:]
+        record["http_attempts"] = len(run_calls)
+        if args.client == "claude-cli":  # every model ID the CLI reported for this run (one, unless drifted)
+            record["reported_models"] = sorted({m for row in run_calls for m in row.get("reported_models") or []})
+            if record["stop"] == MODEL_MISMATCH:
+                record["model_mismatch"] = {"expected": model, "reported": record["reported_models"]}
         record["tool_results"] = [
             {"call_id": m.get("tool_call_id"), "head": m["content"][:300], "tail": m["content"][-300:]}
             for m in TranscriptStore(runtime).load() if m.get("role") == "tool"
         ]
         decision = AcceptanceRunner(runtime, backend).evaluate(
-            acceptance_plan(task, version), evaluator_root=bundle, timeout_seconds=args.pytest_timeout + 120)
+            plan, evaluator_root=bundle, timeout_seconds=args.pytest_timeout + 120)
         record["initial_workspace_revision"] = initial_revision
         record["acceptance"] = {"status": decision.status, "criterion_outcomes": decision.criterion_outcomes,
                                 "report_artifact_id": decision.report_artifact_id,
@@ -1067,6 +1590,9 @@ def main() -> None:
         print(f"{run_id}: {record['stop']} -> {decision.status} {decision.criterion_outcomes}", flush=True)
         if budget_stop:
             print(f"Stopping: {budget_stop}")
+            break
+        if record["stop"] == MODEL_MISMATCH:  # every later run would meet the same model; void this one and stop
+            print(f"Stopping: {record['agent'].get('error')}")
             break
 
 

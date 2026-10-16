@@ -1,0 +1,187 @@
+{
+  "task_id": "sqlparse-mut-061",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.319451,
+  "statement_sha256": "32c063b142c3c8c198b69d2bf2b38289d3a69640e06c6e448743901164002626",
+  "generated_at": "2026-09-29T06:03:36.083746+00:00",
+  "file": "sqlparse-mut-061/test_reticle_repro.py",
+  "sha256_lf": "a2e89a39fd3dc926ca1d4df47a65941e356af8c2ba24341a4c0f989522d7ca22",
+  "collected": 2,
+  "pre_edit": {
+    "collected": 2,
+    "passed": 1,
+    "failed": 1,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 1,
+      "seconds": 173.3,
+      "cost_usd": 0.31945060000000003,
+      "num_turns": 17,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-kprbhapf\\workspace\\sqlparse\\filters\\reindent.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "wrap_after",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-kprbhapf\\workspace",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "wrap|reindent|identifier list",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-kprbhapf\\workspace\\CHANGELOG",
+            "output_mode": "content",
+            "-n": true,
+            "head_limit": 80
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/site-packages/sqlparse*/**"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": true,
+          "input": {
+            "pattern": "identifier list",
+            "path": "C:\\",
+            "output_mode": "files_with_matches",
+            "head_limit": 20
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-kprbhapf\\workspace\\docs\\source\\api.rst",
+            "offset": 40,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": ".git/**"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-kprbhapf\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent=True|select foo|SELECT foo|reindent_aligned",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-kprbhapf\\workspace",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-kprbhapf\\workspace\\docs\\source\\intro.rst",
+            "offset": 30,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-kprbhapf\\workspace\\README.rst",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-kprbhapf\\workspace\\CHANGELOG",
+            "offset": 300,
+            "limit": 50
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-kprbhapf\\workspace\\sqlparse\\filters\\aligned_indent.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "indent_columns",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-kprbhapf\\workspace",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "a2e89a39fd3dc926ca1d4df47a65941e356af8c2ba24341a4c0f989522d7ca22",
+      "rationale": "The report and docs/source/api.rst both establish that with reindent=True and wrap_after left at its default (0/\"unspecified\"), a comma-separated identifier list should be split so that every item is on its own line; the code's `self.wrap_after > 0` guard in `_process_identifierlist` breaks this by suppressing all wrapping when wrap_after is 0, which is exactly the observed 'select foo, ...' (unsplit) vs 'select foo,\\n...' (split) failure. The first test checks (via stripped lines, to avoid guessing exact indentation width) that each identifier lands on its own line by default, which fails today and passes once the guard is fixed; the second test locks in the documented, currently-working \"fits under an explicit wrap_after limit \u2192 stays on one line\" behavior so a fix doesn't regress that case.",
+      "pre_edit": {
+        "collected": 2,
+        "passed": 1,
+        "failed": 1,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

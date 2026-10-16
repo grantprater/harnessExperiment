@@ -11,10 +11,19 @@ Modes (exactly one):
   --plan      print every invocation and its expected protocol hash, and the blockers that make
               --execute refuse; nothing runs. With --replay RUN_DIR, compare the planned invocation of
               that name (or the plan's only invocation) with a recorded run's config.json
-  --execute   take the live-run lock (fail if held), preflight each live arm with the runner's own
-              --dry-run, run the invocations sequentially, then write the report skeleton.
-              --resume skips invocations that already have a completed record
+  --execute   take the live-run lock (fail if held), check the machine (an OCI arm needs its pinned engine
+              running; a card with none needs no engine) and log its facts, preflight each live arm with the
+              runner's own --dry-run, run the invocations sequentially, then write the report skeleton.
+              --resume skips invocations that already have a completed record. With
+              budgets.campaign.list_price_cap_usd, stops before the next attempt once the CLI list-price
+              estimates of the campaign's calls reach the cap
   --report    rewrite the report skeleton from whatever results exist; nothing runs
+  --integrity scan every attempt directory's run-tool commands for reads outside the workspace, git, package and
+              network tools (run_integrity.py; report only, changes no acceptance). --execute also scans each
+              attempt as it ends, logs an `integrity_scan` event and prints the flagged commands
+
+A trusted-local arm with `sandbox: unshare-confined` makes --execute refuse (exit 2) before any run when the host
+cannot confine its commands (the runner refuses too, dry runs included): never a silent unconfined run.
 
 Usage (from the repo root):
   python experiments/session_harness/run_card.py experiments/session_harness/cards/007.json --plan --limit 5
@@ -38,19 +47,32 @@ import json
 import math
 import os
 from pathlib import Path
+import platform
 import random
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import run_integrity  # noqa: E402  (post-run integrity scan: report only)
 SCHEMA_PATH = Path(__file__).resolve().parent / "cards" / "card.schema.json"
 LIVE_CLIENTS = ("openrouter", "claude-cli")
 EXECUTABLE_STATUSES = ("approved", "running")
+# The claude-cli client takes full model IDs only (the runner's claude_cli.model_id_problem; kept here so a card
+# validates without loading its runner). Required of cards --execute can launch (status approved or running);
+# completed, inconclusive, invalidated and proposed cards validate and replay as before. 2026-09-30: CLI 2.1.286
+# moved the alias `sonnet` from claude-sonnet-5 to claude-sonnet-5-5 without a protocol-hash change.
+FULL_CLAUDE_MODEL_ID = re.compile(r"claude-[a-z0-9][a-z0-9.-]*[a-z0-9]")
+# The runner's stop labels for adapter failures: voided and retried or stopped, never a task outcome.
+# model_mismatch (the CLI reported another model than the pinned one; the cloud port called it model_pin_violation)
+# cannot be fixed by a retry: classify() makes it an integrity stop (corrupted_protocol, exit 4), resumable.
+ADAPTER_FAILURE_STOPS = ("model_error", "model_mismatch")
 EXIT_OK, EXIT_REFUSED, EXIT_CHECKPOINT, EXIT_INTEGRITY, EXIT_LOCKED = 0, 2, 3, 4, 5
 DEFAULT_RUN_NAME_TEMPLATE = "{prefix}-{task}-r{rollout}-{arm}"
 # config.json fields added to runner v8 after some runs were recorded (S6a: --tasks FILE.json); a replay of an
@@ -63,7 +85,7 @@ RESERVED_FLAGS = frozenset({
     "--max-calls-per-run", "--max-context-bytes", "--max-tokens", "--max-total-calls", "--pytest-timeout",
     "--max-attempts-per-run", "--max-tool-actions-per-run", "--elapsed-cap-seconds", "--cost-ceiling-usd",
     "--attempt-cost-reservation-usd", "--resume-after-provider-stop", "--resume-wait-seconds",
-    "--stop-on-repeats", "--dry-run",
+    "--stop-on-repeats", "--dry-run", "--sandbox",
 })
 # Measurement vocabulary. RESULT_MEASUREMENTS come from results.jsonl; JOURNAL_MEASUREMENTS need the
 # session journal (S6b) and are listed as pending in the report skeleton.
@@ -250,6 +272,11 @@ def validate_card(card) -> List[str]:
             errors.append(f"{where}: provider pins apply to the openrouter client only")
         if arm["client"] == "claude-cli" and card["environment"]["claude_cli_version"] is None:
             errors.append(f"{where}: pin environment.claude_cli_version or mark it unresolved")
+        model = arm.get("model")
+        if arm["client"] == "claude-cli" and card["status"] in EXECUTABLE_STATUSES and isinstance(model, str) \
+                and (not FULL_CLAUDE_MODEL_ID.fullmatch(model) or model.endswith("-latest")):
+            errors.append(f"{where}: model {arm['model']!r} is a CLI alias; a claude-cli card with status {card['status']} pins "
+                          f"the full model ID (e.g. claude-sonnet-5)")
         guards = arm["guards"]
         if guards["resume_after_provider_stop"] == 0 and guards["resume_wait_seconds"] is not None:
             errors.append(f"{where}.guards: resume_wait_seconds must be null when resume_after_provider_stop is 0")
@@ -522,6 +549,9 @@ class RunnerAdapter:
         """The runner's own resolve_execution, with the card's image ID and engine standing in for probes."""
         module = self.module
         if backend["kind"] == "trusted-local":
+            if backend.get("sandbox"):  # only runners that offer --sandbox; the contract is then the runner's own
+                return module.resolve_execution("trusted-local", getattr(module, "DEFAULT_OCI_IMAGE", ""),
+                                                backend["sandbox"])[1]
             return module.resolve_execution("trusted-local", getattr(module, "DEFAULT_OCI_IMAGE", ""))[1]
         image_id, engine = backend["image_id"], backend["engine"]
         real_backend = module.IsolatedOCIBackend
@@ -550,9 +580,13 @@ class RunnerAdapter:
         finally:
             module.IsolatedOCIBackend, module.subprocess = saved
 
-    def routing(self, client: str, model: Optional[str], provider: Optional[str], cli_version: Optional[str]) -> dict:
+    def routing(self, client: str, model: Optional[str], provider: Optional[str], cli_version: Optional[str],
+                extra_args: Sequence[str] = ()) -> dict:
         module = self.module
         if client == "claude-cli":
+            options = self.client_options(extra_args)
+            if options:  # only runners that declare client options; the contract is then the runner's own
+                return {model: module.cli_routing_contract(model, cli_version, options)}
             return {model: module.cli_contract(model, max_turns=module.CLI_MAX_TURNS,
                                                timeout=module.CLI_TIMEOUT_SECONDS, version=cli_version)}
         if client == "openrouter":
@@ -565,10 +599,16 @@ class RunnerAdapter:
         """(the treatments an arm's extra_args turn on, as the runner records and hashes them; the extra_args
         flags that are not treatment flags). Runners without treatments see every flag as other."""
         flags = [a.split("=", 1)[0] for a in extra_args if a.startswith("--")]
-        known = set(getattr(self.module, "TREATMENT_FLAGS", ()))
+        known = set(getattr(self.module, "TREATMENT_FLAGS", ())) | set(getattr(self.module, "CLIENT_FLAGS", ()))
         function = getattr(self.module, "treatments_from_args", None)
         treatments = function(extra_args) if function is not None and extra_args else {}
         return treatments, [flag for flag in flags if flag not in known]
+
+    def client_options(self, extra_args: Sequence[str]) -> dict:
+        """The claude-cli client options an arm's extra_args turn on, as the runner records them in the CLI
+        contract ({} for none, or for a runner without client options)."""
+        function = getattr(self.module, "client_options_from_args", None)
+        return function(list(extra_args)) if function is not None and extra_args else {}
 
     def protocol_hash(self, policy: str, routing: dict, execution: dict, guards: dict, contracts=(),
                       treatments=None) -> str:
@@ -723,6 +763,8 @@ def runner_args(card: dict, default_task_file: Optional[Path], client: str, arm:
     args += ["--arm", arm["policy"], "--backend", "oci" if arm["backend"]["kind"] == "oci" else "trusted-local"]
     if arm["backend"]["kind"] == "oci":
         args += ["--oci-image", arm["backend"]["image"]]
+    if arm["backend"].get("sandbox"):
+        args += ["--sandbox", arm["backend"]["sandbox"]]
     args.append("--tasks")
     if default_task_file is None or resolve_path(card["tasks"]["file"]) != default_task_file:
         args.append(card["tasks"]["file"])
@@ -828,13 +870,15 @@ def build_plan(card: dict, card_path: Path) -> Plan:
                 pending.append("hash needs the OCI image ID pinned")
             try:
                 treatments, _ = adapter.treatments(list(arm.get("extra_args", [])))
+                adapter.client_options(list(arm.get("extra_args", [])))
             except SystemExit as exc:  # the runner refuses a treatment value; --execute would fail the same way
                 problems.append(f"extra_args: {exc}")
             blockers.extend(f"{owner}: {problem}" for problem in problems)
             if problems or pending:
                 arm_notes[owner] = "; ".join(problems + pending)
             else:
-                parts = {"routing": adapter.routing(client, arm.get("model"), arm.get("provider"), cli_version),
+                parts = {"routing": adapter.routing(client, arm.get("model"), arm.get("provider"), cli_version,
+                                                    list(arm.get("extra_args", []))),
                          "execution": adapter.execution(arm["backend"]), "guards": guards_record(arm),
                          "treatments": treatments}
                 result = (adapter, parts)
@@ -845,12 +889,18 @@ def build_plan(card: dict, card_path: Path) -> Plan:
     for arm in card["arms"]:
         adapter, parts = protocol_for(arm, arm["client"], f"arm {arm['name']}")
         if arm.get("extra_args"):
-            # Treatment flags the runner declares (TREATMENT_FLAGS) are hashed here as the runner hashes them;
-            # any other flag is seen only by the --execute preflight.
+            # Treatment flags (TREATMENT_FLAGS) and claude-cli client options (CLIENT_FLAGS, in the CLI contract)
+            # the runner declares are hashed here as the runner hashes them; any other flag is seen only by the
+            # --execute preflight.
             treatments = parts["treatments"] if parts is not None else {}
             other = adapter.treatments(list(arm["extra_args"]))[1] if parts is not None else ["?"]
             notes = [f"treatments in the planned hash: " + ", ".join(
                 f"{value['name']} {value['version']}" for _, value in sorted(treatments.items()))] if treatments else []
+            options = adapter.client_options(list(arm["extra_args"])) if parts is not None else {}
+            if options and arm["client"] == "claude-cli":
+                contract = next(iter(parts["routing"].values()))
+                notes.append(f"client options in the planned hash (CLI contract {contract['adapter_version']}): "
+                             + ", ".join(f"{name} {value}" for name, value in sorted(options.items())))
             if other:
                 notes.append("extra_args may change the hash; verified only at --execute")
             arm_notes[f"arm {arm['name']}"] = "; ".join(notes)
@@ -888,7 +938,7 @@ def build_plan(card: dict, card_path: Path) -> Plan:
             if kind == "run" and arm["name"] not in line_ending_hashes:
                 variant = adapter.other_line_ending_hash(arm["policy"], parts["routing"], parts["execution"],
                                                          parts["guards"], contracts, parts["treatments"])
-                if variant:
+                if variant and variant[1] != protocol:  # equal when the runner does not hash that file (forecast tasks)
                     line_ending_hashes[arm["name"]] = variant
             live = client in LIVE_CLIENTS
             model = run_model(client, arm)
@@ -982,7 +1032,8 @@ def describe_hashes(hashes: Optional[List[str]]) -> str:
 
 def describe_backend(backend: dict) -> str:
     if backend["kind"] == "trusted-local":
-        return "trusted-local"
+        sandbox = f", sandbox {backend['sandbox']}" if backend.get("sandbox") else ""
+        return f"trusted-local ({isolation_of(backend)}{sandbox})"
     image_id = backend["image_id"]
     short = "unresolved" if is_unresolved(image_id) else image_id.split(":")[-1][:12]
     return f"oci {backend['image']}@{short} ({backend['engine']})"
@@ -1112,6 +1163,120 @@ def replay_check(plan: Plan, run_dir: Path, out: Callable[[str], None] = print) 
 # Lock
 # ---------------------------------------------------------------------------------------------
 
+def isolation_of(backend: dict) -> str:
+    """What isolates an arm's candidate commands: the OCI container, or for trusted-local what the card declares
+    (host: none beyond the host account; vm-sandbox: a disposable VM such as a cloud session's). Recorded in the
+    campaign log; not a runner input, so not in the protocol hash."""
+    if backend["kind"] == "oci":
+        return "oci-container"
+    return backend.get("isolation", "host")
+
+
+def engine_problems(plan: "Plan") -> List[str]:
+    """Why an OCI arm of the plan cannot run on this machine: its pinned engine is not on PATH, or does not answer
+    `ENGINE version` (for example a docker client without a daemon). Empty when every arm is trusted-local."""
+    problems = []
+    engines = sorted({inv.arm["backend"]["engine"] for inv in plan.invocations if inv.arm["backend"]["kind"] == "oci"})
+    for engine in engines:
+        executable = shutil.which(engine)
+        if executable is None:
+            problems.append(f"the card pins an OCI backend on {engine}, which is not on PATH: this machine has no "
+                            f"container engine for it. OCI cards cannot run here; use a trusted-local card (a "
+                            f"different protocol, e.g. cards/019.json) or a machine with {engine}")
+            continue
+        try:
+            completed = subprocess.run([executable, "version"], capture_output=True, text=True, timeout=30)
+            answer = completed.returncode, (completed.stderr or completed.stdout).strip()
+        except (OSError, subprocess.SubprocessError) as exc:
+            answer = None, repr(exc)
+        if answer[0] != 0:
+            problems.append(f"the card pins an OCI backend on {engine}, but `{engine} version` fails ({answer[1][-200:]}): "
+                            f"the engine is not running. OCI cards cannot run here until it does")
+    return problems
+
+
+CONFINED_SANDBOX = "unshare-confined"
+
+
+def confinement_problems(plan: "Plan") -> List[str]:
+    """Why an arm that asks for `sandbox: unshare-confined` cannot be confined on this machine: the runner's own
+    confined backend runs its self-test (one confined `true`). Empty when no arm asks for it. Fail closed: a card that
+    asks for confinement never runs without it."""
+    problems, seen = [], set()
+    for inv in plan.invocations:
+        backend = inv.arm["backend"]
+        if backend.get("sandbox") != CONFINED_SANDBOX or inv.script is None or inv.script in seen:
+            continue
+        seen.add(inv.script)
+        module = RunnerAdapter.load(inv.script).module
+        try:
+            confined, _ = module.resolve_execution("trusted-local", getattr(module, "DEFAULT_OCI_IMAGE", ""),
+                                                   CONFINED_SANDBOX)
+            problem = confined.availability()
+        except (SystemExit, Exception) as exc:  # noqa: BLE001 - any failure to confine is a refusal
+            problem = f"{type(exc).__name__}: {exc}"
+        if problem:
+            problems.append(f"the card asks for sandbox {CONFINED_SANDBOX}, which cannot run on this machine "
+                            f"({problem}); it refuses rather than run the model's commands unconfined")
+    return problems
+
+
+def integrity_scan(campaign: "Campaign", inv: "Invocation", name: str, out: Callable[[str], None]) -> dict:
+    """Scan one attempt's run-tool commands (run_integrity.scan_run), log an integrity_scan event, print flags.
+    Report only: the outcome and every record stay as they are."""
+    try:
+        scan = run_integrity.scan_run(campaign.runs_root(inv) / name)
+    except Exception as exc:  # noqa: BLE001 - a scan failure is logged, never a campaign stop
+        campaign.log("integrity_scan", run=name, version=run_integrity.SCAN_VERSION, error=repr(exc)[:300])
+        return {}
+    campaign.log("integrity_scan", run=name, version=scan["version"], run_commands=scan["run_commands"],
+                 flagged=len(scan["flagged"]), flag_counts=scan["flag_counts"],
+                 commands=[{k: entry[k] for k in ("response", "tool_call_id", "flags", "command")}
+                           for entry in scan["flagged"]])
+    if scan["flagged"]:
+        out(f"  integrity: {run_integrity.summary_line(scan)}")
+    return scan
+
+
+def print_integrity(plan: "Plan", out: Callable[[str], None] = print) -> Tuple[int, int]:
+    """--integrity: scan every attempt directory of the plan; (attempts scanned, attempts flagged). Report only."""
+    campaign, scanned, flagged = Campaign(plan), 0, 0
+    for inv in plan.invocations:
+        if inv.script is None:
+            continue
+        for name in campaign.attempt_names(inv):
+            scan = run_integrity.scan_run(campaign.runs_root(inv) / name)
+            scanned += 1
+            flagged += bool(scan["flagged"])
+            if scan["flagged"]:
+                out(run_integrity.summary_line(scan))
+                for entry in scan["flagged"]:
+                    out(f"  r{entry['response']} {entry['tool_call_id']} [{', '.join(entry['flags'])}] "
+                        f"{entry['command'][:200]}")
+    out(f"integrity scan ({run_integrity.SCAN_VERSION}): {flagged} of {scanned} attempt directories flagged "
+        f"(report only; acceptance unchanged)")
+    return scanned, flagged
+
+
+def machine_facts(plan: "Plan", python: str) -> dict:
+    """Host facts for the campaign log: the isolation of every arm, the OS, CPUs, Pythons and CLI version."""
+    facts = {
+        "isolation": {arm["name"]: isolation_of(arm["backend"]) for arm in plan.card["arms"]},
+        "os": platform.platform(), "system": platform.system(), "machine": platform.machine(),
+        "cpu_count": os.cpu_count(), "driver_python": platform.python_version(), "runner_python": python,
+        "task_python": None, "claude_cli_version": None,
+    }
+    module = plan.runner.module if plan.runner else None
+    if module is not None and hasattr(module, "TASK_PYTHON"):
+        facts["task_python"] = str(module.TASK_PYTHON)
+    if module is not None and any(inv.client == "claude-cli" for inv in plan.invocations):
+        try:
+            facts["claude_cli_version"] = module.cli_version()
+        except (SystemExit, OSError, subprocess.SubprocessError) as exc:
+            facts["claude_cli_version"] = f"unavailable: {exc}"
+    return facts
+
+
 class LockHeld(Exception):
     pass
 
@@ -1210,14 +1375,23 @@ class Campaign:
         wanted = set(inv.task_ids)
         return [r for r in read_jsonl(self.runs_root(inv) / name / "results.jsonl") if r.get("task_id") in wanted]
 
-    def used_attempts(self) -> int:
-        total = 0
+    def calls(self) -> List[dict]:
+        """Every attempt record (calls.jsonl) of every attempt directory of the plan's invocations."""
+        rows = []
         for inv in self.plan.invocations:
             if inv.script is None:
                 continue
             for name in self.attempt_names(inv):
-                total += len(read_jsonl(self.runs_root(inv) / name / "calls.jsonl"))
-        return total
+                rows += read_jsonl(self.runs_root(inv) / name / "calls.jsonl")
+        return rows
+
+    def used_attempts(self) -> int:
+        return len(self.calls())
+
+    def list_price_usd(self) -> float:
+        """The sum of the CLI's list-price estimates (result total_cost_usd) over the campaign's attempts; attempts
+        without one (scripted clients, failed spawns, OpenRouter) add nothing. Not a bill: see claude_cli.py."""
+        return round(sum(float((row.get("cli_result") or {}).get("total_cost_usd") or 0) for row in self.calls()), 6)
 
     def log(self, event: str, **fields) -> None:
         self.directory.mkdir(parents=True, exist_ok=True)
@@ -1261,6 +1435,12 @@ def classify(plan: Plan, campaign: Campaign, inv: Invocation, name: str, exit_co
             return Outcome("integrity", f"control_failed: {inv.name} expected {inv.expect} but not on {wrong}", records)
         return Outcome("ok", f"control {inv.name}: all {len(records)} {inv.expect}", records)
     failures = [r for r in records if is_model_failure(r)]
+    pinned = [r for r in failures if is_model_mismatch(r)]
+    if pinned:  # the CLI answered with another model than the card pins: a corrupted protocol, never retried.
+        # The attempt is void (never a completed attempt), so --resume reruns it once the model is right.
+        return Outcome("integrity", f"corrupted_protocol: {(pinned[0].get('agent') or {}).get('error', '')[:300]}; "
+                                    f"the attempt is void. Pin the model the CLI serves (or restore the expected "
+                                    f"one), then --resume", records)
     if failures:
         error = (failures[0].get("agent") or {}).get("error") or ""
         return Outcome("failure", f"model_error: {error[:200]}", records)
@@ -1268,9 +1448,32 @@ def classify(plan: Plan, campaign: Campaign, inv: Invocation, name: str, exit_co
     return Outcome("ok", f"{record.get('stop')} -> {record.get('acceptance', {}).get('status')}", records)
 
 
+def campaign_spend(campaign: "Campaign", events: Optional[List[dict]] = None) -> dict:
+    """The nested model cost (CLI list price) and call count of a campaign, and its wall time from the first
+    campaign_start to the last campaign event (None before a start)."""
+    events = read_jsonl(campaign.log_path) if events is None else events
+    times = []
+    for event in events:
+        try:
+            times.append((event["event"], datetime.fromisoformat(event["time"])))
+        except (KeyError, ValueError):
+            continue
+    starts = [time for name, time in times if name == "campaign_start"]
+    wall = round((max(time for _, time in times) - starts[0]).total_seconds(), 1) if starts else None
+    return {"nested_cost_usd": campaign.list_price_usd(), "nested_calls": len(campaign.calls()), "wall_seconds": wall}
+
+
 def is_model_failure(record: dict) -> bool:
-    """A provider/model error (the runner's stop label model_error), as opposed to a task outcome or guard."""
-    return record.get("stop") == "model_error"
+    """An adapter failure (the runner's stop label model_error or model_mismatch), as opposed to a task outcome
+    or guard: the attempt is void and never counted as an outcome."""
+    return record.get("stop") in ADAPTER_FAILURE_STOPS
+
+
+def is_model_mismatch(record: dict) -> bool:
+    """The claude-cli model guard fired: the stop label model_mismatch (exp/ontology-pilot's name), or a model_error
+    whose error names model_pin_violation (the cloud port's name, as cloud-era records carry it)."""
+    error = (record.get("agent") or {}).get("error") or ""
+    return record.get("stop") == "model_mismatch" or "model_pin_violation" in error
 
 
 def completed_attempt(campaign: Campaign, inv: Invocation) -> Optional[str]:
@@ -1344,6 +1547,13 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
     if existing and not resume:
         out(f"refused: {len(existing)} planned run directories already exist (first: {existing[0]}); pass --resume")
         return EXIT_REFUSED
+    problems = engine_problems(plan) + confinement_problems(plan)
+    if problems:
+        reason = "refused: " + "; ".join(problems)
+        campaign.log("stop", reason=reason)
+        out(reason)
+        return EXIT_REFUSED
+    campaign.log("host", **machine_facts(plan, python))
     stop = preflight(plan, campaign, python, out)
     if stop:
         campaign.log("stop", reason=stop[1])
@@ -1354,6 +1564,7 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
                  invocations=len(plan.invocations), sets=plan.sets, pid=os.getpid())
     consecutive, wall = 0, card["budgets"]["per_run"].get("invocation_wall_seconds")
     cap = card["budgets"]["campaign"].get("max_model_attempts")
+    price_cap = card["budgets"]["campaign"].get("list_price_cap_usd")
     checked_units = set()
 
     def finish(code: int, reason: str) -> int:
@@ -1365,7 +1576,13 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
 
     def over_cap(inv: Invocation) -> Optional[str]:
         """Before every attempt: the attempt must fit the campaign cap, and the first attempt in a unit
-        (task x rollout) must leave room for every arm of the unit (plan 5.5: launch a pair only when both fit)."""
+        (task x rollout) must leave room for every arm of the unit (plan 5.5: launch a pair only when both fit).
+        With a list-price cap, the campaign's summed CLI list-price estimate must still be below it."""
+        if price_cap is not None and inv.client in LIVE_CLIENTS:
+            spent = campaign.list_price_usd()
+            if spent >= price_cap:
+                return (f"list-price cap: the campaign's calls total ${spent:.2f} at CLI list price, the card's cap is "
+                        f"${price_cap:.2f}")
         if cap is None:
             return None
         pending = [inv]
@@ -1406,6 +1623,7 @@ def _execute_locked(plan: Plan, resume: bool, python: str, sleep, out) -> int:
                          outcome=outcome.kind,
                          detail=outcome.detail, elapsed_s=round(time.time() - started, 1))
             out(f"[{inv.index}/{len(plan.invocations)}] {name}: {outcome.kind} ({outcome.detail})")
+            integrity_scan(campaign, inv, name, out)
             if outcome.kind == "integrity":
                 return finish(EXIT_INTEGRITY, f"integrity stop: {outcome.detail}")
             if outcome.kind == "ok":
@@ -1743,6 +1961,19 @@ def render_report(plan: Plan, entries: List[dict]) -> str:
     add("")
     add(f"Incomplete units: {len(incomplete)}" + (f" (first: {incomplete[0]})" if incomplete else "") + ".")
     add("")
+    price_cap = card["budgets"]["campaign"].get("list_price_cap_usd")
+    if price_cap is not None:  # cards with a spend guard (the cloud cards); other reports are unchanged
+        spend = campaign_spend(campaign, events)
+        add("## Spend and time")
+        add("")
+        add(f"- nested model cost (CLI list price): ${spend['nested_cost_usd']:.2f} over {spend['nested_calls']} CLI "
+            f"calls (the sum of `cli_result.total_cost_usd` in the campaign's `calls.jsonl`; card cap ${price_cap:.2f})")
+        wall = spend["wall_seconds"]
+        add(f"- wall time: " + ("n/a" if wall is None else f"{wall:.0f} s ({wall / 3600:.2f} h), first campaign_start "
+                                                          f"to last campaign event"))
+        add("- The supervising session's own usage is not included; the account's usage for the session's period "
+            "minus the nested cost estimates it.")
+        add("")
     add("## Decision rule (from the card)")
     add("")
     add(f"> {card['decision_rule']}")
@@ -1766,6 +1997,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     mode.add_argument("--plan", action="store_true")
     mode.add_argument("--execute", action="store_true")
     mode.add_argument("--report", action="store_true")
+    mode.add_argument("--integrity", action="store_true",
+                      help="scan every attempt's run-tool commands for outside reads (report only)")
     parser.add_argument("--resume", action="store_true", help="with --execute: skip invocations already completed")
     parser.add_argument("--limit", type=int, default=None, help="with --plan: print only the first N invocations")
     parser.add_argument("--json", action="store_true", help="with --plan: print the plan as JSON")
@@ -1798,6 +2031,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         return EXIT_OK
     if args.report:
         print(f"report skeleton: {display_path(write_report(plan))}")
+        return EXIT_OK
+    if args.integrity:
+        print_integrity(plan)
         return EXIT_OK
     return execute(plan, resume=args.resume, python=args.python, lock_path=args.lock)
 

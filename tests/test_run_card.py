@@ -21,7 +21,7 @@ STUB_CLI = "9.9.9 (stub)"
 
 
 def arm(name, policy, **extra):
-    value = {"name": name, "client": "claude-cli", "model": "m", "policy": policy, "toolset": "stub-tools-v1",
+    value = {"name": name, "client": "claude-cli", "model": "claude-m1", "policy": policy, "toolset": "stub-tools-v1",
              "backend": {"kind": "trusted-local"},
              "guards": {"stop_on_repeats": False, "resume_after_provider_stop": 0, "resume_wait_seconds": None}}
     value.update(extra)
@@ -103,9 +103,38 @@ class Fixture:
 
 class CardValidationTests(unittest.TestCase):
     def test_repository_cards_validate(self):
-        for name in ("006-replay", "007", "008", "009", "011", "012", "013", "014", "015"):
+        for name in ("006-replay", "007", "008", "009", "010", "011", "012", "013", "014", "015", "017"):
             card = run_card.load_card(CARDS / f"{name}.json")
             self.assertEqual(run_card.validate_card(card), [], name)
+
+    def test_executable_claude_cli_cards_pin_the_full_model_id(self):
+        """An alias resolves to whatever the installed CLI maps it to (2026-09-30: `sonnet` moved from
+        claude-sonnet-5 to claude-sonnet-5-5), so a card --execute can launch must name the full model ID."""
+        base = Fixture(self).card()
+        for alias in ("sonnet", "opus", "haiku", "default", "opusplan", "claude-sonnet-latest", "sonnet[1m]"):
+            for status in ("approved", "running"):
+                card = copy.deepcopy(base)
+                card["status"] = status
+                card["arms"][0]["model"] = alias
+                self.assertIn(f"arms.a: model {alias!r} is a CLI alias", "\n".join(run_card.validate_card(card)),
+                              (alias, status))
+        for model in ("claude-sonnet-5", "claude-opus-5-5", "claude-haiku-4-5-20251001"):
+            card = copy.deepcopy(base)
+            card["arms"][0]["model"] = model
+            self.assertEqual(run_card.validate_card(card), [], model)
+        # Cards --execute cannot launch keep their recorded alias: they validate and replay as before.
+        for status in ("proposed", "completed", "inconclusive", "invalidated"):
+            card = copy.deepcopy(base)
+            card["status"] = status
+            card["arms"][0]["model"] = "sonnet"
+            self.assertEqual(run_card.validate_card(card), [], status)
+        for name in ("006-replay", "013"):  # completed claude-cli cards recorded with the alias
+            card = run_card.load_card(CARDS / f"{name}.json")
+            self.assertEqual({a["model"] for a in card["arms"]}, {"sonnet"})
+            self.assertEqual(run_card.validate_card(card), [], name)
+        for name in ("010", "014", "015"):  # pinned after the alias drift
+            card = run_card.load_card(CARDS / f"{name}.json")
+            self.assertEqual({a["model"] for a in card["arms"]}, {"claude-sonnet-5"}, name)
 
     def test_minimal_card_is_valid(self):
         self.assertEqual(run_card.validate_card(Fixture(self).card()), [])
@@ -254,7 +283,7 @@ class ExpansionTests(unittest.TestCase):
         module = plan.runner.module
         execution = {"backend": "isolated-oci", "image": "localhost/stub:1", "image_id": image_id,
                      "container_user_arguments": ["--user", "65534:65534"]}
-        routing = {"m": module.cli_contract("m", max_turns=1, timeout=300, version=STUB_CLI)}
+        routing = {"claude-m1": module.cli_contract("claude-m1", max_turns=1, timeout=300, version=STUB_CLI)}
         guards = {"stop_on_repeats": False, "resume_after_provider_stop": 0, "resume_wait_seconds": None}
         self.assertEqual(plan.arm_hashes["a"], [module.protocol_hash("stub-policy-a", routing, execution, guards)])
         self.assertIn("--oci-image", plan.runs[0].args)
@@ -371,23 +400,54 @@ class ExpansionTests(unittest.TestCase):
 
     def test_treatment_cards_plan_the_runner_hashes_and_keep_the_incumbent(self):
         """Cards 013-015: the treatment flag in extra_args is hashed as the runner hashes it; the incumbent arm
-        plans card 007's hash for every shared task; only the approval blockers remain."""
+        plans card 007's hash for every shared task (013, which ran on the alias) or card 007's routing with only
+        the model pinned to its full ID and the CLI re-pinned to 2.1.286 (014, 015, pinned 2026-09-30 after the
+        alias drift)."""
         runner = run_card.RunnerAdapter.load(ROOT / "experiments" / "p6_pilot" / "run_pilot.py").module
         card_007 = run_card.build_plan(run_card.load_card(CARDS / "007.json"), CARDS / "007.json")
         hash_007 = {inv.task_ids[0]: inv.expected_hash for inv in card_007.runs}
+        routing_007 = {inv.task_ids[0]: inv.expected_config["provider_routing"] for inv in card_007.runs}
+
+        def pinned(routing, model, cli_version):
+            (contract,) = routing.values()
+            arguments = list(contract["arguments"])
+            arguments[arguments.index("--model") + 1] = model
+            # integration/2026-10: the merged model guard (cloud port) adds "model_pin" to a full ID's contract
+            model_pin = runner.cli_contract(model, max_turns=1, timeout=300, version=cli_version)["model_pin"]
+            return {model: {**contract, "model": model, "arguments": arguments, "cli_version": cli_version,
+                            "model_pin": model_pin}}
+
         for name, arm_name in (("013", "finish-guard"), ("014", "midpoint-nudge"), ("015", "check-oracle")):
             with self.subTest(card=name):
                 card = run_card.load_card(CARDS / f"{name}.json")
                 self.assertEqual(run_card.validate_card(card), [])
                 plan = run_card.build_plan(card, CARDS / f"{name}.json")
-                self.assertEqual(plan.blockers, [])  # cards 013-015 were approved by the owner on 2026-09-28
+                # cards 014-015 were approved by the owner on 2026-09-28; card 013 has run and is completed
+                self.assertEqual(plan.blockers, [] if card["status"] != "completed" else
+                                 ["card status is 'completed'; --execute needs approved or running"])
                 self.assertEqual((len(plan.runs), len(plan.controls)), (32, 2))
                 treatment = next(a for a in card["arms"] if a["name"] == arm_name)
                 treatments = runner.treatments_from_args(treatment["extra_args"])
                 self.assertTrue(treatments)
+                model = treatment["model"]
                 for inv in plan.runs:
+                    task_id = inv.task_ids[0]
+                    if model == "sonnet":
+                        self.assertEqual(inv.expected_config["provider_routing"], routing_007[task_id])
+                    else:
+                        self.assertEqual(model, "claude-sonnet-5")
+                        self.assertEqual(inv.expected_config["provider_routing"], pinned(routing_007[task_id], model,
+                                                                                        card["environment"]["claude_cli_version"]))
                     if inv.name == "incumbent":
-                        self.assertEqual(inv.expected_hash, hash_007[inv.task_ids[0]])
+                        if model == "sonnet":
+                            self.assertEqual(inv.expected_hash, hash_007[task_id])
+                        else:  # the full model ID is a hash input: the pinned incumbent is not card 007's
+                            self.assertNotEqual(inv.expected_hash, hash_007[task_id])
+                            contracts = [runner.task_contract(t) for t in plan.universe.tasks.values()
+                                         if t["task_id"] == task_id]
+                            self.assertEqual(inv.expected_hash, runner.protocol_hash(
+                                "pressure-recent-v3", inv.expected_config["provider_routing"],
+                                inv.expected_config["execution"], inv.expected_config["guards"], contracts, {}))
                         self.assertNotIn("treatments", inv.expected_config)
                     else:
                         self.assertNotEqual(inv.expected_hash, hash_007[inv.task_ids[0]])
@@ -511,6 +571,28 @@ class ExecutionTests(unittest.TestCase):
         self.assertTrue(all((runs_root / name / "results.jsonl").exists() for name in names))
         skipped = [e["run"] for e in fixture.events(plan) if e["event"] == "skip"]
         self.assertEqual(skipped, names[:3])
+
+    def test_model_mismatch_is_a_void_adapter_failure_that_stops_without_retry(self):
+        fixture = Fixture(self)
+        plan = fixture.plan(fixture.card())
+        names = [inv.run_name for inv in plan.invocations]
+        fixture.behave({names[1]: ["model_mismatch", "accept"]})
+        # integration/2026-10: one guard with the cloud port's model pin, so a mismatch is an integrity stop
+        # (corrupted_protocol, exit 4) rather than exp/ontology-pilot's checkpoint (exit 3); still void and resumable.
+        self.assertEqual(fixture.execute(plan), run_card.EXIT_INTEGRITY)
+        self.assertEqual(fixture.invoked(), names[:2])  # no retry: it would meet the same model
+        self.assertEqual(fixture.sleeps, [])
+        end = [e for e in fixture.events(plan) if e["event"] == "invocation_end"][-1]
+        self.assertEqual(end["outcome"], "integrity")
+        self.assertTrue(end["detail"].startswith("corrupted_protocol: model_mismatch (model_pin_violation): "
+                                                 "requested claude-m1"), end["detail"])
+        self.assertIn("model_mismatch", fixture.events(plan)[-1]["reason"])
+        record = run_card.read_jsonl(fixture.dir / "runs" / names[1] / "results.jsonl")[0]
+        self.assertTrue(run_card.is_model_failure(record))
+        # Not a task outcome: the invocation has no completed attempt, so --resume runs it again.
+        self.assertIsNone(run_card.completed_attempt(run_card.Campaign(plan), plan.invocations[1]))
+        self.assertEqual(fixture.execute(plan, resume=True), run_card.EXIT_OK)
+        self.assertEqual(fixture.invoked()[2:3], [f"{names[1]}-a2"])  # the void attempt runs again on --resume
 
     def test_consecutive_failures_across_invocations(self):
         fixture = Fixture(self)

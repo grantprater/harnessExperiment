@@ -1,0 +1,284 @@
+{
+  "task_id": "sqlparse-mut-061",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.579359,
+  "statement_sha256": "32c063b142c3c8c198b69d2bf2b38289d3a69640e06c6e448743901164002626",
+  "generated_at": "2026-09-29T07:12:42.065540+00:00",
+  "file": "sqlparse-mut-061/test_reticle_repro.py",
+  "sha256_lf": "a8dc0e2a516334db6e02f1055bd2a0910f1eb458d21254b3eb9e325471cf5d21",
+  "collected": 2,
+  "pre_edit": {
+    "collected": 2,
+    "passed": 0,
+    "failed": 2,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 259.4,
+      "cost_usd": 0.5793592000000001,
+      "num_turns": 29,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse/filters/reindent.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "wrap_after",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "identifier list",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-g9rzqrjq/workspace/CHANGELOG",
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_tokens",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse/engine/grouping.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "group_tokens",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "group_tokens|class TokenList|def __init__|self.value",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse/sql.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse/sql.py",
+            "limit": 120
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class TokenList|def __init__|_pprint_tree|def append_token|def insert_before|def insert_after|self.value =|self\\.tokens =\"",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse/sql.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class TokenList|def __init__|value =|def insert_before|def insert_after|def append_token",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse/sql.py",
+            "offset": 158,
+            "limit": 220
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent: identifier list|identifier list with wrap|comment first",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace/docs",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace/docs/source/intro.rst",
+            "-n": true,
+            "-A": 15
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": true,
+          "input": {
+            "pattern": "reindent|format(",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace/docs/source/intro.rst",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-g9rzqrjq/workspace/docs/source/intro.rst"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse/utils.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse/filters/right_margin.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent=True",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent|wrap_after|comma_first|indent_columns",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace/docs/source/api.rst",
+            "-n": true,
+            "-A": 4
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-g9rzqrjq/workspace/docs/source/api.rst"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-g9rzqrjq/workspace/README.rst"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Strip|whitespace|trailing",
+            "path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse/filters/others.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse/filters/others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-g9rzqrjq/workspace/sqlparse/formatter.py"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "a8dc0e2a516334db6e02f1055bd2a0910f1eb458d21254b3eb9e325471cf5d21",
+      "rationale": "The regression is in sqlparse/filters/reindent.py's `_process_identifierlist`: the else-branch (plain, non-VALUES, non-function identifier lists) now guards the newline insertion with `self.wrap_after > 0 and ...`. Since `wrap_after` defaults to 0, this guard silently disables the split entirely for the common case, even though docs/source/api.rst explicitly documents `wrap_after`: \"If unspecified, it puts every item in the list on its own line.\" The reproduction verifies that `sqlparse.format(sql, reindent=True)` (wrap_after unspecified) puts each SELECT column on its own line, aligned under the first column (offset 7, matching `len('select ')`, computed the same way the surrounding code already computes offsets for VALUES lists and CASE expressions) \u2014 this matches the exact truncated failure shown in the report ('select foo, ...' vs 'select foo,\\n...'). On the current buggy code the columns stay on one line ('select foo, bar, baz\\nfrom table1[...]'), so both tests fail now; once the wrongly-added `wrap_after > 0` guard is removed/fixed, each identifier gets its own line and the tests pass.",
+      "pre_edit": {
+        "collected": 2,
+        "passed": 0,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

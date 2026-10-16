@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "id": "E3-calibration-023",
+  "title": "Second mutation bank (boltons): incumbent calibration for near transfer, on the cloud VM backend",
+  "status": "completed",
+  "markdown": "experiments/session_harness/E3-calibration-023.md",
+  "hypothesis": "A capable model succeeds on some boltons mutation tasks and fails on others under the incumbent harness, so a subset of the 20 selected tasks lands in the 30-70% zone. The bank is the near-transfer test set: harness changes selected on sqlparse tasks are later compared on it.",
+  "run_prefix": "c023",
+  "run_name_template": "{prefix}-{task}-r{rollout}",
+  "runner": {
+    "script": "experiments/p6_pilot/run_pilot.py",
+    "runner_version": 8
+  },
+  "environment": {
+    "claude_cli_version": "2.1.286 (Claude Code)"
+  },
+  "prerequisites": [
+    {
+      "text": "Bank generated and checked (experiments/mutation_tasks/tasks.boltons.json; generation log generation_log.boltons.json; every task cross-checked on Linux in the pinned image, linux_check.boltons.json) and host gold/noop controls passed on 5 tasks (trusted-local and OCI; E3-calibration-023.md, Evidence before approval)",
+      "done": true
+    },
+    {
+      "text": "owner approval recorded in the markdown card (then set status to running), conditional on the cloud session's checks passing on the VM before any model run: setup_cloud.sh READY (it clones boltons at 45a251181fba4c5a4ecc05e838da1c394e1ed0e4), the core tests, and the gold/noop controls",
+      "done": true
+    }
+  ],
+  "arms": [
+    {
+      "name": "incumbent",
+      "client": "claude-cli",
+      "model": "claude-sonnet-5",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "trusted-local",
+        "isolation": "vm-sandbox"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [
+        "--cli-reply-recovery",
+        "lenient-json+second-turn-on-retry"
+      ],
+      "expected_protocol_hash": null,
+      "note": "Card 019's incumbent arm (card 007's protocol on the cloud backend: runner v8, pressure-recent-v3, reticle-tools-v3, repeat guard off, trusted-local in the VM, model pinned) with card 020's CLI reply recovery (adapter v3). The protocol hash includes each task's contract and the VM's task-interpreter path, so every task has its own hash (listed per invocation by --plan on the VM); the arm-level field stays null."
+    }
+  ],
+  "controls": [
+    {
+      "name": "gold",
+      "client": "gold",
+      "task_set": "controls",
+      "like_arm": "incumbent",
+      "expect": "accepted"
+    },
+    {
+      "name": "noop",
+      "client": "noop",
+      "task_set": "controls",
+      "like_arm": "incumbent",
+      "expect": "rejected"
+    }
+  ],
+  "tasks": {
+    "file": "experiments/mutation_tasks/tasks.boltons.json",
+    "file_sha256": "d958410c25897fb4048736a0292b1a1b6029a65c0c04b8ce7568784a8d04eb5e",
+    "sets": {
+      "calibration": {
+        "ref": {
+          "path": "experiments/session_harness/E3-calibration-023-tasks.json",
+          "key": "task_ids",
+          "sha256": "0e24792dd1642373e20b119828f3eb097cfdca9e918dcd02d65b20a12355de35"
+        },
+        "note": "select_calibration_tasks.py --seed 23 --card E3-calibration-023 --bank experiments/mutation_tasks/tasks.boltons.json: card 007's rule on the boltons bank, recorded before any run."
+      },
+      "controls": {
+        "ids": [
+          "boltons-mut-010",
+          "boltons-mut-001"
+        ],
+        "note": "The first calibration task and one bank task outside the set, as card 007's controls; both passed gold/noop on the host (trusted-local and OCI) before the card was proposed."
+      }
+    }
+  },
+  "blocks": [
+    {
+      "name": "calibration",
+      "task_set": "calibration",
+      "arms": [
+        "incumbent"
+      ],
+      "rollouts": 2,
+      "arm_order": {
+        "rule": "fixed"
+      }
+    }
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 20,
+      "model_attempts": 24,
+      "active_seconds": 1200,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {
+        "default": 120,
+        "max": 600
+      },
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {
+      "max_runs": 40,
+      "max_model_attempts": 1200,
+      "monetary_cap_usd": null,
+      "note": "Card 007's and 019's caps: 40 runs x 24 attempts = 960 planned, room for 10 retried runs. The CLI bills the owner's credits, so card 019's spend guard: checkpoint before the next attempt once the CLI list-price estimates of the campaign's calls reach $40.",
+      "list_price_cap_usd": 40
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [
+      60,
+      300
+    ],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "The markdown asks for the repeat flag to be recorded while the run continues. run_pilot.py records the flag only with --stop-on-repeats, which also stops the run, so this card runs without the guard and repeat_flags are derived from the transcripts afterwards (S6b).",
+    "manual": [
+      "Evaluator leakage, evidence loss, or authority escape stops the campaign (run_card.py detects evidence loss and protocol drift; leakage and escape need trajectory review).",
+      "A model_pin_violation (the CLI answered with a model other than claude-sonnet-5) is a corrupted protocol: run_card.py stops the campaign (exit 4); do not resume until the cause is known.",
+      "A cli_auth_error or an isolation failure (tools other than StructuredOutput, an MCP server, an apiKeySource naming an environment key) stops the campaign; do not work around it by passing ANTHROPIC_* variables.",
+      "The supervising cloud session commits evidence to the branch cloud-results-023 at least every 10 finished runs (python experiments/cloud/campaign.py run); if the VM or session ends, resume from the last pushed evidence.",
+      "Trusted-local gives the model's commands the VM's filesystem and network: the trajectory review checks every run for reads outside the workspace (notably the task clone .runtime/bug-mining/repos/boltons, which holds the healthy code), for pip install boltons, and for fetches of upstream boltons; such a run is an authority escape.",
+      "Do not tune statements, budgets or the environment during the card, and do not tune statements on these tasks after seeing results (they become the held-in set for near-transfer work); any change is a new card."
+    ]
+  },
+  "measurements": {
+    "per_run": [
+      "accepted",
+      "stop_reason",
+      "responses_used",
+      "provider_attempts",
+      "tool_calls",
+      "active_seconds",
+      "wall_seconds",
+      "tokens",
+      "first_edit_response",
+      "rejected_calls",
+      "repeat_flags",
+      "edit_in_gold_files",
+      "verification_before_finish"
+    ],
+    "campaign": [
+      "acceptance_rate_ci",
+      "outcome_distribution",
+      "per_task_outcomes",
+      "evolution_set",
+      "acceptance_by:mutation_kind",
+      "acceptance_by_size:fail_to_pass"
+    ]
+  },
+  "decision_rule": "Calibration, not a promotion. Pass: 40 runs complete with evidence and at least 5 contrastive tasks (1/2). Report acceptance with a 95% interval, per-task outcomes, the evolution set (1/2 tasks plus 0/2 tasks whose trajectories show a fixable mechanism), and acceptance by mutation kind and by fail_to_pass size (1, 2-3, 4-10, 11+). Otherwise report the distribution; card 010's difficulty decision then covers both banks. Statements are not tuned on these tasks.",
+  "report": {
+    "path": "experiments/session_harness/E3-calibration-023-report.md",
+    "sets_path": "experiments/session_harness/E3-calibration-023.sets.json"
+  },
+  "notes": [
+    "Card 007's design (20 tasks by card 007's selection rule, 2 rollouts, one invocation per task and rollout named c023-<task>-r<n>, --max-total-calls 24, the same per-run budgets and retry rules) on the boltons bank, on card 019's cloud backend (trusted-local, isolation vm-sandbox, CLI 2.1.286 (re-pinned from 2.1.284 by the owner on 2026-10-01; the cloud VM now ships 2.1.286), model pinned as claude-sonnet-5), with card 020's --cli-reply-recovery lenient-json+second-turn-on-retry.",
+    "The selection seed is the card number (23), as card 007 used 7; the selector ran once, before any run.",
+    "The bank was generated on the Windows host; every task's failing set was re-measured on Linux in the pinned image before the card (linux_check.boltons.json), because the cloud VM is Linux.",
+    "The boltons workspace keeps the library's doctests (they live in the source files the model can read and run); acceptance uses only the hidden tests/ suite. Whether a run executed doctests is reported from the trajectory review.",
+    "Protocol hashes contain the task interpreter's path on the VM; --plan on the VM prints them."
+  ]
+}

@@ -1,0 +1,5 @@
+# 2026-10-01T01:35:05+00:00 /home/user/harnessExperiment/.runtime/test-venv/bin/python /home/user/harnessExperiment/experiments/p6_pilot/run_pilot.py --client gold --arm pressure-recent-v3 --backend trusted-local --tasks experiments/mutation_tasks/tasks.boltons.json boltons-mut-010 boltons-mut-001 --run-name c023-control-gold --max-calls-per-run 20 --max-context-bytes 80000 --max-tokens 4096 --pytest-timeout 600 --max-attempts-per-run 24 --elapsed-cap-seconds 1200 --cli-reply-recovery lenient-json+second-turn-on-retry
+task budgets per run: {"gold-client": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
+--cli-reply-recovery applies to the claude-cli client only; the gold client ignores it
+boltons-mut-001__gold-client: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}
+boltons-mut-010__gold-client: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}

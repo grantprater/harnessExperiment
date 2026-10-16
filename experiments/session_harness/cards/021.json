@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "id": "E4-verifier-commit-021",
+  "title": "Realistic verifier (a pre-written reproduction test behind check()) plus a mid-budget commitment prompt, paired with the incumbent on the cloud VM backend",
+  "status": "invalidated",
+  "markdown": "experiments/session_harness/E4-verifier-commit-021.md",
+  "hypothesis": "On card 007's five hard tasks, where two thirds of incumbent rejections end at the response budget without a committed fix and most rejected runs saw the mutated line (observation audit: 17 of 22), asking the model at mid-budget to commit to a hypothesis and test a stated prediction, and giving it a check() backed by a reproduction test written in advance from the problem statement only (no hidden tests), raises acceptance above the incumbent's. Card 020's hidden-test oracle is the ceiling for the verifier half; each frozen reproduction test's validity (fails on the mutated tree, passes on the gold tree) is scored offline to say how much of that ceiling a realistic verifier can reach.",
+  "run_prefix": "c021",
+  "run_name_template": "{prefix}-{task}-r{rollout}-{arm}",
+  "runner": {
+    "script": "experiments/p6_pilot/run_pilot.py",
+    "runner_version": 8
+  },
+  "environment": {
+    "claude_cli_version": "2.1.284 (Claude Code)"
+  },
+  "prerequisites": [
+    {
+      "text": "owner approval recorded in the markdown card (then set status to running)",
+      "done": true
+    },
+    {
+      "text": "smoke on the VM (experiments/cloud/RUN_IN_CLOUD-021.md steps 5-6): the one-response probe with the pinned model passed, and the reproduction tests were generated with experiments/p6_pilot/repro_verifiers.py generate into experiments/session_harness/verifiers/021 (manifest committed; no test regenerated or edited after generation)",
+      "done": true
+    }
+  ],
+  "arms": [
+    {
+      "name": "incumbent",
+      "client": "claude-cli",
+      "model": "claude-sonnet-5",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "trusted-local",
+        "isolation": "vm-sandbox"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [
+        "--cli-reply-recovery",
+        "lenient-json+second-turn-on-retry"
+      ],
+      "expected_protocol_hash": null,
+      "note": "Card 020's incumbent arm, unchanged (card 007's protocol on the cloud backend, model pinned, CLI reply recovery); on the same VM path its planned hash per task equals card 020's, so card 020's ten hard-task incumbent runs are a secondary, unpaired reference."
+    },
+    {
+      "name": "verifier-commit",
+      "client": "claude-cli",
+      "model": "claude-sonnet-5",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "trusted-local",
+        "isolation": "vm-sandbox"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [
+        "--verifier",
+        "repro-test:3",
+        "--verifier-manifest",
+        "experiments/session_harness/verifiers/021/manifest.json",
+        "--nudge",
+        "commit",
+        "--cli-reply-recovery",
+        "lenient-json+second-turn-on-retry"
+      ],
+      "expected_protocol_hash": null,
+      "note": "The incumbent arm plus two treatments: check() over the task's frozen reproduction test (counts only, 3 calls; card 020's interface, a realistic source), and the commitment nudge at half the response budget with the commit_hypothesis and record_observation tools. The manifest's sha256 is in the protocol hash, so hashes are final only once it is generated and committed.",
+      "bundle": {
+        "module": "tool use + agent loop",
+        "surface": "added tool (task-changing arm) + harness message + two recording tools",
+        "treatment": "repro-test-verifier-v1 + commit-nudge-v1 (commitment-tools-v1)",
+        "flag": "--verifier repro-test:3 --verifier-manifest experiments/session_harness/verifiers/021/manifest.json --nudge commit",
+        "max_calls": 3,
+        "code": "reticle/tools/repro_verifier.py, experiments/p6_pilot/run_repro_test.py, experiments/p6_pilot/repro_verifiers.py, reticle/runtime/nudges.py, reticle/tools/commitment.py"
+      }
+    }
+  ],
+  "controls": [
+    {
+      "name": "gold",
+      "client": "gold",
+      "task_set": "controls",
+      "like_arm": "verifier-commit",
+      "expect": "accepted"
+    },
+    {
+      "name": "noop",
+      "client": "noop",
+      "task_set": "controls",
+      "like_arm": "verifier-commit",
+      "expect": "rejected"
+    }
+  ],
+  "tasks": {
+    "file": "experiments/mutation_tasks/tasks.mutations.json",
+    "file_sha256": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa",
+    "sets": {
+      "hard": {
+        "ids": [
+          "sqlparse-mut-001",
+          "sqlparse-mut-022",
+          "sqlparse-mut-032",
+          "sqlparse-mut-057",
+          "sqlparse-mut-061"
+        ],
+        "note": "Card 007's evolution set, the only tasks the incumbent fails: 6 of 30 accepted over cards 007, 019 and 020 (001 2/6, 022 3/6, 032 0/6, 057 0/6, 061 1/6)."
+      },
+      "easy": {
+        "ids": [
+          "sqlparse-mut-025",
+          "sqlparse-mut-034",
+          "sqlparse-mut-040"
+        ],
+        "note": "Card 020's efficiency set (accepted in all 12 of its runs), one rollout per arm, as a harm check: a treatment that loses an easy task is a finding at any sample size."
+      },
+      "controls": {
+        "ids": [
+          "sqlparse-mut-001"
+        ],
+        "note": "Scripted gold/noop controls under the treatment arm, before any model run; they need the task's manifest entry, so they run after verifier generation."
+      }
+    }
+  },
+  "blocks": [
+    {
+      "name": "hard",
+      "task_set": "hard",
+      "arms": [
+        "incumbent",
+        "verifier-commit"
+      ],
+      "rollouts": 3,
+      "arm_order": {
+        "rule": "seeded",
+        "seed": 21
+      }
+    },
+    {
+      "name": "easy",
+      "task_set": "easy",
+      "arms": [
+        "incumbent",
+        "verifier-commit"
+      ],
+      "rollouts": 1,
+      "arm_order": {
+        "rule": "seeded",
+        "seed": 21
+      }
+    }
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 20,
+      "model_attempts": 24,
+      "active_seconds": 1200,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {
+        "default": 120,
+        "max": 600
+      },
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {
+      "max_runs": 36,
+      "max_model_attempts": 1000,
+      "monetary_cap_usd": null,
+      "note": "36 runs x 24 attempts = 864 planned, room for 5 retried runs. Expected nested cost about $40 at CLI list price (card 020: $26.84 for 32 runs, about $1.2 per hard run and $0.24 per easy run by token share; 30 hard runs and 6 easy runs here). Spend guard: checkpoint before the next attempt at $52, so that with verifier generation (its own cap, $8) the card stays within $60.",
+      "list_price_cap_usd": 52
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [
+      60,
+      300
+    ],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "No repeat guard (as cards 019 and 020); repeat_flags are derived from the transcripts afterwards if needed.",
+    "manual": [
+      "Evaluator leakage, evidence loss, or authority escape stops the campaign (run_card.py detects evidence loss and protocol drift; leakage and escape need trajectory review).",
+      "A model_pin_violation stops the campaign as a corrupted protocol (exit 4).",
+      "Do not change the treatment's text or parameters during the card; a change is a new version and a new card.",
+      "Do not regenerate, edit or drop a frozen reproduction test after generation, whatever its validity; a verifier that is unavailable for a task stays unavailable (check() then returns an error). Validity is scored only after the campaign (RUN_IN_CLOUD-021.md step 9).",
+      "Hidden-test leakage stops the campaign: any hidden test name or test output in a request, a tool result, or the workspace of a run (trajectory review). On trusted-local the model's commands can read the VM's filesystem, including the frozen reproduction tests under experiments/session_harness/verifiers/021 and the task clone under .runtime; review every treatment trajectory for reads outside the workspace, and report reads of the verifier directory separately (the test is not hidden from a determined reader, only not shown)."
+    ]
+  },
+  "measurements": {
+    "per_run": [
+      "accepted",
+      "stop_reason",
+      "responses_used",
+      "provider_attempts",
+      "tool_calls",
+      "active_seconds",
+      "wall_seconds",
+      "tokens",
+      "first_edit_response",
+      "rejected_calls",
+      "edit_in_gold_files",
+      "verification_before_finish"
+    ],
+    "campaign": [
+      "acceptance_rate_ci",
+      "per_task_outcomes",
+      "outcome_distribution",
+      "paired_table",
+      "delta:incumbent:verifier-commit"
+    ]
+  },
+  "decision_rule": "Primary: hard-block acceptance, verifier-commit against incumbent, 15 paired runs each; one-sided Fisher exact test at 0.05, reported with Wilson intervals and per task. Mechanism (read from results.jsonl and the journals, not tested for significance unless stated): (a) runs that end at the response budget (model_call_limit) per arm, the incumbent's dominant failure (16 of 24 hard rejections over cards 007/019/020); (b) confident wrong finishes (finish_requested and rejected) per arm; (c) check() use and what followed a failing count; (d) verifier validity per task (repro_verifiers.py score) and acceptance split by valid and invalid verifier; (e) the commitment record (score_commitments.py): commitments after the nudge, predictions matched, mismatched or unchecked, located file and function, against acceptance. Easy block: any rejection in the treatment arm is reported as possible harm. Reading: a hard-block gain with valid verifiers and commitments that locate the mutation says the bundle works and card 022 should split it (verifier-only and commit-only arms); no gain with invalid verifiers says the realistic verifier is the bottleneck, not the model; no gain with valid verifiers and fewer budget exhaustions says the model commits to wrong fixes; no change in budget exhaustion says the prompt does not produce commitment. The arm is never promoted to incumbent on this card alone.",
+  "report": {
+    "path": "experiments/session_harness/E4-verifier-commit-021-report.md"
+  },
+  "notes": [
+    "Card 020's layout and backend (trusted-local in the cloud VM, isolation vm-sandbox, CLI 2.1.284, model pinned as claude-sonnet-5, CLI reply recovery in both arms), with 3 rollouts on the hard set and 1 on the easy set; 36 runs, 20 responses and 24 attempts each.",
+    "Runs are named c021-<task>-r<n>-<arm>; one runner invocation per task, rollout and arm, with --max-total-calls 24.",
+    "The verifier-commit arm's hashes contain the verifier manifest's sha256 (LF-normalized), so they change once the manifest is generated; --plan on the VM after generation prints the final ones. The incumbent's do not depend on it.",
+    "Verifier generation (repro_verifiers.py generate) is one to three headless claude -p calls per task, same pinned model, fresh context, only Read/Glob/Grep on a temporary copy of the pre-edit workspace, --permission-mode dontAsk; its own spend cap is $8 (at most $0.60 per call; the host smoke spent $0.32 per call at a $0.30 cap, 17 turns); a task that can get no call under the cap is recorded as unavailable. It is not part of the campaign's calls.jsonl; its cost is in the manifest.",
+    "Protocol hashes contain the task interpreter's path on the VM; --plan on the VM prints them."
+  ]
+}

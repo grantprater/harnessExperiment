@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "generator": {
+    "version": "repro-test-generator-v1",
+    "model": "claude-sonnet-5",
+    "cli_version": "2.1.284 (Claude Code)",
+    "tools": [
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "permission_mode": "dontAsk",
+    "max_attempts": 3,
+    "max_turns": 30,
+    "attempt_budget_usd": 0.3,
+    "system_prompt_sha256": "85b542cf5ef8dc29f69abf990fb47afba93f621a721b40e054faf934d4c96633",
+    "prompt_template_sha256": "6df59e40d93dcbce99a4a4bb868882369081d81f92ea8121057e74347100cf3b",
+    "feedback_template_sha256": "44e98910f4cd822755a326c69950fa76a35d8c4edbacc68ca2eb4a22c541338a",
+    "acceptance": "compiles; collects >= 1 case without a collection error; >= 1 case fails on the pre-edit tree"
+  },
+  "tasks": {
+    "sqlparse-mut-057": {
+      "status": "available",
+      "attempts": 1,
+      "cost_usd": 0.319989,
+      "statement_sha256": "96084c0e13f37db9d8fa567a3591900055660bc9fa8882290a35e7a8ce03a19e",
+      "generated_at": "2026-09-29T06:00:06.938012+00:00",
+      "file": "sqlparse-mut-057/test_reticle_repro.py",
+      "sha256_lf": "5148a818105309b49f881bb62259ac5c82bb6a513162576b2b853f2690251f5c",
+      "collected": 3,
+      "pre_edit": {
+        "collected": 3,
+        "passed": 2,
+        "failed": 1,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      }
+    },
+    "sqlparse-mut-061": {
+      "status": "available",
+      "attempts": 1,
+      "cost_usd": 0.319451,
+      "statement_sha256": "32c063b142c3c8c198b69d2bf2b38289d3a69640e06c6e448743901164002626",
+      "generated_at": "2026-09-29T06:03:36.083746+00:00",
+      "file": "sqlparse-mut-061/test_reticle_repro.py",
+      "sha256_lf": "a2e89a39fd3dc926ca1d4df47a65941e356af8c2ba24341a4c0f989522d7ca22",
+      "collected": 2,
+      "pre_edit": {
+        "collected": 2,
+        "passed": 1,
+        "failed": 1,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      }
+    }
+  }
+}

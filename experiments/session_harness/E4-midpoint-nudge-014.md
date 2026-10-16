@@ -2,6 +2,7 @@
 
 Date: 2026-09-28  
 Status: proposed; awaiting owner approval  
+Model: pinned by full ID `claude-sonnet-5` after alias drift (2026-09-30): CLI 2.1.286 resolved the alias `sonnet` to `claude-sonnet-5-5`. CLI re-pinned from 2.1.283 to 2.1.286 (owner, 2026-09-30: "You can repin 14 and 15").  
 Stage: S6 (agent-loop module, continuation-rule surface). Machine-readable card: [`cards/014.json`](cards/014.json).
 Relation to [card 009](E4-diagnostic-commitment-009.md): the same "diagnostic commitment" weakness, addressed by a
 triggered message instead of opening-instruction text.

@@ -1,0 +1,879 @@
+{
+  "task_id": "sqlparse-mut-032",
+  "status": "available",
+  "attempts": 3,
+  "cost_usd": 1.818434,
+  "statement_sha256": "1935a30ee1fa607c1f6d154e1c83ec933c2cec4d99e519bb996b0b16abd6b8df",
+  "generated_at": "2026-09-29T07:05:35.078078+00:00",
+  "file": "sqlparse-mut-032/test_reticle_repro.py",
+  "sha256_lf": "47ab140bd3700aeef700a414f0043703661aa5f912e394cab1528b7e4209c956",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 1,
+    "failed": 2,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 1,
+      "seconds": 292.9,
+      "cost_usd": 0.6378012000000001,
+      "num_turns": 38,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is not in list|\\.index\\(",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "offset": 280,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class Where|token_next_by|group_where|until",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class Where|group_where",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "group_where",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/grouping.py",
+            "-n": true,
+            "-C": 15
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Where",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Where",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/grouping.py",
+            "-n": true,
+            "-C": 10
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Where",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "-n": true,
+            "-C": 15
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Where",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/grouping.py",
+            "-n": true,
+            "-C": 10,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Where",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "-n": true,
+            "-C": 15,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "_groupable_tokens",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "offset": 220,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "offset": 495,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/grouping.py",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "where",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/CHANGELOG",
+            "-i": true,
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/utils.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def match\\(|normalized",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "-n": true,
+            "-A": 15
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def match\\(|normalized",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "-n": true,
+            "-A": 15,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/grouping.py",
+            "offset": 380,
+            "limit": 80
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "invalidwhere|invalid where|issue26|INSERT INTO foo",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace",
+            "-i": true,
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "invalidwhere|invalid where|issue26|INSERT INTO foo",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/CHANGELOG",
+            "-i": true,
+            "-n": true,
+            "-C": 5,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "issue26|INSERT INTO foo",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/filters/others.py",
+            "-n": true,
+            "-C": 10,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "WHERE",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/keywords.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def token_next_by|def token_not_matching",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "-n": true,
+            "-A": 10
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def token_next_by|def token_not_matching",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "-n": true,
+            "-A": 10,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "offset": 235,
+            "limit": 45
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "_token_matching\\(",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "token_matching\\(|token_next\\(None|idx=None",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/grouping.py",
+            "offset": 60,
+            "limit": 100
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "IndexError|ValueError|is not in list|WHERE clause|group_where",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/CHANGELOG",
+            "-i": true,
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/CHANGELOG",
+            "offset": 300,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Where|where",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/filters/reindent.py",
+            "-n": true,
+            "-C": 8,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def insert_before|def insert_after",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "-n": true,
+            "-A": 12,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "insert_before",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/filters/reindent.py"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "393680fa79bd04ada34f1839aafd8469482c96a124e2f6205ad2053ed6306ddd",
+      "rationale": "The report says formatting an invalid/incomplete WHERE clause currently raises `ValueError: None is not in list`, which comes from sqlparse's internal token-index bookkeeping (sql.py's TokenList.insert_before/token_index used while reindenting a Where group, or its group_where/_groupable_tokens computation) when it cannot locate an expected token for an incomplete WHERE clause. sqlparse has always been documented and tested (e.g. the historic issue121/issue26 regression tests) to tolerate malformed SQL without crashing and without dropping input tokens, so the expected values -- no exception, and the trailing \"where\"/original text preserved -- come directly from that long-standing, still-intended behavior rather than from the current buggy output. The third test is a control on a well-formed WHERE clause to make sure the fix does not regress normal reindent formatting.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": "no_failure"
+    },
+    {
+      "attempt": 2,
+      "cli_exit_code": 1,
+      "seconds": 279.7,
+      "cost_usd": 0.6291466000000001,
+      "num_turns": 31,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is not in list|\\.index\\(",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class Where|WHERE",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "offset": 280,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/filters/reindent.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Where|WHERE",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class Where|M_OPEN|M_CLOSE",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/grouping.py",
+            "offset": 330,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "_groupable_tokens",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "offset": 220,
+            "limit": 20
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "offset": 495,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "where|WHERE",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/CHANGELOG",
+            "output_mode": "content",
+            "-n": true,
+            "-i": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/grouping.py",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def insert_before|def insert_after|def token_next_by|def token_not_matching",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "offset": 340,
+            "limit": 20
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "issue121|issue26\\b",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/utils.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "insert_before\\(|insert_after\\(|token_index\\(",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "offset": 235,
+            "limit": 45
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "invalid where|invalid WHERE|where clause",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace",
+            "output_mode": "content",
+            "-i": true,
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/CLAUDE.md"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/AGENTS.md"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/grouping.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "offset": 1,
+            "limit": 220
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "offset": 555,
+            "limit": 15
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/CHANGELOG",
+            "offset": 1,
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/TODO"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "token_not_matching",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/filters/others.py"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "169e531a5f5b345e90affcbb2d699e65b15dc7b542f28f4ec7e8bb7d9dcd98cb",
+      "rationale": "The report says formatting an invalid/incomplete WHERE clause raises `ValueError: None is not in list` (a regression of the historical issue121 fix in sqlparse.filters.reindent.ReindentFilter._process_where / sqlparse.engine.grouping.group_where, whose job is to tolerate malformed SQL such as a WHERE clause with nothing after it, or one nested inside an otherwise-unterminated construct). The test formats several syntactically invalid WHERE clauses (a bare trailing WHERE, and a WHERE clause with an unmatched/invalid trailing construct) with reindent=True and asserts that sqlparse.format() returns normally without raising, and that it does not silently drop the WHERE keyword from the output \u2014 mirroring sqlparse's own documented tolerance for invalid input. A control case with a valid WHERE clause checks that the fix does not break normal reindenting.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": "no_failure"
+    },
+    {
+      "attempt": 3,
+      "cli_exit_code": 0,
+      "seconds": 273.4,
+      "cost_usd": 0.5514857999999999,
+      "num_turns": 19,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/filters/reindent.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\.index\\(",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "group_where|def group_where|class Where\", \"M_OPEN|group_functions|def group\\(\", \"def group_tzcasts\", \"insert_before\", \"insert_after\"",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/grouping.py",
+            "offset": 330,
+            "limit": 50
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "where|WHERE",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/CHANGELOG",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/filters/others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/grouping.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "invalid_where|invalid where|WHERE\\)?$",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": ".git/**"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/CHANGELOG",
+            "offset": 1,
+            "limit": 80
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "group_tokens|def __init__.*tokens\" -n",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/engine/statement_splitter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/utils.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "WHERE",
+            "path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/keywords.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "/tmp/repro-gen-_1hunkzz/workspace/sqlparse/tokens.py"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "47ab140bd3700aeef700a414f0043703661aa5f912e394cab1528b7e4209c956",
+      "rationale": "By tracing the grouping pipeline in sqlparse/engine/grouping.py, a WHERE clause immediately followed by a comma (e.g. \"WHERE, bar\") causes group_identifier_list's generic _group() helper to fold the WHERE keyword together with the comma and the following identifier into a brand-new IdentifierList, because its `valid()` predicate accepts any T.Keyword token as well as sql.Identifier/Comparison. This buries the literal WHERE token one level below the sql.Where node's direct children, so ReindentFilter._process_where()'s `tlist.token_next_by(m=(T.Keyword, 'WHERE'))` returns `tidx=None`, and the subsequent `tlist.insert_before(tidx, ...)` calls `list.index(None)`, raising `ValueError: None is not in list` \u2014 matching the report exactly. Since sqlparse's documented behavior is to tolerate invalid SQL and never drop input tokens, the expected (post-fix) outcome is that `sqlparse.format(..., reindent=True)` completes without raising and still contains all the original keywords/identifiers, which the first two tests check for a top-level and a nested WHERE clause; the third test is a control that pins down the well-established correct formatting of a valid WHERE clause so the fix cannot regress normal behavior.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 1,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

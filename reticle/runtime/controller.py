@@ -253,6 +253,8 @@ class AgentController:
                         "tool": function.get("name"),
                         "status": outcome.status,
                     }
+                    if outcome.advisory_chars:
+                        message["_reticle_output"]["advisory_chars"] = outcome.advisory_chars
                 if outcome.finished:
                     finished = True
                     finish_summary = self._summary(str(function.get("arguments", "{}")))
@@ -544,6 +546,8 @@ class AgentController:
                                 "tool": function["name"],
                                 "status": outcome.status,
                             }
+                            if outcome.advisory_chars:
+                                message["_reticle_output"]["advisory_chars"] = outcome.advisory_chars
                         if outcome.finished:
                             finished = True
                             finish_summary = self._summary(function["arguments"])

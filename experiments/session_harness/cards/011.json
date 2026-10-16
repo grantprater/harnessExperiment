@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "E3-diagnostic-011",
   "title": "Budget or diagnosis? The three 0/2 tasks of card 007 at 40 responses",
-  "status": "approved",
+  "status": "completed",
   "markdown": "experiments/session_harness/E3-diagnostic-011.md",
   "hypothesis": "If the three tasks that failed both rollouts of card 007 (sqlparse-mut-032, -057, -061) resolve at 40 responses, budget was the constraint and pacing treatments are the right family; if they still fail, the model cannot locate the fault and pacing will not help.",
   "run_prefix": "c011",

@@ -17,6 +17,10 @@ Structure: [`card.schema.json`](card.schema.json) (JSON Schema keywords, checked
 | `013.json` | [E4-finish-guard-013](../E4-finish-guard-013.md) | `proposed`; incumbent vs `--completion finish-guard` (v2, fail-then-pass), card 007's evolution set + 3 solved-twice tasks, 2 rollouts, seeded order; blocked only on approval |
 | `014.json` | [E4-midpoint-nudge-014](../E4-midpoint-nudge-014.md) | `proposed`; incumbent vs `--nudge midpoint`, same tasks; blocked only on approval |
 | `015.json` | [E4-check-oracle-015](../E4-check-oracle-015.md) | `proposed`; incumbent vs `--oracle hidden-tests:3` (task-changing arm), same tasks; blocked only on approval |
+| `019.json` | [E3-cloud-replication-019](../E3-cloud-replication-019.md) | `proposed`; card 007's design on a cloud VM: trusted-local (`isolation: vm-sandbox`), model pinned to `claude-sonnet-5`, list-price cap $40; blocked only on approval |
+| `020.json` | [E4-cloud-check-oracle-020](../E4-cloud-check-oracle-020.md) | `proposed`; card 015's arms on the cloud backend of card 019; blocked on approval and on card 019's result |
+| `022.json` | [E5-transfer-forecasting-022-design](../E5-transfer-forecasting-022-design.md), phase A | `proposed`; forecast tasks (`experiments/forecast_tasks/`, kind `forecast`, bank v2: 40/120/40 series-disjoint): incumbent on 40 calibration questions plus 20 repeats, controls gold/constant/noop/gamer/peeker; cloud first (trusted-local `vm-sandbox`, `sandbox: unshare-rnm`); blocked on approval and the pinned-model smoke of the recall probe and one-shot comparator |
+| `023.json` | [E3-calibration-023](../E3-calibration-023.md) | `proposed`; card 007's design on the second (boltons) mutation bank, on card 019's cloud backend with card 020's CLI reply recovery; seed-23 selection recorded before any run; blocked only on approval |
 
 ## Commands
 
@@ -45,12 +49,12 @@ cap). Exit codes: 0 done, 2 invalid/blocked/refused, 3 checkpoint stop, 4 integr
 | `environment.claude_cli_version` | the `claude --version` string the protocol hash is computed with; `null` only when no arm uses `claude-cli` |
 | `prerequisites` | `{text, done}`; any `done: false` blocks execution |
 | `arms[]` | see below |
-| `controls[]` | scripted-client runs before the arms: `{name, client: gold/noop/breaker/gamer/tester, task_set, like_arm, expect: accepted/rejected, run_name}`; one invocation over the whole set, with the named arm's policy, backend and guards. A control whose outcome differs from `expect` is an integrity stop |
+| `controls[]` | scripted-client runs before the arms: `{name, client: gold/noop/breaker/gamer/tester (constant/peeker: forecast tasks only), task_set, like_arm, expect: accepted/rejected, run_name}`; one invocation over the whole set, with the named arm's policy, backend and guards. A control whose outcome differs from `expect` is an integrity stop |
 | `tasks` | `file` (task JSON), `file_sha256` (sha256 with CRLF folded to LF, the bytes git stores), `sets` (named task sets, below) |
 | `blocks[]` | `{name, task_set, arms, rollouts, arm_order: {rule: fixed or seeded, seed}}` |
 | `schedule` | `rollout-major` (default: rollout 1 of every task before rollout 2, so an early stop leaves balanced evidence) or `task-major` |
 | `budgets.per_run` | below |
-| `budgets.campaign` | `max_runs`, `max_model_attempts` (checked at plan time and before every attempt), `monetary_cap_usd` (recorded; the CLI has no billing), `note` |
+| `budgets.campaign` | `max_runs`, `max_model_attempts` (checked at plan time and before every attempt), `monetary_cap_usd` (recorded; the CLI has no billing), `list_price_cap_usd` (optional: before every live attempt, the sum of the CLI's list-price estimates `cli_result.total_cost_usd` over the campaign's `calls.jsonl` must be below it, or the campaign checkpoints, exit 3; one run can overshoot it), `note` |
 | `stop_rules` | `max_retries_per_invocation` (0-2), `retry_backoff_seconds` (one per retry), `consecutive_failures_to_stop` (1-3), `repeat_rule` and `manual` (text the runner cannot enforce) |
 | `measurements` | `per_run` and `campaign` names from the vocabulary below |
 | `decision_rule` | text, copied into the report |
@@ -67,7 +71,7 @@ cap). Exit codes: 0 done, 2 invalid/blocked/refused, 3 checkpoint stop, 4 integr
 | `provider` | `--provider MODEL=SLUG` | OpenRouter only |
 | `policy` | `--arm` | must be one of the runner's `ARMS` |
 | `toolset` | none | asserted equal to the runner's `TOOLSET_VERSION`; not selectable |
-| `backend` | `--backend`, `--oci-image` | `{kind: trusted-local}` or `{kind: oci, image, image_id, engine}`; `image_id` and `engine` are hash inputs the card pins |
+| `backend` | `--backend`, `--oci-image` | `{kind: trusted-local, isolation?}` or `{kind: oci, image, image_id, engine}`; `image_id` and `engine` are hash inputs the card pins. `isolation` (`host`, the default, or `vm-sandbox` for a disposable VM such as a cloud session) is what isolates trusted-local commands; it is logged, not hashed. `sandbox: unshare-rnm` (forecast tasks, Linux) passes `--sandbox unshare-rnm`: every command in user, mount and network namespaces with the checkout hidden (`experiments/p6_pilot/sandbox.py`); it is in the execution contract, so hashed. `sandbox: unshare-confined` (any task, Linux; the fix for the 019-021 integrity audit) passes `--sandbox unshare-confined`: every run-tool, evaluator and check command runs in a new root holding only its working directory, read-only system directories and the task interpreter, with no network, a private `/tmp` and no capabilities (`reticle.execution.ConfinedLocalBackend`); the model's authority text says so. Hashed (contract and authority), so never equal to an unconfined arm. `--execute` refuses (exit 2) on a machine where it cannot run, and the runner refuses too: never a silent unconfined run |
 | `guards` | `--stop-on-repeats`, `--resume-after-provider-stop`, `--resume-wait-seconds` | the runner's `guards` record |
 | `extra_args` | appended verbatim | may not repeat a flag the card sets from structured fields. Treatment flags the runner declares in `TREATMENT_FLAGS` (the S6 treatments; see the runner's docstring) are parsed with the runner's own `treatments_from_args` and enter the planned hash and expected config as the runner records them; plan hashes do not see any other flag, the preflight does |
 | `runner` | the script this arm runs | overrides the card's runner, for a candidate bundle that lives in its own worktree |
@@ -138,6 +142,12 @@ machine rather than the card; the card pins them and `--execute` checks them:
    (`core.autocrlf=true`) they have CRLF line endings; a Linux checkout of the same commit has LF and records a
    different hash for the same protocol. `--plan` prints the other-line-ending hash after the arms.
 
+A trusted-local arm hashes the **task interpreter's path** (`execution.guest_python`: `$RETICLE_TASK_PYTHON`, else
+`.runtime/bugs-venv/Scripts/python.exe` on Windows or `bin/python` on POSIX, under the checkout), so its hash depends on
+where the checkout lives and is only comparable between machines with the same path. It never equals an OCI arm's
+hash: a different backend is a different protocol. `--plan` computes it for the machine it runs on; `--execute`'s
+preflight compares that with the runner's own `--dry-run` on the same machine.
+
 Since S6a the hash also covers each task's **contract** (materializer version, mutation kind and file, hidden
 paths, patch and statement digests) for tasks that alter the exported tree, so every mutation task has its own
 hash, and an invocation over several tasks hashes all their contracts together. `run_card.py` computes each
@@ -174,6 +184,19 @@ used v1, whose contract has no `materializer` field. The card's arm with the smo
 
 - **Lock.** `<main checkout>/.runtime/locks/live-run.lock`, created exclusively (shared by every worktree through
   the git common directory). A held lock fails the command (exit 5) and is never broken automatically.
+- **Machine check.** Before the preflight, every OCI arm's pinned engine must be on PATH and answer `ENGINE version`
+  (a docker client without a daemon does not); otherwise `--execute` refuses (exit 2) and says OCI cards cannot run
+  on this machine. A card whose arms are all trusted-local needs no engine. The campaign log then gets a `host`
+  event: each arm's isolation (`oci-container`, or the trusted-local `isolation`), OS, CPU count, the driver's and
+  the runner's Python, the task interpreter, and the Claude CLI version.
+- **Model pin.** A claude-cli arm whose `model` is a full id (`claude-...`) is pinned by the adapter (claude_cli.py):
+  an attempt whose CLI reports another model fails as `model_pin_violation` before its reply is used, and
+  `run_card.py` stops the campaign on it as `corrupted_protocol` (exit 4) instead of retrying. The pin adds a
+  `model_pin` entry to the routing contract, so it is in the hash; an alias (`sonnet`) is unchanged.
+  On `integration/2026-10` this is one guard with `exp/ontology-pilot`'s `model_mismatch`: the failure kind and
+  the runner's stop label are `model_mismatch`, the message reads `model_mismatch (model_pin_violation): ...`,
+  the runner stops the invocation's later tasks, and the void attempt reruns on `--resume`. Live runs refuse an
+  alias, and `--validate` refuses one on an approved or running claude-cli card.
 - **Order.** Controls first, then blocks in card order, units by `schedule`, arms by `arm_order`; strictly one
   runner process at a time.
 - **Evidence.** Each invocation writes its own run directory under `experiments/p6_pilot/runs/`. The campaign log is

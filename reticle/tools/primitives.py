@@ -34,6 +34,9 @@ class ToolOutcome:
     status: str  # a ToolResultEnvelope status
     finished: bool = False
     handle: Optional[str] = None  # output handle for read_output / search_output
+    # Length of a runtime-appended advisory suffix of content (the injected reasoning arm); it is not part of the
+    # recorded tool output, and bounded views keep it whole on the newest result.
+    advisory_chars: int = 0
 
 
 class ToolArgumentError(ValueError):
@@ -424,7 +427,7 @@ class ToolSuite:
         self.runtime.begin_action(operation_id, name, {"call_id": call_id, "arguments": arguments})
         effect_class = (
             "workspace_mutation" if name in {"replace_text", "write_file"}
-            else "session_mutation" if name in {"note", "finish"}
+            else "session_mutation" if name in {"note", "finish", "reasoning_update"}
             else "read_only"
         )
         try:

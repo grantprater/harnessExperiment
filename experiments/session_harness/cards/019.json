@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "id": "E3-cloud-replication-019",
+  "title": "Card 007 replicated on a cloud VM (trusted-local, model pinned) to measure the environment effect",
+  "status": "running",
+  "markdown": "experiments/session_harness/E3-cloud-replication-019.md",
+  "hypothesis": "Card 007's incumbent protocol, run in a Claude Code cloud VM (trusted-local backend in a disposable VM, CLI 2.1.284, model pinned to claude-sonnet-5) instead of the Windows host's OCI container, gives per-task acceptance within sampling noise of card 007 (32/40, 2 contrastive, 3 negative tasks). A difference larger than that is an environment effect that must be understood before any treatment card runs in the cloud.",
+  "run_prefix": "c019",
+  "run_name_template": "{prefix}-{task}-r{rollout}",
+  "runner": {
+    "script": "experiments/p6_pilot/run_pilot.py",
+    "runner_version": 8
+  },
+  "environment": {
+    "claude_cli_version": "2.1.284 (Claude Code)"
+  },
+  "prerequisites": [
+    {
+      "text": "owner approval recorded in the markdown card (then set status to running). The owner approves by pasting experiments/cloud/RUN_IN_CLOUD.md into a cloud session, conditional on its steps 1-5 passing on the VM (setup READY, core tests, gold/noop controls, pinned-model smoke)",
+      "done": true
+    }
+  ],
+  "arms": [
+    {
+      "name": "incumbent",
+      "client": "claude-cli",
+      "model": "claude-sonnet-5",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "trusted-local",
+        "isolation": "vm-sandbox"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [],
+      "expected_protocol_hash": null,
+      "note": "Card 007's incumbent arm (runner v8, claude-cli adapter v2, pressure-recent-v3, repeat guard off) with two changes: the trusted-local backend (the VM has no container engine) and the full model id, which the adapter pins (model_pin in the routing contract). Both change the protocol hash, which also contains the task interpreter's path on the VM; --plan on the VM prints the hashes the runs must record."
+    }
+  ],
+  "controls": [
+    {
+      "name": "gold",
+      "client": "gold",
+      "task_set": "controls",
+      "like_arm": "incumbent",
+      "expect": "accepted"
+    },
+    {
+      "name": "noop",
+      "client": "noop",
+      "task_set": "controls",
+      "like_arm": "incumbent",
+      "expect": "rejected"
+    }
+  ],
+  "tasks": {
+    "file": "experiments/mutation_tasks/tasks.mutations.json",
+    "file_sha256": "fa185723735d56e7ff6858b7188bd603ed8f2ee0170637273fcaa71038db1daa",
+    "sets": {
+      "calibration": {
+        "ref": {
+          "path": "experiments/session_harness/E3-calibration-007-tasks.json",
+          "key": "task_ids",
+          "sha256": "1f1ccca4de8571c218c2c54ed06cc6fe8d5bcc5ce8c82ce775e48b387342c708"
+        },
+        "note": "The markdown card's selection: select_calibration_tasks.py --seed 7, recorded before any calibration run."
+      },
+      "controls": {
+        "ids": [
+          "sqlparse-mut-001",
+          "sqlparse-mut-006"
+        ],
+        "note": "Card 007's control tasks, run again on the VM (c019-control-gold, -noop)."
+      }
+    }
+  },
+  "blocks": [
+    {
+      "name": "calibration",
+      "task_set": "calibration",
+      "arms": [
+        "incumbent"
+      ],
+      "rollouts": 2,
+      "arm_order": {
+        "rule": "fixed"
+      }
+    }
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 20,
+      "model_attempts": 24,
+      "active_seconds": 1200,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {
+        "default": 120,
+        "max": 600
+      },
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {
+      "max_runs": 40,
+      "max_model_attempts": 1200,
+      "monetary_cap_usd": null,
+      "note": "Card 007's caps: 40 runs x 24 attempts = 960 planned, room for 10 retried runs. The CLI bills the owner's credits, so a spend guard: the campaign checkpoints before the next attempt once the CLI's list-price estimates (total_cost_usd) of its calls reach $40 (card 007 totalled $27.53 at list price over 555 calls). A run in progress can overshoot by its own cost.",
+      "list_price_cap_usd": 40
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [
+      60,
+      300
+    ],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "The markdown asks for the repeat flag to be recorded while the run continues. run_pilot.py records the flag only with --stop-on-repeats, which also stops the run, so this card runs without the guard and repeat_flags are derived from the transcripts afterwards (S6b).",
+    "manual": [
+      "Evaluator leakage, evidence loss, or authority escape stops the campaign (run_card.py detects evidence loss and protocol drift; leakage and escape need trajectory review).",
+      "A model_pin_violation (the CLI answered with a model other than claude-sonnet-5) is a corrupted protocol: run_card.py stops the campaign (exit 4); do not resume until the cause is known.",
+      "A cli_auth_error or an isolation failure (tools other than StructuredOutput, an MCP server, an apiKeySource naming an environment key) stops the campaign; do not work around it by passing ANTHROPIC_* variables.",
+      "The supervising cloud session commits evidence to the branch cloud-results-019 at least every 10 finished runs (python experiments/cloud/campaign.py run); if the VM or session ends, resume from the last pushed evidence.",
+      "Trusted-local gives the model's commands the VM's filesystem and network: the trajectory review checks every run for reads outside the workspace (notably the task clone .runtime/bug-mining/repos/sqlparse, which holds the healthy code) and for fetches of upstream sqlparse; such a run is an authority escape.",
+      "Do not tune statements, budgets or the environment during the card; any change is a new card."
+    ]
+  },
+  "measurements": {
+    "per_run": [
+      "accepted",
+      "stop_reason",
+      "responses_used",
+      "provider_attempts",
+      "tool_calls",
+      "active_seconds",
+      "wall_seconds",
+      "tokens",
+      "first_edit_response",
+      "rejected_calls",
+      "repeat_flags",
+      "edit_in_gold_files",
+      "verification_before_finish"
+    ],
+    "campaign": [
+      "acceptance_rate_ci",
+      "outcome_distribution",
+      "per_task_outcomes",
+      "evolution_set",
+      "acceptance_by:mutation_kind",
+      "acceptance_by_size:fail_to_pass"
+    ]
+  },
+  "decision_rule": "Environment check, not a promotion. Report per task the accepted count of 2 here and in card 007, the total (32/40 in card 007) with 95% intervals, the stop-reason distribution, responses and active seconds per run (seconds are not comparable: CLI spawn latency and CPU differ), and every run that stopped on the active-seconds cap. The environment is 'equivalent for treatment work' if the total differs from 32 by at most 6 runs and no task moves from 2/2 to 0/2 or back; otherwise it is 'different' and cloud treatment cards compare only against a cloud incumbent run in the same card (paired design), never against card 007.",
+  "report": {
+    "path": "experiments/session_harness/E3-cloud-replication-019-report.md",
+    "sets_path": "experiments/session_harness/E3-cloud-replication-019.sets.json"
+  },
+  "notes": [
+    "Same design as card 007: the 20 seed-7 calibration tasks (same selection file and hash), 2 rollouts, one invocation per task and rollout named c019-<task>-r<n>, --max-total-calls 24, the same per-run budgets and retry rules. Controls are rerun on the VM under new names (card 007 reused its recorded v2 controls).",
+    "Differences from card 007, all deliberate or forced: trusted-local in a VM sandbox instead of the OCI image (no container engine on the VM); CLI 2.1.284 instead of 2.1.283; the model pinned as claude-sonnet-5 (card 007 asked for the alias sonnet, which CLI 2.1.283 on the host resolved to claude-sonnet-5 and CLI 2.1.284 on the VM resolves to claude-sonnet-5-5); the task interpreter is a Linux venv built by experiments/cloud/setup_cloud.sh from the host's pinned list; about 16.6 s of CLI start-up latency per response (host: about 1 s), counted in active seconds.",
+    "The protocol hash differs from card 007's by construction (backend, execution record, routing contract with model_pin, CLI version). It depends on the task interpreter's absolute path, so it is computed on the VM (--plan) and checked there by the preflight; the arm-level field stays null."
+  ]
+}

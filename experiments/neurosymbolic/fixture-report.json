@@ -1,0 +1,246 @@
+{
+  "model_calls": 0,
+  "interpretation": "mechanism controls only",
+  "results": [
+    {
+      "fixture": "stale_evidence",
+      "mode": "memory",
+      "passed": true,
+      "rules": [],
+      "delivered_in_action_result": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "memory",
+        "entities": 3,
+        "relations": 0,
+        "updates": 1,
+        "findings": 0,
+        "tool_reads": 0,
+        "tool_writes": 1
+      }
+    },
+    {
+      "fixture": "stale_evidence",
+      "mode": "symbolic",
+      "passed": true,
+      "rules": [
+        "stale_observation"
+      ],
+      "delivered_in_action_result": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "symbolic",
+        "entities": 3,
+        "relations": 0,
+        "updates": 1,
+        "findings": 1,
+        "tool_reads": 0,
+        "tool_writes": 1
+      }
+    },
+    {
+      "fixture": "stale_evidence",
+      "mode": "injected",
+      "passed": true,
+      "rules": [
+        "stale_observation"
+      ],
+      "delivered_in_action_result": [
+        "stale_observation"
+      ],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "injected",
+        "entities": 3,
+        "relations": 0,
+        "updates": 1,
+        "findings": 1,
+        "tool_reads": 0,
+        "tool_writes": 1,
+        "injections": 2,
+        "injections_skipped_no_change": 0,
+        "injected_chars": 614,
+        "injected_tokens_estimate": 155,
+        "injections_truncated": 0
+      }
+    },
+    {
+      "fixture": "misleading_reproduction",
+      "mode": "memory",
+      "passed": true,
+      "rules": [],
+      "delivered_in_action_result": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "memory",
+        "entities": 4,
+        "relations": 1,
+        "updates": 1,
+        "findings": 0,
+        "tool_reads": 0,
+        "tool_writes": 1
+      }
+    },
+    {
+      "fixture": "misleading_reproduction",
+      "mode": "symbolic",
+      "passed": true,
+      "rules": [
+        "narrow_coverage"
+      ],
+      "delivered_in_action_result": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "symbolic",
+        "entities": 4,
+        "relations": 1,
+        "updates": 1,
+        "findings": 1,
+        "tool_reads": 0,
+        "tool_writes": 1
+      }
+    },
+    {
+      "fixture": "misleading_reproduction",
+      "mode": "injected",
+      "passed": true,
+      "rules": [
+        "narrow_coverage"
+      ],
+      "delivered_in_action_result": [
+        "narrow_coverage"
+      ],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "injected",
+        "entities": 4,
+        "relations": 1,
+        "updates": 1,
+        "findings": 1,
+        "tool_reads": 0,
+        "tool_writes": 1,
+        "injections": 2,
+        "injections_skipped_no_change": 0,
+        "injected_chars": 543,
+        "injected_tokens_estimate": 137,
+        "injections_truncated": 0
+      }
+    },
+    {
+      "fixture": "competing_diagnoses",
+      "mode": "memory",
+      "passed": true,
+      "rules": [],
+      "delivered_in_action_result": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "memory",
+        "entities": 4,
+        "relations": 0,
+        "updates": 1,
+        "findings": 0,
+        "tool_reads": 0,
+        "tool_writes": 1
+      }
+    },
+    {
+      "fixture": "competing_diagnoses",
+      "mode": "symbolic",
+      "passed": true,
+      "rules": [
+        "non_discriminating_check"
+      ],
+      "delivered_in_action_result": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "symbolic",
+        "entities": 4,
+        "relations": 0,
+        "updates": 1,
+        "findings": 1,
+        "tool_reads": 0,
+        "tool_writes": 1
+      }
+    },
+    {
+      "fixture": "competing_diagnoses",
+      "mode": "injected",
+      "passed": true,
+      "rules": [
+        "non_discriminating_check"
+      ],
+      "delivered_in_action_result": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "injected",
+        "entities": 4,
+        "relations": 0,
+        "updates": 1,
+        "findings": 1,
+        "tool_reads": 0,
+        "tool_writes": 1,
+        "injections": 1,
+        "injections_skipped_no_change": 0,
+        "injected_chars": 217,
+        "injected_tokens_estimate": 55,
+        "injections_truncated": 0
+      }
+    },
+    {
+      "fixture": "interrupted_investigation",
+      "mode": "memory",
+      "passed": true,
+      "rules": [],
+      "delivered_in_action_result": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "memory",
+        "entities": 3,
+        "relations": 1,
+        "updates": 1,
+        "findings": 0,
+        "tool_reads": 1,
+        "tool_writes": 1
+      }
+    },
+    {
+      "fixture": "interrupted_investigation",
+      "mode": "symbolic",
+      "passed": true,
+      "rules": [],
+      "delivered_in_action_result": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "symbolic",
+        "entities": 3,
+        "relations": 1,
+        "updates": 1,
+        "findings": 0,
+        "tool_reads": 1,
+        "tool_writes": 1
+      }
+    },
+    {
+      "fixture": "interrupted_investigation",
+      "mode": "injected",
+      "passed": true,
+      "rules": [],
+      "delivered_in_action_result": [],
+      "state": {
+        "version": "evidence-ontology-v1",
+        "mode": "injected",
+        "entities": 3,
+        "relations": 1,
+        "updates": 1,
+        "findings": 0,
+        "tool_reads": 1,
+        "tool_writes": 1,
+        "injections": 1,
+        "injections_skipped_no_change": 0,
+        "injected_chars": 217,
+        "injected_tokens_estimate": 55,
+        "injections_truncated": 0
+      }
+    }
+  ]
+}

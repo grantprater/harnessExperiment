@@ -14,6 +14,7 @@ operating rule.
 - [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) - the current plan and work ledger.
 - [IMPLEMENTATION_PLAN_CRITIQUE.md](IMPLEMENTATION_PLAN_CRITIQUE.md) - the current critique.
 - [experiments/REGISTER.md](experiments/REGISTER.md) - the experiment register.
+- [Evidence ontology experiment](experiments/neurosymbolic/README.md) - optional structured memory and advisory symbolic reasoning, fixtures, and comparison protocol.
 - [experiments/session_harness/](experiments/session_harness/) - run cards, reports, and
   delivery records.
 

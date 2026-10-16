@@ -30,9 +30,12 @@ from reticle.execution import IsolatedOCIBackend  # noqa: E402
 from reticle.runtime import LocalRuntime  # noqa: E402
 from reticle.tools import ToolSuite  # noqa: E402
 
+sys.path.insert(0, str(ROOT / "experiments" / "p6_pilot"))
+from interpreters import task_python  # noqa: E402
+
 HERE = Path(__file__).resolve().parent
 RUNNER_VERSION = 2  # 2: chmod check after the uid-65534 chmod denial; Podman guest uses keep-id
-TASK_PYTHON = ROOT / ".runtime" / "bugs-venv" / "Scripts" / "python.exe"
+TASK_PYTHON = task_python(ROOT)
 DEFAULT_OCI_IMAGE = "localhost/reticle-p6-task:py313-v1"
 SIBLING_NEEDLE = "S2B-HIDDEN-EVALUATOR-7f3a"
 CREDENTIAL_NEEDLE = "S2B-CREDENTIAL-SENTINEL-91c2"  # harmless marker, not a real secret
