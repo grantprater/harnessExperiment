@@ -1,0 +1,64 @@
+{
+  "status": "completed",
+  "started_at": "2026-10-01T17:05:18.134469+00:00",
+  "completed": [
+    {
+      "arm": "gold",
+      "acceptance": "accepted",
+      "stop": "finish_requested",
+      "responses": 2,
+      "provider_attempts": 2,
+      "tool_calls": 2,
+      "elapsed_s": 9.0,
+      "checks": [],
+      "reported_cost_usd": null,
+      "run_dir": "C:\\Users\\grant\\harnessExperiment-subscription\\experiments\\p6_pilot\\runs\\c020-subscription-mini-20261001-001-r1-gold"
+    },
+    {
+      "arm": "noop",
+      "acceptance": "rejected",
+      "stop": "finish_requested",
+      "responses": 1,
+      "provider_attempts": 1,
+      "tool_calls": 1,
+      "elapsed_s": 8.8,
+      "checks": [],
+      "reported_cost_usd": null,
+      "run_dir": "C:\\Users\\grant\\harnessExperiment-subscription\\experiments\\p6_pilot\\runs\\c020-subscription-mini-20261001-001-r1-noop"
+    },
+    {
+      "arm": "incumbent",
+      "acceptance": "rejected",
+      "stop": "finish_requested",
+      "responses": 18,
+      "provider_attempts": 18,
+      "tool_calls": 40,
+      "elapsed_s": 228.2,
+      "checks": [],
+      "reported_cost_usd": null,
+      "run_dir": "C:\\Users\\grant\\harnessExperiment-subscription\\experiments\\p6_pilot\\runs\\c020-subscription-mini-20261001-001-r1-incumbent"
+    },
+    {
+      "arm": "check-oracle",
+      "acceptance": "rejected",
+      "stop": "model_call_limit",
+      "responses": 20,
+      "provider_attempts": 20,
+      "tool_calls": 38,
+      "elapsed_s": 239.4,
+      "checks": [
+        {
+          "call": 1,
+          "failing": 1,
+          "passing": 0,
+          "calls_left": 2,
+          "status": "success"
+        }
+      ],
+      "reported_cost_usd": null,
+      "run_dir": "C:\\Users\\grant\\harnessExperiment-subscription\\experiments\\p6_pilot\\runs\\c020-subscription-mini-20261001-001-r1-check-oracle"
+    }
+  ],
+  "current": null,
+  "finished_at": "2026-10-01T17:13:41.611413+00:00"
+}
