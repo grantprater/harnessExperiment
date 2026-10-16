@@ -2,6 +2,7 @@
 finish after a source edit is rejected once unless a command that failed before the first edit passed, rerun,
 after the latest edit (no model, no API)."""
 
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -295,12 +296,19 @@ class CheckDetectionTests(unittest.TestCase):
 
 
 class IncumbentUnchangedTests(unittest.TestCase):
-    """The optional guard leaves the current tools and incumbent finish behavior intact."""
+    """Golden checks: toolset v3 and the incumbent protocol are what card 007 ran; opt-in v4 has no guard tools."""
 
-    def test_current_toolset_has_no_guard_only_tools(self):
-        self.assertEqual(TOOLSET_VERSION, "reticle-tools-v4")
-        self.assertIn("apply_patch", [schema["function"]["name"] for schema in TOOL_SCHEMAS])
+    def test_toolset_v3_schemas_are_unchanged(self):
+        self.assertEqual(TOOLSET_VERSION, "reticle-tools-v3")
+        digest = hashlib.sha256(json.dumps(TOOL_SCHEMAS, sort_keys=True).encode("utf-8")).hexdigest()
+        self.assertEqual(digest[:16], "7d919d61e9a8196d")
         self.assertNotIn("check", [schema["function"]["name"] for schema in TOOL_SCHEMAS])
+
+    def test_opt_in_toolset_v4_has_no_guard_only_tools(self):
+        from reticle.tools import toolset_v4
+        self.assertEqual(toolset_v4.TOOLSET_VERSION, "reticle-tools-v4")
+        self.assertIn("apply_patch", [schema["function"]["name"] for schema in toolset_v4.TOOL_SCHEMAS])
+        self.assertNotIn("check", [schema["function"]["name"] for schema in toolset_v4.TOOL_SCHEMAS])
 
     def test_plain_toolsuite_finishes_immediately_after_an_edit(self):
         with tempfile.TemporaryDirectory() as name:

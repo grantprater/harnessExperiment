@@ -14,7 +14,7 @@ from reticle.context import DecisionContextPolicy, MinimalContextPolicy, Pressur
 from reticle.runtime.contracts import TaskEnvelope
 from reticle.runtime.controller import AgentController, AgentLimits
 from reticle.runtime.session import LocalRuntime
-from reticle.tools.primitives import ToolSuite
+from reticle.tools.toolset_v4 import ToolSuiteV4  # toolset v4, opt-in (owner, 2026-10-15)
 from reticle.execution import TrustedLocalBackend, IsolatedOCIBackend, BackendUnavailableError
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -136,7 +136,7 @@ def usage_summary(records):
     return f'tokens: input {total("prompt_tokens")}, output {total("completion_tokens")}, cached input {cache}'
 
 
-class TerminalTools(ToolSuite):
+class TerminalTools(ToolSuiteV4):
     quiet = False
 
     def dispatch(self, name, arguments, call_id):

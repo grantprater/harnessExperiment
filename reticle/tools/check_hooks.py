@@ -2,7 +2,8 @@
 from dataclasses import replace
 import json
 from reticle.runtime.check_hooks import VERSION, render_check, source_fingerprint
-from reticle.tools.primitives import ToolSuite, ToolOutcome, _function
+from reticle.tools.primitives import ToolOutcome, _function
+from reticle.tools.toolset_v4 import ToolSuiteV4  # toolset v4, opt-in (owner, 2026-10-15)
 
 ARMS = ('manual', 'automatic-full', 'automatic-selective')
 ALLOWED = {'glob_files', 'read_file', 'outline', 'search_text', 'replace_text',
@@ -12,7 +13,7 @@ VERIFY_SCHEMA = _function('verify', 'Run the fixed project tests. Full results a
                           'this tool is available in all conditions.', {}, [])
 
 
-class CheckHookTools(ToolSuite):
+class CheckHookTools(ToolSuiteV4):
     def __init__(self, runtime, *, interpreter, checker, source_paths, arm):
         super().__init__(runtime, interpreter=interpreter)
         if arm not in ARMS:

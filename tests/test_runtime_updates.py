@@ -59,7 +59,7 @@ class RuntimeUpdateTests(unittest.TestCase):
         return RuntimeSupervisor(self.session, self.workspace, self.options, client or FinishClient(), ROOT)
 
     def change_tools(self):
-        file = self.workspace / 'reticle/tools/primitives.py'
+        file = self.workspace / 'reticle/tools/toolset_v4.py'
         source = file.read_text(encoding='utf-8')
         source = source.replace(WRITE_REGION, UPDATED_WRITE_REGION)
         file.write_text(source, encoding='utf-8')
@@ -86,7 +86,7 @@ class RuntimeUpdateTests(unittest.TestCase):
                 inner.requests.append(messages)
                 n = len(inner.requests)
                 actions = [
-                    ('replace_text', {'path': 'reticle/tools/primitives.py',
+                    ('replace_text', {'path': 'reticle/tools/toolset_v4.py',
                                       'old_text': WRITE_REGION,
                                       'new_text': UPDATED_WRITE_REGION}),
                     ('activate_runtime', {'reason': 'Exercise live update'}),

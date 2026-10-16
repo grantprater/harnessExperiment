@@ -45,16 +45,16 @@ class ContractTestCase(unittest.TestCase):
 
 
 class SchemaTests(ContractTestCase):
-    def test_schema_has_no_duplicate_synonyms_and_optional_regex(self):
+    def test_schema_has_no_duplicate_synonyms_and_no_advertised_regex(self):
         names = [s["function"]["name"] for s in TOOL_SCHEMAS]
-        self.assertEqual(TOOLSET_VERSION, "reticle-tools-v4")
+        self.assertEqual(TOOLSET_VERSION, "reticle-tools-v3")
         self.assertIn("glob_files", names)
         self.assertIn("search_text", names)
         for legacy in LEGACY_TOOL_NAMES:
             self.assertNotIn(legacy, names)
         properties = {s["function"]["name"]: s["function"]["parameters"] for s in TOOL_SCHEMAS}
         self.assertEqual(properties["glob_files"]["required"], ["glob"])
-        self.assertIn("regex", properties["search_text"]["properties"])
+        self.assertNotIn("regex", properties["search_text"]["properties"])
         self.assertEqual(len(names), len(set(names)))
 
 
@@ -113,13 +113,13 @@ class SearchTextTests(ContractTestCase):
         self.assertIn('Example: {"query": "def get_name(", "file_glob": "*.py"}'.replace("get_name", "get_real_name"),
                       outcome.content)
 
-    def test_pattern_is_rejected_and_regex_is_explicit(self):
+    def test_pattern_and_regex_are_rejected_not_silently_reinterpreted(self):
         pattern = self.dispatch("search_text", pattern="get_name|other")
         self.assertEqual(pattern.status, "rejected")
         self.assertIn("'pattern' is not a search_text argument: put the text to find in query", pattern.content)
         regex = self.dispatch("search_text", query="get_.*", regex=True)
-        self.assertEqual(regex.status, "success")
-        self.assertIn("Python regex", regex.content)
+        self.assertEqual(regex.status, "rejected")
+        self.assertIn("Regex matching is not available in this toolset", regex.content)
 
 
 class ReadEditWriteTests(ContractTestCase):
@@ -148,56 +148,6 @@ class ReadEditWriteTests(ContractTestCase):
         self.assertTrue(overwritten.content.startswith("Overwrote new/dir/notes.txt"))
         self.assertEqual((self.workspace / "new/dir/notes.txt").read_text(encoding="utf-8"), "c\n")
 
-    def test_replace_multiline_text_accepts_either_newline_style_and_preserves_bytes(self):
-        path = self.workspace / "pkg/core.py"
-        for ending, argument_ending in ((b"\r\n", "\n"), (b"\n", "\r\n")):
-            with self.subTest(ending=ending):
-                prefix = b"\xef\xbb\xbf# caf\xc3\xa9" + ending
-                before = prefix + b"def example():" + ending + b"    return 0" + ending + b"# no final newline"
-                path.write_bytes(before)
-                outcome = self.dispatch("replace_text", path="pkg/core.py",
-                                        old_text=argument_ending.join(("def example():", "    return 0")),
-                                        new_text=argument_ending.join(("def example():", "    value = 1", "    return value")))
-                self.assertEqual(outcome.status, "success")
-                self.assertEqual(path.read_bytes(), prefix + ending.join(
-                    (b"def example():", b"    value = 1", b"    return value", b"# no final newline")))
-
-    def test_newline_equivalent_duplicate_matches_are_ambiguous(self):
-        path = self.workspace / "pkg/core.py"
-        before = b"a\r\nb\r\nseparator\na\nb\n"
-        path.write_bytes(before)
-        outcome = self.dispatch("replace_text", path="pkg/core.py", old_text="a\nb", new_text="x\ny")
-        self.assertEqual(outcome.status, "error")
-        self.assertIn("occurs 2 times", outcome.content)
-        self.assertEqual(path.read_bytes(), before)
-        outcome = self.dispatch("replace_text", path="pkg/core.py", old_text="a\nb", new_text="x\ny",
-                                replace_all=True)
-        self.assertEqual(outcome.status, "success")
-        self.assertEqual(path.read_bytes(), b"x\r\ny\r\nseparator\nx\ny\n")
-
-    def test_single_line_replacement_uses_local_line_endings(self):
-        path = self.workspace / "pkg/core.py"
-        path.write_bytes(b"keep\nvalue = 0\r\nlast")
-        outcome = self.dispatch("replace_text", path="pkg/core.py", old_text="value = 0",
-                                new_text="value = 1\nextra = 2")
-        self.assertEqual(outcome.status, "success")
-        self.assertEqual(path.read_bytes(), b"keep\nvalue = 1\r\nextra = 2\r\nlast")
-        outcome = self.dispatch("replace_text", path="pkg/core.py", old_text="last", new_text="last\nadded")
-        self.assertEqual(outcome.status, "success")
-        self.assertEqual(path.read_bytes(), b"keep\nvalue = 1\r\nextra = 2\r\nlast\r\nadded")
-
-    def test_newline_tolerance_does_not_relax_other_whitespace_or_regex_literals(self):
-        path = self.workspace / "pkg/core.py"
-        before = b"def example():\r\n    return x[0] + 1\r\n"
-        path.write_bytes(before)
-        outcome = self.dispatch("replace_text", path="pkg/core.py",
-                                old_text="def example():\n  return x[0] + 1", new_text="wrong")
-        self.assertEqual(outcome.status, "error")
-        self.assertEqual(path.read_bytes(), before)
-        outcome = self.dispatch("replace_text", path="pkg/core.py", old_text="x[0] + 1", new_text="x[1] + 2")
-        self.assertEqual(outcome.status, "success")
-        self.assertEqual(path.read_bytes(), b"def example():\r\n    return x[1] + 2\r\n")
-
     def test_unknown_arguments_to_schema_tools_are_rejected_with_guidance(self):
         outcome = self.dispatch("read_file", path="pkg/core.py", offset=10)
         self.assertEqual(outcome.status, "rejected")
@@ -210,19 +160,19 @@ class RunTests(ContractTestCase):
         outcome = self.dispatch("run", command="cd /testbed && python test_issue.py")
         self.assertEqual(outcome.status, "rejected")
         self.assertIn("shell operator(s) && are not supported", outcome.content)
-        self.assertIn("choose a workspace directory with cwd instead of cd", outcome.content)
-        self.assertIn('Run instead: {"command": "python test_issue.py", "cwd": "/testbed"}', outcome.content)
+        self.assertIn("commands already run in the workspace root, so 'cd /testbed &&' is not needed", outcome.content)
+        self.assertIn('Run instead: {"command": "python test_issue.py"}', outcome.content)
         self.assertEqual(outcome.content.count("Example:"), 0)
 
     def test_bare_cd_pipes_and_unknown_arguments_are_explained(self):
         cd = self.dispatch("run", command="cd pkg")
-        self.assertIn("cd is not available: use the cwd argument", cd.content)
+        self.assertIn("cd is not available: commands already run in the workspace root", cd.content)
         piped = self.dispatch("run", command="python -c pass | cat")
         self.assertIn("shell operator(s) | are not supported", piped.content)
         self.assertIn('Example: {"command": "pytest tests/test_example.py -q"}', piped.content)
         unknown = self.dispatch("run", command="python -c pass", cwd="pkg")
-        self.assertEqual(unknown.status, "success")
-        self.assertIn("cwd: pkg", unknown.content)
+        self.assertEqual(unknown.status, "rejected")
+        self.assertIn("unknown argument(s) cwd; nothing was run.", unknown.content)
 
     def test_output_shows_command_status_and_exit_code(self):
         outcome = self.dispatch("run", command='python -c "print(7)"')

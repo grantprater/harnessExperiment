@@ -139,6 +139,6 @@ in [experiments/README.md](experiments/README.md); modality prototypes and super
 plans remain in [archive](archive/). The retired self-refactoring loop optimized a
 complexity metric rather than task outcomes; see [archive/RETIRED.md](archive/RETIRED.md).
 
-This working checkout includes substantial uncommitted implementation and result
-files. Preserve existing work when resuming. Sessions and raw experiment data are
+The 2026-10-03 session's implementation and result files, once uncommitted in this
+checkout, are now committed (0a309b0). Preserve existing work when resuming. Sessions and raw experiment data are
 local research artifacts, not a publication bundle.

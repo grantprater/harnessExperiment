@@ -160,7 +160,7 @@ def prepare(out):
     from reticle.runtime.reasoning import REASONING_VERSION
     sources = ('reticle/runtime/knowledge.py', 'reticle/tools/knowledge.py', 'reticle/runtime/reasoning.py',
                'reticle/tools/reasoning.py', 'reticle/interactive.py', 'reticle/cognitive/chatgpt_subscription.py',
-               'reticle/context/baseline.py', 'reticle/tools/primitives.py',
+               'reticle/context/baseline.py', 'reticle/tools/primitives.py', 'reticle/tools/toolset_v4.py',
                'experiments/session_harness/knowledge_transfer.py')
     protocol = {'created_utc': datetime.now(timezone.utc).isoformat(),
                 'name': 'knowledge-transfer-002', 'client': 'chatgpt-subscription', 'model': 'gpt-6.1-sol',
