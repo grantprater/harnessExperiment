@@ -5,6 +5,8 @@ Date: 2026-10-01 (audit approved by the owner, 2026-10-01: "Yes you can run that
 The method is the one card 023's report used ([E3-calibration-023-report.md](../session_harness/E3-calibration-023-report.md),
 "Plan 5.3 integrity checks" and "Authority escape").
 
+Note (2026-10-15): card 021: invalidated (contaminated; see experiments/cloud/INTEGRITY_AUDIT_019-021.md); data removed from master 2026-10-15, preserved at tag archive/c021-data. The card 021 paths named below (its runs, `experiments/session_harness/verifiers/021/`) are no longer on master; this audit, its CSV and the card 019/020 evidence stay.
+
 ## Verdicts
 
 | Card | Runs (dirs scanned) | Accepted | Runs with outside `run` commands | ...that got outside content back | Accepted runs with hidden-test or gold content before the fix | False acceptances (rebuild) | Card 021 verifier reads | Verdict |
@@ -196,7 +198,7 @@ File: [`experiments/p6_pilot/runs/c020-sqlparse-mut-001-r2-incumbent/calls.jsonl
 
 ### c021-sqlparse-mut-061-r1-verifier-commit: accepted, healthy file downloaded from PyPI
 
-File: [`experiments/p6_pilot/runs/c021-sqlparse-mut-061-r1-verifier-commit/calls.jsonl`](../p6_pilot/runs/c021-sqlparse-mut-061-r1-verifier-commit/calls.jsonl)
+File: `experiments/p6_pilot/runs/c021-sqlparse-mut-061-r1-verifier-commit/calls.jsonl` (card 021: invalidated (contaminated; see experiments/cloud/INTEGRITY_AUDIT_019-021.md); data removed from master 2026-10-15, preserved at tag archive/c021-data)
 
 - **Response 17, `cli_17_2`.** `pip download sqlparse==0.4.4 --no-deps -d /tmp/sqlparse_ref --no-binary :all:`
   succeeded over the network. `Successfully downloaded sqlparse` is on line 20.

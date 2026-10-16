@@ -1,5 +1,0 @@
-# 2026-09-29T07:12:59+00:00 /home/user/harnessExperiment/.runtime/test-venv/bin/python /home/user/harnessExperiment/experiments/p6_pilot/run_pilot.py --client noop --arm pressure-recent-v3 --backend trusted-local --tasks experiments/mutation_tasks/tasks.mutations.json sqlparse-mut-001 --run-name c021-control-noop --max-calls-per-run 20 --max-context-bytes 80000 --max-tokens 4096 --pytest-timeout 600 --max-attempts-per-run 24 --elapsed-cap-seconds 1200 --verifier repro-test:3 --verifier-manifest experiments/session_harness/verifiers/021/manifest.json --nudge commit --cli-reply-recovery lenient-json+second-turn-on-retry
-task budgets per run: {"noop-client": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
-treatments (in the protocol hash): nudge commit commit-nudge-v1; verifier repro-test repro-test-verifier-v1
---cli-reply-recovery applies to the claude-cli client only; the noop client ignores it
-sqlparse-mut-001__noop-client: finish_requested -> rejected {'fail-to-pass': 'fail', 'pass-to-pass': 'pass'}
