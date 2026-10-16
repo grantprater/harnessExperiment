@@ -1,0 +1,5 @@
+sqlparse-mut-064-nm attempt 1: $0.177, pre-edit {'collected': 4, 'passed': 0, 'failed': 4, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-064-nm: available after 1 attempt(s), $0.177
+sqlparse-mut-015 attempt 1: $0.275, pre-edit {'collected': 3, 'passed': 1, 'failed': 2, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-015: available after 1 attempt(s), $0.275
+sqlparse-mut-016-nm attempt 1: read_outside_workspace: [{"name": "Grep", "input": {"pattern": "\\.value\\b", "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-tokjuk85\\workspace\\sqlparse", "output_mode": "content", "-n": true}}]

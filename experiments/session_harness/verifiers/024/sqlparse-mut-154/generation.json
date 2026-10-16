@@ -1,0 +1,206 @@
+{
+  "task_id": "sqlparse-mut-154",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.366575,
+  "statement_sha256": "0ad5d1f24f62c59dd7835c5f4d3a80edd6290020f0521b79f01bfafe14e91f9a",
+  "generated_at": "2026-10-02T00:58:16.358672+00:00",
+  "file": "sqlparse-mut-154/test_reticle_repro.py",
+  "sha256_lf": "fc08f47962acec2be6908987dcbe48d01b4fb077bd00dfee1a410d7f330cfd60",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 0,
+    "failed": 3,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 105.7,
+      "cost_usd": 0.3665752,
+      "num_turns": 20,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\sqlparse\\keywords.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\sqlparse\\tokens.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "_get_repr_name|def __repr__|def __str__|class Token\\b",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\sqlparse\\sql.py",
+            "-A": 10
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\sqlparse\\sql.py",
+            "limit": 150
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "_pprint_tree|get_repr_name|_get_repr_name",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\sqlparse\\sql.py",
+            "-A": 15
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "_pprint_tree",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def _pprint_tree|ttype",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\sqlparse\\sql.py",
+            "offset": 185,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "repr|pprint",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\CHANGELOG",
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "docs/**/*.rst"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "repr|pprint|Keyword.DML|DML",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\docs\\source\\analyzing.rst",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\docs\\source\\analyzing.rst"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_identifier|Number|T.Number",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\sqlparse\\engine\\grouping.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Number",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\sqlparse\\engine\\grouping.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Number",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\sqlparse\\engine\\grouping.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-3qs51_cy\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "fc08f47962acec2be6908987dcbe48d01b4fb077bd00dfee1a410d7f330cfd60",
+      "rationale": "The three reported failing checks ('pprint', 'token repr', 'single quotes') all stem from Token._get_repr_name picking str(ttype).split('.')[-2] instead of [-1]: this makes repr()/pprint report the parent token type (Keyword, Number, String) instead of the documented/intended leaf subtype (DML, Integer, Single), exactly matching the reported diff (\"...Keyword... Number...\" vs expected \"...DML...Integer...\"). The expected strings are derived directly from sqlparse's own token hierarchy in tokens.py (Keyword.DML, Number.Integer, String.Single) and from the KEYWORDS_COMMON/SQL_REGEX mappings that assign SELECT to Keyword.DML and quoted strings to String.Single, not from the current buggy output.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 0,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

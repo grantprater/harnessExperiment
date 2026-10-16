@@ -1,0 +1,246 @@
+{
+  "task_id": "sqlparse-mut-050",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.396174,
+  "statement_sha256": "80fd21f52ea2efb2c5ecdebb65e84694f08e98eb0cfb673b466bdc9dc736ac40",
+  "generated_at": "2026-10-01T23:53:05.591302+00:00",
+  "file": "sqlparse-mut-050/test_reticle_repro.py",
+  "sha256_lf": "805d88063c33574c499c53ad61255f530928eda7d2ece2eb3ec43c387cc9e83e",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 0,
+    "failed": 3,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 220.4,
+      "cost_usd": 0.39617359999999996,
+      "num_turns": 24,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "strip_comments",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\filters\\others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\CHANGELOG",
+            "limit": 80
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class TokenList|def __init__|def __str__|self\\.value|_pprint_tree|def value|@property\" -n",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\sql.py",
+            "offset": 150,
+            "limit": 220
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\sql.py",
+            "offset": 1,
+            "limit": 90
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def flatten|class Token\\b\" -n",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\sql.py",
+            "offset": 90,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\__init__.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "strip_comments|strip-comments\" -n",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\docs\\source\\api.rst",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "issue484|line break|Comment\" -n",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\CHANGELOG",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\docs\\source\\api.rst",
+            "offset": 25,
+            "limit": 25
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comment.Single|Comment\\.Multiline|--.*|/\\*\" -n",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\keywords.py",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Comment\" -n",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\engine\\grouping.py",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class Comment\" -n",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "group_comments|Comment\" -n",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\engine",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 320,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 400,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-sny7p315\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 458,
+            "limit": 30
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "805d88063c33574c499c53ad61255f530928eda7d2ece2eb3ec43c387cc9e83e",
+      "rationale": "The reported regression lives in TokenList.flatten()/TokenList caching .value at construction: StripCommentsFilter correctly mutates a group's .tokens to drop a Comment child, but since align_comments (sqlparse/engine/grouping.py) merges a trailing comment into the preceding Identifier group, the Identifier's cached .value is never refreshed, and flatten() now treats that group as an opaque leaf instead of recursing into its (fixed) children, so the stale, comment-containing value leaks into the final formatted string. The expected outputs follow directly from the documented contract of strip_comments (\"comments are removed from the statements\", docs/source/api.rst) plus the preserved-line-break guarantee from CHANGELOG issue484, and were derived by manually tracing StripCommentsFilter's token manipulation (not by running the current buggy code), so they fail today and will pass once flatten()/value caching correctly reflects live token mutations.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 0,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

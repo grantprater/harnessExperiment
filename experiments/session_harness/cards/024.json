@@ -1,0 +1,276 @@
+{
+  "schema_version": 1,
+  "id": "E3-ontology-pilot-024",
+  "title": "Ontology pilot screen: incumbent vs evidence-ontology memory, symbolic, and verifier-commit on card 010's 31 eval tasks",
+  "status": "approved",
+  "markdown": "experiments/session_harness/E3-ontology-pilot-024.md",
+  "hypothesis": "On card 010's 31 combined-eval sqlparse tasks (calibrated incumbent acceptance 32/62), at least one treatment arm (--reasoning memory, --reasoning symbolic, or verifier-commit) shows a per-task acceptance difference over the unchanged incumbent large enough to justify a powered follow-up. A screen at r = 2, not a test: it detects effects of roughly 23 points.",
+  "run_prefix": "c024",
+  "run_name_template": "{prefix}-{task}-r{rollout}-{arm}",
+  "runner": {
+    "script": "experiments/p6_pilot/run_pilot.py",
+    "runner_version": 8
+  },
+  "environment": {
+    "claude_cli_version": "2.1.286 (Claude Code)"
+  },
+  "prerequisites": [
+    {
+      "text": "Owner decisions 2026-10-01 recorded verbatim in E3-difficulty-calibration-010.md and IMPLEMENTATION_PLAN.md: quarantine of the eval twins (\"Quarantine dev twins (Recommended)\") and r = 2 (\"r=2 screen (Recommended)\")",
+      "done": true
+    },
+    {
+      "text": "Owner approval of this card's launch: run count, cost and the verifier's generation calls (1-3 per task, 31 tasks, at most 93 calls), recorded verbatim in E3-ontology-pilot-024.md; then set status to approved",
+      "done": true
+    },
+    {
+      "text": "Verifier manifest generated after the launch approval: experiments/p6_pilot/repro_verifiers.py generate --out experiments/session_harness/verifiers/024 --tasks experiments/mutation_tasks/tasks.pilot024-eval.json --model claude-sonnet-5 --oci-image localhost/reticle-p6-task:py313-v1 --spend-cap-usd <approved cap> (pre-edit runs in podman, network none; at most 93 calls), committed; then re-plan, since the verifier-commit hashes planned before it are provisional (manifest_sha256_lf null)",
+      "done": false
+    }
+  ],
+  "arms": [
+    {
+      "name": "incumbent",
+      "client": "claude-cli",
+      "model": "claude-sonnet-5",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [],
+      "expected_protocol_hash": null,
+      "note": "Card 010's incumbent arm unchanged (cards/010.json and cards/010-stage2a.json): runner v8, claude-cli, claude-sonnet-5 pinned by full ID, pressure-recent-v3, reticle-tools-v3, OCI image 8b74015e5079 (podman), repeat guard off, no treatment, CLI 2.1.286 (the private copy, auto-update off). Its planned hash per task equals the hash card 010 or 010-stage2a recorded for that task (check_pilot_hashes_024.py)."
+    },
+    {
+      "name": "memory",
+      "client": "claude-cli",
+      "model": "claude-sonnet-5",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [
+        "--reasoning",
+        "memory"
+      ],
+      "expected_protocol_hash": null,
+      "note": "The incumbent plus --reasoning memory: the evidence ontology's reasoning_state, reasoning_update and assess_check tools over this run's own session journal; no inference rules.",
+      "bundle": {
+        "module": "memory / state",
+        "surface": "added tools",
+        "treatment": "evidence-ontology-v1 (memory)",
+        "flag": "--reasoning memory",
+        "code": "reticle/runtime/reasoning.py"
+      }
+    },
+    {
+      "name": "symbolic",
+      "client": "claude-cli",
+      "model": "claude-sonnet-5",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [
+        "--reasoning",
+        "symbolic"
+      ],
+      "expected_protocol_hash": null,
+      "note": "The incumbent plus --reasoning symbolic: the memory arm's tools plus the ontology's inference rules (consequences conditional on the model's assertions), reported only when the model asks.",
+      "bundle": {
+        "module": "memory / state",
+        "surface": "added tools",
+        "treatment": "evidence-ontology-v1 (symbolic)",
+        "flag": "--reasoning symbolic",
+        "code": "reticle/runtime/reasoning.py"
+      }
+    },
+    {
+      "name": "verifier-commit",
+      "client": "claude-cli",
+      "model": "claude-sonnet-5",
+      "policy": "pressure-recent-v3",
+      "toolset": "reticle-tools-v3",
+      "backend": {
+        "kind": "oci",
+        "image": "localhost/reticle-p6-task:py313-v1",
+        "image_id": "8b74015e5079d613ccd9f17d891fc540cf5b9d6a427b2512b92e6f50eafe355b",
+        "engine": "podman"
+      },
+      "guards": {
+        "stop_on_repeats": false,
+        "resume_after_provider_stop": 0,
+        "resume_wait_seconds": null
+      },
+      "extra_args": [
+        "--verifier",
+        "repro-test:3",
+        "--verifier-manifest",
+        "experiments/session_harness/verifiers/024/manifest.json",
+        "--nudge",
+        "commit"
+      ],
+      "expected_protocol_hash": null,
+      "note": "Card 021's verifier-commit treatment on card 010's incumbent: check() over the task's frozen reproduction test (counts only, at most 3 calls per run), run through the run's OCI backend; and the commitment nudge at half the response budget with the commit_hypothesis and record_observation tools. Unlike card 021 it runs on local OCI (network none, workspace-only mount), not the cloud trusted-local backend, and without --cli-reply-recovery, so the treatment is its only difference from the incumbent. The manifest's sha256 is a hash input, so this arm's hashes exist only after repro_verifiers.py generate writes experiments/session_harness/verifiers/024/manifest.json (a launch prerequisite; 1-3 model calls per task).",
+      "bundle": {
+        "module": "tool use + agent loop",
+        "surface": "added tool (task-changing arm) + harness message + two recording tools",
+        "treatment": "repro-test-verifier-v1 + commit-nudge-v1 (commitment-tools-v1)",
+        "flag": "--verifier repro-test:3 --verifier-manifest experiments/session_harness/verifiers/024/manifest.json --nudge commit",
+        "max_calls": 3,
+        "code": "reticle/tools/repro_verifier.py, experiments/p6_pilot/run_repro_test.py, experiments/p6_pilot/repro_verifiers.py, reticle/runtime/nudges.py, reticle/tools/commitment.py (ported verifier-only from integration/2026-10, commits 52deea7, a41fcff, 4ae5dea; owner decision 2026-10-01 'Port verifier only'; generation runs every model-written test in this card's OCI image, owner decision 'Confine it in podman')"
+      }
+    }
+  ],
+  "controls": [
+    {
+      "name": "gold",
+      "client": "gold",
+      "task_set": "eval",
+      "like_arm": "incumbent",
+      "expect": "accepted",
+      "run_name": "c024-control-gold"
+    },
+    {
+      "name": "noop",
+      "client": "noop",
+      "task_set": "eval",
+      "like_arm": "incumbent",
+      "expect": "rejected",
+      "run_name": "c024-control-noop"
+    }
+  ],
+  "tasks": {
+    "file": "experiments/mutation_tasks/tasks.pilot024-eval.json",
+    "file_sha256": "58a79039164d46516eeba21fd121fc13ecbf93d2d57421e15e06aaac2a88f9d8",
+    "sets": {
+      "eval": {
+        "ref": {
+          "path": "experiments/session_harness/E3-difficulty-calibration-010.eval-combined.json",
+          "key": "eval",
+          "sha256": "327fb19d46279944a0c2e6f28cb4ab4dbb37b9b9a0306b0f59a6b3be8b3fa5dd"
+        },
+        "note": "Card 010's combined eval split (stage 1's 12 then stage 2a's 19), registry role eval-010-combined. The task file copies each task unchanged from the file card 010 calibrated it in (build_pilot_eval_tasks.py --check). No quarantined-eval-twin, dev, evolution or boltons task is in it."
+      }
+    }
+  },
+  "blocks": [
+    {
+      "name": "eval",
+      "task_set": "eval",
+      "arms": [
+        "incumbent",
+        "memory",
+        "symbolic",
+        "verifier-commit"
+      ],
+      "rollouts": 2,
+      "arm_order": {
+        "rule": "seeded",
+        "seed": 24
+      }
+    }
+  ],
+  "schedule": "rollout-major",
+  "budgets": {
+    "per_run": {
+      "responses": 20,
+      "model_attempts": 24,
+      "active_seconds": 1200,
+      "context_bytes": 80000,
+      "max_tokens": 4096,
+      "pytest_timeout_seconds": 600,
+      "command_timeout_seconds": {
+        "default": 120,
+        "max": 600
+      },
+      "invocation_wall_seconds": 3600
+    },
+    "campaign": {
+      "max_runs": 248,
+      "max_model_attempts": 6944,
+      "monetary_cap_usd": null,
+      "note": "248 runs (31 tasks x 2 rollouts x 4 arms) x 24 attempts = 5952 planned, capped at 248 x 28 = 6944 (card 010's 28 per run: room for retried runs). CLI on the subscription: no monetary cap, billing recorded as unknown. List-price estimate from card 010's calibration runs of these 31 tasks: $79.71 over 62 runs = $1.286 a run, so about $319 for 248 runs, plus the verifier generation (not in this cap; see the markdown card)."
+    }
+  },
+  "stop_rules": {
+    "max_retries_per_invocation": 2,
+    "retry_backoff_seconds": [
+      60,
+      300
+    ],
+    "consecutive_failures_to_stop": 3,
+    "repeat_rule": "As card 007: the repeat guard is off; repeat flags are derived from the journals afterwards.",
+    "manual": [
+      "Evaluator leakage, evidence loss, or authority escape stops the campaign (trajectory review).",
+      "A model_pin_violation or a CLI version other than 2.1.286 stops the campaign as a corrupted protocol.",
+      "A run ended by a usage limit, an adapter failure or a machine sleep is voided (renamed *.void-<reason>) and rerun, as in cards 010 and 018; it is not an outcome.",
+      "No arm, lesson or evolution step reads a task whose registry role is quarantined-eval-twin, dev, an evolution role or a boltons role (owner, 2026-10-01).",
+      "Do not change a treatment's text or parameters during the card; do not regenerate, edit or drop a frozen reproduction test after generation; a verifier unavailable for a task stays unavailable.",
+      "The campaign stops at the run cap or the attempt cap; an extension needs a new approval."
+    ]
+  },
+  "measurements": {
+    "per_run": [
+      "accepted",
+      "stop_reason",
+      "responses_used",
+      "provider_attempts",
+      "tool_calls",
+      "active_seconds",
+      "wall_seconds",
+      "tokens",
+      "first_edit_response",
+      "edit_in_gold_files",
+      "verification_before_finish"
+    ],
+    "campaign": [
+      "acceptance_rate_ci",
+      "per_task_outcomes",
+      "outcome_distribution",
+      "paired_table",
+      "delta:incumbent:memory",
+      "delta:incumbent:symbolic",
+      "delta:incumbent:verifier-commit",
+      "acceptance_by:statement_message_dropped"
+    ]
+  },
+  "decision_rule": "A screen, written before data (E3-ontology-pilot-024.md, Decision rule). For each treatment arm T over the 31 tasks: d(T) = mean over tasks of (T's accepted runs/2 - incumbent's accepted runs/2); wins(T) / losses(T) = tasks where T's per-task rate is higher / lower than the incumbent's. Follow-up justified for T when d(T) >= +0.10 (about +6 accepted runs of 62) and wins(T) > losses(T). Possible harm when d(T) <= -0.10 (recorded, no follow-up). Otherwise no follow-up for T on this evidence, reported as uncertain, not negative. If several arms qualify, the powered follow-up takes the largest d(T); a tie goes to the arm with fewer model calls per run (generation included). Tool use, check() calls, tokens and cost are reported, not deciding. No significance claim.",
+  "report": {
+    "path": "experiments/session_harness/E3-ontology-pilot-024-report.md"
+  },
+  "notes": [
+    "Draft for owner review (status proposed): run_card.py --execute refuses any status other than approved or running.",
+    "The incumbent copies card 010 field for field, so each task's incumbent hash equals card 010's recorded one; check_pilot_hashes_024.py compares them from --plan.",
+    "Calibration outcomes are not reused as incumbent data (card 010 rule 8); the incumbent is run again here.",
+    "Arm order is seeded per (block, task, rollout) with seed 24; rollout-major schedule.",
+    "One runner invocation per task, rollout and arm (c024-<task>-r<k>-<arm>), --max-total-calls 24."
+  ]
+}

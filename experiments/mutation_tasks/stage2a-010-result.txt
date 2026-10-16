@@ -1,0 +1,10 @@
+card 010 amendment 1, stage 2a generation result
+command summary: max_candidates=531 budget_seconds=3600.0 commit=f66d12c245412f28c58f045b646eb53c0e691b8b task_python=/home/user/harnessExperiment/.runtime/bugs-venv/bin/python pytest_timeout_plugin=False per_run_timeout_seconds=60.0
+baseline: {'pass': 491, 'skip': 2, 'seconds': 2.92}
+candidate pool: 531; tried: 531; budget stopped the loop: False; loop_seconds: 2802.4; mean_candidate_seconds: 5.28
+verdicts: {'kept': 351, 'too_destructive': 101, 'timeout': 13, 'survived': 65, 'collection_error': 1}
+kept: 351 (recorded bank: 76; new ids after sqlparse-mut-076: 275)
+gold checks: sqlparse-mut-001 ok=True; sqlparse-mut-002 ok=True
+DETERMINISM: PASS-ADDRESS-ONLY
+  address-only statement differences: sqlparse-mut-072
+PROPOSED selection (amendment 1; counts only): {"new_kept": 275, "excluded_names_function": 16, "dev_pool_shares_function_or_set_with_recorded_bank": 182, "duplicates_among_new": 38, "candidates_function_distinct": 39, "candidates_single_test": 5, "candidates_multi_test": 34}

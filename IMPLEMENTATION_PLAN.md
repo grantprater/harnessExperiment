@@ -844,6 +844,74 @@ records and decisions exist.
 **Owner decisions (2026-10-01):** "1. $144. 2. Yes. 3. Yes. 4. Yes", answering: (1) cloud credit balance is $144 (expires 2026-11-05); (2) launch card 023 (boltons calibration, $40 nested cap) in the cloud (launched 2026-10-01 as one-shot routine `trig_015orL1bg5GH8rm6TpZuaZz7` with the prompt in `experiments/cloud/RUN_IN_CLOUD-023.md`, results to branch `cloud-results-023`); (3) build an integration branch merging the cloud-card branches with the 2026-09-30 branches (not master); (4) add card 021's verifier-commit as a 4th arm of the evidence-ontology pilot (`experiments/neurosymbolic/README.md`).
 
 **Owner decisions (2026-10-01, later):** "We can wait for card 10 to build the pooled registry. We can keep it as the transfer test." (1) A pooled task registry across cards 007, 023 and 010 (per-task outcomes, role tag: iterate / held-out / near-transfer test / pilot eval) is built offline after card 010's calibration finishes; it is the S6 loop's evidence store. (2) The boltons bank stays the near-transfer test as card 023 planned: its evolution set (015, 023, 056) is not used for iteration. Also approved the same day ("Yes you can run that"): an offline integrity audit of cloud cards 019-021 for the trusted-local `run` authority escape found in card 023. After the audit: "1. stop it 2. Yes keep it. 3. We can try to fix it now": card 021 invalidated; verifier-commit stays the pilot's 4th arm; the trusted-local `run` confinement fix is being built on `fix/cloud-run-confinement`, and cloud cards are paused until its probe passes on the VM. That fix is built: card field `"sandbox": "unshare-confined"`, a fail-closed new-root namespace sandbox with its own protocol hash, plus a report-only post-run scan (`run_integrity.py`). It passed the probe in a host container; the VM probe (`experiments/cloud/RUN_IN_CLOUD-confinement-probe.md`) first failed check 6 only: the marker was the `.gitignore` that `uv venv` writes into the task venv, not a repository or task source (the check matched the text `/.git`). Check 6 now matches path components, exempts only `.gitignore`/`.gitattributes`/`.gitkeep`, and also flags any sqlparse/boltons copy outside the workspace (e8150cd). The VM rerun passed: `SUMMARY 40 passed, 0 failed`, `CONFINEMENT: PASS` (branch `cloud-probe-confinement-2`, 939870d; copy in `experiments/cloud/probe-confinement-result.txt`). The fix is merged into this branch. Cloud cards may resume only with `"sandbox": "unshare-confined"` (a new protocol hash: new runs, no replay); no card uses the mode yet, and any cloud launch still needs the owner's approval of calls and cost.
+**Owner decision (2026-10-01, card 010 stage 2a).** The owner was asked: "Card 010's keep/drop rule left only 12 eval
+tasks, not the ~30 the 4-arm pilot was sized for. How should the pilot proceed?" The answer, verbatim: "Stage 2a first
+(Recommended)". That option generates about 45-55 new sqlparse mutation tasks (CPU only, about 47 min, a one-shot
+cloud routine, no model calls), then calibrates them in about 90-110 Sonnet 5 runs (roughly $95-115 at list), then runs
+the 4-arm pilot as approved (about 240 runs). Each step's calls and cost are confirmed with the owner before it runs.
+
+The decision is recorded as
+[card 010 amendment 1](experiments/session_harness/E3-difficulty-calibration-010.md#amendment-1-2026-10-01-stage-2a).
+Generation is specified there and ready to launch, with the prompt in
+`experiments/cloud/RUN_IN_CLOUD-010-stage2a.md`. Three things were proposed and are approved 2026-10-01:
+- the determinism check's memory-address exception;
+- the stage-2a selection rule;
+- applying the keep/drop rule per stage.
+
+**Owner decisions (2026-10-01, card 010 stage 2a, after generation).** Generation ran in the cloud (531 of 531
+candidates tried, 275 new kept tasks, `DETERMINISM: PASS-ADDRESS-ONLY`). The owner was asked three questions; the
+question texts are verbatim:
+
+1. Question: "Accept the reproducibility exception? Tasks 001-076 regenerated identically on the cloud machine except task 072, whose description differs only by a Python memory address. Task 072 is already excluded from every set."
+   Answer (verbatim): "Accept (Recommended)" (option text: "PASS-ADDRESS-ONLY counts as a pass, so the new task ids (077 onward) may be used.")
+2. Question: "Accept the proposed selection rule for stage 2a? Of 275 new tasks, 182 share a function or failing set with the original bank, 38 duplicate each other and 16 are excluded by name, leaving 39 function-distinct tasks (5 single-test, 34 multi-test). The keep/drop rule is applied to those 39 alone, and the tasks it keeps are added to stage 1's 12."
+   Answer (verbatim): "Accept (Recommended)" (option text: "Calibrate all 39 and apply the keep/drop rule to stage 2a separately. Pooling would pull round-1 tasks that were dropped back in ahead of any new task.")
+3. Question: "Approve the stage 2a calibration: 39 tasks x 2 rollouts = 78 runs on claude-sonnet-5 (CLI 2.1.286, local OCI backend, same protocol as stage 1). It costs about $70 at list (stage 1 averaged $0.90 a run; range about $55-95), plus model-free gold/no-op controls first. Expected yield is about 10-16 more eval tasks, for about 22-28 in total, since most new tasks are multi-test, which Sonnet solved more often."
+   Answer (verbatim): "Approve 78 runs (Recommended)" (option text: "Run the model-free controls, then the 78 calibration runs locally, one process at a time. The stage-1 stopping rules apply.")
+
+The stage-2a calibration is approved at 78 runs (39 tasks x 2 rollouts, about $70 at list), after the model-free
+controls. Machine card: `experiments/session_harness/cards/010-stage2a.json`; record in card 010 amendment 1, A1.5.
+
+**Owner decision (2026-10-01, card 010 stage 2a, CLI auto-update).** At 12:04 local time the user's CLI updated itself
+from 2.1.286 (the card's pin) to 2.1.287 mid-calibration; the runner stopped at invocation 40/80 (integrity stop on
+`c010b-sqlparse-mut-085-r1`, all 24 calls on 2.1.287); `c010b-sqlparse-mut-102-r1` had 19 calls on 2.1.286 and 2 on
+2.1.287; the other 36 finished runs are clean. The owner was asked (verbatim): "The CLI auto-updated to 2.1.287 mid-calibration. 36 runs are clean on 2.1.286; 085-r1 and 102-r1 touched 2.1.287 and would be voided and rerun. How should the remaining runs proceed?"
+Answer (verbatim): "Private 2.1.286 copy (Recommended)" (option text: "Install CLI 2.1.286 from npm into the project's .runtime folder, used only by the runner, with auto-update off for it. Your own claude stays on 2.1.287. Void the two runs and resume the same card: 42 runs left (40 + 2 reruns, about $2 extra). The same copy would keep the 240-run pilot on one version. I'd also add a per-call CLI-version check so a mid-run update is caught.")
+Done 2026-10-01: private CLI 2.1.286 under `.runtime/claude-cli-2.1.286` (runner PATH, `DISABLE_AUTOUPDATER=1`),
+both runs voided as `*.void-cli-2.1.287`, per-call CLI-version check (`cli_version_mismatch`), no protocol hash change;
+record in card 010 amendment 1, A1.6.
+
+**Owner decisions (2026-10-01, ontology pilot after card 010).**
+1. Question (verbatim): "31 eval tasks share a mutated function (38 pairs) or an exact failing-test set (26 pairs) with dev tasks. None of those dev tasks has ever been run. The card says eval must be 'disjoint from every dev task'. How should the overlap be handled?"
+Answer (verbatim): "Quarantine dev twins (Recommended)" (option text: "Tag the overlapping dev tasks so no arm, lesson or evolution step ever uses them. Eval stays at 31, it costs nothing, and the pilot can't learn on a near-copy of an eval bug.")
+2. Question (verbatim): "How many rollouts per task should the 4-arm pilot use (incumbent, memory, symbolic, verifier-commit on 31 tasks)? Costs are list price at about $1.20/run on these harder tasks; it is billed to the subscription for now. The earlier plan was an r=2 screen."
+Answer (verbatim): "r=2 screen (Recommended)" (option text: "248 runs, about $300 list, about 29 hours sequential. A screen only: it detects roughly 23-point effects. A powered follow-up runs only if an arm looks promising. Matches the earlier pilot plan.")
+
+Earlier decisions carried forward: verifier-commit stays the pilot's 4th arm; its reproduction tests need 1-3 generation calls per task, and that count is confirmed with the owner at launch; card 021 is invalidated (cloud trusted-local `run` without a path guard), but the arm is kept. Recorded in
+[card 010 amendment 1, A1.7](experiments/session_harness/E3-difficulty-calibration-010.md#a17-owner-decisions-for-the-ontology-pilot-2026-10-01).
+Done: 64 eval twins quarantined in the pooled registry (`quarantined-eval-twin`: 49 `was:dev`, 15
+`was:uncalibrated-pool`; [TASK_REGISTRY.md](experiments/session_harness/TASK_REGISTRY.md)); pilot drafted as
+[card 024](experiments/session_harness/E3-ontology-pilot-024.md) (`proposed`, 248 runs; not launched; the owner approves
+the launch separately).
+
+**Owner decisions (2026-10-01, card 024 draft).**
+1. Question (verbatim): "Merging the verifier-commit code from integration/2026-10 changes the protocol hash of every incumbent/memory/symbolic run (its CLI wrapper adds a model_pin block), so the pilot would no longer run the same code as card 010's calibration. How should the arm's code come in?"
+Answer (verbatim): "Port verifier only (Recommended)" (option text: "Bring over only the verifier-commit runner and repro-test code, not the CLI wrapper change. Must keep all 186 other hashes equal to calibration. The 'same code as calibration' rule holds.")
+2. Question (verbatim): "Before the pilot, verifier-commit generates a reproduction test per task (at most 93 calls, about 43 expected, about $19). The model-written test file is then executed with plain host Python on this machine, outside any sandbox. How should that run?"
+Answer (verbatim): "Confine it in podman (Recommended)" (option text: "Run each generated test in the same OCI image the runs use (network none, scratch copy only) before freezing it. A small code change; nothing model-written runs on the host.")
+3. Question (verbatim): "The card's decision rule, written before any data: an arm earns a powered follow-up if it beats the incumbent by at least +0.10 in acceptance AND wins more tasks than it loses; an arm at -0.10 or worse is recorded as harmful. The draft agent chose the 0.10 threshold. Keep it?"
+Answer (verbatim): "Keep +0.10 (Recommended)".
+
+Done on `exp/ontology-pilot`: verifier-only port (`07f70df`, from `52deea7`, `a41fcff`, `4ae5dea`; no `claude_cli.py`
+change) and podman confinement of every model-written test run (`c47deb8`; fail closed, no host fallback). Card 024's
+incumbent, memory and symbolic hashes are unchanged (incumbent 31/31 equal to card 010). Remaining before launch: the
+owner's launch approval (runs, cost, generation calls, spend cap; $56 proposed), then generation of the verifier
+manifest, then status `approved`.
+
+**Owner launch approval (2026-10-01, card 024).** Question (verbatim): "Card 024 is ready to launch. Phase 1: generate reproduction tests for verifier-commit (at most 93 model calls, about 43 expected, about $19 list; tests run in podman). Phase 2: 248 pilot runs + 2 scripted controls on claude-sonnet-5 via the private CLI 2.1.286, at most 7,037 model calls in total, about $338-395 list, about 29 h sequential on this machine at idle priority. It bills the subscription; if Anthropic's paused Agent SDK credit change resumes mid-campaign, `claude -p` usage could start drawing on a monthly credit ($20-200) instead. What do you approve?"
+Answer (verbatim): "Both phases (Recommended)" (option text: "Run generation, then I verify the manifest (one test per task, each fails on the mutated tree and passes on gold), commit it, re-plan, and launch the 248 runs without asking again. I stop and come back if anything in that check fails or costs exceed the estimate.")
+Question (verbatim): "Spend cap for phase 1 generation (each call is already capped at $0.60, so 93 calls can never exceed $55.80)?"
+Answer (verbatim): "$30". Card 024 status set to `approved`.
 
 **Implementation choices before any E3 model run in OCI** (from
 `experiments/session_harness/S2b-oci-boundaries-controls.md`):

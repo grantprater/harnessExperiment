@@ -1,0 +1,606 @@
+{
+  "task_id": "sqlparse-mut-052-nm",
+  "status": "unavailable",
+  "attempts": 3,
+  "cost_usd": 1.882808,
+  "statement_sha256": "d12d82c92b379ba8f250566c83db225bc213e114c9dcf4bd6b0e9cfdce328f69",
+  "generated_at": "2026-10-02T00:10:30.007980+00:00",
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 1,
+      "seconds": 335.5,
+      "cost_usd": 0.6413443999999999,
+      "num_turns": 30,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Function",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "group_functions|def group_as|Function",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 370,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 420,
+            "limit": 70
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_period",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\grouping.py",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 20
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 182,
+            "limit": 15
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "qualified function|aliased function\" ohne\\|without as\\|alias",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace",
+            "-i": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\CHANGELOG"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_tokens|def __init__|def __str__|self\\.value =|self\\._groupable_tokens|class TokenList",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\sql.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class TokenList",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_tokens",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 40
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 473,
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 1,
+            "limit": 164
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 255,
+            "limit": 115
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\sql.py",
+            "offset": 1,
+            "limit": 160
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\sql.py",
+            "offset": 217,
+            "limit": 96
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/test_grouping*.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/sqlparse*/**"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class Function|class Identifier|get_parameters|get_real_name|get_typecast|get_parent_name|_get_first_name",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\sql.py",
+            "offset": 360,
+            "limit": 150
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\sql.py",
+            "offset": 600,
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 211,
+            "limit": 46
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def recurse",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\utils.py",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 25
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "SQL_REGEX|r'\\(?P<|\\(r'|PROCESS_AS_KEYWORD|KEYWORDS =|KEYWORDS_COMMON|re\\.compile\" ",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\keywords.py",
+            "output_mode": "content",
+            "-n": true,
+            "head_limit": 80
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Function|qualified|alias",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\docs",
+            "-i": true,
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 374,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\docs\\source\\analyzing.rst"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "2bd83de71488470e38054f8b63d13e3198f198f408e9ce76fdd9dff17d184f17",
+      "rationale": "The two tests reconstruct the exact scenarios named in the report: a dot-qualified function call (\"foo.bar(1, 2)\") and a function call aliased without the AS keyword (\"foo() bar\"). Expected values come directly from sqlparse's own documented contracts in sql.py - NameAliasMixin.get_real_name's docstring (\"real name is the component after the last dot\"), TokenList.get_parent_name's docstring (\"parent object is identified by the first occurring dot\"), and NameAliasMixin.get_alias's documented \"name alias\" (no-AS) case - rather than from whatever the currently-regressed grouping code happens to produce. A helper does a structural DFS instead of hard-coding token indices, so the tests fail precisely when grouping drops the Function/Identifier nesting (the reported regression) and pass once that grouping is restored, without being sensitive to incidental whitespace-token layout.",
+      "pre_edit": {
+        "collected": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": "no_failure"
+    },
+    {
+      "attempt": 2,
+      "cli_exit_code": 1,
+      "seconds": 318.3,
+      "cost_usd": 0.6400416000000001,
+      "num_turns": 18,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_functions|def group_aliased|def group_identifier",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace",
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "qualified|without_as|without AS",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": true,
+          "input": {
+            "pattern": "test_qualified_function\\b",
+            "path": "C:\\Users\\grant",
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": true,
+          "input": {
+            "pattern": "**/sqlparse*/**/test_grouping.py",
+            "path": "C:\\Users\\grant"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Name|PROCESS_AS_KEYWORD|SQL_REGEX",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\keywords.py",
+            "-n": true,
+            "head_limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\keywords.py",
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\keywords.py",
+            "offset": 80,
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\CHANGELOG",
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\CHANGELOG",
+            "limit": 40,
+            "offset": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\lexer.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "'DUAL'|'BAR'|'FOO'",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\keywords.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "4d0999be85462d2507def887b718a0ec06943463731a7c45f691a612066ed1d7",
+      "rationale": "The test checks that dotted function calls (\"foo.bar(5)\") and functions followed directly by an alias with no AS (\"foo() bar\") are each grouped into a single top-level sql.Identifier wrapping a sql.Function, per the documented contracts of NameAliasMixin.get_real_name, TokenList.get_parent_name and NameAliasMixin.get_alias (docstrings in sqlparse/sql.py). The expected real name, parent name and alias values come directly from those docstrings' stated semantics (\"component after the last dot\", \"parent identified by first dot\", \"name alias\" case) rather than from whatever the current grouping code happens to return, and the added len(stmt.tokens) == 1 check makes the test structurally sensitive to a grouping regression that leaves the qualifier/alias ungrouped with the function call.",
+      "pre_edit": {
+        "collected": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": "no_failure"
+    },
+    {
+      "attempt": 3,
+      "cli_exit_code": 1,
+      "seconds": 254.0,
+      "cost_usd": 0.6014224,
+      "num_turns": 15,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\keywords.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "qualified function|aliased function|without as",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\tokens.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\CHANGELOG",
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\lexer.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.cfg"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.toml"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "version",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\__init__.py",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\__init__.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-ate7mnm0\\workspace\\sqlparse\\engine\\filter_stack.py"
+          }
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": null,
+      "rationale": null,
+      "pre_edit": null,
+      "rejected_because": "no_structured_output"
+    }
+  ]
+}

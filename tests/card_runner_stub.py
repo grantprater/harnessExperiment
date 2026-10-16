@@ -10,13 +10,16 @@ mutation_patch) enters the protocol hash, and config.json records task_file and 
 Behaviour comes from the JSON file named by CARD_STUB_BEHAVIOUR:
   {"log": PATH, "attempts": N, "runs": {RUN_NAME: BEHAVIOUR}}
 where BEHAVIOUR is accept (default for live clients and gold), reject (default for noop), model_error,
-model_mismatch (the claude-cli model guard's stop, as claude_cli.py words it), crash (exit 1, no record), silent
-(exit 0, no record), wrong_hash, over_budget, or model_pin (a model_error whose error is a model_pin_violation, as
-the cloud port's records carry it), or a list of those used in turn by reruns of the same run name.
+model_mismatch (the claude-cli model guard's stop, as claude_cli.py words it), cli_version_mismatch (the claude-cli
+CLI-version guard's stop), cli_drift (accepted, but the last call was served by CLI 10.0.0: a mid-run update the
+runner did not catch), crash (exit 1, no record), silent (exit 0, no record), wrong_hash, over_budget, or model_pin
+(a model_error whose error is a model_pin_violation, as the cloud port's records carry it), or a list of those used
+in turn by reruns of the same run name.
 With "cost_per_attempt": X, each attempt record carries cli_result.total_cost_usd X; with "sleep_seconds": S,
 each non-dry-run invocation first sleeps S seconds.
 Each non-dry-run invocation appends its run name to PATH.
-CARD_STUB_CLI_VERSION overrides the reported CLI version.
+CARD_STUB_CLI_VERSION overrides the reported CLI version. Each calls.jsonl row of a claude-cli run carries
+cli_init.claude_code_version (the bare version, as the real CLI's init event).
 """
 
 import argparse
@@ -190,21 +193,27 @@ def main():
     if mode == "silent":
         return 0
     attempts = behaviour.get("attempts", 2) if live else 0
+    served = cli_version().split()[0]
     for task_id in task_ids:
         with (run_dir / "calls.jsonl").open("a", encoding="utf-8") as handle:
             for index in range(attempts):
                 row = {"run_id": task_id, "attempt": index + 1}
                 if behaviour.get("cost_per_attempt") is not None:
                     row["cli_result"] = {"total_cost_usd": behaviour["cost_per_attempt"]}
+                if args.client == "claude-cli":
+                    drifted = mode in ("cli_drift", "cli_version_mismatch") and index == attempts - 1
+                    row["cli_init"] = {"claude_code_version": "10.0.0" if drifted else served}
                 handle.write(json.dumps(row) + "\n")
         responses = args.max_calls_per_run + 1 if mode == "over_budget" else min(3, args.max_calls_per_run)
-        accepted = mode in ("accept", "over_budget", "wrong_hash")
-        stop = {"model_error": "model_error", "model_pin": "model_error", "model_mismatch": "model_mismatch"}.get(
-            mode, "finish_requested")
+        accepted = mode in ("accept", "over_budget", "wrong_hash", "cli_drift")
+        stop = {"model_error": "model_error", "model_pin": "model_error", "model_mismatch": "model_mismatch",
+                "cli_version_mismatch": "cli_version_mismatch"}.get(mode, "finish_requested")
         error = {"model_error": "failed after 3 attempts: stub outage",
                  "model_mismatch": f"model_mismatch (model_pin_violation): requested {models[0]}, the CLI reported "
                                    f"['claude-other', '{models[0]}']",
-                 "model_pin": "model_pin_violation: requested 'claude-x', the CLI reported ['claude-y']"}.get(mode)
+                 "model_pin": "model_pin_violation: requested 'claude-x', the CLI reported ['claude-y']",
+                 "cli_version_mismatch": f"cli_version_mismatch: the run's protocol records CLI {served}, "
+                                         f"the CLI reported 10.0.0"}.get(mode)
         record = {
             "run_id": f"{task_id}__{models[0]}", "task_id": task_id, "model": models[0], "client": args.client,
             "arm": args.arm, "protocol_hash": arm_hash, "stop": stop,

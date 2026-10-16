@@ -1,0 +1,357 @@
+{
+  "task_id": "sqlparse-mut-125-nm",
+  "status": "available",
+  "attempts": 2,
+  "cost_usd": 0.987108,
+  "statement_sha256": "be8e58531177d1fa99e84bbdbeed641ca993d2239d4c0daddca46b17d1d9efc1",
+  "generated_at": "2026-10-02T01:36:55.196441+00:00",
+  "file": "sqlparse-mut-125-nm/test_reticle_repro.py",
+  "sha256_lf": "70d001ec5a3df5023546db72500d2887af734e45a64fa434d17e41d1aad66964",
+  "collected": 2,
+  "pre_edit": {
+    "collected": 2,
+    "passed": 0,
+    "failed": 2,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 1,
+      "seconds": 317.1,
+      "cost_usd": 0.6311198000000001,
+      "num_turns": 14,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "alias",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "NULL",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace\\CHANGELOG"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace\\AGENTS.md"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/site-packages/sqlparse/**"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "dont_alias_keywords|dont alias keywords|null_with_as|null with as",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "NULL|\\bAS\\b",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace\\sqlparse\\keywords.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace\\sqlparse\\keywords.py",
+            "offset": 1,
+            "limit": 100
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "'DISTINCT'|\\bDISTINCT\\b",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace\\sqlparse\\keywords.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-f7xeov6f\\workspace\\sqlparse\\tokens.py"
+          }
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": null,
+      "rationale": null,
+      "pre_edit": null,
+      "rejected_because": "no_structured_output"
+    },
+    {
+      "attempt": 2,
+      "cli_exit_code": 0,
+      "seconds": 182.4,
+      "cost_usd": 0.3559884,
+      "num_turns": 20,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "alias keywords|null with as|dont_alias|null_with_as",
+            "output_mode": "content",
+            "-i": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_as|Keyword.NULL|NULL|is_alias|def group_aliased|Alias",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 185,
+            "limit": 70
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "alias|NULL",
+            "path": "CHANGELOG",
+            "output_mode": "content",
+            "-i": true,
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "CHANGELOG",
+            "offset": 540,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "CHANGELOG",
+            "offset": 640,
+            "limit": 25
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 1,
+            "limit": 70
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": true,
+          "input": {
+            "pattern": "dont_alias|null_with_as|test_null|test_dont",
+            "path": "C:\\",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group\\(|group_as|group_aliased|_group\\(tlist|funcs = \\[|group_functions|group_identifier_list",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 437,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 360,
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 162,
+            "limit": 32
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "DISTINCT|'ASC'|'DESC'|\\bNULL\\b",
+            "path": "sqlparse/keywords.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 473,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/grouping.py",
+            "offset": 512,
+            "limit": 30
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "70d001ec5a3df5023546db72500d2887af734e45a64fa434d17e41d1aad66964",
+      "rationale": "The bug is a single-character flip (`!=` vs `==`) in `group_as`'s `valid_prev` check against the keyword `NULL`: currently it allows any non-NULL keyword to be grouped with a following `AS ...` into an alias Identifier (breaking \"dont alias keywords\"), while specifically rejecting NULL itself (breaking \"null with as\"). The expected values come directly from the CHANGELOG entries documenting that NULL must be alias-able via AS and that plain keywords must not be, plus tracing `_group`'s prev/next matching logic in grouping.py to confirm the resulting token structure for each case. Both tests fail on the current buggy comparison and pass once it is corrected to `==`, without affecting any other grouping behaviour.",
+      "pre_edit": {
+        "collected": 2,
+        "passed": 0,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

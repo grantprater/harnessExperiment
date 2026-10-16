@@ -1,0 +1,606 @@
+{
+  "task_id": "sqlparse-mut-020",
+  "status": "available",
+  "attempts": 2,
+  "cost_usd": 1.214691,
+  "statement_sha256": "1ca6067a952446b934a27079d9f53b7d3d16e7929ea8aa25596ab05fa2b92d02",
+  "generated_at": "2026-10-02T00:31:43.403715+00:00",
+  "file": "sqlparse-mut-020/test_reticle_repro.py",
+  "sha256_lf": "6c00a950e25696741218cb8fcfdd1639ca466e009bde76f306d2c8284e59e5c6",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 2,
+    "failed": 1,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 1,
+      "seconds": 349.3,
+      "cost_usd": 0.6395052,
+      "num_turns": 29,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_group",
+            "path": ".",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\sqlparse\\filters\\reindent.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "as_in_parentheses|parentheses_indents|indent.*as",
+            "path": ".",
+            "-i": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\CHANGELOG",
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\sqlparse\\engine\\statement_splitter.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "M_OPEN|M_CLOSE",
+            "path": ".\\sqlparse\\sql.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "M_OPEN|M_CLOSE",
+            "path": ".\\sqlparse\\sql.py",
+            "-n": true,
+            "-C": 3
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_group",
+            "path": ".\\sqlparse\\sql.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_group",
+            "path": ".\\sqlparse\\filters\\others.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_group",
+            "path": ".\\sqlparse\\filters\\right_margin.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_group",
+            "path": ".\\sqlparse\\sql.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_group",
+            "path": ".\\sqlparse\\filters\\others.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/test*"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*issue845*"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\sqlparse\\filters\\aligned_indent.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\.flatten\\(\\)|get_offset|_get_offset",
+            "path": ".\\sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\sqlparse\\sql.py",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class Parenthesis|M_OPEN|M_CLOSE",
+            "path": ".\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 3
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\sqlparse\\filters\\others.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.cfg"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/site-packages/**/sqlparse*"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\sqlparse\\keywords.py",
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def imt",
+            "path": ".\\sqlparse\\utils.py",
+            "-A": 25,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def token_next_by|def token_matching|def token_next\\b|def token_prev\\b|def _token_matching",
+            "path": ".\\sqlparse\\sql.py",
+            "-A": 20,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\sqlparse\\sql.py",
+            "offset": 576,
+            "limit": 75
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_tokens",
+            "path": ".\\sqlparse\\sql.py",
+            "-A": 35,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class indent|class offset|def indent|def offset",
+            "path": ".\\sqlparse\\utils.py",
+            "-A": 15,
+            "output_mode": "content"
+          }
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": null,
+      "rationale": null,
+      "pre_edit": null,
+      "rejected_because": "no_structured_output"
+    },
+    {
+      "attempt": 2,
+      "cli_exit_code": 0,
+      "seconds": 255.6,
+      "cost_usd": 0.5751854000000001,
+      "num_turns": 33,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_group",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "as in parentheses",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\filters\\reindent.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "indent",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\CHANGELOG",
+            "output_mode": "content",
+            "-i": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_group",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\sql.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_group",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\engine\\grouping.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_group",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\filters\\others.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_group",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\filters\\right_margin.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\.is_group",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\.is_group",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\engine\\grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\.is_group",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\filters\\others.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\.is_group",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\filters\\right_margin.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\filters\\others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "_get_offset|_flatten_up_to_token",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\filters\\reindent.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\sql.py",
+            "offset": 1,
+            "limit": 260
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/test_format.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.dist-info/**"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "as_in_parenthesis|parenthesis_indent|as in parenthes",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace",
+            "-i": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\CHANGELOG",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_tokens|def __init__|_groupable_tokens|class TokenList\" ",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\sql.py",
+            "offset": 300,
+            "limit": 80
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_group",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "M_OPEN|M_CLOSE|class Parenthesis|class Identifier\\b|class Function\\b\" ",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\examples\\extract_table_names.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def get_identifiers|class IdentifierList\" ",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\sql.py",
+            "offset": 440,
+            "limit": 70
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "sqlparse/filters/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\filters\\aligned_indent.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "_get_first_name|def get_cases|class Case\" ",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-0b200um9\\workspace\\sqlparse\\sql.py",
+            "offset": 380,
+            "limit": 60
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "6c00a950e25696741218cb8fcfdd1639ca466e009bde76f306d2c8284e59e5c6",
+      "rationale": "The report says sqlparse's reindent formatter now raises AttributeError('NoneType' object has no attribute 'is_group') for the 'as in parentheses indents' behaviour, which occurs in ReindentFilter._process_parenthesis/_flatten_up_to_token when an AS keyword sits next to a parenthesized sub-query (CTE definitions and derived-table aliases are the canonical real-world examples). The tests assert the documented, always-intended invariants of sqlparse.format(reindent=True) \u2014 it must not crash on valid SQL, must preserve every token of the input, and must place a sub-query's body on its own, further-indented line (the same indentation contract already implemented for plain \"FROM (SELECT ...)\" via the is_dml_dll branch in _process_parenthesis) \u2014 so the expectations come from the formatter's existing, working logic and stated purpose rather than from the current crashing output.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 2,
+        "failed": 1,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

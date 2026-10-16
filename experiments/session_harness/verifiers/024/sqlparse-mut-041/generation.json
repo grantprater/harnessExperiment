@@ -1,0 +1,207 @@
+{
+  "task_id": "sqlparse-mut-041",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.567066,
+  "statement_sha256": "97d986686f864249527f1248d22da04eca2934b2a5b4878e4e877d68fc21329b",
+  "generated_at": "2026-10-02T00:16:10.244584+00:00",
+  "file": "sqlparse-mut-041/test_reticle_repro.py",
+  "sha256_lf": "c084104fbef39b02850306b170c1976a28d09de1c3ad8c2c3c4451cc7b74b166",
+  "collected": 2,
+  "pre_edit": {
+    "collected": 2,
+    "passed": 1,
+    "failed": 1,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 336.4,
+      "cost_usd": 0.5670664000000001,
+      "num_turns": 21,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\(\\(\" , glob=\"*.py",
+            "path": "."
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "SQL_REGEX|r'\\(' |PROCESS_AS_KEYWORD",
+            "path": "."
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\sqlparse\\keywords.py",
+            "limit": 80
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "ReDoS|redos|catastrophic|backtrack",
+            "path": ".",
+            "-i": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\(\\(",
+            "path": "sqlparse"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\CHANGELOG",
+            "limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class TokenList|def __init__|def group_tokens|def _pprint_tree|str\\(self\\)|self\\.value =|_token_matching",
+            "path": "sqlparse\\sql.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "within_cap|under_1s|nested_paren|MAX_GROUPING_DEPTH|Maximum grouping depth",
+            "path": ".",
+            "-i": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/test*"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.rst"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\AGENTS.md"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "MAX_GROUPING_DEPTH|grouping depth|DoS",
+            "path": "docs\\source\\api.rst",
+            "-n": true,
+            "-C": 5
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "isinstance\\(token, cls\\)|not isinstance\\(token, cls\\)",
+            "path": "sqlparse\\engine\\grouping.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/site-packages/sqlparse/**"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": ".\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "c084104fbef39b02850306b170c1976a28d09de1c3ad8c2c3c4451cc7b74b166",
+      "rationale": "The grouping pipeline's `_group_matching` must recurse into already-grouped containers of a *different* type to find nested constructs of the target type - this is explicitly documented by the in-code comment \"Check inside previously grouped (i.e. parenthesis) if group of different type is inside (i.e., case)\". The current code's recursion guard is `isinstance(token, cls)` instead of `not isinstance(token, cls)`, so a CASE expression wrapped in parentheses is never recursed into and is left ungrouped (its keywords stay flat instead of becoming a single `sql.Case` node), which the first test catches directly via structural inspection and via `get_cases()`. The second test pins down the adjacent, correctly-working behaviour (pure nested parentheses within the documented `MAX_GROUPING_DEPTH` cap must still parse quickly and without error), guarding against the fix accidentally reintroducing the quadratic CPU blow-up or the depth cap firing too early, both described in the CHANGELOG's DoS-protection section.",
+      "pre_edit": {
+        "collected": 2,
+        "passed": 1,
+        "failed": 1,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

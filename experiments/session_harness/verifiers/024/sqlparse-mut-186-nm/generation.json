@@ -1,0 +1,212 @@
+{
+  "task_id": "sqlparse-mut-186-nm",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.373203,
+  "statement_sha256": "fb359245adcae01e2f6b78c1efd0abe25f8d6935b01a819b6ae93ddf355c9c73",
+  "generated_at": "2026-10-02T01:18:50.159535+00:00",
+  "file": "sqlparse-mut-186-nm/test_reticle_repro.py",
+  "sha256_lf": "10bf3c641700efcf2afdf6549e7f9c6b9e6bd9da99f26d173c0723068a57bc28",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 0,
+    "failed": 3,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 187.4,
+      "cost_usd": 0.3732034,
+      "num_turns": 20,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\sqlparse\\engine\\statement_splitter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\sqlparse\\__init__.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "193|194|casewhen|CASE WHEN|split_function|splitting function",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace",
+            "-i": true,
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "193|194",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\CHANGELOG",
+            "-i": true,
+            "-A": 3
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "193|194|split",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\CHANGELOG",
+            "-i": true,
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\CHANGELOG",
+            "limit": 150
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "845",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace",
+            "-i": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/files/*.sql"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.sql"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "END\\s|END IF|END LOOP|END WHILE|END CASE|END FOR",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\sqlparse\\keywords.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "END",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\sqlparse\\keywords.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "END",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\sqlparse\\keywords.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "'IF'|'CASE'|'WHILE'|'FOR'|'LOOP'|'DO'|'BEGIN'|'DECLARE'|'THEN'|'RETURN'",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\sqlparse\\keywords.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\sqlparse\\engine\\filter_stack.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "'CREATE'|CREATE",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\sqlparse\\keywords.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\sqlparse\\tokens.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "'WHEN'|'PROCEDURE'|'FUNCTION'|'RETURNS'",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-qd6i59gl\\workspace\\sqlparse\\keywords.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "10bf3c641700efcf2afdf6549e7f9c6b9e6bd9da99f26d173c0723068a57bc28",
+      "rationale": "The reported regression (issue193/194 function splitting, CASE/WHEN procedure splitting, etc.) traces to StatementSplitter._handle_nested_block in sqlparse/engine/statement_splitter.py, where the WHILE check was inverted to `if not (unified == 'WHILE')`. This bug causes the method to intercept and return 0 for almost every keyword seen inside a BEGIN block - including the closing `END`, `END IF` and `END CASE` tokens - so `_handle_closing_keyword` (which should pop the block stack and return -1 to close the BEGIN block) is never reached. As a result the split level never drops back to 0, and sqlparse.split() incorrectly merges a CREATE FUNCTION/PROCEDURE's BEGIN...END body with the following statement into one. The tests build minimal BEGIN...END function/procedure bodies (plain, with an IF block, and with a CASE/WHEN block, mirroring the three named regressions) and assert that sqlparse.split() returns two statements split exactly at the function/procedure's closing END; - behavior that is evidently intended by the splitter's own docstrings/comments about BEGIN...END blocks and is restored once the WHILE condition is corrected to `if unified == 'WHILE'`.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 0,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

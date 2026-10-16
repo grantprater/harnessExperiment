@@ -1,0 +1,198 @@
+{
+  "task_id": "sqlparse-mut-016-nm",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.535808,
+  "statement_sha256": "a2c146e8b487b90d21b719fa05d5bea318a679e3bae5aa87e34216ba273b6578",
+  "generated_at": "2026-10-01T23:49:18.702308+00:00",
+  "file": "sqlparse-mut-016-nm/test_reticle_repro.py",
+  "sha256_lf": "352e5e0afd0947cd701cce16590240ff46c9c52446888d774a4628d3a9527d6b",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 0,
+    "failed": 3,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 269.6,
+      "cost_usd": 0.5358080000000001,
+      "num_turns": 20,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\sqlparse\\filters\\others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "token_prev|_token_matching|reverse",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\AGENTS.md"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\CHANGELOG",
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "grp\\.value|self\\.value =|\\.value \\+=",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\.value\\b",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\sqlparse\\filters",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\sqlparse\\filters\\reindent.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\sqlparse\\formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "strip_comments|reindent",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\docs",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\docs\\source\\api.rst"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\docs\\source\\intro.rst"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "version",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\pyproject.toml",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1o1tg278\\workspace\\sqlparse\\engine\\filter_stack.py"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "352e5e0afd0947cd701cce16590240ff46c9c52446888d774a4628d3a9527d6b",
+      "rationale": "The CHANGELOG shows several deliberate recent changes but none documents touching `TokenList._token_matching`'s reverse-search index math, which uses `range(start - 2, -2, -1)`. Since the stop bound `-2` is exclusive, the range includes `-1`, and Python resolves `tokens[-1]` to the *last* element instead of signalling \"out of range\", so `token_prev` called at index 0 wrongly returns the statement's last token instead of `(None, None)` as its own docstring promises. This single bug cascades into `StripCommentsFilter` (which checks `prev_ is None` to decide whether a leading comment can be deleted cleanly) and into `ReindentFilter._split_statements` (whose own comment says \"only break if it's not the first token\"), producing a stray leading blank line in both `strip_comments` and `reindent` output \u2014 matching the reported failing checks (\"strip comments single/multi\", \"reindent: stmts\"). The expected values come straight from `TokenList.token_prev`'s docstring, from the self-evident intent of the `prev_ is None` branches in the source, and from the long-standing worked example in `docs/source/intro.rst`, so they reflect intended behavior rather than whatever the buggy code currently emits.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 0,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

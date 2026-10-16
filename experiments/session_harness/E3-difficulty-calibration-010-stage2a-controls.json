@@ -1,0 +1,598 @@
+{
+ "runtime_limit_s": 60.0,
+ "passed": 39,
+ "candidates": 39,
+ "tasks": [
+  {
+   "task_id": "sqlparse-mut-154",
+   "gold_runs": 3,
+   "gold_accepted": 3,
+   "noop_runs": 3,
+   "noop_rejected_exact": 3,
+   "max_elapsed_s": 10.4,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-gold-sample",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2",
+    "c010b-control-noop-sample"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-310-nm",
+   "gold_runs": 3,
+   "gold_accepted": 3,
+   "noop_runs": 3,
+   "noop_rejected_exact": 3,
+   "max_elapsed_s": 10.1,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-gold-sample",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2",
+    "c010b-control-noop-sample"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-172-nm",
+   "gold_runs": 3,
+   "gold_accepted": 3,
+   "noop_runs": 3,
+   "noop_rejected_exact": 3,
+   "max_elapsed_s": 10.4,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-gold-sample",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2",
+    "c010b-control-noop-sample"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-186-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 9.8,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-111",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 9.8,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-143-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.1,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-151",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 9.6,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-125-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 9.6,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-176",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.4,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-304-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.0,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-198-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.0,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-158",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 9.5,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-232-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 9.3,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-131-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 18.7,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-266",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 9.6,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-297",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 9.9,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-084-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.2,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-212-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 9.9,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-246",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 13.4,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-122",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.2,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-283",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.2,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-164-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.7,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-214",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 9.9,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-110-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 11.2,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-098",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.4,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-320-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.5,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-225",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.3,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-339",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 9.6,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-323-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.3,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-338-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.0,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-089-nm",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 11.2,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-221",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.1,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-152",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.7,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-094",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.3,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-286",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.8,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-226",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 15.4,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-102",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.2,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-085",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 10.0,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  },
+  {
+   "task_id": "sqlparse-mut-181",
+   "gold_runs": 2,
+   "gold_accepted": 2,
+   "noop_runs": 2,
+   "noop_rejected_exact": 2,
+   "max_elapsed_s": 11.1,
+   "verdict": "pass",
+   "runs": [
+    "c010b-control-gold",
+    "c010b-control-gold-rep2",
+    "c010b-control-noop",
+    "c010b-control-noop-rep2"
+   ]
+  }
+ ]
+}

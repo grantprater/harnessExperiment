@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "E3-difficulty-calibration-010",
   "title": "Difficulty calibration: a harder mutation bank with a dev/eval split",
-  "status": "approved",
+  "status": "completed",
   "markdown": "experiments/session_harness/E3-difficulty-calibration-010.md",
   "hypothesis": "Fresh mutation tasks drawn by the card's rule (single-test failing sets, and multi-test tasks with or without the failure message in the statement) give the Reticle incumbent (Sonnet 5 via the CLI) a mix of solved, mixed and unsolved tasks from which the preregistered keep rule builds an eval split whose predicted acceptance is 30-60%, disjoint from the dev tasks used for tuning.",
   "run_prefix": "c010",

@@ -1,0 +1,308 @@
+{
+  "task_id": "sqlparse-mut-151",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.42863,
+  "statement_sha256": "2826de9690c6a510698f9df6e96ea0b1b9d1aa6514f823d3ad37b2c5988dfdd5",
+  "generated_at": "2026-10-02T01:28:31.320376+00:00",
+  "file": "sqlparse-mut-151/test_reticle_repro.py",
+  "sha256_lf": "166ae1a512b0a193f810c5c4903e464d164825f334d357af695480abac9f9b03",
+  "collected": 2,
+  "pre_edit": {
+    "collected": 2,
+    "passed": 1,
+    "failed": 1,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 204.7,
+      "cost_usd": 0.42862980000000006,
+      "num_turns": 29,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "php",
+            "path": "sqlparse",
+            "-i": true,
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse\\filters\\output.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "php|output_format",
+            "path": "sqlparse\\formatter.py",
+            "-i": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": true,
+          "input": {
+            "pattern": "php|\\.\\.=",
+            "path": "doc",
+            "-i": true,
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.rst"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/CHANGELOG*"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "php|\\.\\.=\" |output_format|OutputPHP",
+            "path": "CHANGELOG",
+            "-i": true,
+            "output_mode": "content",
+            "-n": true,
+            "-C": 2
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "php|PHP",
+            "path": "README.rst",
+            "-i": true,
+            "-C": 5
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Newline|\\\\n|Whitespace",
+            "path": "sqlparse\\keywords.py",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Whitespace|\\\\s\\+|\\\\n",
+            "path": "sqlparse\\keywords.py",
+            "-n": true,
+            "-C": 1
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "WHITESPACE|SQL_REGEX",
+            "path": "sqlparse\\keywords.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse\\keywords.py",
+            "offset": 1,
+            "limit": 35
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Newline|Whitespace",
+            "path": "sqlparse\\tokens.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse\\lexer.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Whitespace.*\\\\n|\\\\n.*' '",
+            "path": "sqlparse\\filters\\reindent.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Whitespace",
+            "path": "sqlparse\\filters\\reindent.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse\\filters\\reindent.py",
+            "offset": 1,
+            "limit": 70
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "is_whitespace",
+            "path": "sqlparse\\sql.py",
+            "-n": true,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse\\formatter.py",
+            "offset": 150,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse\\formatter.py",
+            "offset": 1,
+            "limit": 150
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse\\__init__.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "class SerializerUnicode\" -A 15",
+            "path": "sqlparse\\filters",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "SerializerUnicode",
+            "path": "sqlparse\\filters",
+            "output_mode": "content",
+            "-n": true,
+            "-A": 15
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse\\engine\\filter_stack.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def split_unquoted_newlines\" -A 15",
+            "path": "sqlparse\\utils.py",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "split_unquoted_newlines",
+            "path": "sqlparse\\utils.py",
+            "-n": true,
+            "output_mode": "content",
+            "-A": 10
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group\\(|GROUP_FUNCTIONS|def group_\\w+\" ",
+            "path": "sqlparse\\engine\\grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "166ae1a512b0a193f810c5c4903e464d164825f334d357af695480abac9f9b03",
+      "rationale": "The reported IndexError comes from sqlparse/filters/output.py's OutputPHPFilter._process, which on encountering a newline token does `token.value.split('\\n', 1)[2]` to compute the indentation to carry over to the next line; since str.split(sep, 1) returns at most 2 elements, index 2 is always out of range, so ANY multi-line statement crashes when output_format='php' is used (this is a pure regression versus the sibling OutputPythonFilter a few lines above, which correctly uses index [1] for the exact same purpose). The first test reproduces this crash with a minimal two-line SELECT and pins down the correct post-fix output, derived by hand-tracing the filter's own token-emission logic (header tokens, quote alignment via the extra space before '=', and the '.=' continuation line) using index [1] instead of [2] \u2014 i.e. the behavior the surrounding code (and the parallel python-format code path) clearly intends. The second test locks in the already-correct single-line case so the fix can't be verified by accidentally breaking that path.",
+      "pre_edit": {
+        "collected": 2,
+        "passed": 1,
+        "failed": 1,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+# Pooled task registry (cards 007, 023, 010 stage 1 + 2a)
+
+File: [task_registry.json](task_registry.json), built by [build_task_registry.py](build_task_registry.py)
+(stdlib, deterministic; `--check` rebuilds and diffs against the committed file). One record per task id across
+the sqlparse bank (`tasks.mutations.full.json`, its 76-task recorded subset, and the `-nm` statement variants in
+`tasks.difficulty010*.json`) and the boltons bank (`tasks.boltons.json`). Offline only: no model calls, no tests.
+
+Card 023 has not been merged into this branch, so its three inputs (`tasks.boltons.json`,
+`E3-calibration-023-tasks.json`, `E3-calibration-023.sets.json`) are read with `git show` from commit
+`57161e64ff28c9600c856cf5393701f755299754` (analysis/c023, "boltons calibration 36/40"). The sha256 of every
+input is in the registry's `sources` block.
+
+Each record has: id, bank, task-definition file (the card-specific file first, then the recorded bank, then the
+full bank), source cards and memberships, stratum (`single` / `multi-msg` / `multi-nm`), calibration outcome per
+source card (accepted, runs, category; `null` where the card listed the task but never ran it), mutated file and
+function, sha256 of the sorted fail-to-pass set, `same_mutation_as`, `role`, `role_source`, `tags`, and
+`overlaps_eval`.
+
+## Quarantine of eval twins (owner decision, 2026-10-01)
+
+Question, verbatim: "31 eval tasks share a mutated function (38 pairs) or an exact failing-test set (26 pairs) with
+dev tasks. None of those dev tasks has ever been run. The card says eval must be 'disjoint from every dev task'. How
+should the overlap be handled?"
+
+Answer, verbatim: "Quarantine dev twins (Recommended)". The option's text was: "Tag the overlapping dev tasks so no
+arm, lesson or evolution step ever uses them. Eval stays at 31, it costs nothing, and the pilot can't learn on a
+near-copy of an eval bug."
+
+Rule (applied by the builder after every other role): a non-eval task whose `overlaps_eval` is non-empty (same
+mutated function or same exact fail-to-pass set as an eval task, within the bank), or whose `same_mutation_as` names
+an eval task, gets role **`quarantined-eval-twin`**, and its previous role is kept as the tag `was:<role>`. Result:
+**64 tasks** (`was:dev` 49, `was:uncalibrated-pool` 15, the base ids of the 15 `-nm` eval tasks). No card 007 task
+and no evolution-set task is among them. The eval split and card 010's split, sets and card files are unchanged; the
+decision text is also in the registry's `role_notes`. No arm, lesson, memory or evolution step may read or run a
+quarantined task.
+
+## Counts (bank x role)
+
+| Bank | Role | Tasks |
+|---|---|---|
+| sqlparse | eval-010-combined | 31 |
+| sqlparse | quarantined-eval-twin (tags `was:dev` 49, `was:uncalibrated-pool` 15) | 64 |
+| sqlparse | evolution-contrastive (card 007; tag `dev`) | 2 |
+| sqlparse | evolution-negative (card 007; tag `dev`) | 3 |
+| sqlparse | dev | 247 |
+| sqlparse | excluded-statement-names-function | 19 |
+| sqlparse | uncalibrated-pool | 13 |
+| boltons | near-transfer-boltons | 17 |
+| boltons | boltons-evolution-excluded (015, 023, 056) | 3 |
+| boltons | excluded-statement-names-function | 26 |
+| boltons | uncalibrated-pool | 17 |
+| | **total** | **442** (379 sqlparse, 63 boltons) |
+
+Roles not in the brief's list: `excluded-statement-names-function` comes from the `excluded` lists of the card 010
+sets files (stage 1: 3, stage 2a: 16) and the selector exclusion of cards 007 and 023 (statement names the mutated
+function). Eval tasks in a stage's evolution lists carry `evolution-contrastive` (12) or `evolution-negative` (9) as
+tags; all 21 are eval, as both stage reports say.
+
+## Reconciliation
+
+| Card | Set | Source file | Registry |
+|---|---|---|---|
+| 010 stage 1 | eval | 12 | 12 |
+| 010 stage 1 | dev | 61 | 61 |
+| 010 stage 2a | eval | 19 | 19 |
+| 010 stage 2a | dev | 240 | 240 |
+
+Dev counts include the quarantined dev tasks (tag `was:dev`): they are still in the split files' `dev` lists.
+| 007 | tasks / accepted | 20 / 32 of 40 | 20 / 32 of 40 |
+| 023 | tasks / accepted | 20 / 36 of 40 | 20 / 36 of 40 |
+
+The 31 eval ids appear first, in the combined file's order. No id appears twice.
+
+## Overlap with eval (the quarantine's input)
+
+- Restricted to the 301 card-010 dev tasks: **38 same-function pairs, 26 same-failing-set pairs**, the figures in the
+  stage-2a report.
+- Over every non-eval task: 53 function pairs and 41 failing-set pairs (64 tasks: 49 dev, 15 uncalibrated-pool).
+  The extra 15 are the base ids of the 15 `-nm` eval tasks (below). Boltons shares nothing with eval. All 64 are
+  now `quarantined-eval-twin`; `same_mutation_as` adds none beyond them.
+- Comparison is within a bank, by mutated function name and exact sorted fail-to-pass set, as in
+  `apply_split_010_stage2a.py`.
+
+## Flags and ambiguities
+
+- **Same mutation under two ids (28 pairs).** Every `-nm` task is the same mutation patch as its base id, with a
+  statement that drops the failure message. For the 15 `-nm` eval tasks, the base id (e.g. `sqlparse-mut-016`) is
+  in no card list and lands in `uncalibrated-pool`; for the 13 `-nm` dev tasks, the base id is likewise
+  uncalibrated. All 28 sqlparse `uncalibrated-pool` tasks were such base ids. They carry the tag
+  `same-mutation-as-other-id`. The 15 eval twins are now quarantined (owner, 2026-10-01, above); the 13 dev twins'
+  base ids stay `uncalibrated-pool`.
+- **Card 007's role.** Its 20 tasks are card 010 stage-1 dev core (with `sqlparse-mut-006`). Its report names an
+  evolution set (contrastive 001, 022; negative 032, 057, 061) that cards 011 and 013-015 used. The registry gives
+  those five role `evolution-contrastive` / `evolution-negative` (source: card 007 report, hard-coded in the builder
+  because no machine file holds the hand-chosen set) with tag `dev`; the other 15 are `dev`. Card 007 has no
+  `category` field; its categories use card 010's mapping (2/2 solved, 1/2 mixed, 0/2 hard). Its `sets.json` holds
+  card 011's derived block, so outcomes come from `c007-campaign.jsonl`.
+- **Boltons outside the 20.** The 17 eligible but uncalibrated boltons tasks are `uncalibrated-pool`, not
+  near-transfer; no card defines them as either.
+- **`sqlparse-mut-072`** differs in statement between `tasks.mutations.json` and the full bank; it is excluded in
+  every card and its mutation and failing set agree.

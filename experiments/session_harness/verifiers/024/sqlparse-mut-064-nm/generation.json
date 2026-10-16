@@ -1,0 +1,224 @@
+{
+  "task_id": "sqlparse-mut-064-nm",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.1769,
+  "statement_sha256": "dc21d1f0435b0c63db939fba177e486f0b0a17f20e18dc4ad78e9e4bb21ac841",
+  "generated_at": "2026-10-01T23:37:08.530041+00:00",
+  "file": "sqlparse-mut-064-nm/test_reticle_repro.py",
+  "sha256_lf": "6b6bf00f0ac7e640e94836f1ffb501b3f43f6704610bf92663784827b1c4451e",
+  "collected": 4,
+  "pre_edit": {
+    "collected": 4,
+    "passed": 0,
+    "failed": 4,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 73.4,
+      "cost_usd": 0.17690039999999999,
+      "num_turns": 19,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "array",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace",
+            "-i": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "array",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\sqlparse\\engine\\grouping.py",
+            "-i": true,
+            "-C": 10
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "array",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\sqlparse\\sql.py",
+            "-i": true,
+            "-C": 10
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "array",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\CHANGELOG",
+            "-i": true,
+            "-C": 5
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "array",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\sqlparse\\engine\\grouping.py",
+            "-i": true,
+            "-C": 10,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "array",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\sqlparse\\sql.py",
+            "-i": true,
+            "-C": 10,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "array",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\CHANGELOG",
+            "-i": true,
+            "-C": 5,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "SquareBrackets",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-C": 5
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "get_array_indices|array_index|SquareBrackets",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace",
+            "-i": true,
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\AGENTS.md"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 260,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_period",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\sqlparse\\engine\\grouping.py",
+            "-A": 20,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_identifier\\b",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\sqlparse\\engine\\grouping.py",
+            "-A": 10,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 164,
+            "limit": 30
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def _group\\b",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\sqlparse\\engine\\grouping.py",
+            "-A": 40,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\sqlparse\\engine\\grouping.py",
+            "offset": 510,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def token_next_by|def group_tokens|class Identifier\\b",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-o4a2n_cg\\workspace\\sqlparse\\sql.py",
+            "-A": 10,
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "6b6bf00f0ac7e640e94836f1ffb501b3f43f6704610bf92663784827b1c4451e",
+      "rationale": "sqlparse.sql.Identifier.get_array_indices() has its condition inverted (`if not isinstance(token, SquareBrackets)`), so it currently yields the contents of every non-bracket sibling token instead of the contents of the SquareBrackets groups, breaking array-index extraction for 1D, 2D, schema-qualified and expression indices alike. The expected values come directly from the method's own docstring (\"Returns an iterator of index token lists\", discarding the brackets per the inline comment `# Use [1:-1] index to discard the square brackets`) and from the grouping logic in sqlparse/engine/grouping.py (group_period/group_arrays), which flattens \"a[1]\", \"a[1][2]\" and \"schema.a[1]\" into a single Identifier containing Name/'.'/SquareBrackets children \u2014 so the correct output is the index expression inside each SquareBrackets, in source order. These tests fail against the current inverted condition and will pass once it is corrected to `if isinstance(token, SquareBrackets)`.",
+      "pre_edit": {
+        "collected": 4,
+        "passed": 0,
+        "failed": 4,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

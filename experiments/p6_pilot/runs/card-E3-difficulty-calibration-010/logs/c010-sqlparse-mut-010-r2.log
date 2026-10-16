@@ -1,0 +1,6 @@
+# 2026-10-01T04:37:51+00:00 'C:\Users\grant\harnessExperiment\.runtime\test-venv\Scripts\python.exe' 'C:\Users\grant\harnessExperiment\.claude\worktrees\ontology-pilot\experiments\p6_pilot\run_pilot.py' --client claude-cli --models claude-sonnet-5 --arm pressure-recent-v3 --backend oci --oci-image localhost/reticle-p6-task:py313-v1 --tasks experiments/mutation_tasks/tasks.difficulty010.json sqlparse-mut-010 --run-name c010-sqlparse-mut-010-r2 --max-calls-per-run 20 --max-context-bytes 80000 --max-tokens 4096 --pytest-timeout 600 --max-attempts-per-run 24 --max-total-calls 24 --elapsed-cap-seconds 1200
+1 runs (1 tasks x 1 models), arm pressure-recent-v3, protocol 1fa8ce8623ae
+claude-cli 2.1.286 (Claude Code): at most 20 responses per run; every CLI attempt counts toward --max-total-calls=24; billing unknown (local subscription login, no API key)
+per-run guards: {"stop_on_repeats": false, "resume_after_provider_stop": 0, "resume_wait_seconds": null}; backend isolated-oci
+task budgets per run: {"claude-sonnet-5": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
+sqlparse-mut-010__claude-sonnet-5: finish_requested -> accepted {'fail-to-pass': 'pass', 'pass-to-pass': 'pass'}

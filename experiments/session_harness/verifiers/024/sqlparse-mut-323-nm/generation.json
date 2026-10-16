@@ -1,0 +1,208 @@
+{
+  "task_id": "sqlparse-mut-323-nm",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.606326,
+  "statement_sha256": "d7d4d7002eca3f857837f96b38ebc90641f202662d1718f57cc05f92c47bd9cb",
+  "generated_at": "2026-10-02T02:50:53.098317+00:00",
+  "file": "sqlparse-mut-323-nm/test_reticle_repro.py",
+  "sha256_lf": "56ca765a860209419388431f05bba87b1e3ac8d0b9f18155bf053844cc65d02a",
+  "collected": 4,
+  "pre_edit": {
+    "collected": 4,
+    "passed": 0,
+    "failed": 4,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 1,
+      "seconds": 229.6,
+      "cost_usd": 0.6063255999999999,
+      "num_turns": 22,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "crlf|\\\\r\\\\n",
+            "path": "sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/utils.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "CHANGELOG*"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/cli.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/filters/others.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/lexer.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/filters/reindent.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/sql.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/keywords.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/site-packages/sqlparse*/**"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.dist-info/**"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "CHANGELOG",
+            "limit": 80
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/statement_splitter.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "MAX_GROUPING|SQLParseError|recursion|depth",
+            "path": "sqlparse/engine/grouping.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/engine/filter_stack.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "sqlparse/__init__.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "strip_semicolon",
+            "path": ".",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "AGENTS.md"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "56ca765a860209419388431f05bba87b1e3ac8d0b9f18155bf053844cc65d02a",
+      "rationale": "All four tests target the same root-cause bug: FilterStack.__init__ has `if not (strip_semicolon):` instead of `if strip_semicolon:` when deciding to register StripTrailingSemicolonFilter, so by default (strip_semicolon=False, used by both sqlparse.format and sqlparse.split) trailing semicolons are silently stripped, while explicitly passing strip_semicolon=True leaves them untouched - the exact opposite of the documented contract (\"If True, remove trailing semicolons (default: False)\" in sqlparse.split's docstring, and format() never stripping semicolons at all). Since virtually every SQL snippet in the real test suite ends with a semicolon, this single inverted condition explains the breadth of the reported regression ('stdout' CLI output, 'format: notransform of quoted crlf', 'format reindent: stmts', and dozens more), and the expected strings are derived directly from the library's own documented default and from tracing the (otherwise correct) StripWhitespaceFilter/ReindentFilter/SerializerUnicode logic by hand.",
+      "pre_edit": {
+        "collected": 4,
+        "passed": 0,
+        "failed": 4,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

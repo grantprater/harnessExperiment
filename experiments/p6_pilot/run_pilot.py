@@ -65,19 +65,20 @@ protocol hash (name, version, fixed texts, parameters), and reported under "trea
   --oracle hidden-tests[:K]  tool use (changes the task): a check() tool returning only the counts of the task's
                              hidden fail_to_pass tests failing and passing, at most K calls per run (default 3),
                              run on a snapshot outside the workspace (reticle/tools/check_oracle.py)
+  --verifier repro-test[:K] --verifier-manifest MANIFEST.json
+                             tool use (card 021): the same check() interface over a reproduction test a separate
+                             model call wrote before the campaign from the statement and the pre-edit tree, frozen
+                             in the manifest (reticle/tools/repro_verifier.py, repro_verifiers.py); not with --oracle;
+                             --backend oci only (a check() run is never trusted-local)
+  --nudge commit             agent loop (card 021): once per run at --nudge-fraction of the response budget, edits or
+                             not, a harness message asking for a committed hypothesis and a tested prediction, with
+                             the commit_hypothesis and record_observation tools offered from the first request
+                             (reticle/runtime/nudges.py, reticle/tools/commitment.py)
   --reasoning memory        durable evidence ontology with explicit model assertions and runtime observations
   --reasoning symbolic      same memory/tools, with advisory rules for stale evidence, declared coverage,
                              non-discriminating checks and contradictions; see experiments/neurosymbolic/README.md
   --reasoning injected      same as symbolic, plus a bounded advisory summary appended to the result of each
                              replace_text/write_file/run action (never finish; nothing is rejected)
-  --verifier repro-test[:K] --verifier-manifest MANIFEST.json
-                             tool use (card 021): the same check() interface over a reproduction test a separate
-                             model call wrote before the campaign from the statement and the pre-edit tree, frozen
-                             in the manifest (reticle/tools/repro_verifier.py, repro_verifiers.py); not with --oracle
-  --nudge commit             agent loop (card 021): once per run at --nudge-fraction of the response budget, edits or
-                             not, a harness message asking for a committed hypothesis and a tested prediction, with
-                             the commit_hypothesis and record_observation tools offered from the first request
-                             (reticle/runtime/nudges.py, reticle/tools/commitment.py)
 
 claude-cli client options (off by default; not treatments, since they change how a reply is obtained, not what the
 model is offered; one that is on is recorded in the CLI contract under provider_routing and so in the protocol hash;
@@ -158,7 +159,8 @@ HERE = Path(__file__).resolve().parent
 DEFAULT_TASK_FILE = HERE / "tasks.json"
 sys.path.insert(0, str(HERE))
 from claude_cli import (  # noqa: E402
-    MODEL_MISMATCH, REPLY_RECOVERY, RETRY_MAX_TURNS, ClaudeCliClient, cli_contract, cli_version, model_id_problem,
+    CLI_VERSION_MISMATCH, MODEL_MISMATCH, REPLY_RECOVERY, RETRY_MAX_TURNS, ClaudeCliClient, cli_contract, cli_version,
+    model_id_problem, version_number,
 )
 from interpreters import task_python  # noqa: E402
 import sandbox as namespace_sandbox  # noqa: E402
@@ -197,6 +199,11 @@ BASE_URL = "https://openrouter.ai/api/v1"
 #    with the cloud port's model pin (claude_cli.py, MODEL PIN), whose CLI contract adds "model_pin" for a full
 #    model id: a full-id card's hash differs from the one exp/ontology-pilot planned (an alias contract, and so
 #    card 007's recorded hashes, are unchanged).
+#    Later in v8, without a bump (2026-10-01, after the CLI updated itself from 2.1.286 to 2.1.287 in the middle
+#    of card 010 stage 2a): the claude-cli client checks every call's claude_code_version against the version
+#    recorded at run start (the hashed one) and stops the run as cli_version_mismatch (an adapter failure, voided,
+#    never a task outcome); its children run with DISABLE_AUTOUPDATER=1; claude-cli results record cli_versions.
+#    Nothing hashed changes: the CLI version was already in the routing contract.
 RUNNER_VERSION = 8
 CLI_TIMEOUT_SECONDS = 300  # per attempt, as the OpenRouter client's HTTP timeout
 CLI_MAX_TURNS = 1  # the reply is the model's first message; the CLI stops before a second model turn
@@ -216,8 +223,10 @@ OBSERVATION_TOOLS = {
     "list_files", "read_file", "outline", "search", "read_output", "search_output",
     "history", "search_history", "read_artifact", "read_note",
 }
-# Stop labels read from the controller's error prefix. model_mismatch is the claude-cli adapter's model guard.
-GUARD_STOPS = ("diagnostic_termination", "attempt_cap_reached", MODEL_MISMATCH)
+# Stop labels read from the controller's error prefix. model_mismatch and cli_version_mismatch are the claude-cli
+# adapter's model and CLI-version guards.
+GUARD_STOPS = ("diagnostic_termination", "attempt_cap_reached", MODEL_MISMATCH, CLI_VERSION_MISMATCH)
+ADAPTER_PIN_STOPS = (MODEL_MISMATCH, CLI_VERSION_MISMATCH)  # every later run would meet the same drift
 RETRYABLE_HTTP = {408, 429, 500, 502, 503, 504}
 MAX_ATTEMPTS = 3  # the first attempt plus at most two retries (plan section 5.3)
 MANAGED_ROOT_FILES = ("conftest.py", "pytest.ini", "setup.cfg", "tox.ini", "pyproject.toml")
@@ -930,8 +939,8 @@ def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, o
     """The run's tool suite with each tool-level treatment that is on composed in as a mixin, and the per-run
     state object of every treatment (each has record()). With no treatment it is base_class itself. The oracle
     runs the evaluator bundle at evaluator_root, the verifier the bundle at verifier_root, through the suite's
-    backend. Each mixin appends its schemas after those of the classes after it in the MRO, so the commitment
-    tools (first in the list) come last, as model_tool_schemas lists them."""
+    backend (the verifier only through an isolated one). Each mixin appends its schemas after those of the classes
+    after it in the MRO, so the commitment tools (first in the list) come last, as model_tool_schemas lists them."""
     mixins, extra, state = [], {}, {}
     if "reasoning" in treatments:
         state["reasoning"] = extra["reasoning"] = EvidenceOntology(runtime, treatments["reasoning"]["mode"])
@@ -946,10 +955,14 @@ def build_tools(runtime, treatments: dict, base_class, *, evaluator_root=None, o
             **timeout)
         mixins.append(CheckOracleTools)
     if "verifier" in treatments:
+        backend = suite_arguments.get("backend")
+        if backend is None or not getattr(backend, "host_isolation", False):
+            # card 021 ran it trusted-local; here a frozen, model-written test runs only in an isolated backend
+            # (with backend None, AcceptanceRunner would fall back to TrustedLocalBackend on the host)
+            raise SystemExit("--verifier needs an isolated backend (--backend oci); it never runs trusted-local")
         timeout = {} if oracle_timeout_seconds is None else {"timeout_seconds": oracle_timeout_seconds}
         state["verifier"] = extra["oracle"] = ReproTestVerifier(
-            runtime, suite_arguments.get("backend"), verifier_root, max_calls=treatments["verifier"]["max_calls"],
-            **timeout)
+            runtime, backend, verifier_root, max_calls=treatments["verifier"]["max_calls"], **timeout)
         mixins.append(CheckOracleTools)
     if (treatments.get("nudge") or {}).get("name") == "commit":
         state["commitment"] = extra["commitment"] = CommitmentLog(runtime)
@@ -1334,6 +1347,8 @@ def main() -> None:
         raise SystemExit(f"the {args.client} client is for forecast tasks only")
     instructions = FORECAST_INSTRUCTIONS if forecast else INSTRUCTIONS
     contracts = [c for c in (task_contract(t) for t in tasks) if c is not None]
+    if "verifier" in treatments and args.backend != "oci":
+        raise SystemExit("--verifier needs --backend oci: a check() run is never trusted-local")
     verifier_manifest = load_verifier_manifest(treatments) if "verifier" in treatments and not args.dry_run else None
     live = args.client in ("openrouter", "claude-cli")
     if live:
@@ -1534,6 +1549,7 @@ def main() -> None:
         elif args.client == "claude-cli":
             inner = ClaudeCliClient(model, calls_path, run_id, budget, max_attempts=MAX_ATTEMPTS,
                                     timeout=CLI_TIMEOUT_SECONDS, max_turns=CLI_MAX_TURNS,
+                                    expected_cli_version=routing[model]["cli_version"],
                                     **({"reply_recovery": client_options["reply_recovery"]} if client_options else {}))
         else:
             inner = scripted_client(args.client, task, repo)
@@ -1575,6 +1591,12 @@ def main() -> None:
             record["reported_models"] = sorted({m for row in run_calls for m in row.get("reported_models") or []})
             if record["stop"] == MODEL_MISMATCH:
                 record["model_mismatch"] = {"expected": model, "reported": record["reported_models"]}
+            # every CLI version that served a call of this run (one, unless the CLI changed mid-run)
+            record["cli_versions"] = sorted({str((row.get("cli_init") or {}).get("claude_code_version"))
+                                             for row in run_calls if row.get("cli_init")})
+            if record["stop"] == CLI_VERSION_MISMATCH:
+                record["cli_version_mismatch"] = {"expected": version_number(routing[model]["cli_version"]),
+                                                  "reported": record["cli_versions"]}
         record["tool_results"] = [
             {"call_id": m.get("tool_call_id"), "head": m["content"][:300], "tail": m["content"][-300:]}
             for m in TranscriptStore(runtime).load() if m.get("role") == "tool"
@@ -1591,7 +1613,7 @@ def main() -> None:
         if budget_stop:
             print(f"Stopping: {budget_stop}")
             break
-        if record["stop"] == MODEL_MISMATCH:  # every later run would meet the same model; void this one and stop
+        if record["stop"] in ADAPTER_PIN_STOPS:  # every later run would meet the same drift; void this one and stop
             print(f"Stopping: {record['agent'].get('error')}")
             break
 

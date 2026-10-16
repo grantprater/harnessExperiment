@@ -1,0 +1,139 @@
+{
+  "task_id": "sqlparse-mut-164-nm",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.278747,
+  "statement_sha256": "24e8262152dee51ba3ded360769d67d996b4d1d0f51e22c56cbf57f63842ea7c",
+  "generated_at": "2026-10-02T02:46:59.530656+00:00",
+  "file": "sqlparse-mut-164-nm/test_reticle_repro.py",
+  "sha256_lf": "9cc6e5daebf04cdf41dcbb48bd1aff04e43e601947f1cb64e7ff893f6592ae7b",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 0,
+    "failed": 3,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 112.8,
+      "cost_usd": 0.2787472,
+      "num_turns": 12,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1b7l_o35\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1b7l_o35\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1b7l_o35\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "get_parent_name",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "parent_name|get_parent_name",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1b7l_o35\\workspace\\docs",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1b7l_o35\\workspace\\examples\\extract_table_names.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "qualified|aliased_column|identifier_invalid",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1b7l_o35\\workspace",
+            "output_mode": "content",
+            "-i": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "parent_name",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1b7l_o35\\workspace",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Name\\b|SQL_REGEX|PROCESS_AS_KEYWORD",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1b7l_o35\\workspace\\sqlparse\\keywords.py",
+            "-n": true,
+            "head_limit": 30
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "9cc6e5daebf04cdf41dcbb48bd1aff04e43e601947f1cb64e7ff893f6592ae7b",
+      "rationale": "The library's own docstring for TokenList.get_parent_name states it should return the name of the token preceding the first dot (the qualifying/parent name) or None if there is no dot; the current implementation has an inverted ternary (`return None if prev_ is not None else remove_quotes(prev_.value)`) that returns None exactly when a real parent exists and raises AttributeError when there is none. This directly breaks qualified-name/qualified-function grouping behaviour (e.g. `foo.bar()` should report parent 'foo'), matching the 'qualified function' item from the regression report, while the unit-level tests isolate the exact inverted-condition bug independent of the rest of the grouping pipeline. The expected values ('foo' as parent, None for unqualified names, 'bar' as real name) come directly from the method's own docstring and from get_real_name's already-correct, unaffected behavior.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 0,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

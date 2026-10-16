@@ -1,0 +1,338 @@
+{
+  "task_id": "sqlparse-mut-310-nm",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.537291,
+  "statement_sha256": "7f99c45897f847b8008b9edec5472cd8229aaae4e8614adedf8cda71caedd2ad",
+  "generated_at": "2026-10-02T01:02:17.941141+00:00",
+  "file": "sqlparse-mut-310-nm/test_reticle_repro.py",
+  "sha256_lf": "e415bba26f6368c9214a3a38fe828bd417a8c53a126f93e5e3a40479e85bf088",
+  "collected": 3,
+  "pre_edit": {
+    "collected": 3,
+    "passed": 0,
+    "failed": 3,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 0,
+      "seconds": 237.4,
+      "cost_usd": 0.5372912,
+      "num_turns": 34,
+      "result_subtype": "success",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\filters\\tokens.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\cli.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "keywordcase|KeywordCaseFilter|keyword_case",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "psql|\\\\copy|issue469",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\CHANGELOG",
+            "offset": 320,
+            "limit": 90
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\engine\\statement_splitter.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\\\\\\\copy|psql|Command",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "keywordcase|inplace|issue469",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace",
+            "output_mode": "content",
+            "-n": true,
+            "-i": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\keywords.py",
+            "offset": 1,
+            "limit": 70
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Keyword\\b",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\tokens.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\tokens.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Command",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\sql.py",
+            "offset": 640,
+            "limit": 40
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\CHANGELOG",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\sql.py",
+            "offset": 1,
+            "limit": 180
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "def group_tokens|grp\\.value|\\.value \\+=|extend",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\sql.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\sql.py",
+            "offset": 280,
+            "limit": 70
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\.value\\b",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\engine\\filter_stack.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\filters\\others.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "split_unquoted_newlines|def value|@property",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\utils.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\utils.py",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Command|Generic",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\filters",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "Command|Generic",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\engine",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\lexer.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\README.rst",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\docs\\source\\api.rst",
+            "offset": 1,
+            "limit": 60
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "'TO'",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\keywords.py",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "'STDOUT'|'CSV'",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\keywords.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "'STDOUT'|'CSV'",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-1pfh8_tq\\workspace\\sqlparse\\keywords.py",
+            "output_mode": "content"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "e415bba26f6368c9214a3a38fe828bd417a8c53a126f93e5e3a40479e85bf088",
+      "rationale": "All three symptoms (format keyword_case, the issue469 psql \\\\copy command, and the CLI --in-place run) trace to the same bug: sqlparse.filters.tokens._CaseFilter.process() inverts its condition (`if not (ttype in self.ttype)`), so it case-converts every token that is NOT the target ttype and leaves the target ttype untouched. For KeywordCaseFilter this means keywords stay lowercase while identifiers and psql \"\\\\command\" tokens get wrongly upper-cased. The expected values come directly from documentation: README.rst's quick-start example shows keyword_case='upper' upper-casing SELECT/FROM while leaving the identifier \"foo\" untouched, docs/source/api.rst states keyword_case \"Changes how keywords are formatted\", the KEYWORDS table marks TO/STDOUT as keywords, and CHANGELOG's issue469 entry (\"Avoid formatting of psql commands\") establishes that Command tokens like \"\\\\copy\" must stay untouched. Each test currently fails because of the inverted condition and will pass once the condition in _CaseFilter.process is corrected to convert only tokens whose ttype matches self.ttype.",
+      "pre_edit": {
+        "collected": 3,
+        "passed": 0,
+        "failed": 3,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+task budgets per run: {"noop-client": {"model_responses": 20, "context_bytes": 80000, "model_attempts": 24, "active_seconds": 1200.0}}
+sqlparse-mut-154__noop-client: finish_requested -> rejected {'fail-to-pass': 'fail', 'pass-to-pass': 'pass'}
+sqlparse-mut-310-nm__noop-client: finish_requested -> rejected {'fail-to-pass': 'fail', 'pass-to-pass': 'pass'}
+sqlparse-mut-172-nm__noop-client: finish_requested -> rejected {'fail-to-pass': 'fail', 'pass-to-pass': 'pass'}

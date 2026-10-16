@@ -57,6 +57,11 @@ init check still requires the tools to be exactly [StructuredOutput], and every 
 have been refused by the CLI (an error tool_result) or the attempt fails as tool_isolation_violation. Cost: only
 the retry attempts run a second turn, and one whose first message is usable discards it (cli_model_messages).
 
+CLI pin: the CLI version is a protocol-hash input, read once at run start. The runner also passes it as
+expected_cli_version, and a call whose init event reports another `claude_code_version` stops the run with the
+`cli_version_mismatch` failure (never retried): on 2026-10-01 the CLI updated itself mid-campaign (card 010 stage 2a).
+Every child gets DISABLE_AUTOUPDATER=1, so the adapter's own CLI processes never update the CLI.
+
 Tool probe (asks the nested CLI, with the adapter's exact flags and no Reticle tools, what it can call; one
 response, one attempt, every adapter check applied, including the model pin for a full id):
   python experiments/p6_pilot/claude_cli.py --probe-tools OUT_DIR [MODEL]
@@ -126,6 +131,13 @@ REPLY_SCHEMA = {
 FULL_MODEL_ID = re.compile(r"claude-[a-z0-9][a-z0-9.-]*[a-z0-9]")
 MODEL_MISMATCH = "model_mismatch"  # the failure kind and the prefix of its error message
 MODEL_PIN_VIOLATION = "model_pin_violation"  # the same guard's cloud-port name; every mismatch message contains it
+# 2026-10-01: the CLI auto-updated from 2.1.286 to 2.1.287 in the middle of card 010 stage 2a; one run had calls on
+# both versions and the version was checked only at run start. With expected_cli_version set, a call whose init
+# event reports another claude_code_version stops the run as cli_version_mismatch (void, never retried).
+CLI_VERSION_MISMATCH = "cli_version_mismatch"  # the failure kind and the prefix of its error message
+# Set in every child the adapter starts: the CLI must never update itself in the middle of a campaign. Not hashed
+# (only the removed names are recorded), so no protocol hash changes.
+PINNED_CLI_ENVIRONMENT = {"DISABLE_AUTOUPDATER": "1"}
 REPLY_CHANNEL_TOOLS = frozenset({"StructuredOutput"})  # how --json-schema returns the reply; not an action
 # Flags that isolate the nested CLI from user configuration and remove every built-in tool.
 ISOLATION_ARGUMENTS = [
@@ -210,8 +222,14 @@ def cli_version(executable: str = "claude") -> str:
     if path is None:
         raise SystemExit(f"{executable} is not on PATH")
     completed = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=60,
-                               env=child_environment()[0])
+                               env=child_environment(PINNED_CLI_ENVIRONMENT)[0])
     return completed.stdout.strip()
+
+
+def version_number(version: Optional[str]) -> Optional[str]:
+    """The bare version: `2.1.286 (Claude Code)` (what --version prints) -> `2.1.286` (the init event's form)."""
+    parts = str(version).split() if version else []
+    return parts[0] if parts else None
 
 
 def _text(content) -> str:
@@ -576,11 +594,14 @@ class ClaudeCliClient:
 
     def __init__(self, model: str, calls_path: Path, run_id: str, budget, *, max_attempts: int = 3,
                  timeout: int = 300, backoff_seconds: float = 5.0, max_turns: int = 1,
-                 executable: str = "claude", workdir: Optional[Path] = None, reply_recovery: Optional[str] = None):
+                 executable: str = "claude", workdir: Optional[Path] = None, reply_recovery: Optional[str] = None,
+                 expected_cli_version: Optional[str] = None):
         check_recovery(reply_recovery, max_turns)
         self.model, self.calls_path, self.run_id, self.budget = model, Path(calls_path), run_id, budget
         self.max_attempts, self.timeout, self.backoff_seconds = max_attempts, timeout, backoff_seconds
         self.max_turns, self.executable = max_turns, executable
+        # The version the run's protocol hash recorded (`claude --version` at run start); None checks nothing.
+        self.expected_cli_version = version_number(expected_cli_version)
         self.workdir = Path(workdir) if workdir else None
         self.call_index = 0
         self.reply_recovery = reply_recovery
@@ -619,7 +640,7 @@ class ClaudeCliClient:
         if not system_file.exists():
             system_file.write_text(system_prompt, encoding="utf-8")
         arguments = self.arguments(system_file)
-        environment, removed = child_environment()
+        environment, removed = child_environment(PINNED_CLI_ENVIRONMENT)
         kept = [name for name in kept_session_variables() if name in environment]
         last_error = "no attempt made"
         # Reply recovery: set once an attempt's StructuredOutput call was rejected; the request's later attempts
@@ -675,8 +696,15 @@ class ClaudeCliClient:
                     entry["cli_model_messages"] = len(stream)
                     problem = problem or unexecuted_tool_problem(stream, tool_results)
                 pin = model_problem(self.model, reported) if init is not None else None
+                served = init.get("claude_code_version") if init is not None else None
                 if problem:  # checked first: a reply from a non-isolated CLI is never used
                     last_error, retry, failure = problem, False, "tool_isolation_violation"
+                elif init is not None and self.expected_cli_version and served != self.expected_cli_version:
+                    # another CLI than the hashed one served this call (an update mid-run): never used, never retried
+                    entry["cli_version_mismatch"] = {"expected": self.expected_cli_version, "reported": served}
+                    last_error = (f"{CLI_VERSION_MISMATCH}: the run's protocol records CLI {self.expected_cli_version}, "
+                                  f"the CLI reported {served}")
+                    retry, failure = False, CLI_VERSION_MISMATCH
                 elif pin:  # nor a reply from a model other than the pinned one; a retry would only repeat it
                     entry["model_mismatch"] = {"expected": self.model, "reported": entry["reported_models"]}
                     last_error, retry, failure = pin, False, MODEL_MISMATCH

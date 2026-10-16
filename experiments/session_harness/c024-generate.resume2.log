@@ -1,0 +1,49 @@
+sqlparse-mut-064-nm: already in the manifest (available); kept
+sqlparse-mut-015: already in the manifest (available); kept
+sqlparse-mut-016-nm: already in the manifest (available); kept
+sqlparse-mut-050: already in the manifest (available); kept
+sqlparse-mut-012: already in the manifest (available); kept
+sqlparse-mut-052-nm: already in the manifest (unavailable); kept
+sqlparse-mut-041: already in the manifest (available); kept
+sqlparse-mut-045-nm: already in the manifest (available); kept
+sqlparse-mut-059: already in the manifest (available); kept
+sqlparse-mut-020: already in the manifest (available); kept
+sqlparse-mut-062-nm: already in the manifest (available); kept
+sqlparse-mut-005: already in the manifest (unavailable); kept
+sqlparse-mut-154: already in the manifest (available); kept
+sqlparse-mut-310-nm: already in the manifest (available); kept
+sqlparse-mut-172-nm: already in the manifest (available); kept
+sqlparse-mut-186-nm: already in the manifest (available); kept
+sqlparse-mut-111: already in the manifest (available); kept
+sqlparse-mut-143-nm: already in the manifest (available); kept
+sqlparse-mut-151: already in the manifest (available); kept
+sqlparse-mut-125-nm: already in the manifest (available); kept
+sqlparse-mut-232-nm attempt 1: $0.755, pre-edit {'collected': 3, 'passed': 3, 'failed': 0, 'skipped': 0, 'collection_error': False, 'timed_out': False}, no_failure
+sqlparse-mut-232-nm attempt 2: $0.635, pre-edit {'collected': 3, 'passed': 3, 'failed': 0, 'skipped': 0, 'collection_error': False, 'timed_out': False}, no_failure
+sqlparse-mut-232-nm attempt 3: $0.653, pre-edit None, no_structured_output
+sqlparse-mut-232-nm: unavailable after 3 attempt(s), $2.043
+sqlparse-mut-266 attempt 1: $0.738, pre-edit None, no_structured_output
+sqlparse-mut-266 attempt 2: $0.611, pre-edit {'collected': 3, 'passed': 3, 'failed': 0, 'skipped': 0, 'collection_error': False, 'timed_out': False}, no_failure
+sqlparse-mut-266 attempt 3: $0.613, pre-edit None, no_structured_output
+sqlparse-mut-266: unavailable after 3 attempt(s), $1.962
+sqlparse-mut-084-nm attempt 1: $0.594, pre-edit {'collected': 3, 'passed': 3, 'failed': 0, 'skipped': 0, 'collection_error': False, 'timed_out': False}, no_failure
+sqlparse-mut-084-nm attempt 2: $0.677, pre-edit {'collected': 4, 'passed': 4, 'failed': 0, 'skipped': 0, 'collection_error': False, 'timed_out': False}, no_failure
+sqlparse-mut-084-nm attempt 3: $0.659, pre-edit None, no_structured_output
+sqlparse-mut-084-nm: unavailable after 3 attempt(s), $1.931
+sqlparse-mut-164-nm attempt 1: $0.279, pre-edit {'collected': 3, 'passed': 0, 'failed': 3, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-164-nm: available after 1 attempt(s), $0.279
+sqlparse-mut-323-nm attempt 1: $0.606, pre-edit {'collected': 4, 'passed': 0, 'failed': 4, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-323-nm: available after 1 attempt(s), $0.606
+sqlparse-mut-089-nm attempt 1: $0.728, pre-edit None, no_structured_output
+sqlparse-mut-089-nm attempt 2: $0.600, pre-edit None, no_structured_output
+sqlparse-mut-089-nm attempt 3: $0.515, pre-edit {'collected': 3, 'passed': 0, 'failed': 3, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-089-nm: available after 3 attempt(s), $1.843
+sqlparse-mut-152 attempt 1: $0.615, pre-edit {'collected': 2, 'passed': 0, 'failed': 2, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-152: available after 1 attempt(s), $0.615
+sqlparse-mut-226 attempt 1: $0.696, pre-edit {'collected': 3, 'passed': 3, 'failed': 0, 'skipped': 0, 'collection_error': False, 'timed_out': False}, no_failure
+sqlparse-mut-226 attempt 2: $0.555, pre-edit {'collected': 3, 'passed': 1, 'failed': 2, 'skipped': 0, 'collection_error': False, 'timed_out': False}, frozen
+sqlparse-mut-226: available after 2 attempt(s), $1.251
+sqlparse-mut-102 attempt 1: no init event
+sqlparse-mut-102 attempt 2: no init event
+sqlparse-mut-102 attempt 3: no init event
+sqlparse-mut-102: unavailable after 3 attempt(s), $0.000

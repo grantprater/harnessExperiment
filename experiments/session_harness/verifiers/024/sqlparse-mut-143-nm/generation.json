@@ -1,0 +1,199 @@
+{
+  "task_id": "sqlparse-mut-143-nm",
+  "status": "available",
+  "attempts": 1,
+  "cost_usd": 0.62918,
+  "statement_sha256": "04d22d66a639b08e867284e775f3deac3214258a2a785a213b9f45b5f1ebc517",
+  "generated_at": "2026-10-02T01:25:02.082030+00:00",
+  "file": "sqlparse-mut-143-nm/test_reticle_repro.py",
+  "sha256_lf": "7163ea0367e831e1cb9b54b6ee3c8f6bb859b371a16dd6191082fb69b6198c8a",
+  "collected": 2,
+  "pre_edit": {
+    "collected": 2,
+    "passed": 0,
+    "failed": 2,
+    "skipped": 0,
+    "collection_error": false,
+    "timed_out": false
+  },
+  "attempt_log": [
+    {
+      "attempt": 1,
+      "cli_exit_code": 1,
+      "seconds": 332.6,
+      "cost_usd": 0.6291800000000001,
+      "num_turns": 21,
+      "result_subtype": "error_max_budget_usd",
+      "api_key_source": "none",
+      "reported_model": {
+        "init": "claude-sonnet-5",
+        "messages": [
+          "claude-sonnet-5"
+        ],
+        "result": [
+          "claude-sonnet-5"
+        ]
+      },
+      "tool_uses": [
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\sqlparse\\utils.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/CHANGELOG*"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "imt",
+            "output_mode": "files_with_matches"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\CHANGELOG",
+            "limit": 60
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\sqlparse\\sql.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\sqlparse\\engine\\grouping.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\sqlparse\\filters\\aligned_indent.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\sqlparse\\filters\\reindent.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "reindent_aligned|use_space_around_operators|aligned",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\docs",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\sqlparse\\engine\\statement_splitter.py"
+          }
+        },
+        {
+          "name": "Grep",
+          "refused": false,
+          "input": {
+            "pattern": "\\.value\\b",
+            "path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\sqlparse",
+            "output_mode": "content",
+            "-n": true
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\sqlparse\\formatter.py"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\sqlparse\\filters\\others.py"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.md"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.txt"
+          }
+        },
+        {
+          "name": "Glob",
+          "refused": false,
+          "input": {
+            "pattern": "**/*.json"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\AGENTS.md"
+          }
+        },
+        {
+          "name": "Read",
+          "refused": false,
+          "input": {
+            "file_path": "C:\\Users\\grant\\AppData\\Local\\Temp\\repro-gen-uhvzge1g\\workspace\\CLAUDE.md"
+          }
+        },
+        {
+          "name": "StructuredOutput",
+          "refused": false,
+          "input": "<reply>"
+        }
+      ],
+      "stderr_tail": "",
+      "code_sha256_lf": "7163ea0367e831e1cb9b54b6ee3c8f6bb859b371a16dd6191082fb69b6198c8a",
+      "rationale": "The two tests target the two concretely-named regressed behaviours. The DoS-prevention test encodes the documented intent of MAX_GROUPING_TOKENS/MAX_GROUPING_DEPTH (per the CHANGELOG security-fix entry and AGENTS.md): they exist only to stop pathological/adversarial input, so a plain 5000-element IN(...) list - ordinary, legitimate SQL - must still parse without SQLParseError and must still be grouped into a proper IdentifierList inside the Parenthesis, exactly as it always did before the protection was added. The aligned-indent test encodes AlignedIndentFilter's documented column-alignment algorithm (api.rst + the filter's own nl()/`_process_identifierlist` logic, whose intended output for \"select a, b as bb, c from table\" aligns every subsequent column and the `from` clause's value under the first selected column), giving a fixed, unambiguous expected string derived from the documented/intended formatting rules rather than from whatever the current buggy code happens to emit.",
+      "pre_edit": {
+        "collected": 2,
+        "passed": 0,
+        "failed": 2,
+        "skipped": 0,
+        "collection_error": false,
+        "timed_out": false
+      },
+      "rejected_because": null
+    }
+  ]
+}
